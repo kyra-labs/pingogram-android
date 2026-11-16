@@ -215,6 +215,10 @@ internal class HistoryPages(
                 is MessageTopic.SavedMessages -> {
                     TdApi.GetSavedMessagesTopicHistory(topic.topicId, fromMessageId, offset, PAGE_SIZE)
                 }
+
+                is MessageTopic.DirectMessages -> {
+                    TdApi.GetDirectMessagesChatTopicHistory(key.chatId, topic.topicId, fromMessageId, offset, PAGE_SIZE)
+                }
             }
         return client.request(request).map { messages ->
             messages.messages
@@ -251,6 +255,12 @@ internal class HistoryPages(
                     client
                         .request(TdApi.GetSavedMessagesTopicHistory(topic.topicId, 0, 0, 1))
                         .map { it.messages.firstOrNull()?.id ?: 0 }
+                }
+
+                is MessageTopic.DirectMessages -> {
+                    client
+                        .request(TdApi.GetDirectMessagesChatTopic(key.chatId, topic.topicId))
+                        .map { it.lastMessage?.id ?: 0 }
                 }
             }
         return lastId.getOrNull() ?: UNKNOWN_LAST_MESSAGE

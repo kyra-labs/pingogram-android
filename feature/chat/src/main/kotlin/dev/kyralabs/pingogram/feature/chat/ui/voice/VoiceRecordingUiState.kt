@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import kotlinx.collections.immutable.ImmutableList
 
 /**
  * A voice message, or a round [video] message, being recorded in the composer (`REQUIREMENTS.md` FR-C5,
@@ -17,7 +18,25 @@ data class VoiceRecordingUiState(
     val isPaused: Boolean = false,
     val meter: RecordingMeter = RecordingMeter(),
     val video: VideoRecordingUiState? = null,
+    val trim: VoiceTrim? = null,
 )
+
+/**
+ * A paused voice recording's trim: its whole waveform ([levels], one per tick, oldest first), how long it is
+ * ([durationMillis]) and the part that will be sent, from [startMillis] to [endMillis].
+ */
+@Immutable
+data class VoiceTrim(
+    val levels: ImmutableList<Float>,
+    val durationMillis: Long,
+    val startMillis: Long = 0L,
+    val endMillis: Long = durationMillis,
+) {
+    /** How long the part sent is. */
+    val keptMillis: Long get() = endMillis - startMillis
+
+    override fun toString() = "VoiceTrim(duration=$durationMillis, start=$startMillis, end=$endMillis)"
+}
 
 /**
  * What a round video message being recorded adds: which camera it records from ([isFront]), whether the other one can

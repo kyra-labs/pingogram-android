@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentType
@@ -27,8 +28,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.verificationCode
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.AuthStepUiState
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -49,10 +52,12 @@ internal fun AuthCodeField(
     modifier: Modifier = Modifier,
     isNumeric: Boolean = true,
     contentType: ContentType? = null,
+    enabled: Boolean = true,
 ) {
     TextField(
         value = value,
         onValueChange = onValueChange,
+        enabled = enabled,
         modifier =
             modifier
                 .fillMaxWidth()
@@ -153,6 +158,22 @@ private fun PasswordVisibilityToggle(
  * which Compose's [ContentType] does not name.
  */
 internal val EmailOtpCode: ContentType = ContentType("emailOTPCode")
+
+/**
+ * Under the phone number while it looks too short for its country ([AuthStepUiState.PhoneNumber.expectedLength]): "Too
+ * short for India numbers, which have 10 digits. Check it, or tap Next and Telegram will decide." A warning, not a
+ * refusal (owner decision 2026-11-15, board 23); null otherwise.
+ */
+@Composable
+internal fun phoneTooShortText(state: AuthStepUiState.PhoneNumber): String? {
+    val length = state.expectedLength ?: return null
+    val country =
+        state.country
+            ?.name
+            .orEmpty()
+            .bidiIsolated()
+    return pluralStringResource(R.plurals.auth_phone_too_short, length, country, length)
+}
 
 /** Reports [message] as this text field's error to screen readers, instead of Material's generic "Invalid input". */
 internal fun Modifier.fieldError(message: String?): Modifier =

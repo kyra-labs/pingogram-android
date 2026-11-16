@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -157,38 +158,47 @@ private fun ShownItem(
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shown = state.shown
-    Box(
-        modifier
-            .clip(MaterialTheme.shapes.extraLarge)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-    ) {
-        when {
-            shown != null -> {
-                ItemImage(shown.image, Modifier.fillMaxSize())
-                val number = state.items.indexOf(shown) + 1
-                NumberBadge(
-                    number,
-                    large = true,
-                    Modifier.align(Alignment.TopStart).padding(MaterialTheme.spacing.medium),
-                )
-                if (shown.isVideo) {
-                    DurationLabel(
-                        shown.durationSeconds,
-                        Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.medium),
-                    )
+    // Another item shown crossfades into its place on the effects springs.
+    StateCrossfade(
+        targetState = state.shown,
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        contentKey = { it?.key },
+        label = "shownItem",
+    ) { shown ->
+        Box(Modifier.fillMaxSize()) {
+            when {
+                shown != null -> {
+                    ItemImage(shown.image, Modifier.fillMaxSize())
+                    // An item being removed fades out without its number, which it no longer has.
+                    val number = state.items.indexOf(shown) + 1
+                    if (number > 0) {
+                        NumberBadge(
+                            number,
+                            large = true,
+                            Modifier.align(Alignment.TopStart).padding(MaterialTheme.spacing.medium),
+                        )
+                    }
+                    if (shown.isVideo) {
+                        DurationLabel(
+                            shown.durationSeconds,
+                            Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.medium),
+                        )
+                    }
+                    FilledTonalIconButton(
+                        onClick = { onRemove(shown.key) },
+                        shapes = IconButtonDefaults.shapes(),
+                        modifier = Modifier.align(Alignment.TopEnd).padding(MaterialTheme.spacing.small),
+                    ) {
+                        Icon(painterResource(UiR.drawable.ic_delete), stringResource(R.string.new_story_remove))
+                    }
                 }
-                FilledTonalIconButton(
-                    onClick = { onRemove(shown.key) },
-                    shapes = IconButtonDefaults.shapes(),
-                    modifier = Modifier.align(Alignment.TopEnd).padding(MaterialTheme.spacing.small),
-                ) {
-                    Icon(painterResource(UiR.drawable.ic_delete), stringResource(R.string.new_story_remove))
-                }
-            }
 
-            state.preparing > 0 -> {
-                LoadingIndicator(Modifier.align(Alignment.Center))
+                state.preparing > 0 -> {
+                    LoadingIndicator(Modifier.align(Alignment.Center))
+                }
             }
         }
     }

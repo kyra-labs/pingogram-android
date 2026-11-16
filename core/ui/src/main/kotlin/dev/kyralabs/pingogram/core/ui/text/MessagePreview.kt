@@ -74,5 +74,6 @@ private fun MessageContent.withoutCaption(): MessageContent =
         is MessageContent.VoiceNote -> copy(caption = FormattedText.Empty)
         is MessageContent.Audio -> copy(caption = FormattedText.Empty)
         is MessageContent.Document -> copy(caption = FormattedText.Empty)
+        is MessageContent.PaidMedia -> copy(caption = FormattedText.Empty)
         else -> this
     }

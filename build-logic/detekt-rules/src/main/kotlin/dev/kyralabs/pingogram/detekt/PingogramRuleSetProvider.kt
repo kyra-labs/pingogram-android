@@ -8,5 +8,6 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
 class PingogramRuleSetProvider : RuleSetProvider {
     override val ruleSetId: String = "pingogram"
 
-    override fun instance(config: Config): RuleSet = RuleSet(ruleSetId, listOf(PingogramHardcodedToken(config)))
+    override fun instance(config: Config): RuleSet =
+        RuleSet(ruleSetId, listOf(PingogramHardcodedToken(config), PingogramMotionDefault(config)))
 }

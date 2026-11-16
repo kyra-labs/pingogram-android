@@ -68,6 +68,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   each with its rows or its error ([SectionErrorSegment]); a section still searching or that found nothing is left
  *   out, as the progress indicator under the search field shows the search (`SearchScreen`). Message rows show the
  *   query's words highlighted.
+ * - **Posts** (under [SearchFilter.Posts]): first a card that offers the search or says the day's free searches are
+ *   used ([PostsPromptCard]), then the posts found as messages, and how many free searches are left.
  * - **Paging**: while more messages can load, it reports the end coming within [LOAD_MORE_THRESHOLD] entries
  *   ([SearchEvent.LoadMoreMessages]), again whenever entries were added and the end is still near.
  *
@@ -169,9 +171,41 @@ private fun LazyListScope.results(
         when (content.filter) {
             SearchFilter.Media -> R.string.search_section_media
             SearchFilter.Links -> R.string.search_section_links
+            SearchFilter.Posts -> R.string.search_section_posts
             else -> R.string.search_section_messages
         }
+    postsPrompt(content.posts, onEvent, style)
     messageSection(messagesTitle, content.messages, content.highlight, onEvent, style)
+    content.postsLeft?.let { left ->
+        item(key = POSTS_LEFT, contentType = POSTS_LEFT) { PostsLeftNote(left, Modifier.row(this, style)) }
+    }
+}
+
+/** Search of public posts' offer, the day's searches used up, or its limits not read; nothing while checking. */
+private fun LazyListScope.postsPrompt(
+    prompt: PostsPrompt,
+    onEvent: (SearchEvent) -> Unit,
+    style: RowStyle,
+) {
+    when (prompt) {
+        PostsPrompt.None, PostsPrompt.Checking -> {}
+
+        is PostsPrompt.Failed -> {
+            item(key = POSTS_PROMPT, contentType = ERROR) {
+                SectionErrorSegment(prompt.error, { onEvent(SearchEvent.Retry) }, Modifier.row(this, style))
+            }
+        }
+
+        is PostsPrompt.Offer, is PostsPrompt.Exhausted -> {
+            item(key = POSTS_PROMPT, contentType = POSTS_PROMPT) {
+                PostsPromptCard(
+                    prompt = prompt,
+                    onSearch = { onEvent(SearchEvent.SearchPosts) },
+                    modifier = Modifier.row(this, style).padding(top = MaterialTheme.spacing.large),
+                )
+            }
+        }
+    }
 }
 
 /** A group of chats under its header; nothing while it searches or if it found none. */
@@ -395,3 +429,5 @@ private const val CHATS = "chats"
 private const val CONTACTS = "contacts"
 private const val GLOBAL = "global"
 private const val MESSAGES = "messages"
+private const val POSTS_PROMPT = "postsPrompt"
+private const val POSTS_LEFT = "postsLeft"

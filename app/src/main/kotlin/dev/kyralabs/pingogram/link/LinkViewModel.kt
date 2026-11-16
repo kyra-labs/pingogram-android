@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.isWebLink
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -54,7 +55,8 @@ interface LinkDispatcher {
  * hands its parameter to the bot's conversation ([BotStartInbox]), whose "Start" sends it once tapped; nothing is ever
  * sent, joined or confirmed here. Scoped to the activity, so a link being looked up survives rotation; nothing to
  * restore after process death, as the link is gone with the screen that tapped it (an intent is not handled again
- * then).
+ * then). A "Log in with Telegram" request Telegram announces ([OauthLoginRepository.requests]: the user started it on a
+ * website in this phone's browser) opens its sheet as a link from another app would.
  */
 @HiltViewModel
 class LinkViewModel
@@ -62,6 +64,7 @@ class LinkViewModel
     constructor(
         private val linkRepository: LinkRepository,
         private val botStarts: BotStartInbox,
+        oauthLogins: OauthLoginRepository,
     ) : ViewModel(),
         LinkDispatcher {
         private val resolving = MutableStateFlow(false)
@@ -71,6 +74,14 @@ class LinkViewModel
         override val effects: Flow<LinkEffect> = effectChannel.receiveAsFlow()
 
         private var job: Job? = null
+
+        init {
+            viewModelScope.launch {
+                oauthLogins.requests.collect { url ->
+                    effectChannel.send(effectOf(LinkTarget.OauthLogin(url), fromOutside = true))
+                }
+            }
+        }
 
         override fun open(
             link: String,
@@ -125,6 +136,11 @@ class LinkViewModel
                 }
 
                 target is LinkTarget.Unsupported -> {
+                    LinkEffect.Notice(LinkNotice.Unsupported(target.url.takeIf(::isWebLink)))
+                }
+
+                // TDLib: a login request tapped inside the app is not acted upon; the browser can take it.
+                target is LinkTarget.OauthLogin && !fromOutside -> {
                     LinkEffect.Notice(LinkNotice.Unsupported(target.url.takeIf(::isWebLink)))
                 }
 

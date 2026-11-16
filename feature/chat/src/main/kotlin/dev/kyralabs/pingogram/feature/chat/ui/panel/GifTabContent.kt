@@ -69,6 +69,9 @@ import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -100,6 +103,7 @@ internal fun GifTabContent(
     onGif: (Animation) -> Unit,
     onEvent: (EmojiPanelEvent) -> Unit,
     onSearchFocus: (Boolean) -> Unit = {},
+    caption: GifCaption? = null,
 ) {
     when (tab) {
         GifTab.Loading -> {
@@ -116,6 +120,10 @@ internal fun GifTabContent(
                     GifSearchField(tab.search?.query.orEmpty(), onSearchFocus) {
                         onEvent(EmojiPanelEvent.GifQueryChanged(it))
                     }
+                }
+                // Grows in as the composer gets text, and shrinks away as it empties.
+                GrowingVisibility(visible = caption != null && caption.shows) {
+                    caption?.let { GifCaptionBar(it.choice) }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     val search = tab.search
@@ -244,6 +252,7 @@ private fun GifGrid(
         val columns = (width / MaterialTheme.sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cell = (width - gap * (columns - 1)) / columns
         val cellPx = with(LocalDensity.current) { cell.roundToPx() }
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
@@ -253,10 +262,12 @@ private fun GifGrid(
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
             items(count = gifs.size, key = { gifs[it].file.id }, contentType = { GIF }) { index ->
-                GifCell(gifs[index], cellPx, onGif, onRemove)
+                GifCell(gifs[index], cellPx, onGif, onRemove, Modifier.animateItem(this, motion))
             }
             if (footer != null) {
-                item(key = FOOTER, span = { GridItemSpan(maxLineSpan) }, contentType = FOOTER) { footer() }
+                item(key = FOOTER, span = { GridItemSpan(maxLineSpan) }, contentType = FOOTER) {
+                    Box(Modifier.animateItem(this, motion)) { footer() }
+                }
             }
         }
     }
@@ -274,6 +285,7 @@ private fun GifCell(
     cellPx: Int,
     onGif: (Animation) -> Unit,
     onRemove: ((Animation) -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -281,7 +293,7 @@ private fun GifCell(
     val send = stringResource(R.string.panel_gifs_send)
     val remove = stringResource(R.string.panel_gifs_remove)
     val colorFilter = MaterialTheme.pingogramColors.mediaColorFilter
-    Box {
+    Box(modifier) {
         Box(
             Modifier
                 .aspectRatio(1f)

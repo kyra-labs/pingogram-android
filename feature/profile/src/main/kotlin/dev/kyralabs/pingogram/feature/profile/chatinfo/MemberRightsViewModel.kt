@@ -331,14 +331,14 @@ class MemberRightsViewModel internal constructor(
             name = if (user == null || isDeleted) UiText.resource(UiR.string.user_deleted_account) else user.fullName(),
             photo = user?.profilePhoto,
             avatarId = userId,
-            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_filled else null,
+            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_off_filled else null,
             restrict = restrict,
             isNew = if (restrict) role !is MemberRole.Restricted else role !is MemberRole.Administrator,
             switches = if (restrict) permissionSwitches(loaded) else rightSwitches(loaded),
             canRevoke = if (restrict) role is MemberRole.Restricted else role is MemberRole.Administrator,
             isSaving = isSaving,
             canTransfer =
-                !restrict && !isDeleted && user?.type == UserType.Regular &&
+                !restrict && !isDeleted && user.type == UserType.Regular &&
                     loaded.group.myRole is MemberRole.Owner && loaded.group.kind != GroupKind.BasicGroup,
             isCheckingTransfer = (mutableUiState.value as? MemberRightsUiState.Content)?.isCheckingTransfer == true,
         )

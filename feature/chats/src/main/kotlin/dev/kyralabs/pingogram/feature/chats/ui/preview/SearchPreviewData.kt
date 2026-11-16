@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.MessageSection
+import dev.kyralabs.pingogram.feature.chats.ui.PostsPrompt
 import dev.kyralabs.pingogram.feature.chats.ui.SearchChatItem
 import dev.kyralabs.pingogram.feature.chats.ui.SearchContent
 import dev.kyralabs.pingogram.feature.chats.ui.SearchFilter
@@ -246,6 +247,64 @@ internal object SearchPreviewData {
 
     /** The Media filter without a query, in chats without photos or videos. */
     val noMedia = media(SearchSection.Items(persistentListOf()))
+
+    private fun posts(
+        prompt: PostsPrompt,
+        found: SearchSection<SearchMessageItem> = SearchSection.Items(persistentListOf()),
+        left: UiText? = null,
+    ) = SearchUiState(
+        content =
+            SearchContent.Results(
+                query = "android",
+                highlight = MatchHighlight.of("android"),
+                chats = SearchSection.Items(persistentListOf()),
+                contacts = SearchSection.Items(persistentListOf()),
+                global = SearchSection.Items(persistentListOf()),
+                messages = MessageSection(found),
+                filter = SearchFilter.Posts,
+                posts = prompt,
+                postsLeft = left,
+            ),
+        filter = SearchFilter.Posts,
+    )
+
+    /** The Posts filter before searching: the search offered, 7 of the day's 10 free searches left. */
+    val postsOffer = posts(PostsPrompt.Offer(left = 7, daily = 10))
+
+    /** The Posts filter with the day's free searches used up. */
+    val postsExhausted = posts(PostsPrompt.Exhausted(daily = 10, nextFree = "6:40 PM"))
+
+    /** The posts found, with how many free searches are left. */
+    val postsFound =
+        posts(
+            prompt = PostsPrompt.None,
+            found =
+                SearchSection.Items(
+                    persistentListOf(
+                        message(
+                            chatId = -100_21,
+                            messageId = 2101,
+                            chatTitle = "Android Developers",
+                            preview = UiText.Plain("Android 17 is here: adaptive layouts by default and more"),
+                            date = "9:12 AM",
+                            badge = TitleBadge.Verified,
+                            shape = AvatarShape.Channel,
+                        ),
+                        message(
+                            chatId = -100_22,
+                            messageId = 2201,
+                            chatTitle = "Compose Weekly",
+                            preview =
+                                UiText.Plain(
+                                    "Material 3 Expressive on Android: what changed in the motion scheme",
+                                ),
+                            date = "Mon",
+                            shape = AvatarShape.Channel,
+                        ),
+                    ),
+                ),
+            left = UiText.plural(R.plurals.search_posts_left, 6, 6, 10),
+        )
 
     /** What the search field holds for [state]: its query, none for the suggestions. */
     fun queryOf(state: SearchUiState): String = (state.content as? SearchContent.Results)?.query.orEmpty()

@@ -17,7 +17,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
@@ -42,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -52,6 +50,7 @@ import dev.kyralabs.pingogram.core.ui.component.FollowScaffoldDirective
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.ListPaneExpansionAnchors
 import dev.kyralabs.pingogram.core.ui.component.PaneDragHandle
+import dev.kyralabs.pingogram.core.ui.component.SchemeAnimatedPane
 import dev.kyralabs.pingogram.core.ui.component.extraPaneEdge
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.rememberExtraPaneWidth
@@ -60,6 +59,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.trace.OpenChatTrace
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListPane
@@ -173,15 +173,13 @@ internal fun ChatsListDetail(
         if (shownExtra != null) lastExtra = shownExtra
     }
     val keyboard = rememberPaneKeyboard()
-    val boundsSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntRect>()
     val paneExpansionState = rememberPaneExpansionState(keyProvider = value, anchors = ListPaneExpansionAnchors)
     val extraWidth = rememberExtraPaneWidth()
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainer)) {
         NavigableListDetailPaneScaffold(
             navigator = navigator,
             listPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier = Modifier.paneContainer(twoPanes, last = false),
                 ) {
                     Box(Modifier.listPaneFocus(keyboard)) {
@@ -203,14 +201,16 @@ internal fun ChatsListDetail(
                                 openChatId = shownChatId,
                                 onEditFolder = onEditFolder,
                                 headerActions = headerActions,
+                                onOpenMessage = { chatId, messageId ->
+                                    keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                                },
                             )
                         }
                     }
                 }
             },
             detailPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier = Modifier.paneContainer(twoPanes, last = !extraVisible),
                 ) {
                     val chatId = shownChatId ?: lastChatId.takeUnless { detailVisible }
@@ -221,6 +221,7 @@ internal fun ChatsListDetail(
                             onOpenMedia = onOpenMedia,
                             // The chat messages were forwarded to replaces this one, or is pushed with one pane.
                             onOpenChat = opener::openChat,
+                            onOpenMessage = opener::openMessage,
                             onOpenProfile = opener::openProfile,
                             onOpenChatInfo = opener::openChatInfo,
                             onBack = backUnless(listVisible && shownChatId != null, opener::closeChat),
@@ -234,8 +235,7 @@ internal fun ChatsListDetail(
                 }
             },
             extraPane = {
-                AnimatedPane(
-                    boundsAnimationSpec = boundsSpec,
+                SchemeAnimatedPane(
                     modifier =
                         Modifier
                             .preferredWidth(extraWidth.width)
@@ -322,8 +322,8 @@ private fun backUnless(
  * The list pane's content: the chat [list], or docked search ([SearchPane]) while [search] is docked, crossfading on
  * the effects springs. Search gets this crossfade's animated visibility scope, so the search button grows into it; the
  * list keeps the destination's, which its "New chat" button grows out of. With [twoPanes] search sits in the pane's
- * rounded container; system back closes it while [searchBackEnabled]. Its results open through [onOpenChat] and
- * [onOpenMessage].
+ * rounded container; system back closes it while [searchBackEnabled], the list showing through with the gesture's
+ * progress ([rememberSeekableSteps]). Its results open through [onOpenChat] and [onOpenMessage].
  */
 @Suppress("LongParameterList") // Search, where its results open, the panes, back, and the list.
 @Composable
@@ -336,12 +336,20 @@ private fun SearchOrList(
     list: @Composable () -> Unit,
 ) {
     val motionScheme = MaterialTheme.motionScheme
-    AnimatedContent(
-        targetState = search.isDocked,
+    // Back from docked search follows the predictive back gesture: the list fades in with its progress, and the
+    // search button shrinks out of search on the same transition (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = search.isDocked,
+            backTo = false.takeIf { search.isDocked },
+            key = { it },
+            enabled = search.isDocked && searchBackEnabled,
+            onBack = { search.isDocked = false },
+        )
+    steps.transition.AnimatedContent(
         transitionSpec = {
             fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
         },
-        label = "dockedSearch",
     ) { docked ->
         if (docked) {
             ProvideNavAnimatedVisibilityScope(this) {
@@ -350,7 +358,6 @@ private fun SearchOrList(
                     onOpenChat = onOpenChat,
                     onOpenMessage = onOpenMessage,
                     shape = if (twoPanes) MaterialTheme.shapes.extraLarge else FullBleedShape,
-                    backEnabled = searchBackEnabled,
                 )
             }
         } else {

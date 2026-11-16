@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -80,14 +81,10 @@ internal fun RecordingBar(
         // The text field's pill in its place.
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        val motionScheme = MaterialTheme.motionScheme
-        AnimatedContent(
+        StateCrossfade(
             targetState = recording.isLocked,
-            transitionSpec = {
-                fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
-                    fadeOut(motionScheme.fastEffectsSpec())
-            },
             contentAlignment = Alignment.CenterStart,
+            clip = true,
             label = "recordingBar",
         ) { locked ->
             Row(
@@ -179,7 +176,7 @@ private fun RowScope.LockedContent(
         )
     }
     RecordingDot(recording)
-    RecordingLength(recording.meter)
+    RecordingLength(recording.meter, keptMillis = recording.trim?.keptMillis)
     val video = recording.video
     if (video?.isStopped == true) {
         Text(
@@ -192,7 +189,21 @@ private fun RowScope.LockedContent(
         )
         return
     }
-    LiveWaveform(recording, Modifier.weight(1f))
+    val trim = recording.trim
+    // Paused, the live waveform gives way to the trimming one, crossfading in place.
+    StateCrossfade(
+        targetState = trim,
+        modifier = Modifier.weight(1f),
+        contentAlignment = Alignment.CenterStart,
+        contentKey = { it != null },
+        label = "recordingWaveform",
+    ) { shown ->
+        if (shown != null) {
+            TrimWaveform(shown, onEvent, Modifier.fillMaxWidth())
+        } else {
+            LiveWaveform(recording, Modifier.fillMaxWidth())
+        }
+    }
     if (video?.canFlip == true) {
         IconButton(onClick = { onVideoEvent(VideoNoteEvent.FlipCamera) }, shapes = IconButtonDefaults.shapes()) {
             Icon(
@@ -240,10 +251,17 @@ private fun RecordingDot(recording: VoiceRecordingUiState) {
     )
 }
 
-/** How long it has recorded, "0:07" or "1:02:03", recomposed once a second. */
+/**
+ * How long it has recorded, "0:07" or "1:02:03", recomposed once a second; while trimmed, how long the part sent is
+ * ([keptMillis]).
+ */
 @Composable
-private fun RecordingLength(meter: RecordingMeter) {
-    val seconds by remember(meter) { derivedStateOf { meter.elapsedMillis / MILLIS_PER_SECOND } }
+private fun RecordingLength(
+    meter: RecordingMeter,
+    keptMillis: Long? = null,
+) {
+    val recorded by remember(meter) { derivedStateOf { meter.elapsedMillis / MILLIS_PER_SECOND } }
+    val seconds = keptMillis?.let { it / MILLIS_PER_SECOND } ?: recorded
     Text(
         text = recordingLength(seconds),
         color = MaterialTheme.colorScheme.onSurface,

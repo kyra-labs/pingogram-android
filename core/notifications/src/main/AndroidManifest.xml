@@ -13,6 +13,11 @@
             android:name="dev.kyralabs.pingogram.core.notifications.TransferCancelReceiver"
             android:exported="false" />
 
+        <!-- A message reminder's "Snooze 1 h", from the app's own pending intent only. -->
+        <receiver
+            android:name="dev.kyralabs.pingogram.core.notifications.ReminderActionReceiver"
+            android:exported="false" />
+
         <!-- WorkManager's foreground service runs TransfersWorker while the files the user sends and downloads are on
              their way (REQUIREMENTS.md FR-N4): type dataSync on Android 14+, which needs FOREGROUND_SERVICE_DATA_SYNC
              (app manifest), and ChatExportWorker while a chat export the user started runs (docs/adr/0021). Before

@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animate
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -49,7 +48,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import dev.kyralabs.pingogram.core.ui.R
-import kotlinx.coroutines.launch
+import dev.kyralabs.pingogram.core.ui.gesture.SettlingOffset
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -66,9 +65,11 @@ import kotlin.math.roundToInt
 class ExtraPaneWidth internal constructor(
     initial: Dp,
 ) {
+    /** The width in dp, which the handle's drag moves and its spring settles; a drag cancels a settle. */
+    internal val offset = SettlingOffset(initial.value)
+
     /** The extra pane's preferred width, for the scaffold's `Modifier.preferredWidth` on the pane. */
-    var width: Dp by mutableStateOf(initial)
-        internal set
+    val width: Dp get() = offset.value.dp
 
     /** The extra pane's edge that faces the detail pane, in the root's pixels; NaN until it is placed. */
     internal var paneEdge by mutableFloatStateOf(Float.NaN)
@@ -104,7 +105,9 @@ fun Modifier.extraPaneEdge(state: ExtraPaneWidth): Modifier {
  * ([spacerSize], the directive's) between the detail pane and the extra pane: Material's [VerticalDragHandle] on a
  * touch target of the minimum interactive size. A drag resizes the extra pane between 360 dp and a third of the
  * scaffold, mirrored right to left, and settles on the nearest of [ExtraPaneWidth]'s widths on the motion scheme's
- * default spatial spring. Accessibility services hear its width and move it to the next width with a click.
+ * default spatial spring (`docs/DESIGN_SYSTEM.md` §5.1), from the release's velocity; grabbing the handle again
+ * stops the settle where the pane is. Accessibility services hear its width and move it to the next width with a
+ * click.
  */
 @Composable
 fun ExtraPaneDragHandle(
@@ -122,10 +125,9 @@ fun ExtraPaneDragHandle(
     var overlayStart by remember { mutableFloatStateOf(Float.NaN) }
     var overlayWidth by remember { mutableStateOf(0.dp) }
     val anchors = extraPaneAnchors(overlayWidth)
-    val settle = { target: Dp ->
-        scope.launch {
-            animate(state.width.value, target.value, animationSpec = spec) { value, _ -> state.width = value.dp }
-        }
+    // velocity: in dp per second, positive as the pane widens.
+    val settle = { target: Dp, velocity: Float ->
+        state.offset.settle(scope, target.value, spec, velocity)
     }
     val widthName = extraPaneWidthName(anchors, state.width)
     Box(
@@ -150,15 +152,23 @@ fun ExtraPaneDragHandle(
                 .draggable(
                     state =
                         rememberDraggableState { delta ->
-                            val change = with(density) { delta.toDp() }
-                            state.width =
-                                (state.width + if (rtl) change else -change).coerceIn(anchors.first(), anchors.last())
+                            val change = with(density) { delta.toDp() }.value
+                            state.offset.dragBy(
+                                if (rtl) change else -change,
+                                anchors.first().value..anchors.last().value,
+                            )
                         },
                     orientation = Orientation.Horizontal,
                     interactionSource = interactionSource,
-                    onDragStopped = { settle(anchors.minBy { (it - state.width).value.absoluteValue }) },
+                    onDragStopped = { velocity ->
+                        val widening = with(density) { velocity.toDp() }.value
+                        settle(
+                            anchors.minBy { (it - state.width).value.absoluteValue },
+                            if (rtl) widening else -widening,
+                        )
+                    },
                 ).handleSemantics(widthName) {
-                    settle(anchors.firstOrNull { it > state.width + AnchorTolerance } ?: anchors.first())
+                    settle(anchors.firstOrNull { it > state.width + AnchorTolerance } ?: anchors.first(), 0f)
                 },
             contentAlignment = Alignment.Center,
         ) {

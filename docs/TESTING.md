@@ -9,7 +9,7 @@
 | Compose UI (JVM) | `createComposeRule` + Robolectric | `feature:*` | Interaction-heavy screens (composer, code entry, swipe) |
 | Instrumented | Espresso/Compose on emulator, test DC | `:app` `androidTest` | Smoke: launch → login on test DC → open a chat (nightly, not per PR) |
 | Macrobenchmark | `benchmark/` | release build | Startup, chat-list scroll, conversation scroll; generates Baseline Profile |
-| Static | ktlint, detekt (+ `PingogramHardcodedToken`), Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
+| Static | ktlint, detekt (+ `PingogramHardcodedToken`, `PingogramMotionDefault`), Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
 
 ## Rules
 
@@ -56,6 +56,16 @@ saying why.
 - `PingogramHardcodedToken` (`build-logic/detekt-rules`) fails `:feature:*` production code that uses
   literal colors, `sp`/`dp` values (except `0.dp`), corner shapes or animation specs instead of the
   `MaterialTheme` tokens (`docs/DESIGN_SYSTEM.md` §1). Test sources and `core`/`app` are not checked.
+- `PingogramMotionDefault` (`build-logic/detekt-rules`) fails `:feature:*` and `:app` production code that leaves an
+  animation's spec to Compose's defaults (an `AnimatedVisibility` without enter and exit, an `AnimatedContent` without
+  its `transitionSpec`, a transition or `animate*AsState` without a spec, a default `spring()`, a loop without a
+  commented suppression, a lazy item's `animateItem()` without its three specs (`core:ui`'s
+  `animateItem(scope, rememberItemMotion())`), a `SizeTransform`, a pager's `animateScrollToPage` or an
+  `AnimatedPane` without its spec, Coil's `crossfade`, an animated value read in composition rather than in a
+  lambda…), and `:app` and `core:ui` code with literal tweens, durations or easings (`docs/DESIGN_SYSTEM.md` §5 and
+  §5.1, `docs/plans/motion-expressive-plan.md` §4). Every check is on; `config/detekt/detekt.yml` lists them.
+- detekt's `ForbiddenImport` (`config/detekt/detekt.yml`) keeps `androidx.compose.material3.ModalBottomSheet` out of
+  production code: sheets go through `core:ui`'s `PingogramBottomSheet` (`docs/DESIGN_SYSTEM.md` §6 "Bottom sheets").
 - Kotlin compiler warnings fail the build in the modules that apply `pingogram.kotlin.warnings`
   (`allWarningsAsErrors`, main and test sources). The modules without it yet, and their warnings, are listed in
   `docs/audit/v1-readiness.md`; a module applies it once they are fixed.
@@ -72,5 +82,9 @@ https://core.telegram.org/api/auth#test-accounts). Use them only in `androidTest
 ## CI gates
 
 - PR: `check` (ktlint, detekt, lint, unit, screenshot verify), `assembleFossDebug`.
+  - `ci.yml` runs `check` as parallel jobs, one per group of modules (`tools/ci/check-shards.json`), beside the debug
+    APK. A new module goes into a group in that file; `tools/ci/check_shards.py` fails CI when a project of
+    `settings.gradle.kts` is in no group or in two.
+  - The `build` job passes only when every one of them did, so pull requests keep waiting for one check.
 - Nightly: instrumented smoke on API 26 and API 36 emulators, Macrobenchmark on a Firebase
   Test Lab physical device if the owner configures it (optional).

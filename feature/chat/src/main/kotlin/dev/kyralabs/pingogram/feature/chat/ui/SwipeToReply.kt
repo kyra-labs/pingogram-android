@@ -99,7 +99,7 @@ internal fun rememberSwipeReplyStyle(): SwipeReplyStyle {
  *   the fast spatial spring; back under it, the icon shrinks again. Beyond it the bubble follows the finger at a
  *   fraction of its speed.
  * - Released armed, it replies ([onReply], the same event as the actions' "Reply"); armed or not, the bubble springs
- *   back on the default spatial spring. A new swipe takes the bubble where the spring has it.
+ *   back on the default spatial spring from the release's speed. A new swipe takes the bubble where the spring has it.
  */
 @Stable
 internal class SwipeToReplyState(
@@ -124,7 +124,7 @@ internal class SwipeToReplyState(
         dragged = if (offset <= distance) offset else distance + (offset - distance) / BEYOND_FACTOR
     }
 
-    val onStopped: suspend CoroutineScope.(Float) -> Unit = { release() }
+    val onStopped: suspend CoroutineScope.(Float) -> Unit = { velocity -> release(velocity) }
 
     private fun drag(delta: Float) {
         val distance = style.distance
@@ -133,14 +133,21 @@ internal class SwipeToReplyState(
         arm(dragged >= distance)
     }
 
-    private fun release() {
+    /**
+     * Lets go at the finger's [velocity]: the bubble springs back from the speed it has, beyond the distance a fraction
+     * of the finger's.
+     */
+    private fun release(velocity: Float) {
         if (armed) onReply()
         arm(false)
+        val bubbleVelocity = if (dragged > style.distance) velocity * BEYOND_FACTOR else velocity
         dragged = 0f
         val from = offset
         settleJob =
             style.scope.launch {
-                animate(from, 0f, animationSpec = style.settleSpec) { value, _ -> offset = value }
+                animate(from, 0f, initialVelocity = bubbleVelocity, animationSpec = style.settleSpec) { value, _ ->
+                    offset = value
+                }
             }
     }
 

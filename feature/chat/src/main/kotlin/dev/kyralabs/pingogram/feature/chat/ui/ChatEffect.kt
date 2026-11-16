@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
@@ -54,6 +55,15 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open chat [chatId] at message [messageId]: the original of a post forwarded from a channel. */
+    data class OpenMessage(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
+
+    /** "Forwarded from …" of a user who hides their account was tapped: a snackbar says nothing can open. */
+    data object ForwardSourceHidden : ChatEffect
+
     /** Open channel [chatId], the next unread one, in this conversation's place, so back leads where it did. */
     data class OpenNextChannel(
         val chatId: Long,
@@ -82,6 +92,13 @@ sealed interface ChatEffect {
     /** The user started a reply or an edit: the composer's text field takes the focus, which opens the keyboard. */
     data object FocusComposer : ChatEffect
 
+    /**
+     * The Quick compose widget's "Voice" (board 33) opened the chat: a locked voice recording starts where the
+     * microphone permission is granted ([VoiceEvent.Start]), else the snackbar that asks for it
+     * ([VoiceEvent.PermissionNeeded]).
+     */
+    data object RecordVoiceNow : ChatEffect
+
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
 
@@ -102,6 +119,20 @@ sealed interface ChatEffect {
 
     /** A day picked to jump to has no messages on it or before it (the chat starts later): a snackbar says so. */
     data object NoMessagesForDay : ChatEffect
+
+    /** What was picked for a poll's media is no photo, which polls take: a snackbar says so. */
+    data object PollPhotoOnly : ChatEffect
+
+    /** Open the page of every pinned message of the conversation, [route] (`LocalPinnedMessagesLauncher`). */
+    data class OpenPinnedMessages(
+        val route: PinnedMessagesRoute,
+    ) : ChatEffect
+
+    /** Open the statistics of the poll of message [messageId] in chat [chatId] (`LocalPollStatisticsLauncher`). */
+    data class OpenPollStatistics(
+        val chatId: Long,
+        val messageId: Long,
+    ) : ChatEffect
 
     /**
      * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
@@ -139,8 +170,9 @@ sealed interface ChatEffect {
     data object SendFailed : ChatEffect
 
     /**
-     * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);
-     * the screen reports what came of it with `ChatEvent.PhotoTaken`, also when no camera app opens.
+     * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI),
+     * asking for the camera permission first where it is not granted; the screen reports what came of it with
+     * `ChatEvent.PhotoTaken`, also when no camera app opens.
      */
     data class LaunchCamera(
         val path: String,

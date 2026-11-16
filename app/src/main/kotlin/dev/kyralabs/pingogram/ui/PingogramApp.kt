@@ -36,18 +36,23 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.PageToOpen
 import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalMessageLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
@@ -61,13 +66,18 @@ import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.feature.calls.navigation.navigateToRecentCalls
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToBookmarks
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToPinnedMessages
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.navigateToFeedback
+import dev.kyralabs.pingogram.feature.profile.navigation.navigateToPollStatistics
 import dev.kyralabs.pingogram.link.LinkDispatcher
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.navigation.isFullScreen
@@ -135,10 +145,10 @@ fun PingogramApp(
     navController: NavHostController = rememberNavController(),
     navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
     tabReselection: TabReselection = remember { TabReselection() },
-    chatToOpen: Long? = null,
+    chatToOpen: ChatToOpen? = null,
     onChatOpened: () -> Unit = {},
-    lockedChatsToOpen: Boolean = false,
-    onLockedChatsOpened: () -> Unit = {},
+    pageToOpen: PageToOpen? = null,
+    onPageOpened: () -> Unit = {},
     links: LinkDispatcher? = null,
     linkToOpen: String? = null,
     onLinkOpened: () -> Unit = {},
@@ -179,9 +189,18 @@ fun PingogramApp(
     val openNewContact = remember(navController) { { navController.navigateToNewContact() } }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
+    val openBookmarks = remember(navController) { { navController.navigateToBookmarks() } }
+    val openPollStatistics: (Long, Long) -> Unit =
+        remember(navController) { { chatId, messageId -> navController.navigateToPollStatistics(chatId, messageId) } }
+    val openPinnedMessages: (PinnedMessagesRoute) -> Unit =
+        remember(navController) { { route -> navController.navigateToPinnedMessages(route) } }
     val openLockedChats =
         remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
     val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
+    val openMessage =
+        remember(navController) {
+            { chatId: Long, messageId: Long -> navController.navigate(ChatRoute(chatId, messageId = messageId)) }
+        }
     // Before the NavHost sets its graph, whose media viewer is an overlay destination.
     val overlays = rememberOverlayNavigator(navController)
     SharedTransitionLayout(modifier) {
@@ -207,10 +226,14 @@ fun PingogramApp(
                             LocalTabReselection provides tabReselection,
                             LocalFeedbackLauncher provides openFeedback,
                             LocalRecentCallsLauncher provides openRecentCalls,
+                            LocalBookmarksLauncher provides openBookmarks,
+                            LocalPollStatisticsLauncher provides openPollStatistics,
+                            LocalPinnedMessagesLauncher provides openPinnedMessages,
                             // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on
                             // the page.
                             LocalLockedChatsLauncher provides openLockedChats,
                             LocalChatLauncher provides openChat,
+                            LocalMessageLauncher provides openMessage,
                         ) {
                             AppContent(uiState, search) {
                                 PingogramNavHost(
@@ -220,9 +243,10 @@ fun PingogramApp(
                                     headerActions = headerActions,
                                     chatToOpen = chatToOpen,
                                     onChatOpened = onChatOpened,
-                                    lockedChatsToOpen = lockedChatsToOpen,
-                                    onLockedChatsOpened = onLockedChatsOpened,
+                                    pageToOpen = pageToOpen,
+                                    onPageOpened = onPageOpened,
                                     onOpenLinkTarget = { target -> links?.show(target) },
+                                    shares = shares,
                                 )
                             }
                         }

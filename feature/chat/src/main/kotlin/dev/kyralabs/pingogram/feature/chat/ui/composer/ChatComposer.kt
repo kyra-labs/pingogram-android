@@ -211,6 +211,25 @@ internal class ChatComposer(
     }
 
     /**
+     * The field's text, for a GIF tapped in the panel to take as its caption: emptied with the draft, as sending does;
+     * null while editing or when it holds only white space. [restoreCaption] gives it back when Telegram refuses it.
+     */
+    fun takeCaption(): FormattedText? {
+        val content = text.content
+        if (mode.value is ComposerMode.Editing || content.text.isBlank()) return null
+        pendingSave?.cancel()
+        if (chatDraft?.isEmpty == false) remember(ComposerDraft.Empty)
+        chatDraft = ComposerDraft.Empty
+        text.setContent(FormattedText.Empty)
+        return content
+    }
+
+    /** Gives back a caption [takeCaption] took, unless the field holds something new by then. */
+    fun restoreCaption(caption: FormattedText) {
+        if (text.isEmpty) text.setContent(caption)
+    }
+
+    /**
      * Saves the draft now, if it changed: the screen stops or leaves. Undispatched, so the request is sent before this
      * returns, as the view model's scope may be cancelled right after.
      */

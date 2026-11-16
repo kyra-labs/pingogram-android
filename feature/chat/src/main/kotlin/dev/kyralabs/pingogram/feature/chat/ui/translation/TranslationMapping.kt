@@ -6,11 +6,15 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
+import dev.kyralabs.pingogram.feature.chat.ui.SummaryEvent
 import dev.kyralabs.pingogram.feature.chat.ui.TranslationEffect
+import dev.kyralabs.pingogram.feature.chat.ui.TranslationEvent
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import java.util.Locale
 
 /**
@@ -28,7 +32,7 @@ internal fun ChatUiState.withTranslations(translations: ImmutableMap<Long, Bubbl
                 item
             } else {
                 changed = true
-                val text = (translation as? BubbleTranslation.Shown)?.text ?: item.text
+                val text = translation.shownText ?: item.text
                 item.copy(text = text, translation = translation, showsTime = true)
             }
         }
@@ -36,8 +40,22 @@ internal fun ChatUiState.withTranslations(translations: ImmutableMap<Long, Bubbl
 }
 
 /**
- * "Translated from Spanish", or "Translated" without a language; "Translating…" while it is on its way. The language
- * is named in [locale], the screen's.
+ * The [translations] with the [summaries] over them: a bubble the user chose to see summarized shows its summary, not a
+ * translation.
+ */
+internal fun withSummaries(
+    translations: ImmutableMap<Long, BubbleTranslation>,
+    summaries: ImmutableMap<Long, BubbleTranslation>,
+): ImmutableMap<Long, BubbleTranslation> =
+    when {
+        summaries.isEmpty() -> translations
+        translations.isEmpty() -> summaries
+        else -> (translations + summaries).toImmutableMap()
+    }
+
+/**
+ * "Translated from Spanish", or "Translated" without a language; "Translating…" while it is on its way; "Summary by
+ * Telegram" and "Summarizing…" for a summary. The language is named in [locale], the screen's.
  */
 internal fun translationLabel(
     resources: Resources,
@@ -52,6 +70,14 @@ internal fun translationLabel(
         is BubbleTranslation.Shown -> {
             translation.fromLanguage?.let { resources.getString(R.string.translation_from, languageName(it, locale)) }
                 ?: resources.getString(R.string.translation_translated)
+        }
+
+        BubbleTranslation.Summarizing -> {
+            resources.getString(R.string.summary_summarizing)
+        }
+
+        is BubbleTranslation.Summary -> {
+            resources.getString(R.string.summary_by_telegram)
         }
     }
 
@@ -99,5 +125,32 @@ internal fun translationNotice(
 
         TranslationEffect.BarHidden -> {
             resources.getString(R.string.translation_bar_hidden)
+        }
+
+        is TranslationEffect.SummaryFailed -> {
+            if (effect.error is DomainError.Unknown && !showDetails) {
+                resources.getString(R.string.summary_failed)
+            } else {
+                errorMessage(resources, effect.error, showDetails)
+            }
+        }
+    }
+
+/** "Show original" on a translated bubble, "Show full text" on a summarized one; null on the others. */
+internal fun originalTextAction(
+    resources: Resources,
+    bubble: ChatItem.Bubble,
+): Pair<String, ChatEvent>? =
+    when (bubble.translation) {
+        is BubbleTranslation.Shown -> {
+            resources.getString(R.string.message_action_show_original) to TranslationEvent.ShowOriginal(bubble.id)
+        }
+
+        is BubbleTranslation.Summary -> {
+            resources.getString(R.string.message_action_show_full_text) to SummaryEvent.ShowFullText(bubble.id)
+        }
+
+        else -> {
+            null
         }
     }

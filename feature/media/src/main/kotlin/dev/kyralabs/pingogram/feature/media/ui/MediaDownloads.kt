@@ -40,13 +40,14 @@ internal class MediaDownloads(
     /**
      * Downloads around the item at [currentIndex] of [fileIds] (each item's full file, in pager order), whose known
      * states are [states], and cancels what is out of reach; the shown item's file [streamed] (if not null) is its
-     * stream's to download.
+     * stream's to download, and a live photo's [motion] downloads after its photo, while it is shown.
      */
     fun focus(
         fileIds: List<Int>,
         currentIndex: Int,
         states: Map<Int, FileState>,
         streamed: Int? = null,
+        motion: Int? = null,
     ) {
         // Neither asked for again nor cancelled: the stream downloads it now.
         if (streamed != null) requested.remove(streamed)
@@ -55,6 +56,7 @@ internal class MediaDownloads(
                 fileIds.getOrNull(currentIndex)?.let { put(it, DownloadPriority.Visible) }
                 fileIds.getOrNull(currentIndex - 1)?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
                 fileIds.getOrNull(currentIndex + 1)?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
+                motion?.let { putIfAbsent(it, DownloadPriority.Prefetch) }
             }
         fileIds.getOrNull(currentIndex)?.let(shown::add)
         for ((fileId, priority) in wanted) {
@@ -65,7 +67,7 @@ internal class MediaDownloads(
             }
         }
         val inReach = (currentIndex - KEEP_DISTANCE..currentIndex + KEEP_DISTANCE).mapNotNull(fileIds::getOrNull)
-        for (fileId in requested.keys - inReach.toSet()) cancel(fileId, scope)
+        for (fileId in requested.keys - inReach.toSet() - setOfNotNull(motion)) cancel(fileId, scope)
     }
 
     /**

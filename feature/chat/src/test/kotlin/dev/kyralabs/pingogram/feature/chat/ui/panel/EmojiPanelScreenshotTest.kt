@@ -35,7 +35,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the emoji and sticker panel on a compact phone, light and dark (`docs/TESTING.md`): open below the
  * composer on its emoji tab (the composer's button shows the keyboard icon), and the stickers tab with sections, while
- * it cannot load, and without stickers; the GIF tab with saved GIFs, a search, none found, none saved and an error.
+ * it cannot load, and without stickers; the GIF tab with saved GIFs (and with the composer's text as a caption, its
+ * bar above them), a search, none found, none saved and an error.
  * Sticker files are not on the device, so stickers show their emoji, GIFs their placeholder. Brand
  * colors.
  */
@@ -88,6 +89,14 @@ class EmojiPanelScreenshotTest(
                                     onEvent = {},
                                     modifier = Modifier.fillMaxWidth().height(MaterialTheme.sizes.inputPanelHeight),
                                     initialTab = STATES.getValue(stateName).second,
+                                    gifCaption =
+                                        if (stateName ==
+                                            "gifsCaption"
+                                        ) {
+                                            GifCaption(GifCaptionChoice()) { true }
+                                        } else {
+                                            null
+                                        },
                                 )
                             }
                         }
@@ -106,6 +115,7 @@ class EmojiPanelScreenshotTest(
                 "stickersError" to (PanelPreviewData.stickersError to PanelTab.Stickers),
                 "stickersEmpty" to (PanelPreviewData.stickersEmpty to PanelTab.Stickers),
                 "gifs" to (PanelPreviewData.gifsSaved to PanelTab.Gifs),
+                "gifsCaption" to (PanelPreviewData.gifsSaved to PanelTab.Gifs),
                 "gifsEmpty" to (PanelPreviewData.gifsEmpty to PanelTab.Gifs),
                 "gifsSearch" to (PanelPreviewData.gifsSearch to PanelTab.Gifs),
                 "gifsNoResults" to (PanelPreviewData.gifsNoResults to PanelTab.Gifs),

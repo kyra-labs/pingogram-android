@@ -8,11 +8,15 @@ import dev.kyralabs.pingogram.feature.media.story.StoryViewerRoute as StoryViewe
 
 /**
  * Adds the stories viewer, [StoryViewerRoute], to the graph, with the `NavHost`'s transitions for full-screen
- * destinations; [onClose] leaves it, after the last story or by a swipe, back or the close button. The viewer handles
- * system back itself, following the predictive back gesture.
+ * destinations; [onClose] leaves it, after the last story or by a swipe, back or the close button; [onShare] opens the
+ * share sheet for a story, above the viewer, which pauses meanwhile. The viewer handles system back itself, following
+ * the predictive back gesture.
  */
-fun NavGraphBuilder.storyViewerScreen(onClose: () -> Unit) {
-    composable<StoryViewerRoute> { StoryViewer(onClose = onClose) }
+fun NavGraphBuilder.storyViewerScreen(
+    onClose: () -> Unit,
+    onShare: (posterChatId: Long, storyId: Int) -> Unit = { _, _ -> },
+) {
+    composable<StoryViewerRoute> { StoryViewer(onClose = onClose, onShare = onShare) }
 }
 
 /** Opens the stories viewer on chat [chatId]'s stories; once, however often its ring is tapped. */

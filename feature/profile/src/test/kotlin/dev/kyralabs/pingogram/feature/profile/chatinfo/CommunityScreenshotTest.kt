@@ -1,9 +1,20 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.AddChatsContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.community.AddChatsSheet
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityUiState
@@ -13,6 +24,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.COMPACT
 import dev.kyralabs.pingogram.feature.profile.ui.MEDIUM
 import dev.kyralabs.pingogram.feature.profile.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.profile.ui.ScreenshotVariant
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,8 +100,49 @@ class CommunityScreenshotTest {
             }
         }
 
+    @Test
+    fun addChatsLight() = captureSheet(ScreenshotVariant.Light, CommunityPreviewData.addChats, isDirect = true)
+
+    @Test
+    fun addChatsDark() = captureSheet(ScreenshotVariant.Dark, CommunityPreviewData.addChats, isDirect = true)
+
+    @Test
+    fun suggestChatRtl() = captureSheet(ScreenshotVariant.Rtl, CommunityPreviewData.addChats, isDirect = false)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1800dp-xxhdpi", fontScale = 2f)
+    fun addChatsFontScale200() = captureSheet(ScreenshotVariant.Light, CommunityPreviewData.addChats, isDirect = true)
+
+    @Test
+    fun addChatsEmpty() =
+        captureSheet(ScreenshotVariant.Light, AddChatsSheet(chats = persistentListOf()), isDirect = true)
+
+    /** The sheet's content on a sheet's surface: a sheet's window shows on some runs and not others. */
+    private fun captureSheet(
+        variant: ScreenshotVariant,
+        sheet: AddChatsSheet,
+        isDirect: Boolean,
+    ) = captureRoboImage {
+        ScreenshotTheme(
+            variant,
+        ) { SheetSurface { AddChatsContent(sheet, isDirect, onEvent = {}) } }
+    }
+
     private fun capture(
         variant: ScreenshotVariant,
         state: CommunityUiState = CommunityPreviewData.owner,
     ) = captureRoboImage { ScreenshotTheme(variant) { CommunityScreen(state, onEvent = {}, onBack = {}) } }
+}
+
+/** [content] on a bottom sheet's container, its top corners and padding, as in the sheet's window. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetSurface(content: @Composable () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = BottomSheetDefaults.ExpandedShape,
+        color = BottomSheetDefaults.ContainerColor,
+    ) {
+        Box(Modifier.padding(top = MaterialTheme.spacing.extraLarge)) { content() }
+    }
 }

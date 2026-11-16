@@ -25,6 +25,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -64,6 +66,9 @@ internal fun DeleteMessagesAlert(
         }
     AlertDialog(
         onDismissRequest = onDismiss,
+        // The dialog opens a window of its own, which MainActivity's testTagsAsResourceId does not reach: without it
+        // UiAutomator finds no "delete_confirm" (`benchmark/`'s Journeys.kt).
+        modifier = Modifier.semantics { testTagsAsResourceId = true },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(forEveryone) },

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.text.format.Formatter
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -149,13 +150,19 @@ internal fun DataStorageScreen(
     ) {
         // The page opens on the storage used (docs/DESIGN_SYSTEM.md §13.10); its group stays below.
         val usage = state.usage
-        if (usage is StorageUsageState.Content) {
-            StorageCard(usage.usage) { onEvent(DataStorageEvent.ClearCache) }
-        }
-        state.autoDownload?.let { settings ->
-            AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload) {
-                onEvent(DataStorageEvent.ResetAutoDownload)
+        // The card grows in above the first group once the statistics answer, so the page does not jump down
+        // (docs/DESIGN_SYSTEM.md §5.1). One child of the page's column with that group, so the gap between them grows
+        // with the card rather than appearing at once.
+        val autoDownload = state.autoDownload
+        if (autoDownload != null) {
+            Column {
+                StorageCardSlot(usage, gapBelow = true) { onEvent(DataStorageEvent.ClearCache) }
+                AutoDownloadGroup(autoDownload, state.isDataSaverOn, onOpenAutoDownload) {
+                    onEvent(DataStorageEvent.ResetAutoDownload)
+                }
             }
+        } else {
+            StorageCardSlot(usage, gapBelow = false) { onEvent(DataStorageEvent.ClearCache) }
         }
         state.photosInOriginalQuality?.let { original ->
             SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }

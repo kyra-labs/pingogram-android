@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui.twostep
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -49,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
@@ -137,7 +137,15 @@ internal fun TwoStepVerificationFlowScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler(enabled = state.canGoBack) { onEvent(Event.Back) }
+    // Back to the step before follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.step,
+            backTo = state.backStep,
+            key = { it },
+            enabled = state.canGoBack,
+            onBack = { onEvent(Event.Back) },
+        )
     val motionScheme = MaterialTheme.motionScheme
     SettingsPageScaffold(
         title = stringResource(state.titleRes()),
@@ -146,14 +154,12 @@ internal fun TwoStepVerificationFlowScreen(
         snackbarHostState = snackbarHostState,
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) {
-        AnimatedContent(
-            targetState = state.step,
+        steps.transition.AnimatedContent(
             transitionSpec = {
                 fadeIn(motionScheme.defaultEffectsSpec()) togetherWith
                     fadeOut(motionScheme.fastEffectsSpec()) using
                     SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
             },
-            label = "TwoStepVerificationStep",
         ) { step ->
             Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
                 when (step) {

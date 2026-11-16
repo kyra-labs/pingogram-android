@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.brush
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
+import dev.kyralabs.pingogram.core.ui.theme.popIn
+import dev.kyralabs.pingogram.core.ui.theme.popOut
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -147,7 +150,9 @@ internal fun WallpaperChip(
                 .background(wallpaper.brush(colors) ?: SolidColor(colors.surfaceContainerHighest)),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) {
+        val motion = MaterialTheme.motionScheme
+        // The check pops in with the chip's morph, on the fast springs (docs/DESIGN_SYSTEM.md §5: chips).
+        AnimatedVisibility(selected, enter = popIn(motion), exit = popOut(motion)) {
             Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_check),
@@ -158,7 +163,8 @@ internal fun WallpaperChip(
                             .size(IconButtonDefaults.smallIconSize),
                 )
             }
-        } else if (wallpaper == ChatWallpaper.None) {
+        }
+        AnimatedVisibility(!selected && wallpaper == ChatWallpaper.None, enter = popIn(motion), exit = popOut(motion)) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_close),
                 contentDescription = null,

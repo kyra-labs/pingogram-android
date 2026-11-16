@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
@@ -140,14 +141,19 @@ private fun LinkDialog(
         confirmButton = {
             TextButton(
                 onClick = { onApply(address.text.toString()) },
+                shapes = ButtonDefaults.shapes(),
             ) { Text(stringResource(R.string.new_story_link_apply)) }
         },
         dismissButton = {
             Row {
                 if (current != null) {
-                    TextButton(onClick = { onApply("") }) { Text(stringResource(R.string.new_story_link_remove)) }
+                    TextButton(onClick = { onApply("") }, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(R.string.new_story_link_remove))
+                    }
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.new_story_link_cancel)) }
+                TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
+                    Text(stringResource(R.string.new_story_link_cancel))
+                }
             }
         },
     )

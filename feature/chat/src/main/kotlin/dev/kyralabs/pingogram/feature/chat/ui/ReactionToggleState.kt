@@ -48,18 +48,22 @@ internal class ReactionToggleState(
         }
     }
 
-    /** Crossfades [chip] of message [messageId] to the other state; replaces a crossfade still running. */
+    /**
+     * Crossfades [chip] of message [messageId] to the other state; replaces a crossfade still running, carrying on
+     * from how chosen the chip looks now, so tapping it again mid-crossfade turns it back without a flicker.
+     */
     fun toggle(
         messageId: Long,
         chip: ReactionChip,
     ) {
+        val shown = chosenFraction(messageId, chip)
         animation?.cancel()
         animation =
             scope.launch {
                 val toggle = Toggle(messageId, chip.label, toChosen = !chip.isChosen)
                 toggling = toggle
                 try {
-                    progress.snapTo(0f)
+                    progress.snapTo(if (toggle.toChosen) shown else 1f - shown)
                     progress.animateTo(1f, motionScheme().fastEffectsSpec())
                 } finally {
                     // A crossfade that replaced this one owns the state now.

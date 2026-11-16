@@ -208,6 +208,50 @@ class TdlibMessageInteractionRepositoryTest {
             }
     }
 
+    @Nested
+    inner class Removing {
+        @Test
+        fun `a sender's reactions to one message go with DeleteMessageReactionsFromSender`() =
+            runTest {
+                client.on(TdApi.DeleteMessageReactionsFromSender::class, TdResult.Success(TdApi.Ok()))
+
+                val result = repository.removeReactions(CHAT, MESSAGE, MessageSender.User(7))
+
+                assertEquals(Outcome.Success(Unit), result)
+                val request = client.sentOf<TdApi.DeleteMessageReactionsFromSender>().single()
+                assertEquals(CHAT, request.chatId)
+                assertEquals(MESSAGE, request.messageId)
+                assertEquals(7L, (request.senderId as TdApi.MessageSenderUser).userId)
+            }
+
+        @Test
+        fun `all of a sender's recent reactions go chat-wide`() =
+            runTest {
+                client.on(TdApi.DeleteAllRecentMessageReactionsFromSender::class, TdResult.Success(TdApi.Ok()))
+
+                val result = repository.removeAllRecentReactions(CHAT, MessageSender.Chat(-100L))
+
+                assertEquals(Outcome.Success(Unit), result)
+                val request = client.sentOf<TdApi.DeleteAllRecentMessageReactionsFromSender>().single()
+                assertEquals(CHAT, request.chatId)
+                assertEquals(-100L, (request.senderId as TdApi.MessageSenderChat).chatId)
+            }
+
+        @Test
+        fun `a refusal is mapped`() =
+            runTest {
+                client.on(
+                    TdApi.DeleteMessageReactionsFromSender::class,
+                    TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")),
+                )
+
+                assertEquals(
+                    Outcome.Failure(DomainError.AdminRightsRequired),
+                    repository.removeReactions(CHAT, MESSAGE, MessageSender.User(7)),
+                )
+            }
+    }
+
     private companion object {
         const val CHAT = -42L
         const val MESSAGE = 1024L

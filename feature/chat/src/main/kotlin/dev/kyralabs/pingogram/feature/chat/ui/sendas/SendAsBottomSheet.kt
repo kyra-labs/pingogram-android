@@ -22,7 +22,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -53,11 +53,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.SendAsPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
- * The send-as picker (`REQUIREMENTS.md` FR-C5), a [ModalBottomSheet] opened from the composer's avatar: "Send messages
- * as" in `titleLargeEmphasized`, then everyone the user can send as, a single choice ([SendAsRow]), or the delayed
- * loading indicator while Telegram is asked; the list crossfades in on the motion scheme's default effects spring while
- * the sheet resizes on its default spatial spring. While a new choice goes to TDLib ([SendAsSheet.isChanging]) it shows
- * chosen and a wavy progress indicator shows under the title; the view model closes the sheet once it is done.
+ * The send-as picker (`REQUIREMENTS.md` FR-C5), a [PingogramBottomSheet] opened from the composer's avatar: "Send
+ * messages as" in `titleLargeEmphasized`, then everyone the user can send as, a single choice ([SendAsRow]), or the
+ * delayed loading indicator while Telegram is asked; the list crossfades in on the motion scheme's default effects
+ * spring while the sheet resizes on its default spatial spring. While a new choice goes to TDLib
+ * ([SendAsSheet.isChanging]) it shows chosen and a wavy progress indicator shows under the title; the view model closes
+ * the sheet once it is done.
  *
  * Dragging it down, tapping the scrim and the back gesture (Material's predictive back) close it
  * ([SendAsEvent.Dismiss]). The list scrolls where the window is too short.
@@ -71,7 +72,7 @@ internal fun SendAsBottomSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(SendAsEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(SendAsEvent.Dismiss) }, sheetState = sheetState) {
         SendAsContent(sheet, currentOnEvent)
     }
 }

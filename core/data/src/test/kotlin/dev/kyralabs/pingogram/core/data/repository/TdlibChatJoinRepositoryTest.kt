@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatInvite
+import dev.kyralabs.pingogram.core.domain.model.DirectMessagesChat
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -165,5 +166,46 @@ class TdlibChatJoinRepositoryTest {
         val invite = ChatInvite(1, GroupKind.Channel, "Secret plans", null, "Plans", 2)
 
         assertFalse("Secret plans" in invite.toString())
+    }
+
+    @Test
+    fun `a channel's direct messages chat is the one its full info names, made known to TDLib`() =
+        runTest {
+            client.on(
+                TdApi.GetSupergroupFullInfo::class,
+                TdResult.Success(TdApi.SupergroupFullInfo().also { it.directMessagesChatId = DIRECT_MESSAGES }),
+            )
+            client.on(
+                TdApi.GetChat::class,
+                TdResult.Success(
+                    TdApi.Chat().also {
+                        it.id = DIRECT_MESSAGES
+                        it.type = TdApi.ChatTypeSupergroup(DIRECT_MESSAGES_GROUP, false)
+                    },
+                ),
+            )
+
+            assertEquals(
+                Outcome.Success(DirectMessagesChat(DIRECT_MESSAGES, DIRECT_MESSAGES_GROUP)),
+                repository.directMessagesChat(CHANNEL),
+            )
+            assertEquals(CHANNEL, client.sentOf<TdApi.GetSupergroupFullInfo>().single().supergroupId)
+            assertEquals(DIRECT_MESSAGES, client.sentOf<TdApi.GetChat>().single().chatId)
+            assertTrue(client.sentOf<TdApi.JoinChat>().isEmpty())
+        }
+
+    @Test
+    fun `a channel without direct messages has none`() =
+        runTest {
+            client.on(TdApi.GetSupergroupFullInfo::class, TdResult.Success(TdApi.SupergroupFullInfo()))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.directMessagesChat(CHANNEL))
+            assertTrue(client.sentOf<TdApi.GetChat>().isEmpty())
+        }
+
+    private companion object {
+        const val CHANNEL = 77L
+        const val DIRECT_MESSAGES = -1_002_000_000_001L
+        const val DIRECT_MESSAGES_GROUP = 2_000_000_001L
     }
 }

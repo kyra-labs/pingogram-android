@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,14 +52,17 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewport
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionRow
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntroArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyUiState
@@ -78,10 +82,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.ConversationCards
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.saved.ConversationTabsSlot
 import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
@@ -95,6 +101,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackEvent
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackSlot
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackUi
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableList
@@ -144,7 +153,7 @@ import kotlinx.collections.immutable.toImmutableList
  *   ([reportComment]).
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
- *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ *   opens the page of them all (`PinnedMessagesRoute`, through the route's `LocalPinnedMessagesLauncher`).
  * - **Translation** (`REQUIREMENTS.md` FR-C3): where Telegram suggests translating the chat, the translate bar sits
  *   below the pinned messages bar ([TranslateBarSlot]); translated bubbles show the translation with its label in the
  *   meta, and "Translate" or "Show original" are among a message's actions.
@@ -205,6 +214,8 @@ internal fun ChatScreen(
     topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
     onOpenScheduledMessages: (() -> Unit)? = null,
+    welcome: WelcomePackUi? = null,
+    onWelcomeEvent: (WelcomePackEvent) -> Unit = {},
     nextChannel: NextChannel? = null,
     recordMode: RecordModeUiState = RecordModeUiState(),
     videoNotePreview: SurfaceRequest? = null,
@@ -255,6 +266,8 @@ internal fun ChatScreen(
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
+            welcome = welcome,
+            onWelcomeEvent = onWelcomeEvent,
             jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
             // Over the messages, above the composer, while a video message records.
@@ -291,6 +304,8 @@ private fun ChatScaffold(
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onOpenScheduledMessages: (() -> Unit)? = null,
+    welcome: WelcomePackUi? = null,
+    onWelcomeEvent: (WelcomePackEvent) -> Unit = {},
     overlay: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
@@ -318,8 +333,9 @@ private fun ChatScaffold(
                         onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
                     )
                 }
-                // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
-                LocalConversationTabs.current?.invoke()
+                // Saved Messages' and a forum's tabs, below its top bar as the folder tabs below the chat list's; they
+                // grow in once loaded instead of pushing the conversation down at once.
+                ConversationTabsSlot(LocalConversationTabs.current)
             }
         },
         bottomBar = bottomBar,
@@ -331,23 +347,15 @@ private fun ChatScaffold(
             // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
             val wallpaper = MaterialTheme.chatStyle.wallpaper
             Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
+                // What TDLib suggests about a chat someone new started, then a keyword alert's matches (board 30).
+                ConversationCards(contentPadding)
                 // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
                 state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
-                Box(Modifier.weight(1f)) {
-                    ChatBody(
-                        state,
-                        onEvent,
-                        listState,
-                        bubbleResources,
-                        contentPadding.withTypingRoom(state.typing),
-                        nextChannel,
-                    )
-                    MessagesBottom(state.typing, listState, contentPadding)
-                    overlay()
-                }
+                WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
+                MessagesArea(state, onEvent, listState, bubbleResources, contentPadding, nextChannel, overlay)
             }
         }
     }
@@ -419,11 +427,12 @@ private fun ChatScreenBottomBar(
                     onEvent(ChatEvent.SendSticker(sticker))
                     onSent(SendOptions())
                 },
-                onSendAnimation = { animation ->
-                    onEvent(ChatEvent.SendAnimation(animation))
+                onSendAnimation = { animation, captionAbove ->
+                    onEvent(ChatEvent.SendAnimation(animation, captionAbove))
                     onSent(SendOptions())
                 },
                 onJoin = { onEvent(ChatEvent.JoinChat) },
+                onOpenChat = { onEvent(ChatEvent.OpenChat(it)) },
                 bots = bots,
                 inline = inline,
             )
@@ -437,7 +446,7 @@ private fun ChatScreenBottomBar(
  */
 @Suppress("LongParameterList") // The state, its list and what the bubbles share, the sheet's padding, the next channel.
 @Composable
-private fun BoxScope.ChatBody(
+internal fun BoxScope.ChatBody(
     state: ChatUiState,
     onEvent: (ChatEvent) -> Unit,
     listState: LazyListState,
@@ -519,7 +528,7 @@ private fun MessageList(
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
-    val selectedIds = state.selection?.messageIds
+    val checks = rememberRowChecks(state.selection?.messageIds)
     val jumpState = bubbleResources.jump
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
@@ -548,7 +557,7 @@ private fun MessageList(
         }
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, selectedIds)
+            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, checks)
         }
         val header = state.header
         if (header?.secret != null && content.reachedStart) {
@@ -599,7 +608,8 @@ private fun LazyListScope.pagesState(
 /**
  * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
  * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message. In
- * selection mode ([selectedIds] not null) a bubble shows whether it is selected: an album's when any of its items is.
+ * selection mode ([RowChecks.selectedIds] not null) a bubble shows whether it is selected: an album's when any of its
+ * items is.
  */
 @Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
@@ -611,8 +621,9 @@ private fun ChatItemRow(
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
-    selectedIds: ImmutableSet<Long>? = null,
+    checks: RowChecks? = null,
 ) {
+    val selectedIds = checks?.selectedIds
     when (item) {
         is ChatItem.Bubble -> {
             val fileState = item.content.downloadableFileId?.let(fileStates::get)
@@ -626,7 +637,13 @@ private fun ChatItemRow(
                 modifier = modifier,
                 uploads = item.uploadsIn(uploads),
                 selection = selectedIds?.let { ids -> item.selectionIn(ids) },
+                check = checks?.checkedIds?.let { ids -> item.selectionIn(ids) },
+                reveal = checks?.reveal,
             )
+        }
+
+        is ChatItem.Service if item.birthday != null -> {
+            BirthdaySuggestionRow(item.id, item.birthday, modifier)
         }
 
         is ChatItem.Service -> {
@@ -682,7 +699,7 @@ internal val ChatItem.contentType: Any
     get() =
         when (this) {
             is ChatItem.Bubble -> BubbleContentType.of(this)
-            is ChatItem.Service -> SERVICE
+            is ChatItem.Service -> if (birthday != null) BIRTHDAY else SERVICE
             is ChatItem.DateSeparator -> DATE
             is ChatItem.UnreadDivider -> UNREAD
             is ChatItem.Sponsored -> SPONSORED
@@ -715,6 +732,7 @@ private enum class BubbleContentType {
 }
 
 private const val SERVICE = "service"
+private const val BIRTHDAY = "birthday"
 private const val DATE = "date"
 private const val UNREAD = "unread"
 private const val SPONSORED = "sponsored"

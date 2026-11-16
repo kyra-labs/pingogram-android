@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.ui.theme.MessageBubbleShapes
 import dev.kyralabs.pingogram.core.ui.theme.SenderHues
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.feature.chat.ui.drop.MessageDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichTextCache
 
 /**
@@ -177,6 +178,12 @@ internal class BubbleResources(
     val lift: MessageLiftState,
     val swipe: SwipeReplyStyle,
     val share: ShareButtonStyle,
+    /** Whether a message this version cannot show offers "Update Pingogram" ([ChatUiState.showsUpdateLink]). */
+    val showsUpdateLink: Boolean = false,
+    /** Whether voice and round video messages show the Transcribe button ([ChatUiState.canTranscribe]). */
+    val canTranscribe: Boolean = false,
+    /** Drags a bubble's files into another app after its long press; null where nothing is dragged out. */
+    val dragOut: MessageDragOut? = null,
 )
 
 /**
@@ -190,6 +197,9 @@ internal fun rememberBubbleResources(
     mediaDownloads: MediaDownloads = MediaDownloads(),
     lift: MessageLiftState = remember { MessageLiftState() },
     vividHues: Boolean = true,
+    showsUpdateLink: Boolean = false,
+    canTranscribe: Boolean = false,
+    dragOut: MessageDragOut? = null,
     onDateTime: (unixTime: Long) -> Unit = {},
     onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
@@ -212,6 +222,9 @@ internal fun rememberBubbleResources(
         lift,
         swipe,
         share,
+        showsUpdateLink,
+        canTranscribe,
+        dragOut,
     ) {
         BubbleResources(
             theme,
@@ -225,6 +238,9 @@ internal fun rememberBubbleResources(
             lift,
             swipe,
             share,
+            showsUpdateLink,
+            canTranscribe,
+            dragOut,
         )
     }
 }

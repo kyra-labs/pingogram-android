@@ -72,6 +72,15 @@ data class ChangePhoneNumberUiState(
     /** Back returns to the step before rather than leaving: from the new number and the code. */
     val canGoBack: Boolean get() = step == ChangePhoneNumberStep.Number || step == ChangePhoneNumberStep.Code
 
+    /** The step back leads to, which the back gesture previews (`docs/DESIGN_SYSTEM.md` §5.1). */
+    val backStep: ChangePhoneNumberStep?
+        get() =
+            when (step) {
+                ChangePhoneNumberStep.Number -> ChangePhoneNumberStep.Intro
+                ChangePhoneNumberStep.Code -> ChangePhoneNumberStep.Number
+                ChangePhoneNumberStep.Intro, ChangePhoneNumberStep.Done -> null
+            }
+
     override fun toString() = "ChangePhoneNumberUiState(step=$step, code=$code, isWorking=$isWorking)"
 }
 

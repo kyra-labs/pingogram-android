@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import dev.kyralabs.pingogram.feature.chat.ui.preview.SummaryPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.TranslationPreviewData
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -18,7 +19,8 @@ import org.robolectric.annotation.Config
  * chat in Spanish with the translate bar offering English, the same chat translated (the newest message on its way),
  * the actions of a message with "Translate", and a message translated from Hebrew beside one left in Hebrew, also
  * right to left; the translated chat on an expanded window too, and searched: the result shown is a translated message,
- * which marks the word found in its translation. Brand colors.
+ * which marks the word found in its translation; and a channel's long posts summarized (`ChatSummaries`), in every
+ * theme, right to left and at 200%, with the actions of a post offering "Summarize". Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -38,8 +40,20 @@ class TranslationScreenshotTest(
     fun dark() = capture(ScreenshotVariant.Dark)
 
     @Test
+    fun amoled() {
+        assumeTrue(stateName == "summarized")
+        capture(ScreenshotVariant.Amoled)
+    }
+
+    @Test
+    fun highContrast() {
+        assumeTrue(stateName == "summarized")
+        capture(ScreenshotVariant.HighContrast)
+    }
+
+    @Test
     fun rtl() {
-        assumeTrue(stateName == "rightToLeft" || stateName == "translated")
+        assumeTrue(stateName == "rightToLeft" || stateName == "translated" || stateName == "summarized")
         capture(ScreenshotVariant.Rtl)
     }
 
@@ -61,7 +75,7 @@ class TranslationScreenshotTest(
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName == "translated")
+        assumeTrue(stateName == "translated" || stateName == "summarized")
         capture(ScreenshotVariant.Light, "fontScale200")
     }
 
@@ -98,6 +112,8 @@ class TranslationScreenshotTest(
                 "actions" to TranslationPreviewData.offered.copy(messageActions = TranslationPreviewData.actions),
                 "rightToLeft" to TranslationPreviewData.rightToLeft,
                 "searched" to TranslationPreviewData.searched,
+                "summarized" to SummaryPreviewData.summarized,
+                "summaryActions" to SummaryPreviewData.summarized.copy(messageActions = SummaryPreviewData.actions),
             )
 
         @JvmStatic

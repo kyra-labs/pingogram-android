@@ -8,7 +8,9 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.StoryViewer
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -21,6 +23,7 @@ import dev.kyralabs.pingogram.core.testing.StoryFixtures.updateStoryDeleted
 import dev.kyralabs.pingogram.core.testing.StoryFixtures.videoContent
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.Test
  * Stories: the cache of `updateChatActiveStories` and its order, loading the lists, a chat's active stories and a
  * story with their updates, marking a story viewed, reactions, replies, and errors.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibStoryRepositoryTest {
     private val client = FakeTdlibClient()
 
@@ -303,6 +307,104 @@ class TdlibStoryRepositoryTest {
             assertEquals("❤", (set.reactionType as TdApi.ReactionTypeEmoji).emoji)
             assertTrue(set.updateRecentReactions)
             assertNull(removed.reactionType)
+        }
+
+    @Test
+    fun `deletes a story`() =
+        runTest {
+            client.on(TdApi.DeleteStory::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(Unit), repository().deleteStory(42, 3))
+
+            val deleted = client.sentOf<TdApi.DeleteStory>().single()
+            assertEquals(42L, deleted.storyPosterChatId)
+            assertEquals(3, deleted.storyId)
+        }
+
+    @Test
+    fun `a story the user may delete says so`() =
+        runTest {
+            client.on(TdApi.GetStory::class, TdResult.Success(story(id = 3, canBeDeleted = true)))
+
+            val story = (repository().story(42, 3).first() as Outcome.Success).value
+
+            assertTrue(story!!.canBeDeleted)
+        }
+
+    @Test
+    fun `a story the user may send to chats says so`() =
+        runTest {
+            client.on(TdApi.GetStory::class, TdResult.Success(story(id = 3, canBeForwarded = true)))
+
+            val story = (repository().story(42, 3).first() as Outcome.Success).value
+
+            assertTrue(story!!.canBeForwarded)
+        }
+
+    @Test
+    fun `lists who saw the user's own story, users only, with their reactions`() =
+        runTest {
+            val view = { reaction: TdApi.ReactionType? -> TdApi.StoryInteractionTypeView(reaction) }
+            client.on(
+                TdApi.GetStoryInteractions::class,
+                TdResult.Success(
+                    TdApi.StoryInteractions(
+                        3,
+                        1,
+                        1,
+                        arrayOf(
+                            TdApi.StoryInteraction(
+                                TdApi.MessageSenderUser(7),
+                                100,
+                                null,
+                                view(TdApi.ReactionTypeEmoji("❤")),
+                            ),
+                            TdApi.StoryInteraction(TdApi.MessageSenderChat(-9), 90, null, view(null)),
+                            TdApi.StoryInteraction(TdApi.MessageSenderUser(8), 80, null, view(null)),
+                        ),
+                        "next",
+                    ),
+                ),
+            )
+
+            val page =
+                (
+                    repository().viewers(
+                        5,
+                        "ad",
+                        onlyContacts = true,
+                        reactionsFirst = true,
+                        offset = "",
+                    ) as Outcome.Success
+                ).value
+
+            assertEquals(3, page.totalCount)
+            assertEquals(1, page.reactionCount)
+            assertEquals(
+                listOf(StoryViewer(7, 100, ReactionType.Emoji("❤")), StoryViewer(8, 80, null)),
+                page.viewers,
+            )
+            assertEquals("next", page.nextOffset)
+            val sent = client.sentOf<TdApi.GetStoryInteractions>().single()
+            assertEquals(5, sent.storyId)
+            assertEquals("ad", sent.query)
+            assertTrue(sent.onlyContacts)
+            assertTrue(sent.preferWithReaction)
+        }
+
+    @Test
+    fun `the user's own story carries how many saw and reacted`() =
+        runTest {
+            val own =
+                story(id = 3).apply {
+                    canGetInteractions = true
+                    interactionInfo = TdApi.StoryInteractionInfo(24, 0, 6, longArrayOf(7, 8))
+                }
+            client.on(TdApi.GetStory::class, TdResult.Success(own))
+
+            val story = (repository().story(42, 3).first() as Outcome.Success).value
+
+            assertEquals(StoryInteractionInfo(24, 6, persistentListOf(7L, 8L)), story!!.interactions)
         }
 
     @Test

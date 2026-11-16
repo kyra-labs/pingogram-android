@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -20,11 +21,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistUi
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayUi
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.BubbleTranscript
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
@@ -65,6 +69,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   bar; null while there is none.
  * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
  *   null while the chat has none.
+ * @property showsUpdateLink whether a message Pingogram cannot show offers "Update Pingogram", a link to the latest
+ *   release; false in builds an app store installed (`AppInfo.isFromAppStore`).
  */
 @Immutable
 data class ChatUiState(
@@ -95,6 +101,9 @@ data class ChatUiState(
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
     val scheduledBar: ScheduledBar? = null,
+    val showsUpdateLink: Boolean = false,
+    /** Whether the device can transcribe voice and round video messages: Android 13+ with an on-device recognizer. */
+    val canTranscribe: Boolean = false,
 )
 
 /**
@@ -305,7 +314,7 @@ sealed interface ChatItem {
      * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
      *   without other formatting, link preview, reply or forward: shown large, without a bubble.
      * @property isShout an incoming group message that shouts ([isShout]: one word of up to six characters in capitals,
-     *   nothing else), shown large and italic without a bubble (§13.6).
+     *   at least three of them letters, nothing else), shown large and italic without a bubble (§13.6).
      * @property headlineLength the length of a channel post's first line where it is a short headline, wholly bold and
      *   followed by more text ([headlineLength]), set large (§13.7); 0 for none.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
@@ -321,10 +330,16 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property keywordMatches where its text has the word of the keyword alert match the match bar shows (board 30,
+     *   `docs/DESIGN_SYSTEM.md` §13.13), marked and the bubble ringed; empty for every other bubble.
      * @property rich how its rich message shows where the user changed it: the sections opened or closed, all of a long
      *   message, its full message loading (`RichMessageEvent`); null as it starts.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
+     * @property pollClosesIn how long its open poll stays open, in seconds, as of the current minute; null for every
+     *   other bubble and for polls that do not close by themselves.
+     * @property pollAdding the inline field for a new answer of its poll, open or sending (`PollOptionEvent`); null
+     *   while it is closed.
      * @property checklist how its checklist shows beyond the message: who ticked each task, the tasks whose change is
      *   on its way, the inline field for a new task (`ChecklistEvent`); null for every other bubble.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
@@ -373,9 +388,16 @@ sealed interface ChatItem {
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
         val keyboard: BotKeyboard? = null,
+        /** The post the message suggests to a channel, in its direct messages, shown in a card below it. */
+        val suggestedPost: SuggestedPostUi? = null,
         val translation: BubbleTranslation? = null,
+        /** A voice or round video message's transcript, made on the device; null while its text is not shown. */
+        val transcript: BubbleTranscript? = null,
         val searchMatch: MatchHighlight? = null,
+        val keywordMatches: ImmutableList<IntRange> = persistentListOf(),
         val pollChoices: ImmutableSet<Int>? = null,
+        val pollClosesIn: Long? = null,
+        val pollAdding: PollAdding? = null,
         val checklist: ChecklistUi? = null,
         val rich: RichMessageUi? = null,
         val schedule: BubbleSchedule? = null,
@@ -386,6 +408,9 @@ sealed interface ChatItem {
         val myMentions: ImmutableList<IntRange> = persistentListOf(),
         val isChannelPost: Boolean = false,
         val views: Int = 0,
+        val giveaway: GiveawayUi? = null,
+        /** Where a forwarded message comes from, which tapping "Forwarded from …" opens; null if not forwarded. */
+        val forwardSource: ForwardSource? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -414,10 +439,28 @@ sealed interface ChatItem {
          * (`docs/DESIGN_SYSTEM.md` §13.6).
          */
         val canWave: Boolean = false,
+        /**
+         * A birthday suggestion (td_api.tl `messageSuggestBirthdate`): shown as its card (the owner's board 16b) in
+         * place of the pill, with "Accept" and "Decline" where it is the user's to answer.
+         */
+        val birthday: ServiceBirthday? = null,
     ) : ChatItem {
         override val key: Any get() = id
 
         override fun toString() = "Service(id=$id, …)"
+    }
+
+    /**
+     * What a birthday suggestion's card shows of its message: the [birthdate] suggested, the other person's [name]
+     * (who suggested it, or for one the user sent, whom to), and whether the user sent it ([outgoing]).
+     */
+    @Immutable
+    data class ServiceBirthday(
+        val birthdate: Birthdate,
+        val name: UiText,
+        val outgoing: Boolean,
+    ) {
+        override fun toString() = "ServiceBirthday(outgoing=$outgoing, …)"
     }
 
     /** The first message of a day follows this: "Today", "Yesterday", "Monday, March 17". */
@@ -587,4 +630,28 @@ data class TypingBubble(
     val text: UiText,
 ) {
     override fun toString() = "TypingBubble(userId=$userId, …)"
+}
+
+/** The inline field for a new answer of a poll: open for typing, or its answer on its way to Telegram. */
+enum class PollAdding {
+    Open,
+    Sending,
+}
+
+/** What tapping a forwarded message's "Forwarded from …" opens ([ChatEvent.OpenForwardSource]). */
+@Immutable
+sealed interface ForwardSource {
+    /** The profile of user [userId], who sent it. */
+    data class Profile(
+        val userId: Long,
+    ) : ForwardSource
+
+    /** Chat [chatId], at message [messageId] where TDLib names the original (a channel's post). */
+    data class Chat(
+        val chatId: Long,
+        val messageId: Long?,
+    ) : ForwardSource
+
+    /** A user who hides their account when their messages are forwarded: nothing opens. */
+    data object Hidden : ForwardSource
 }

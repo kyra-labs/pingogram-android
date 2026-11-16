@@ -24,6 +24,9 @@ internal sealed interface HomeDestination {
 
     data object RecentCalls : HomeDestination
 
+    /** The Bookmarks page (`:feature:chat`, `LocalBookmarksLauncher`), a tool of On this phone. */
+    data object Bookmarks : HomeDestination
+
     /** A page above a page of Settings home, opened with that page below it (settings search only). */
     data class SubPage(
         val subPage: SettingsSubPage,
@@ -38,10 +41,11 @@ internal class HomeEntry(
     @param:DrawableRes val icon: Int,
 )
 
-/** A group of entries under its [title]. */
+/** A group of entries under its [title], with a [footer] where it explains what the group holds. */
 internal class HomeGroup(
     @param:StringRes val title: Int,
     val entries: List<HomeEntry>,
+    @param:StringRes val footer: Int? = null,
 )
 
 internal fun page(
@@ -52,12 +56,51 @@ internal fun page(
 ) = HomeEntry(HomeDestination.Page(page), title, summary, icon)
 
 /**
- * Settings home's groups. Every page Settings home opens is in one of them:
- * "Make it yours", "Alerts and privacy", "More", and "App" for the rest. Owner decision to confirm (2026-11-07): the
- * grouping.
+ * "On this phone": the tools that keep what they hold on the device, never on Telegram's servers (Reminders,
+ * Bookmarks, Focus, Keyword alerts). Each adds its row here as it lands; until then the group has none and is not
+ * shown. Owner decision 2026-11-15 (board 29g).
+ */
+internal val OnThisPhoneGroup: HomeGroup =
+    HomeGroup(
+        R.string.settings_home_on_this_phone,
+        entries =
+            listOf(
+                page(
+                    SettingsPage.Reminders,
+                    R.string.settings_reminders,
+                    R.string.settings_reminders_summary,
+                    UiR.drawable.ic_alarm,
+                ),
+                HomeEntry(
+                    HomeDestination.Bookmarks,
+                    R.string.settings_bookmarks,
+                    R.string.settings_bookmarks_summary,
+                    R.drawable.ic_bookmark,
+                ),
+                page(
+                    SettingsPage.Focus,
+                    R.string.settings_focus,
+                    R.string.settings_focus_summary,
+                    UiR.drawable.ic_notifications_off,
+                ),
+                page(
+                    SettingsPage.KeywordAlerts,
+                    R.string.settings_keyword_alerts,
+                    R.string.settings_keyword_alerts_summary,
+                    UiR.drawable.ic_notifications,
+                ),
+            ),
+        footer = R.string.settings_home_on_this_phone_footer,
+    )
+
+/**
+ * Settings home's groups. Every page Settings home opens is in one of them: "On this phone" (shown once a tool there
+ * has a row), "Make it yours", "Alerts and privacy", "More", and "App" for the rest. Owner decision to confirm
+ * (2026-11-07): the grouping; owner decision 2026-11-15: "On this phone" first.
  */
 internal val HomeGroups: List<HomeGroup> =
     listOf(
+        OnThisPhoneGroup,
         HomeGroup(
             R.string.settings_home_make_it_yours,
             listOf(

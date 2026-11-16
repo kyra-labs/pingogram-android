@@ -20,7 +20,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +36,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -53,7 +55,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import kotlinx.collections.immutable.ImmutableList
 
 /**
- * The members whose messages search finds (`docs/DESIGN_SYSTEM.md` §6, "In-chat search"), a [ModalBottomSheet] from
+ * The members whose messages search finds (`docs/DESIGN_SYSTEM.md` §6, "In-chat search"), a [PingogramBottomSheet] from
  * the search bar's sender button, as the conversation's other sheets: "Search messages from" in
  * `titleLargeEmphasized`, the search bar's input field ([query], which the view model searches the members with),
  * then the members as a single choice of list items inset like the chat list's rows, the picked one in the list item's
@@ -70,7 +72,7 @@ internal fun SearchSenderSheet(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ChatSearchEvent.DismissSenders) }) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ChatSearchEvent.DismissSenders) }) {
         SearchSenderContent(sheet, query, currentOnEvent)
     }
 }
@@ -132,9 +134,10 @@ private fun SenderList(
     options: ImmutableList<SenderOption>,
     onPick: (SenderOption) -> Unit,
 ) {
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.selectableGroup().testTag(SENDERS_TEST_TAG)) {
         items(options, key = { it.id }, contentType = { CONTENT_TYPE_SENDER }) { option ->
-            SenderRow(option, onClick = { onPick(option) })
+            SenderRow(option, onClick = { onPick(option) }, Modifier.animateItem(this, motion))
         }
     }
 }
@@ -148,13 +151,14 @@ private fun SenderList(
 private fun SenderRow(
     option: SenderOption,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val name = option.name.resolve()
     val insets = sheetRowInsets()
     ListItem(
         selected = option.selected,
         onClick = onClick,
-        modifier = Modifier.padding(insets),
+        modifier = modifier.padding(insets),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),
         leadingContent = {

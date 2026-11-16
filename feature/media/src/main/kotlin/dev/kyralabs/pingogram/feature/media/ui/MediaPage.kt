@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewerBounds
 import dev.kyralabs.pingogram.feature.media.R
@@ -60,6 +61,8 @@ import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import dev.kyralabs.pingogram.feature.media.ui.zoom.detectZoomGestures
 import dev.kyralabs.pingogram.feature.media.ui.zoom.fittedSize
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -75,6 +78,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   on the device; once the item is in the player ([playback]), [videoSurface] under them, uncovered when the first
  *   frame shows. The screen stays on while a video plays. While power saving keeps it from playing by itself
  *   ([VideoPlayback.waitsForTap]), a play button over it calls [onPlay].
+ * - **Live photos** (a photo with its motion) show "LIVE" at their top start ([LiveBadge]); pressed and held, [onHold]
+ *   is told, and the motion plays over the still while held (board 25). A hold does not toggle the chrome.
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
  * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
  *   conversation ([sharedMediaViewerBounds]), growing out of it as the viewer opens and shrinking back into it as it
@@ -82,10 +87,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   zoomed photo fades out with the screen instead. The layers crop to the moving bounds, so a photo cropped in its
  *   bubble uncrops as it grows.
  *
+ * With [onDragOut], a long press then a move drags the item's file into another app ([detectDragOutAfterLongPress]),
+ * not while the photo is zoomed in.
+ *
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a tap near the start or end side
- * ([SIDE_TAP_FRACTION] of the width, mirrored right to left) calls [onSideTap] instead, with whether it was the end
- * side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap only where it
- * zooms. Screen readers get no semantics from here: the pager describes the page.
+ * (`sizes.sideTapZone`, at most a third of the width, mirrored right to left) calls [onSideTap] instead, with whether
+ * it was the end side, unless the photo is zoomed in or [onSideTap] is null. A double tap waits for the second tap
+ * only where it zooms. Screen readers get no semantics from here: the pager describes the page.
  */
 @Suppress("LongParameterList") // The item, its files and its player, its taps, the video's surface and the zoom.
 @Composable
@@ -99,6 +107,9 @@ internal fun MediaPage(
     modifier: Modifier = Modifier,
     zoom: ZoomState? = null,
     onSideTap: ((end: Boolean) -> Unit)? = null,
+    onHold: ((held: Boolean) -> Unit)? = null,
+    onCancelStream: (() -> Unit)? = null,
+    onDragOut: (() -> Boolean)? = null,
 ) {
     val media = item.media
     val zoomState = zoom?.takeIf { media is ViewerMedia.Image && !item.isHidden }
@@ -107,7 +118,7 @@ internal fun MediaPage(
         modifier
             .fillMaxSize()
             .then(if (playing) Modifier.keepScreenOn() else Modifier)
-            .pageGestures(zoomState, onTap, onSideTap),
+            .pageGestures(zoomState, onTap, onSideTap, onHold, onDragOut),
     ) {
         val container = Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
         val fitted = fittedSize(media.width, media.height, container)
@@ -122,6 +133,7 @@ internal fun MediaPage(
                 .zoomedBy(zoomState),
         ) {
             MediaLayers(item, files, playback, videoSurface)
+            if (item.isLivePhoto) LiveBadge(Modifier.align(Alignment.TopStart).padding(MaterialTheme.spacing.medium))
         }
         when {
             item.isHidden -> {
@@ -132,7 +144,11 @@ internal fun MediaPage(
                 PlayButton(onPlay, Modifier.align(Alignment.Center))
             }
 
-            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
+            // A video in the player streams until its first frame: what came of it, then the seek bar shows it.
+            playback != null && media is ViewerMedia.Clip && !playback.showsFrame -> {
+                StreamingStatus(media.fileId, files[media.fileId], onCancelStream, Modifier.align(Alignment.Center))
+            }
+
             playback?.showsFrame != true -> {
                 DownloadProgress(media.fileId, files[media.fileId], Modifier.align(Alignment.Center))
             }
@@ -143,28 +159,70 @@ internal fun MediaPage(
 /**
  * Taps ([onTap], or [onSideTap] near a side) and, with [zoom], double taps that zoom around the tap and pinches
  * ([detectZoomGestures]). The taps are outside the pinch, so they see the moves the pinch consumed and take no pan for
- * a tap.
+ * a tap. With [onDragOut], a long press then a move drags the file out ([detectDragOutAfterLongPress]).
  */
 @Composable
 private fun Modifier.pageGestures(
     zoom: ZoomState?,
     onTap: () -> Unit,
     onSideTap: ((end: Boolean) -> Unit)?,
+    onHold: ((held: Boolean) -> Unit)?,
+    onDragOut: (() -> Boolean)?,
 ): Modifier {
     val scope = rememberCoroutineScope()
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnSideTap by rememberUpdatedState(onSideTap)
+    val currentOnHold by rememberUpdatedState(onHold)
+    val currentOnDragOut by rememberUpdatedState(onDragOut)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    return pointerInput(zoom, rtl) {
+    val sideZone = MaterialTheme.sizes.sideTapZone
+    val holds = onHold != null
+    val pinches = if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom, scope) } else Modifier
+    // It consumes on the initial pass, before the taps and pinches see the move, wherever it sits in the chain.
+    val drags =
+        if (onDragOut == null) {
+            Modifier
+        } else {
+            Modifier.pointerInput(zoom) {
+                detectDragOutAfterLongPress(
+                    canStart = { zoom?.isZoomed != true },
+                    onDragOut = { currentOnDragOut?.invoke() == true },
+                )
+            }
+        }
+    return pointerInput(zoom, rtl, holds, sideZone) {
+        val holdAfter = viewConfiguration.longPressTimeoutMillis
         detectTapGestures(
+            // A live photo plays while held: once held for a long press, until let go.
+            onPress = {
+                if (holds) {
+                    val hold =
+                        scope.launch {
+                            delay(holdAfter)
+                            currentOnHold?.invoke(true)
+                        }
+                    tryAwaitRelease()
+                    if (hold.isCompleted) currentOnHold?.invoke(false) else hold.cancel()
+                }
+            },
+            // A hold never toggles the chrome.
+            onLongPress = if (holds) ({}) else null,
             onTap = { tap ->
-                val side = currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let { sideOf(tap.x, size.width, rtl) }
+                val side =
+                    currentOnSideTap?.takeIf { zoom?.isZoomed != true }?.let {
+                        sideOf(
+                            tap.x,
+                            size.width,
+                            sideZone.toPx(),
+                            rtl,
+                        )
+                    }
                 if (side == null) currentOnTap() else currentOnSideTap?.invoke(side)
             },
             onDoubleTap = zoom?.let { state -> { tap -> state.toggle(tap - size.toSize().center, spec, scope) } },
         )
-    }.then(if (zoom != null) Modifier.pointerInput(zoom) { detectZoomGestures(zoom) } else Modifier)
+    }.then(pinches.then(drags))
 }
 
 /** Scaled and moved as [zoom] says, in the draw phase; unchanged without one. */
@@ -194,9 +252,19 @@ private fun BoxScope.MediaLayers(
         BlurredMinithumbnail(media.minithumbnail, Modifier.matchParentSize())
     } else {
         when (media) {
-            is ViewerMedia.Image -> PhotoLayers(media, files)
-            is ViewerMedia.Clip -> VideoLayers(media, media.thumbnail, playback, videoSurface)
-            is ViewerMedia.Gif -> VideoLayers(media, media.thumbnail, playback, videoSurface)
+            is ViewerMedia.Image -> {
+                // A live photo's motion plays over the still once its first frame shows (a GIF's playback).
+                if (playback != null) videoSurface(Modifier.matchParentSize())
+                if (playback?.showsFrame != true) PhotoLayers(media, files)
+            }
+
+            is ViewerMedia.Clip -> {
+                VideoLayers(media, media.thumbnail, playback, videoSurface)
+            }
+
+            is ViewerMedia.Gif -> {
+                VideoLayers(media, media.thumbnail, playback, videoSurface)
+            }
         }
     }
 }

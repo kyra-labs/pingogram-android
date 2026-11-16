@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -102,7 +103,8 @@ data class MembersPreview(
 @Immutable
 data class ChatAdministration(
     val canEditInfo: Boolean = false,
-    val canEditPermissions: Boolean = false,
+    /** How many of [Permission]'s switches members have on, where the user may change them (board 24e). */
+    val allowedPermissions: Int? = null,
     val administratorCount: Int? = null,
     val canManageInviteLinks: Boolean = false,
     val bannedCount: Int? = null,
@@ -117,7 +119,7 @@ data class ChatAdministration(
 ) {
     val isEmpty: Boolean
         get() =
-            !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
+            !canEditInfo && allowedPermissions == null && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
                 joinRequestCount == null && !canViewRecentActions && !canViewStatistics && !canManageWelcomeMessages
 }
@@ -323,6 +325,11 @@ sealed interface ChatInfoEffect {
 
     /** The history was cleared: a snackbar says so. */
     data object HistoryCleared : ChatInfoEffect
+
+    /** The owner chose a next owner, but the ownership cannot be transferred now, because of [check]: a snackbar. */
+    data class TransferUnavailable(
+        val check: OwnershipTransferCheck,
+    ) : ChatInfoEffect
 
     /** An action failed: a snackbar shows the error's text, none for [DomainError.Silent]. */
     data class ShowError(

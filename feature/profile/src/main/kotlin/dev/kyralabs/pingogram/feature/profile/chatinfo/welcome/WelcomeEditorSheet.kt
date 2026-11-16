@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.chatinfo.SavingIndicator
 import kotlinx.coroutines.flow.drop
 import java.io.File
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -76,7 +77,10 @@ internal fun WelcomeEditorSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(WelcomeMessagesEvent.CloseEditor) }, sheetState = sheetState) {
+    PingogramBottomSheet(
+        onDismissRequest = { currentOnEvent(WelcomeMessagesEvent.CloseEditor) },
+        sheetState = sheetState,
+    ) {
         WelcomeEditorContent(editor, onEvent)
     }
 }
@@ -119,7 +123,7 @@ internal fun WelcomeEditorContent(
         )
         EditorPhotoArea(editor, onEvent)
         EditorField(editor, onEvent)
-        if (editor.isSaving) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+        SavingIndicator(editor.isSaving)
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),

@@ -234,7 +234,7 @@ private fun EditFields(
         )
     }
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
-        if (state.isSaving) SavingIndicator()
+        SavingIndicator(state.isSaving)
         Row(Modifier.fillMaxWidth()) {
             Spacer(Modifier.weight(1f))
             Button(

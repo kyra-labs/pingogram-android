@@ -11,19 +11,12 @@ sealed interface PinnedEvent : ChatEvent {
      */
     data object Close : PinnedEvent
 
-    /** The bar's list button: the sheet of every pinned message opens. */
+    /** The bar's list button: the page of every pinned message opens. */
     data object OpenList : PinnedEvent
 
-    /** A pinned message tapped in the sheet: the sheet closes, and the list and the bar show [messageId]. */
-    data class ShowFromList(
-        val messageId: Long,
-    ) : PinnedEvent
-
-    /** The sheet was dismissed. */
-    data object DismissList : PinnedEvent
-
     /**
-     * The user started dragging the list: the bar follows the messages on screen again, after a tap or the sheet chose
+     * The user started dragging the list: the bar follows the messages on screen again, after a tap or the pinned
+     * messages page chose
      * its message.
      */
     data object ListDragged : PinnedEvent

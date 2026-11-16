@@ -37,6 +37,7 @@ import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph
@@ -86,6 +87,8 @@ import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.scanner.navigation.navigateToQrScanner
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,6 +108,7 @@ import dev.kyralabs.pingogram.feature.auth.R as AuthR
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
+import dev.kyralabs.pingogram.feature.scanner.R as ScannerR
 import dev.kyralabs.pingogram.feature.settings.R as SettingsR
 
 /**
@@ -142,7 +146,7 @@ class PingogramAppTest {
     private var uiState by mutableStateOf<MainActivityUiState>(MainActivityUiState.SignedIn)
 
     /** The chat a notification asked to open, cleared once the app reports it handled, as `MainActivity` does. */
-    private var chatToOpen by mutableStateOf<Long?>(null)
+    private var chatToOpen by mutableStateOf<ChatToOpen?>(null)
 
     private lateinit var navController: NavHostController
 
@@ -330,12 +334,16 @@ class PingogramAppTest {
     // New chat (FR-L7)
 
     @Test
-    fun `the New chat button grows into New chat above the chats tab, and back returns to the chats`() {
+    fun `the round New chat button grows into New chat above the chats tab, and back returns to the chats`() {
         tdlib.on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
         setApp()
         awaitText(ChatsR.string.chat_list_empty_title)
         val button = composeRule.onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
         val buttonBounds = button.fetchSemanticsNode().boundsInRoot
+        // The transform grows from a circle as tall as the bar (docs/DESIGN_SYSTEM.md §6.1, owner decision 2026-11-13).
+        val barHeight = with(composeRule.density) { NAVIGATION_BAR_HEIGHT.toPx() }
+        assertEquals(barHeight, buttonBounds.height, 1f)
+        assertEquals(buttonBounds.height, buttonBounds.width, 1f)
 
         composeRule.mainClock.autoAdvance = false
         button.performClick()
@@ -355,6 +363,8 @@ class PingogramAppTest {
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
         assertTrue(navController.currentDestination?.hasRoute<ChatsRoute>() == true)
+        // And shrinks back into the same circle.
+        assertEquals(buttonBounds, button.fetchSemanticsNode().boundsInRoot)
     }
 
     // Settings pages (FR-S1)
@@ -579,15 +589,15 @@ class PingogramAppTest {
     // Notifications (FR-N2)
 
     @Test
-    fun `a notification opens its chat above the chat list, from any tab, and back returns to the chats`() {
+    fun `a notification opens its chat at its message above the chat list, from any tab`() {
         tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        chatToOpen = 5
+        chatToOpen = ChatToOpen(5, messageId = 1_048_576)
         composeRule.waitForIdle()
 
-        assertEquals(5L, navController.currentBackStackEntry?.toRoute<ChatRoute>()?.chatId)
+        assertEquals(ChatRoute(5, messageId = 1_048_576), navController.currentBackStackEntry?.toRoute<ChatRoute>())
         val destinations = backStackDestinations()
         assertEquals(2, destinations.size)
         assertTrue(destinations[0].hasRoute<ChatsRoute>())
@@ -599,11 +609,40 @@ class PingogramAppTest {
         uiState = MainActivityUiState.SignedOut
         setApp()
 
-        chatToOpen = 5
+        chatToOpen = ChatToOpen(5)
         composeRule.waitForIdle()
 
         assertNull(chatToOpen)
         assertTrue(navController.currentDestination.isAuthRoute())
+    }
+
+    @Test
+    fun `a predictive back gesture shrinks a full-screen page as it does others, and it stays visible`() {
+        setApp()
+        composeRule.runOnUiThread { navController.navigateToQrScanner() }
+        // Robolectric has no camera, so the scanner asks for none and says so; either title will do.
+        val title =
+            composeRule.onNode(
+                hasText(string(ScannerR.string.scanner_rationale_title)) or
+                    hasText(string(ScannerR.string.scanner_no_camera_title)),
+            )
+        composeRule.waitUntil(TIMEOUT_MILLIS) { runCatching { title.fetchSemanticsNode() }.isSuccess }
+        val resting = title.fetchSemanticsNode().boundsInRoot.width
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, THIRD_OF_GESTURE, BackEventCompat.EDGE_LEFT))
+        }
+        composeRule.waitForIdle()
+
+        // Shrinking, not only fading: the page is still there a third of the way into the gesture.
+        title.assertIsDisplayed()
+        val scale = title.fetchSemanticsNode().boundsInRoot.width / resting
+        assertTrue("$scale", scale < 1f)
+        composeRule.runOnUiThread { dispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        title.assertDoesNotExist()
     }
 
     @Test
@@ -849,9 +888,13 @@ class PingogramAppTest {
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
         const val HALF_GESTURE = 0.5f
+        const val THIRD_OF_GESTURE = 0.3f
 
         /** A few frames into a container transform. */
         const val TRANSFORM_FRAMES = 3
+
+        /** `sizes.floatingNavigationBar`: the floating bar's height and the round New chat button's diameter. */
+        val NAVIGATION_BAR_HEIGHT = 56.dp
 
         /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
         val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f

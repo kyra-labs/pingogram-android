@@ -65,10 +65,17 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
+import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richActions
-import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostActions
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptActions
+import dev.kyralabs.pingogram.feature.chat.ui.translation.originalTextAction
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
@@ -147,25 +154,28 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     selection: RowSelection? = null,
+    check: RowSelection? = selection,
+    reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val highlightColor = MaterialTheme.colorScheme.secondaryContainer
-    val highlightShape = MaterialTheme.shapes.medium
+    val highlight = rememberJumpHighlightStyle()
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe = rowSwipe(bubble, selecting = selection != null, resources, onEvent)
+    val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val reminder = LocalReminderChips.current?.labelFor(bubble.id)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
-                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
+                .jumpHighlight(resources.jump, bubble, highlight)
+                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription = bubbleDescription(strings, bubble)
+                    contentDescription = bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
@@ -182,12 +192,15 @@ internal fun MessageBubbleRow(
                                 shortcuts = resources.shortcuts,
                                 uploads = uploads,
                                 onEvent = onEvent,
-                            )
+                                canTranscribe = resources.canTranscribe,
+                            ) + reminderActions(strings, bubble, reminder, resources.shortcuts, onEvent)
                     }
                 },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (selection != null) SelectionCheck(isSelected)
+        if (check != null) {
+            SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
+        }
         BubbleRowContent(
             bubble = bubble,
             fileState = fileState,
@@ -280,12 +293,13 @@ internal fun BubbleRowContent(
 }
 
 /**
- * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction], [shareAction],
- * [contentActions], [messageShortcuts], showing the original of a translated text, voting in a poll ([pollActions]),
- * the buttons a bot attached ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the
- * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
- * while there are some.
+ * The screen reader's custom actions of [bubble], sending their events: [replyAction], [profileAction],
+ * [forwardSourceAction], [threadAction], [shareAction], [contentActions], [messageShortcuts], showing the original of
+ * a translated text, voting in a poll ([pollActions]), the buttons a bot attached ([botButtonActions]), a toggle per
+ * reaction but the paid one, all reactions where the bubble shows "+N", and the selecting it, then the actions sheet,
+ * last. Cancelling the [uploads] comes first, while there are some.
  */
+
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
     resources: Resources,
@@ -295,6 +309,7 @@ private fun bubbleActions(
     shortcuts: MessageShortcuts,
     uploads: ImmutableMap<Long, MessageUpload>,
     onEvent: (ChatEvent) -> Unit,
+    canTranscribe: Boolean = false,
 ): List<CustomAccessibilityAction> {
     fun action(
         label: String,
@@ -308,27 +323,21 @@ private fun bubbleActions(
             uploadAction(uploads),
             replyAction(bubble),
             profileAction(bubble),
+            forwardSourceAction(bubble),
             threadAction(bubble),
             shareAction(bubble, shortcuts),
         ) +
-            contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
-    val original =
-        if (bubble.translation is BubbleTranslation.Shown) {
-            listOf(
-                action(
-                    resources.getString(R.string.message_action_show_original),
-                    TranslationEvent.ShowOriginal(bubble.id),
-                ),
-            )
-        } else {
-            emptyList()
-        }
+            contentActions(bubble, fileState, isPlaying) + suggestedPostActions(bubble.suggestedPost) +
+            messageShortcuts(bubble, shortcuts)
+    val original = listOfNotNull(originalTextAction(resources, bubble)?.let { (label, event) -> action(label, event) })
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)
         }
     val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val transcript = transcriptActions(resources, bubble, canTranscribe).map { (label, event) -> action(label, event) }
     val checklist = checklistActions(resources, bubble).map { (label, event) -> action(label, event) }
+    val giveaway = giveawayActions(resources, bubble).map { (label, event) -> action(label, event) }
     val rich =
         (bubble.content as? MessageContent.RichMessage)
             ?.let { content ->
@@ -353,7 +362,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + poll + checklist + rich + buttons + reactions + allReactions +
+    } + original + transcript + poll + checklist + giveaway + rich + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
@@ -379,9 +388,11 @@ private fun MessageBubble(
     val frameKind = frameKindOf(bubble)
     val bare = frameKind.isBare
     val bareShape = MaterialTheme.shapes.large
-    // A message that mentions the user is ringed in `primary` (docs/DESIGN_SYSTEM.md §13.6).
-    val mentionRing = bubble.mentionsMe && resources.theme.hues.isNotEmpty()
-    val ringColor = MaterialTheme.colorScheme.primary
+    // A message that mentions the user is ringed in `primary` (docs/DESIGN_SYSTEM.md §13.6), the keyword alert match
+    // the match bar shows in `tertiary` (board 30, §13.13).
+    val keywordRing = bubble.keywordMatches.isNotEmpty()
+    val mentionRing = keywordRing || (bubble.mentionsMe && resources.theme.hues.isNotEmpty())
+    val ringColor = if (keywordRing) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
     val frame: @Composable (Modifier) -> Unit = { outer ->
         // The focus ring in the frame's shape: the bubble's, or around content without a bubble.
         val frameShape = if (bare) bareShape else shape
@@ -397,7 +408,7 @@ private fun MessageBubble(
             }
 
             FrameKind.Bare -> {
-                BareBubble(bubble, style.colors, onEvent, modifier)
+                BareBubble(bubble, style.colors, onEvent, modifier, canTranscribe = resources.canTranscribe)
             }
 
             FrameKind.Media -> {
@@ -458,7 +469,16 @@ private fun PaddedBubble(
                     if (content is MessageContent.RichMessage) {
                         RichMessageBody(bubble, content.message, style, resources, onEvent)
                     } else {
-                        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                        MessageContentBody(
+                            bubble = bubble,
+                            fileState = fileState,
+                            playback = playback,
+                            colors = style.colors,
+                            onEvent = onEvent,
+                            uploads = uploads,
+                            showsUpdateLink = resources.showsUpdateLink,
+                            canTranscribe = resources.canTranscribe,
+                        )
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
@@ -489,7 +509,8 @@ private fun MediaBubble(
 ) {
     val colors = style.colors
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
-    val captionless = bubble.text.text.isEmpty() && bubble.linkPreview == null
+    val captionless =
+        bubble.text.text.isEmpty() && bubble.linkPreview == null && !bubble.content.showsNoteBelowMedia
     val mediaShape = remember(shape, hasHeader, captionless) { shape.mediaCorners(hasHeader, hasFooter = !captionless) }
     val textLayout = remember { TextLayoutHolder() }
     Layout(
@@ -524,7 +545,8 @@ private fun MediaBubble(
 
 /**
  * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;
- * the name opens the sender's profile and the quote shows its message when tapped, if it opens one.
+ * the name opens the sender's profile, "Forwarded from …" where the message comes from ([ForwardSource]), and the quote
+ * shows its message when tapped, if it opens one.
  */
 @Composable
 internal fun BubbleHeader(
@@ -555,8 +577,17 @@ internal fun BubbleHeader(
         }
     }
     bubble.forwardedFrom?.let { forwarded ->
+        val source = bubble.forwardSource
+        val open = remember(source, onEvent) { source?.let { { onEvent(ChatEvent.OpenForwardSource(it)) } } }
         Text(
             text = forwarded.resolve(),
+            // Opens the profile, chat or post it comes from; its touch target reaches past the line, moving nothing.
+            modifier =
+                if (open == null) {
+                    Modifier
+                } else {
+                    Modifier.openTarget(R.string.chat_forward_open_source, MaterialTheme.shapes.extraSmall, open)
+                },
             color = colors.secondaryContent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -618,6 +649,7 @@ private fun BubbleText(
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     matchColor = MaterialTheme.colorScheme.tertiary,
                     mentionColor = MaterialTheme.colorScheme.primary,
+                    keywordColor = MaterialTheme.colorScheme.tertiaryContainer,
                 )
             } else {
                 Modifier

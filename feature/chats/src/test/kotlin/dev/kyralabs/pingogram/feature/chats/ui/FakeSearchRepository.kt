@@ -4,7 +4,9 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.flow
  * [SearchRepository] for the tests of [SearchViewModel] and [NewChatViewModel]: each search answers with its handler,
  * finding nothing by default, and every call is recorded ([calls]) as `chats:<query>`, `contacts:<query>`,
  * `public:<query>`, `messages:<query>:<offset>` (with `:<filter>` after it for photos and videos or links),
+ * `postLimits:<query>`, `posts:<query>:<offset>`,
  * `allContacts`, `recents`, `top`, `add:<id>`, `remove:<id>` or `clear`; calls cancelled while they wait are recorded
  * in [cancelled] too. The recent chats are a list the changes act on.
  */
@@ -31,6 +34,14 @@ class FakeSearchRepository : SearchRepository {
     var onContacts: suspend () -> Outcome<ImmutableList<Chat>> = { found() }
     var onSearchMessages: suspend (String, String?) -> Outcome<FoundMessages> = { _, _ ->
         Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, totalCount = null))
+    }
+
+    /** Telegram's limits of public post search: 10 a day, 7 left, the query free, by default. */
+    var postLimits = PublicPostSearchLimits(10, 7, 0, starCount = 10, isQueryFree = true)
+    var onPostLimits: suspend (String) -> Outcome<PublicPostSearchLimits> = { Outcome.Success(postLimits) }
+    var onSearchPosts: suspend (String, String?) -> Outcome<FoundPublicPosts> = { _, _ ->
+        val none = FoundMessages(persistentListOf(), nextOffset = null, totalCount = null)
+        Outcome.Success(FoundPublicPosts(none, postLimits.copy(remainingFreeQueries = 6), areLimitsExceeded = false))
     }
 
     /** The total TDLib counts for each kind of message search, given with every page [onSearchMessages] finds. */
@@ -55,6 +66,13 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun searchPublicChats(query: String) = record("public:$query") { onSearchPublicChats(query) }
 
     override suspend fun contacts() = record("allContacts") { onContacts() }
+
+    override suspend fun publicPostSearchLimits(query: String) = record("postLimits:$query") { onPostLimits(query) }
+
+    override suspend fun searchPublicPosts(
+        query: String,
+        offset: String?,
+    ) = record("posts:$query:$offset") { onSearchPosts(query, offset) }
 
     override suspend fun publicChat(username: String): Outcome<UsernameOwner> =
         record("username:$username") { Outcome.Failure(DomainError.NotFound) }

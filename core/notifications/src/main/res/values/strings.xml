@@ -13,6 +13,7 @@
     <string name="notification_channel_ongoing_calls_description">The call you are in</string>
     <!-- The incoming call notification's text, under the caller's name. -->
     <string name="call_notification_incoming">Incoming voice call</string>
+    <string name="call_notification_incoming_focus">Incoming call · Focus is on</string>
     <!-- The name of a voice chat's notification while its chat's title is not known yet. -->
     <string name="call_notification_voice_chat">Voice chat</string>
     <string name="call_notification_stop_sharing">Stop sharing</string>
@@ -20,10 +21,33 @@
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
     <string name="notification_channel_transfers">Transfers</string>
     <string name="notification_channel_transfers_description">Progress of the files you send and download, and of chat exports</string>
+    <string name="notification_channel_reminders">Reminders</string>
+    <string name="notification_channel_reminders_description">The message reminders you set, kept on this phone. They ring even when a chat is muted.</string>
+    <!-- A message reminder's notification: its title, the chat's name. -->
+    <string name="reminder_notification_title">Reminder · %1$s</string>
+    <string name="reminder_notification_deleted">The message was deleted</string>
+    <string name="reminder_notification_title_locked">Reminder</string>
+    <string name="reminder_notification_locked">A message in a locked chat</string>
+    <string name="reminder_action_open">Open</string>
+    <string name="reminder_action_snooze">Snooze 1 h</string>
+    <string name="notification_channel_keyword_alerts">Keyword alerts</string>
+    <string name="notification_channel_keyword_alerts_description">Messages with your keyword alert words from muted chats, matched on this phone.</string>
+    <!-- A keyword alert's subtext, beside the app's name: the word that matched, and that its chat is muted (alerts come for muted chats only). -->
+    <string name="keyword_alert_subtext">Keyword: %1$s · muted</string>
+    <string name="keyword_alert_open">Open</string>
+    <string name="keyword_alert_mark_as_read">Mark as read</string>
+    <!-- The title of the notification that groups several keyword alerts. -->
+    <string name="keyword_alert_group">Keyword alerts</string>
+    <plurals name="keyword_alert_group_count">
+        <item quantity="one">%1$d message with your words</item>
+        <item quantity="other">%1$d messages with your words</item>
+    </plurals>
 
     <!-- Notification texts. -->
     <!-- Shown instead of a message when the chat's settings hide message previews. -->
     <string name="notification_new_message">New message</string>
+    <!-- Stands for a part of a message the sender hid as a spoiler, which a notification never shows. -->
+    <string name="notification_spoiler">Spoiler</string>
     <string name="notification_new_secret_chat">Secret chat started</string>
     <string name="notification_incoming_call">Incoming call</string>
     <!-- A sender TDLib knows nothing about. -->

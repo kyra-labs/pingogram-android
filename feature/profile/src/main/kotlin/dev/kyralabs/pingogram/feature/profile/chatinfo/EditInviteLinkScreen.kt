@@ -188,7 +188,7 @@ private fun SaveRow(
     onSave: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
-        if (isSaving) SavingIndicator()
+        SavingIndicator(isSaving)
         Row(Modifier.fillMaxWidth()) {
             Spacer(Modifier.weight(1f))
             Button(onClick = onSave, shapes = ButtonDefaults.shapes(), enabled = !isSaving) {

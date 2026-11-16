@@ -45,6 +45,7 @@ enum class SearchFilter(
     Messages(R.string.search_filter_messages),
     Media(R.string.search_filter_media),
     Links(R.string.search_filter_links),
+    Posts(R.string.search_filter_posts),
     ;
 
     /** Searches the user's chats and public chats. */
@@ -60,7 +61,7 @@ enum class SearchFilter(
                 All, Messages -> MessageSearchFilter.All
                 Media -> MessageSearchFilter.PhotoAndVideo
                 Links -> MessageSearchFilter.Url
-                Chats, Contacts -> null
+                Chats, Contacts, Posts -> null
             }
 
     /** Finds something without a query too: every photo and video, or every link. */
@@ -98,7 +99,8 @@ sealed interface SearchContent {
      * by section, each loading, failing and loading again on its own: the user's chats ([chats]), contacts not among
      * them ([contacts]), public chats and channels found by username that are neither ([global]), and the messages
      * that match ([messages]). A section the filter leaves out found nothing. [highlight] marks the query's words in
-     * the messages' text.
+     * the messages' text. Under [SearchFilter.Posts], [messages] are the posts of public channels, searched only on
+     * the user's tap ([posts] offers it, or says why not), and [postsLeft] says how many free searches are left.
      */
     data class Results(
         val query: String,
@@ -108,11 +110,14 @@ sealed interface SearchContent {
         val global: SearchSection<SearchChatItem>,
         val messages: MessageSection,
         val filter: SearchFilter = SearchFilter.All,
+        val posts: PostsPrompt = PostsPrompt.None,
+        val postsLeft: UiText? = null,
     ) : SearchContent {
         private val sections get() = listOf(chats, contacts, global, messages.first)
 
         /** Every section searched and found nothing: search says so instead of listing sections. */
-        val isEmpty: Boolean get() = sections.all { it is SearchSection.Items && it.items.isEmpty() }
+        val isEmpty: Boolean
+            get() = posts == PostsPrompt.None && sections.all { it is SearchSection.Items && it.items.isEmpty() }
 
         /** How many results the sections hold, for screen readers; null while a section still searches. */
         val resultCount: Int?
@@ -124,10 +129,39 @@ sealed interface SearchContent {
                 }
 
         override val isSearching: Boolean
-            get() = sections.any { it is SearchSection.Loading } || messages.isLoadingMore
+            get() =
+                sections.any { it is SearchSection.Loading } || messages.isLoadingMore ||
+                    posts == PostsPrompt.Checking
 
         override fun toString() = "Results(chats=$chats, contacts=$contacts, global=$global, messages=$messages, …)"
     }
+}
+
+/**
+ * What search of public posts says before the posts (`docs/DESIGN_SYSTEM.md` §6 "Global search"), as a card above
+ * where they show: nothing ([None]), Telegram's limits being read ([Checking]), "Search posts" with how many free
+ * searches are [left] of the day's [daily] ([Offer]), none left until [nextFree] ([Exhausted]), or the limits not read
+ * ([Failed]). Telegram sells more searches for Telegram Stars; Pingogram buys none.
+ */
+@Immutable
+sealed interface PostsPrompt {
+    data object None : PostsPrompt
+
+    data object Checking : PostsPrompt
+
+    data class Offer(
+        val left: Int,
+        val daily: Int,
+    ) : PostsPrompt
+
+    data class Exhausted(
+        val daily: Int,
+        val nextFree: String,
+    ) : PostsPrompt
+
+    data class Failed(
+        val error: DomainError,
+    ) : PostsPrompt
 }
 
 /** A section of the results. */

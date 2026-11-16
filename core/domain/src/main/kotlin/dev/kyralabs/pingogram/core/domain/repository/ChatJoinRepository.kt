@@ -2,11 +2,13 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatInvite
+import dev.kyralabs.pingogram.core.domain.model.DirectMessagesChat
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 
 /**
  * Joining groups and channels (`REQUIREMENTS.md` FR-P5): what an invite link leads to, and joining through it or a
- * public chat. Only ever on the user's tap; nothing joins by itself (Telegram API terms: no automation).
+ * public chat; and the chat where a channel's subscribers write to it, which only reads. Joining happens only on the
+ * user's tap; nothing joins by itself (Telegram API terms: no automation).
  *
  * Requests fail with a `DomainError`: `InviteLinkInvalid` for a link that expired, was revoked or is no invite link,
  * `ChatFull`, `TooManyChats`, `FloodWait`, `Network` for a request that gets no answer in time, …
@@ -20,4 +22,11 @@ interface ChatJoinRepository {
 
     /** Joins public group or channel [chatId] (`joinChat`), or sends a request to join it where it asks for one. */
     suspend fun join(chatId: Long): Outcome<JoinResult>
+
+    /**
+     * The chat where subscribers of channel [supergroupId] write to its administrators (td_api.tl
+     * `supergroupFullInfo.direct_messages_chat_id`), which TDLib then knows; `DomainError.NotFound` where the channel
+     * takes no direct messages. Joins nothing: the user writes there without joining it.
+     */
+    suspend fun directMessagesChat(supergroupId: Long): Outcome<DirectMessagesChat>
 }

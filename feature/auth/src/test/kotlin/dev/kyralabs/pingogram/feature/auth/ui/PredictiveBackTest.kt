@@ -74,6 +74,66 @@ class PredictiveBackTest {
     }
 
     @Test
+    fun `a second gesture within the return of a cancelled one ends on the step it leaves`() {
+        composeRule.mainClock.autoAdvance = false
+        show(AuthPreviewData.code.copy(backStep = AuthPreviewData.phoneNumber(isChangingNumber = true)))
+        val backTitle = composeRule.activity.getString(R.string.auth_phone_change_title)
+
+        backGesture { dispatcher ->
+            dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF))
+            dispatcher.dispatchOnBackCancelled()
+        }
+        frames(2)
+        backGesture { dispatcher ->
+            dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF))
+            dispatcher.dispatchOnBackCancelled()
+        }
+        frames(SETTLE_FRAMES)
+
+        assertEquals(0, composeRule.onAllNodesWithText(backTitle).fetchSemanticsNodes().size)
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.auth_code_title)).assertExists()
+        assertEquals(emptyList<AuthEvent>(), events)
+    }
+
+    @Test
+    fun `a gesture within the return of a cancelled one still goes back when it completes`() {
+        composeRule.mainClock.autoAdvance = false
+        show(AuthPreviewData.code.copy(backStep = AuthPreviewData.phoneNumber(isChangingNumber = true)))
+
+        backGesture { dispatcher ->
+            dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF))
+            dispatcher.dispatchOnBackCancelled()
+        }
+        frames(2)
+        backGesture { dispatcher ->
+            dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF))
+            dispatcher.onBackPressed()
+        }
+        frames(SETTLE_FRAMES)
+
+        assertEquals(listOf(AuthEvent.Back), events)
+    }
+
+    @Test
+    fun `with animations off the gesture previews nothing and goes back when it completes`() {
+        setAnimatorDurationScale(0f)
+        try {
+            show(AuthPreviewData.code.copy(backStep = AuthPreviewData.phoneNumber(isChangingNumber = true)))
+            val backTitle = composeRule.activity.getString(R.string.auth_phone_change_title)
+
+            backGesture { dispatcher -> dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF)) }
+            val during = composeRule.onAllNodesWithText(backTitle).fetchSemanticsNodes().size
+            composeRule.onNodeWithText(composeRule.activity.getString(R.string.auth_code_title)).assertExists()
+            backGesture(start = false) { dispatcher -> dispatcher.onBackPressed() }
+
+            assertEquals(0, during)
+            assertEquals(listOf(AuthEvent.Back), events)
+        } finally {
+            setAnimatorDurationScale(1f)
+        }
+    }
+
+    @Test
     fun `back on the welcome screen is left to the app`() {
         show(AuthPreviewData.welcome)
 
@@ -103,10 +163,16 @@ class PredictiveBackTest {
         composeRule.waitForIdle()
     }
 
+    private fun frames(count: Int) {
+        repeat(count) { composeRule.mainClock.advanceTimeByFrame() }
+        composeRule.waitForIdle()
+    }
+
     private fun backEvent(progress: Float) =
         BackEventCompat(touchX = 0f, touchY = 0f, progress = progress, swipeEdge = BackEventCompat.EDGE_LEFT)
 
     private companion object {
         const val HALF = 0.5f
+        const val SETTLE_FRAMES = 60
     }
 }

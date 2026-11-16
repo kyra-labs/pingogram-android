@@ -23,7 +23,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -55,7 +55,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The profile's confirmations (`docs/DESIGN_SYSTEM.md` §6 "Dialogs": `AlertDialog`s): starting a secret chat, which
  * says that it lives on this device and the other person's only and is gone after logging out, with the lock icon; and
- * blocking the user, destructive, its confirm button in `error`. "Cancel" closes either.
+ * blocking the user, and deleting the chat with a deleted account, destructive, their confirm buttons in `error`.
+ * "Cancel" closes any of them.
  */
 @Composable
 internal fun ProfileDialogs(
@@ -88,6 +89,18 @@ internal fun ProfileDialogs(
                 confirm = stringResource(R.string.profile_block_confirm),
                 destructive = true,
                 onConfirm = { onEvent(ProfileEvent.ConfirmBlock) },
+                onDismiss = { onEvent(ProfileEvent.DismissDialog) },
+            )
+        }
+
+        ProfileDialog.DeleteChat -> {
+            ConfirmDialog(
+                icon = UiR.drawable.ic_delete,
+                title = stringResource(R.string.profile_delete_chat_title),
+                text = stringResource(R.string.profile_delete_chat_text),
+                confirm = stringResource(R.string.profile_delete_chat_confirm),
+                destructive = true,
+                onConfirm = { onEvent(ProfileEvent.ConfirmDeleteChat) },
                 onDismiss = { onEvent(ProfileEvent.DismissDialog) },
             )
         }
@@ -136,8 +149,8 @@ private fun ConfirmDialog(
 
 /**
  * Reporting the account (`REQUIREMENTS.md` FR-P2; `docs/DESIGN_SYSTEM.md` §6 "Report sheet"), as the conversation
- * reports messages: a [ModalBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report" with
- * a wavy progress indicator until the reasons come, then Telegram's question with its reasons as transparent list
+ * reports messages: a [PingogramBottomSheet] that shows the step of TDLib's flow ([ProfileReportSheet.step]): "Report"
+ * with a wavy progress indicator until the reasons come, then Telegram's question with its reasons as transparent list
  * items, or a comment in the rounded tonal text field with "Send report", enabled once there is a comment unless it is
  * optional. Steps crossfade on the effects springs while the sheet resizes on the default spatial spring; while a
  * report is on its way the progress indicator shows and the choices are disabled. Dragging it down, the scrim and
@@ -154,7 +167,7 @@ internal fun ReportProfileSheet(
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ProfileEvent.DismissReport) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ProfileEvent.DismissReport) }, sheetState = sheetState) {
         AnimatedContent(
             targetState = sheet.step,
             transitionSpec = {

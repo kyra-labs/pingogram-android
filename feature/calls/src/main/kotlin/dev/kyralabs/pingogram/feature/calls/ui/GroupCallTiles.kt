@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -62,6 +65,9 @@ internal fun ParticipantTiles(
     modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
+    // On the theme's item motion, still while power saving holds the call screens still; the videos' bounds do not
+    // animate (Q-15).
+    val motion = rememberItemMotion(callMotionScheme())
     LazyVerticalGrid(
         columns = GridCells.Adaptive(MaterialTheme.sizes.sharedMediaCell),
         modifier = modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
@@ -71,22 +77,22 @@ internal fun ParticipantTiles(
     ) {
         if (state.video.remote.isNotEmpty()) {
             item(key = "videos", contentType = "videos", span = { GridItemSpan(maxLineSpan) }) {
-                VideoGrid(state, videos, self, onEvent)
+                VideoGrid(state, videos, self, onEvent, Modifier.animateItem(this, motion, placement = false))
             }
         }
         val link = state.inviteLink
         if (state.isConference && !link.isNullOrEmpty()) {
             item(key = "link", contentType = "link", span = { GridItemSpan(maxLineSpan) }) {
-                InviteLinkChip(onClick = { conference.onShareLink(link) })
+                Box(Modifier.animateItem(this, motion)) { InviteLinkChip(onClick = { conference.onShareLink(link) }) }
             }
         }
         if (state.canInvite) {
             item(key = "add", contentType = "add", span = { GridItemSpan(maxLineSpan) }) {
-                AddPeopleRow(conference.onAddPeople)
+                AddPeopleRow(conference.onAddPeople, Modifier.animateItem(this, motion))
             }
         }
         items(state.participants, key = { it.key }, contentType = { "tile" }) { participant ->
-            ParticipantTile(participant, Modifier.animateItem())
+            ParticipantTile(participant, Modifier.animateItem(this, motion))
         }
     }
 }

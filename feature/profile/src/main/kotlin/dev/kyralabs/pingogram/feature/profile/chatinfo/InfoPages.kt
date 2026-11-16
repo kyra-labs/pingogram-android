@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
@@ -204,6 +205,7 @@ internal class SidesOf(
 internal fun InfoPageContent(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    saving: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val margin = windowMargin()
@@ -231,7 +233,29 @@ internal fun InfoPageContent(
                 content = content,
             )
         }
+        PageSavingLine(saving)
     }
+}
+
+/**
+ * The saving line of a page whose changes go to Telegram one by one ([visible] while one is on its way): at the top
+ * of the page, just below its bar, over the content rather than above it, so nothing on the page moves as it comes and
+ * goes (`docs/DESIGN_SYSTEM.md` §5.1); as wide as the page's content.
+ */
+@Composable
+internal fun BoxScope.PageSavingLine(
+    visible: Boolean,
+    description: String = stringResource(R.string.chat_info_saving),
+) {
+    ReservedProgressLine(
+        visible = visible,
+        modifier =
+            Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
+                .padding(horizontal = windowMargin()),
+        contentDescription = description,
+    )
 }
 
 /**

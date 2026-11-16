@@ -228,6 +228,37 @@ class ComposerTest {
     }
 
     @Test
+    fun `a Telegram Premium subscriber schedules a message that repeats weekly`() {
+        setComposer(composer = ComposerUiState.Available(canSchedule = true, canRepeat = true))
+        field().performTextInput("Standup")
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
+        clickText(R.string.composer_schedule)
+        clickText(R.string.composer_schedule_next)
+        clickText(R.string.composer_schedule_repeat)
+        composeRule.onNodeWithText(string(R.string.scheduled_repeat_weekly)).performClick()
+        clickText(R.string.composer_schedule_confirm)
+
+        val inAnHour = NOW.plus(1, ChronoUnit.HOURS).atZone(ZoneId.systemDefault()).truncatedTo(ChronoUnit.MINUTES)
+        assertEquals(
+            listOf(SendOptions(scheduledAt = inAnHour.toEpochSecond(), repeatPeriod = SendOptions.REPEAT_PERIODS[1])),
+            sent,
+        )
+    }
+
+    @Test
+    fun `scheduling offers no repeat where the composer cannot repeat`() {
+        setComposer()
+        field().performTextInput("Later")
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
+        clickText(R.string.composer_schedule)
+        clickText(R.string.composer_schedule_next)
+
+        composeRule.onNodeWithText(string(R.string.composer_schedule_repeat)).assertDoesNotExist()
+    }
+
+    @Test
     fun `a time that has passed meanwhile asks for another`() {
         setComposer()
         field().performTextInput("Later")

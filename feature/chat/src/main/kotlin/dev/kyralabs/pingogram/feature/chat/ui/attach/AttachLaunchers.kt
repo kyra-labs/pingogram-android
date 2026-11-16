@@ -21,7 +21,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import dev.kyralabs.pingogram.core.ui.file.PhotoCapture
 import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
+import dev.kyralabs.pingogram.core.ui.file.rememberPhotoCapture
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyEvent
@@ -32,15 +34,17 @@ import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationEvent
 import kotlinx.coroutines.launch
 
 /**
- * The system's pickers and the camera app, which the attach menu opens (`REQUIREMENTS.md` FR-C5, §7): none of them
- * needs a permission. What they return goes to the view model as events: picked content URIs, readable while their
- * grant lasts, and whether a photo was taken. Their results survive the activity being recreated, also after process
- * death, as `rememberLauncherForActivityResult` keeps them.
+ * The system's pickers and the camera app, which the attach menu opens (`REQUIREMENTS.md` FR-C5, §7). What they
+ * return goes to the view model as events: picked content URIs, readable while their grant lasts, and whether a photo
+ * was taken. Their results survive the activity being recreated, also after process death, as
+ * `rememberLauncherForActivityResult` keeps them.
  *
  * - **Gallery**: the Photo Picker, photos and videos, at most [MAX_PICKED_MEDIA] (an album).
  * - **File**: the document picker, any type, as many as wanted.
- * - **Camera**: the camera app, `ACTION_IMAGE_CAPTURE` into the content URI of the view model's camera file
- *   ([cameraFileUri]). The app declares no camera permission, so the camera app needs none from it.
+ * - **Camera** ([photo]): the camera app, `ACTION_IMAGE_CAPTURE` into the content URI of the view model's camera file
+ *   ([cameraFileUri]). Pingogram declares the camera permission (scanner, calls, round video messages), so Android
+ *   opens the camera app only once it is granted: [PhotoCapture] asks for it first (`REQUIREMENTS.md` §6.2).
+ * - The pickers need no permission.
  * - **Contact**: the contact picker, for a phone number ([PickContactPhone]).
  * - **Replacing media** ([replace], `REQUIREMENTS.md` FR-C6): one photo or video from the Photo Picker, or one file
  *   from the document picker, for the message being edited.
@@ -50,7 +54,7 @@ internal class AttachLaunchers(
     private val context: Context,
     private val gallery: ManagedActivityResultLauncher<PickVisualMediaRequest, List<Uri>>,
     private val files: ManagedActivityResultLauncher<Array<String>, List<Uri>>,
-    private val camera: ManagedActivityResultLauncher<Uri, Boolean>,
+    private val photo: PhotoCapture,
     private val contact: ManagedActivityResultLauncher<Unit, Uri?>,
     private val replacement: ReplacementLaunchers,
 ) {
@@ -96,11 +100,11 @@ internal class AttachLaunchers(
             }
         }
 
-    /** Opens the camera app to take a photo into the camera file at [path]; false when no camera app opens. */
-    fun takePhoto(path: String): Boolean {
-        val uri = context.cameraFileUri(path) ?: return false
-        return launching { camera.launch(uri) }
-    }
+    /**
+     * Opens the camera app to take a photo into the camera file at [path], asking for the camera permission first
+     * where it is not granted; `ChatEvent.PhotoTaken` says what came of it, and a snackbar why no camera app opened.
+     */
+    fun takePhoto(path: String) = photo.take(path)
 
     private inline fun launching(launch: () -> Unit): Boolean =
         try {
@@ -115,9 +119,16 @@ internal class AttachLaunchers(
     }
 }
 
-/** The [AttachLaunchers] of the screen, whose results go to [onEvent]. */
+/**
+ * The [AttachLaunchers] of the screen, whose results go to [onEvent]; why the camera app did not open goes to
+ * [snackbarHostState]. [cameraUri] hands the camera app the camera file's content URI (tests give their own).
+ */
 @Composable
-internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunchers {
+internal fun rememberAttachLaunchers(
+    onEvent: (ChatEvent) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    cameraUri: ((String) -> Uri?)? = null,
+): AttachLaunchers {
     val currentOnEvent by rememberUpdatedState(onEvent)
     val gallery =
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PICKED_MEDIA)) { uris ->
@@ -127,10 +138,13 @@ internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunch
         rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
             if (uris.isNotEmpty()) currentOnEvent(ChatEvent.AttachFiles(uris.map(Uri::toString)))
         }
-    val camera =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            currentOnEvent(ChatEvent.PhotoTaken(taken))
-        }
+    val photo =
+        rememberPhotoCapture(
+            snackbarHostState = snackbarHostState,
+            noCameraAppMessage = LocalResources.current.getString(R.string.attach_no_camera_app),
+            onTaken = { taken -> currentOnEvent(ChatEvent.PhotoTaken(taken)) },
+            cameraUri = cameraUri,
+        )
     val contact =
         rememberLauncherForActivityResult(PickContactPhone()) { uri ->
             uri?.let { currentOnEvent(ChatEvent.AttachContact(it.toString())) }
@@ -144,9 +158,9 @@ internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunch
             uri?.let { currentOnEvent(ReplyEvent.ReplacementPicked(it.toString())) }
         }
     val context = LocalContext.current
-    return remember(context, gallery, files, camera, contact, replacementMedia, replacementFile) {
+    return remember(context, gallery, files, photo, contact, replacementMedia, replacementFile) {
         val replacement = ReplacementLaunchers(replacementMedia, replacementFile)
-        AttachLaunchers(context, gallery, files, camera, contact, replacement)
+        AttachLaunchers(context, gallery, files, photo, contact, replacement)
     }
 }
 

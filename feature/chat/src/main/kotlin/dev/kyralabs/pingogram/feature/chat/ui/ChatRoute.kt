@@ -24,6 +24,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.component.LocalPollStatisticsLauncher
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
@@ -33,10 +34,19 @@ import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarHost
+import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorHost
+import dev.kyralabs.pingogram.feature.chat.ui.ai.AiEditorViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdayErrorsEffect
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.LocalBirthdaySuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetHost
+import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
@@ -47,18 +57,33 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordMatchViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.LocalKeywordMatchBar
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.rememberKeywordMatchSlot
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetHost
+import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostAnswerDialog
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostsViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
 import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceStartOrAsk
+import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.time.Instant
@@ -96,7 +121,8 @@ import java.util.Locale
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. The bar of the chat's scheduled messages opens their list through [onOpenScheduledMessages]
  * (without it there is no bar). A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which
- * the app navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
+ * the app navigates with; the original of a post forwarded from a channel opens through [onOpenMessage] ([onOpenChat]
+ * without it). With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
  * text field takes the focus once it shows.
  */
 @Suppress(
@@ -120,6 +146,7 @@ internal fun ConversationRoute(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -133,8 +160,66 @@ internal fun ConversationRoute(
     interactionsViewModel: MessageInteractionsViewModel = hiltViewModel(key = "interactions-$chatId-$topic"),
     sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
     doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
+    welcomeViewModel: WelcomePackViewModel =
+        hiltViewModel<WelcomePackViewModel, WelcomePackViewModel.Factory>(key = "welcome-$chatId") {
+            it.create(chatId)
+        },
+    suggestedPostsViewModel: SuggestedPostsViewModel =
+        hiltViewModel<SuggestedPostsViewModel, SuggestedPostsViewModel.Factory>(key = "suggested-$chatId") {
+            it.create(chatId)
+        },
+    birthdaysViewModel: BirthdaySuggestionsViewModel =
+        hiltViewModel<BirthdaySuggestionsViewModel, BirthdaySuggestionsViewModel.Factory>(key = "birthdays-$chatId") {
+            it.create(chatId)
+        },
+    actionBarViewModel: ChatActionBarViewModel =
+        hiltViewModel<ChatActionBarViewModel, ChatActionBarViewModel.Factory>(key = "actionbar-$chatId") {
+            it.create(chatId)
+        },
+    aiEditorViewModel: AiEditorViewModel =
+        hiltViewModel<AiEditorViewModel, AiEditorViewModel.Factory>(key = "ai-editor-$chatId") {
+            it.create(chatId)
+        },
+    bookmarkViewModel: BookmarkSheetViewModel =
+        hiltViewModel<BookmarkSheetViewModel, BookmarkSheetViewModel.Factory>(key = "bookmark-$chatId") {
+            it.create(chatId)
+        },
+    reminderViewModel: ReminderSheetViewModel =
+        hiltViewModel<ReminderSheetViewModel, ReminderSheetViewModel.Factory>(key = "reminder-$chatId") {
+            it.create(chatId)
+        },
+    keywordMatchViewModel: KeywordMatchViewModel =
+        hiltViewModel<KeywordMatchViewModel, KeywordMatchViewModel.Factory>(key = "keyword-$chatId-$messageId") {
+            it.create(chatId, messageId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
+    // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
+    val onEvent: (ChatEvent) -> Unit =
+        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel) {
+            { event ->
+                when (event) {
+                    is SuggestedPostEvent -> {
+                        suggestedPostsViewModel.onEvent(event)
+                    }
+
+                    is BookmarkEvent -> {
+                        viewModel.onEvent(ChatEvent.DismissMessageActions)
+                        bookmarkViewModel.onEvent(event)
+                    }
+
+                    is ReminderEvent -> {
+                        viewModel.onEvent(ChatEvent.DismissMessageActions)
+                        reminderViewModel.onEvent(event)
+                    }
+
+                    else -> {
+                        viewModel.onEvent(event)
+                    }
+                }
+            }
+        }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
@@ -148,7 +233,8 @@ internal fun ConversationRoute(
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
     val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
-    val launchers = rememberAttachLaunchers(viewModel::onEvent)
+    val currentOnOpenMessage by rememberUpdatedState(onOpenMessage)
+    val launchers = rememberAttachLaunchers(viewModel::onEvent, snackbarHostState)
     val attach =
         rememberAttachInputs(
             launchers = launchers,
@@ -167,15 +253,17 @@ internal fun ConversationRoute(
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
         onOpenNextChat = { currentOnOpenNextChat(it) },
+        onOpenMessage = { chat, message -> currentOnOpenMessage?.invoke(chat, message) ?: currentOnOpenChat(chat) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onShareLocation = { attach.onPick(AttachOption.Location) },
         onOpenInteractions = interactionsViewModel::open,
-        onLaunchCamera = { path ->
-            launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
-        },
+        onLaunchCamera = launchers::takePhoto,
         onPickReplacement = launchers::replace,
     )
+    BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
+    BookmarkSheetHost(bookmarkViewModel, snackbarHostState)
+    ReminderSheetHost(reminderViewModel, snackbarHostState)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -183,40 +271,77 @@ internal fun ConversationRoute(
         }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    // The bubbles' reminder chips; a tap opens the reminder in the Remind me sheet.
+    val reminderLabels = reminderViewModel.chips.collectAsStateWithLifecycle()
+    val reminderChips =
+        remember(reminderViewModel, reminderLabels) {
+            ReminderChips(reminderLabels) { reminderViewModel.onEvent(ReminderEvent.Open(it)) }
+        }
+    // Where a keyword alert opened the chat: its matches, each step shown as a tapped reply quote's message.
+    val keywordMatch =
+        rememberKeywordMatchSlot(keywordMatchViewModel) { viewModel.onEvent(ChatEvent.OpenReply(it)) }
+            .takeIf { topic == null }
+    // The match the bar shows marks its word in its bubble.
+    LaunchedEffect(keywordMatchViewModel, viewModel, topic) {
+        if (topic != null) return@LaunchedEffect
+        keywordMatchViewModel.bar
+            .map { bar -> bar?.let { KeywordShown(it.messageId, it.word) } }
+            .distinctUntilChanged()
+            .collect { viewModel.onEvent(ChatEvent.KeywordMatchShown(it)) }
+    }
     CompositionLocalProvider(
+        LocalKeywordMatchBar provides keywordMatch,
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,
+        LocalBirthdaySuggestions provides birthdaysViewModel,
+        LocalReminderChips provides reminderChips,
     ) {
-        ChatScreen(
-            state = state,
-            onEvent = viewModel::onEvent,
-            onBack = onBack,
-            modifier = modifier,
-            snackbarHostState = snackbarHostState,
-            jumpState = jumpState,
-            composerText = viewModel.composerText,
-            composerFocus = composerFocus,
-            attach = attach,
-            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-            reportComment = viewModel.reportComment,
-            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-            onEmojiPanelEvent = panelViewModel::onEvent,
-            onOpenProfile = onOpenProfile,
-            onOpenChatInfo = onOpenChatInfo,
-            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-            search = viewModel.searchState.collectAsStateWithLifecycle().value,
-            searchQuery = viewModel.searchQuery,
-            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-            topicAction = topicActions?.button,
-            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
-            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
-            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
-            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
-            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
-        )
+        // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
+        ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
+            AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
+                ChatScreen(
+                    state = state,
+                    onEvent = onEvent,
+                    onBack = onBack,
+                    modifier = modifier,
+                    snackbarHostState = snackbarHostState,
+                    jumpState = jumpState,
+                    composerText = viewModel.composerText,
+                    composerFocus = composerFocus,
+                    attach = attach,
+                    recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+                    reportComment = viewModel.reportComment,
+                    emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+                    onEmojiPanelEvent = panelViewModel::onEvent,
+                    onOpenProfile = onOpenProfile,
+                    onOpenChatInfo = onOpenChatInfo,
+                    commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+                    inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+                    search = viewModel.searchState.collectAsStateWithLifecycle().value,
+                    searchQuery = viewModel.searchQuery,
+                    botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+                    topicAction = topicActions?.button,
+                    connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+                    onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+                    // A topic's or thread's conversation is not where a new member lands.
+                    welcome =
+                        welcomeViewModel.pack
+                            .collectAsStateWithLifecycle()
+                            .value
+                            .takeIf { topic == null },
+                    onWelcomeEvent = welcomeViewModel::onEvent,
+                    nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+                    recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+                    videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
+                )
+            }
+        }
         ChatSheets(viewModel)
+        val suggestedPostDialog by suggestedPostsViewModel.dialog.collectAsStateWithLifecycle()
+        suggestedPostDialog?.let {
+            SuggestedPostAnswerDialog(it, suggestedPostsViewModel.comment, suggestedPostsViewModel::onEvent)
+        }
         topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
     }
@@ -232,22 +357,23 @@ internal fun ConversationRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
- * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], or a
- * snackbar says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet
- * through [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
- * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
- * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
- * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
- * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
- * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
- * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
- * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
- * once it is refused, and say to hold the button or that recording failed. A message's link goes to the clipboard
- * through [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited
- * message's opens through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group
- * message and who reacted to it opens through [onOpenInteractions].
- * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
- * (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm` (right) or `Reject` (wrong).
+ * [onOpenThread], the next unread channel to [onOpenNextChat] and a forwarded post's original to [onOpenMessage]; the
+ * camera app opens through [onLaunchCamera], which asks for the camera permission first and says in a snackbar why no
+ * camera app opened; a bot's keyboard button that asks for the location opens the "Location" sheet through
+ * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action that opens it
+ * through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's link opens
+ * through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting one is a
+ * snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several texts at
+ * once, thank for a report, and say how saving to Downloads went, with an action that opens the one file saved; the
+ * storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it where the
+ * system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the microphone
+ * permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings once it is
+ * refused, and say to hold the button or that recording failed. A message's link goes to the clipboard through
+ * [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited message's opens
+ * through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group message and who reacted
+ * to it opens through [onOpenInteractions]. A message that failed to send while the screen is shown gets a `Reject`
+ * haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm`
+ * (right) or `Reject` (wrong).
  */
 @Suppress(
     // One branch per effect, all in one place: the compiler sees none is missed.
@@ -263,11 +389,12 @@ internal fun ChatEffects(
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenNextChat: (chatId: Long) -> Unit = onOpenChat,
+    onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
-    onLaunchCamera: (path: String) -> Boolean = { false },
+    onLaunchCamera: (path: String) -> Unit = {},
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
     onEvent: (ChatEvent) -> Unit = {},
     onShareLocation: () -> Unit = {},
@@ -279,6 +406,8 @@ internal fun ChatEffects(
     val showErrorDetails = isDebuggable()
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     val haptics = LocalHapticFeedback.current
+    val openPollStatistics by rememberUpdatedState(LocalPollStatisticsLauncher.current)
+    val openPinnedMessages by rememberUpdatedState(LocalPinnedMessagesLauncher.current)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -295,7 +424,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
-                    is ChatEffect.SponsoredNotice,
+                    ChatEffect.PollPhotoOnly, ChatEffect.ForwardSourceHidden, is ChatEffect.SponsoredNotice,
                     is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
@@ -318,6 +447,16 @@ internal fun ChatEffects(
                         copiedNotice(resources)
                     }
 
+                    is ChatEffect.OpenPinnedMessages -> {
+                        openPinnedMessages?.invoke(effect.route)
+                        ""
+                    }
+
+                    is ChatEffect.OpenPollStatistics -> {
+                        openPollStatistics?.invoke(effect.chatId, effect.messageId)
+                        ""
+                    }
+
                     is ChatEffect.OpenProfile, is ChatEffect.OpenChat, is ChatEffect.OpenThread -> {
                         openNamed(effect, onOpenProfile, onOpenChat, onOpenThread)
                     }
@@ -327,10 +466,21 @@ internal fun ChatEffects(
                         ""
                     }
 
+                    is ChatEffect.OpenMessage -> {
+                        onOpenMessage(effect.chatId, effect.messageId)
+                        ""
+                    }
+
+                    ChatEffect.RecordVoiceNow -> {
+                        onEvent(voiceStartOrAsk(context))
+                        ""
+                    }
+
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera,
                     is BotKeyboardEffect,
                     -> {
-                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, resources, onShareLocation)
+                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, onShareLocation)
+                        ""
                     }
 
                     is ChatEffect.OpenUrl -> {
@@ -357,6 +507,10 @@ internal fun ChatEffects(
                     is PollEffect.QuizAnswered -> {
                         haptics.quizAnswered(effect.correct)
                     }
+
+                    is TranscriptionEffect -> {
+                        context.transcriptionNotice(effect, resources)
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
@@ -369,45 +523,39 @@ internal fun ChatEffects(
 
 /**
  * Hands [effect] to the screen: media to the viewer through [onOpenMedia], the focus to the composer through
- * [composerFocus], a photo to take to the camera app through [onLaunchCamera], a bot's request for the location to
- * the "Location" sheet through [onShareLocation], which asks the user first; the snackbar when no camera app opens,
- * else nothing.
+ * [composerFocus], a photo to take to the camera app through [onLaunchCamera] (which says in a snackbar why the camera
+ * app did not open), a bot's request for the location to the "Location" sheet through [onShareLocation], which asks
+ * the user first.
  */
 private fun handOver(
     effect: ChatEffect,
     onOpenMedia: (messageId: Long) -> Unit,
     composerFocus: ComposerFocusState,
-    onLaunchCamera: (path: String) -> Boolean,
-    resources: Resources,
+    onLaunchCamera: (path: String) -> Unit,
     onShareLocation: () -> Unit = {},
-): String =
+) {
     when (effect) {
         BotKeyboardEffect.ShareLocation -> {
             onShareLocation()
-            ""
         }
 
         is ChatEffect.OpenMedia -> {
             // The viewer ends the section once it has drawn the media's page (docs/PERFORMANCE.md §9).
             MediaViewerTrace.beginOpen()
             onOpenMedia(effect.messageId)
-            ""
         }
 
         ChatEffect.FocusComposer -> {
             composerFocus.request()
-            ""
         }
 
         is ChatEffect.LaunchCamera -> {
-            val launched = onLaunchCamera(effect.path)
-            resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
+            onLaunchCamera(effect.path)
         }
 
-        else -> {
-            ""
-        }
+        else -> {}
     }
+}
 
 /**
  * Opens the downloaded document of [effect] in another app through [openFile], with the chooser's title; the snackbar
@@ -447,6 +595,8 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
+        ChatEffect.PollPhotoOnly -> R.string.poll_photo_only
+        ChatEffect.ForwardSourceHidden -> R.string.chat_forward_source_hidden
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed

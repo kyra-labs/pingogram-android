@@ -22,17 +22,20 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -40,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -55,19 +59,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
@@ -81,7 +93,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The viewer's transparent small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6) over a gradient of `mediaOverlay` (the
  * theme's `scrim`, translucent) that fades into the media: back, the sender and the date as a two-line title, and
- * "3 of 120" ([position]) at the end. Before the media is there, [item] is null and only back shows.
+ * "3 of 120" ([position], [PositionChip]) at the end: the position among the chat's media, never dots (owner decision
+ * 2026-11-15, board 25: the viewer pages through all of a chat's media, not one album). Before the media is there,
+ * [item] is null and only back shows.
  */
 @Composable
 internal fun ViewerTopBar(
@@ -97,19 +111,13 @@ internal fun ViewerTopBar(
         navigationIcon = {
             IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(
-                    painter = painterResource(UiR.drawable.ic_arrow_back),
+                    painter = painterResource(UiR.drawable.ic_close),
                     contentDescription = stringResource(R.string.media_back),
                 )
             }
         },
         actions = {
-            if (position != null) {
-                Text(
-                    text = positionText(position),
-                    modifier = Modifier.padding(end = MaterialTheme.spacing.large),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
+            if (position != null) PositionChip(positionText(position))
         },
         expandedHeight = titleHeight(),
         colors =
@@ -178,7 +186,6 @@ internal fun ViewerBottomBar(
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
     if (item.caption.text.isEmpty() && controls == null && actions == null) return
     val overlay = MaterialTheme.pingogramColors.mediaOverlay
-    val maxWidth = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)
     Column(
         modifier =
             modifier
@@ -189,45 +196,39 @@ internal fun ViewerBottomBar(
                         WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
                     ),
                 ).padding(top = MaterialTheme.spacing.extraLarge, bottom = FloatingToolbarDefaults.ScreenOffset),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (item.caption.text.isNotEmpty()) {
-            ExpandableCaption(
-                caption = item.caption,
-                key = item.messageId,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact).then(maxWidth),
-            )
-        }
-        val media = item.media
-        if (controls != null && media is ViewerMedia.Clip) {
-            VideoControls(
-                playback = controls,
-                durationSeconds = media.video.duration,
-                onEvent = onEvent,
-                canPictureInPicture = canPictureInPicture,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small).then(maxWidth),
-            )
+        // The page's caption and video controls crossfade as the pages change; within a page they follow it.
+        StateCrossfade(
+            targetState = PageBar(item, controls),
+            contentKey = { it.item.messageId },
+            contentAlignment = Alignment.TopCenter,
+            label = "pageBar",
+        ) { bar ->
+            PageBarContent(bar, onEvent, canPictureInPicture, spacedBelow = actions != null)
         }
         actions?.invoke()
     }
 }
 
 /**
- * The caption with its formatting (links open, spoilers show when tapped), at most [COLLAPSED_LINES] lines; tapping
- * it shows all of it, scrolling within about [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and tapping again shows
- * less: a button for screen readers, with its expand or collapse action.
- * It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts collapsed.
- * The stories viewer shows its captions with it too.
+ * The caption with its formatting (links open, spoilers show when tapped), at most [collapsedLines] lines, followed by
+ * "Show more" while it is cut (board 25); tapping it or the caption shows all of it, scrolling within about
+ * [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and "Show less" (or the caption again) shows less. Screen readers get
+ * the caption as a button with its expand or collapse action; the text button is the same action for sight, hidden
+ * from them. It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts
+ * collapsed. The stories viewer shows its captions with it too.
  */
 @Composable
 internal fun ExpandableCaption(
     caption: FormattedText,
     key: Long,
     modifier: Modifier = Modifier,
+    collapsedLines: Int = COLLAPSED_LINES,
 ) {
     var expanded by rememberSaveable(key) { mutableStateOf(false) }
     var spoilersRevealed by rememberSaveable(key) { mutableStateOf(false) }
+    var cut by remember(key) { mutableStateOf(false) }
     val styles = rememberFormattedTextStyles()
     val text =
         remember(caption, styles, spoilersRevealed) {
@@ -239,117 +240,44 @@ internal fun ExpandableCaption(
                 .toDp()
         }
     val label = stringResource(if (expanded) R.string.media_caption_collapse else R.string.media_caption_expand)
-    Text(
-        text = text,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
-                .heightIn(max = windowHeight * EXPANDED_MAX_HEIGHT_FRACTION)
-                .verticalScroll(rememberScrollState(), enabled = expanded)
-                .clickable(onClickLabel = label, role = Role.Button) { expanded = !expanded }
-                // Screen readers get its state as the expand or collapse action.
-                .semantics {
-                    if (expanded) {
-                        collapse {
-                            expanded = false
-                            true
+    Column(modifier.animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())) {
+        Text(
+            text = text,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = windowHeight * EXPANDED_MAX_HEIGHT_FRACTION)
+                    .verticalScroll(rememberScrollState(), enabled = expanded)
+                    .clickable(onClickLabel = label, role = Role.Button) { expanded = !expanded }
+                    // Screen readers get its state as the expand or collapse action.
+                    .semantics {
+                        if (expanded) {
+                            collapse {
+                                expanded = false
+                                true
+                            }
+                        } else if (cut) {
+                            expand {
+                                expanded = true
+                                true
+                            }
                         }
-                    } else {
-                        expand {
-                            expanded = true
-                            true
-                        }
-                    }
-                },
-        maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_LINES,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodyMedium.userContent,
-    )
-}
-
-/**
- * Play or pause and seek the current video (`REQUIREMENTS.md` FR-C10): a [FilledIconButton] whose shape morphs while
- * pressed, the time played, an expressive [Slider] and the length. The slider follows the playback in its layout and
- * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
- * there. Its inactive track shows in `outline` how far the player has the video ([VideoPlayback.buffered], read in the
- * draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`). The times recompose only when the second
- * changes.
- */
-@Composable
-private fun VideoControls(
-    playback: VideoPlayback,
-    durationSeconds: Int,
-    onEvent: (MediaViewerEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    canPictureInPicture: Boolean = false,
-) {
-    val sliderState = remember(playback.messageId) { SliderState(value = playback.progress()) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val touching by rememberUpdatedState(sliderState.isDragging || pressed)
-    val progress = playback.progress
-    LaunchedEffect(sliderState, progress) {
-        snapshotFlow { progress() }.collect { fraction -> if (!touching) sliderState.value = fraction }
-    }
-    val played by remember(sliderState, durationSeconds) {
-        derivedStateOf { (sliderState.value * durationSeconds).toInt() }
-    }
-    val locale = LocalConfiguration.current.locales[0]
-    val playLabel = stringResource(if (playback.isPlaying) R.string.media_pause else R.string.media_play)
-    val seekLabel = stringResource(R.string.media_seek)
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FilledIconButton(onClick = { onEvent(MediaViewerEvent.PlayPause) }, shapes = IconButtonDefaults.shapes()) {
-            Icon(
-                painter =
-                    painterResource(
-                        if (playback.isPlaying) UiR.drawable.ic_pause_filled else UiR.drawable.ic_play_arrow_filled,
-                    ),
-                contentDescription = playLabel,
-            )
-        }
-        TimeText(formatDuration(played, locale))
-        Slider(
-            state = sliderState,
-            onValueChange = { sliderState.value = it },
-            modifier = Modifier.weight(1f).semantics { contentDescription = seekLabel },
-            onValueChangeFinished = { onEvent(MediaViewerEvent.Seek(sliderState.value)) },
-            interactionSource = interactionSource,
-            track = { state -> BufferedTrack(state, playback.buffered) },
+                    },
+            maxLines = if (expanded) Int.MAX_VALUE else collapsedLines,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { if (!expanded) cut = it.hasVisualOverflow },
+            style = MaterialTheme.typography.bodyMedium.userContent,
         )
-        TimeText(formatDuration(durationSeconds, locale))
-        if (canPictureInPicture) PictureInPictureButton(onClick = { onEvent(MediaViewerEvent.PictureInPicture) })
-    }
-}
-
-/** Picture-in-picture, an icon button named for screen readers and in a [PlainTooltip] on a long press or hover. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PictureInPictureButton(onClick: () -> Unit) {
-    val label = stringResource(R.string.media_picture_in_picture)
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-        tooltip = { PlainTooltip { Text(label) } },
-        state = rememberTooltipState(),
-    ) {
-        IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
-            Icon(painterResource(R.drawable.ic_picture_in_picture), contentDescription = label)
+        if (cut || expanded) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.clearAndSetSemantics {},
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(if (expanded) R.string.media_caption_less else R.string.media_caption_more))
+            }
         }
     }
-}
-
-/** A time beside the slider: `labelSmall` with tabular figures, so it does not jitter as it counts. */
-@Composable
-private fun TimeText(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-        maxLines = 1,
-    )
 }
 
 /** Lines of a collapsed caption. */

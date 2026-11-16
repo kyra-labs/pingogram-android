@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.content
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -42,7 +44,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   for a tap, the photo shows only once downloaded, with a download button over it until then ([onDownload], and
  *   [onCancelDownload] while it downloads).
  *
- * Tapping it calls [onOpen]. Screen readers hear "Photo".
+ * Tapping it calls [onOpen]. Screen readers hear "Photo". A live photo (its [MessageContent.Photo.motion]) shows "LIVE"
+ * on a `mediaOverlay` label at its top start, and screen readers hear "Live photo"; its motion plays in the viewer.
  *
  * @param shape the clip, `large` by default (§8); the bubble passes another one where its own corners differ.
  * @param maxWidth the widest the photo gets: `mediaMaxWidth`, or less in a narrower bubble.
@@ -69,21 +72,34 @@ internal fun MessagePhoto(
             maxHeight = sizes.mediaMaxHeight,
             minSize = sizes.mediaMinSize,
         )
-    val description = stringResource(UiR.string.preview_photo)
-    PhotoImage(
-        photo = photo,
-        displaySize = displaySize,
-        hidden = content.hasSpoiler || content.isSecret,
+    val hidden = content.hasSpoiler || content.isSecret
+    val isLive = content.motion != null
+    val description = stringResource(if (isLive) R.string.content_live_photo else UiR.string.preview_photo)
+    Box(
         modifier =
             modifier
                 .size(displaySize)
                 .clip(shape)
                 .clickable(onClickLabel = stringResource(R.string.content_open), onClick = onOpen)
                 .semantics { contentDescription = description },
-        downloads = downloads,
-        onDownload = onDownload,
-        onCancelDownload = onCancelDownload,
-    )
+    ) {
+        PhotoImage(
+            photo = photo,
+            displaySize = displaySize,
+            hidden = hidden,
+            modifier = Modifier.matchParentSize(),
+            downloads = downloads,
+            onDownload = onDownload,
+            onCancelDownload = onCancelDownload,
+        )
+        // A live photo's motion plays in the media viewer; the bubble says it has one.
+        if (isLive && !hidden) {
+            MediaLabel(
+                text = stringResource(R.string.content_live_label),
+                modifier = Modifier.align(Alignment.TopStart).padding(MaterialTheme.spacing.small),
+            )
+        }
+    }
 }
 
 /**

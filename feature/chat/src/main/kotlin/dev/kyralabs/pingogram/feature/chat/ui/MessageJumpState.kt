@@ -21,10 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
@@ -377,21 +373,3 @@ private suspend fun LazyListState.moveTo(
         onPlaced()
     }
 }
-
-/**
- * The highlight of a jumped-to bubble ([MessageJumpState.highlightOf]): [color] in [shape] behind the row at the
- * highlight's strength, like a selection's state layer. Read in the draw phase; the outline is built once per size.
- */
-internal fun Modifier.jumpHighlight(
-    state: MessageJumpState,
-    bubble: ChatItem.Bubble,
-    color: Color,
-    shape: Shape,
-): Modifier =
-    drawWithCache {
-        val outline = shape.createOutline(size, layoutDirection, this)
-        onDrawBehind {
-            val strength = state.highlightOf(bubble)
-            if (strength > 0f) drawOutline(outline, color, alpha = strength)
-        }
-    }

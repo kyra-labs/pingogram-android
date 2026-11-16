@@ -88,7 +88,7 @@ private val MessageShortcuts.linkLabel: Int
     get() = if (linksInThread) R.string.message_action_copy_thread_link else R.string.message_action_copy_link
 
 /** Whether this bubble's message reached Telegram: not still being sent, nor failed. */
-private val ChatItem.Bubble.isSent: Boolean
+internal val ChatItem.Bubble.isSent: Boolean
     get() = status != OutgoingStatus.Pending && status != OutgoingStatus.Failed
 
 /** Cancelling the [uploads] of a bubble's messages being sent, all at once; null while none uploads. */
@@ -100,6 +100,10 @@ internal fun uploadAction(uploads: Map<Long, *>): ContentAction? =
 /** Opening the sender's profile, for an incoming message of a user in a group chat; null otherwise. */
 internal fun profileAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.senderUserId?.let { ContentAction(R.string.chat_open_profile, ChatEvent.OpenProfile(it)) }
+
+/** Opening where a forwarded message comes from ([ForwardSource]); null for a message that was not forwarded. */
+internal fun forwardSourceAction(bubble: ChatItem.Bubble): ContentAction? =
+    bubble.forwardSource?.let { ContentAction(R.string.chat_forward_open_source, ChatEvent.OpenForwardSource(it)) }
 
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =

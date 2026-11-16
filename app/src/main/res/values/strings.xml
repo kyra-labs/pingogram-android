@@ -27,6 +27,47 @@
 
     <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md): its name and description in the
          launcher's widget list, its title and "New chat" button, the messages it shows instead of chats -->
+    <!-- The unread counter widget (board 33): its name and description in the launcher's widget list, what it shows
+         under the count, when nothing is unread, and what screen readers hear. -->
+    <string name="widget_unread_label">Unread counter</string>
+    <string name="widget_unread_description">How many messages wait for you, and your mentions</string>
+    <string name="widget_unread_unread">unread</string>
+    <plurals name="widget_unread_mentions">
+        <item quantity="one">%d mention</item>
+        <item quantity="other">%d mentions</item>
+    </plurals>
+    <string name="widget_unread_all_read">All read</string>
+    <string name="widget_unread_signed_out">Sign in to Pingogram</string>
+    <string name="widget_unread_locked">Pingogram is locked</string>
+    <!-- The Quick compose widget (board 33). -->
+    <string name="widget_compose_label">Quick compose</string>
+    <string name="widget_compose_description">Start a message or a voice message</string>
+    <string name="widget_compose_new">New</string>
+    <string name="widget_compose_message">Message</string>
+    <string name="widget_compose_voice">Voice</string>
+    <string name="widget_compose_new_description">New message</string>
+    <string name="widget_compose_voice_description">New voice message</string>
+    <!-- The Conversation widget (board 33): one chat's newest messages and a reply. -->
+    <string name="widget_conversation_label">Conversation</string>
+    <string name="widget_conversation_description">One chat and reply</string>
+    <string name="widget_conversation_choose">Choose a chat</string>
+    <string name="widget_conversation_sign_in">Sign in to Pingogram first</string>
+    <string name="widget_conversation_failed">Can\'t update right now</string>
+    <string name="widget_conversation_retry">Tap to retry</string>
+    <string name="widget_conversation_empty">No messages yet</string>
+    <!-- The reply field's placeholder -->
+    <string name="widget_conversation_reply">Reply…</string>
+    <!-- Spoken by screen readers for the reply button: "Reply to Trip" -->
+    <string name="widget_conversation_reply_to">Reply to %1$s</string>
+    <!-- The chat picker the widget's "Choose a chat" opens in the app -->
+    <string name="widget_conversation_picker_title">Choose a chat for the widget</string>
+    <string name="widget_conversation_picker_search">Search chats</string>
+    <string name="widget_conversation_picker_clear">Clear search</string>
+    <string name="widget_conversation_picker_none">No chats found</string>
+    <!-- The small reply sheet the widget's Reply opens: "Reply to" over the chat's name -->
+    <string name="widget_reply_to">Reply to</string>
+    <string name="widget_reply_placeholder">Message</string>
+    <string name="widget_reply_send">Send</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>
@@ -71,4 +112,11 @@
     <string name="demo_banner_label">Demo</string>
     <string name="demo_banner_separator" translatable="false">" · "</string>
     <string name="demo_banner_text">Sample chats on this device. Not connected to Telegram.</string>
+
+    <!-- Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33): their labels at most about 15 characters -->
+    <string name="tile_focus">Focus</string>
+    <string name="tile_focus_off">Off</string>
+    <!-- The Focus tile's subtitle while a profile is on: its name (%1$s) and when it ends (%2$s, a time such as 18:00) -->
+    <string name="tile_focus_until">%1$s · until %2$s</string>
+    <string name="tile_new_message">New message</string>
 </resources>

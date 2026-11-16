@@ -17,13 +17,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.ThreadRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.senderNameOf
 import dev.kyralabs.pingogram.feature.chat.ui.shortNameOf
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -31,13 +29,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
  * The pinned messages of chat [chatId] (of its forum topic or message thread [topic], if not null) for `ChatViewModel`
- * (`REQUIREMENTS.md` FR-C9): the bar over the conversation
- * ([bar]) and the sheet that lists them all ([sheet], kept out of the screen's state like the forward sheet).
+ * (`REQUIREMENTS.md` FR-C9): the bar over the conversation ([bar]); its "All pinned messages" opens the page of them
+ * all
+ * (`PinnedMessagesRoute`, [ChatEffect.OpenPinnedMessages]).
  *
  * - **Pins** come from `PinnedMessageRepository.pinnedMessages`, newest first, and follow every pin and unpin. The bar
  *   counts them from the oldest, as the list shows them: the newest is the last ([PinnedBar.position]).
@@ -46,7 +44,8 @@ import kotlinx.coroutines.launch
  *   pin, the oldest. Before the list reports anything, the newest.
  * - **Cycling** ([PinnedEvent.ShowCurrent]): a tap shows the bar's message in the list ([onShow], the jump a reply
  *   quote makes) and moves the bar on to the next older one, back to the newest after the oldest, as Telegram's apps
- *   do; a message tapped in the sheet becomes the bar's. That choice holds while the list moves to it, until the user
+ *   do; a message the page jumped to ([PinnedJumps]) becomes the bar's and shows in the list. That choice holds while
+ * the list moves to it, until the user
  *   drags the list ([PinnedEvent.ListDragged]) or the message is unpinned; then the bar follows the list again.
  * - **Closing** ([PinnedEvent.Close]): where the user may unpin the message (TDLib's `can_be_pinned` of the newest pin,
  *   [MessageActionRepository.properties]) it is unpinned ([MessageActionRepository.unpin]); for others the bar hides on
@@ -87,8 +86,6 @@ internal class ChatPinnedMessages(
             pins.firstOrNull { it.id == chosen }?.id ?: closestAbove(pins, newestVisible)?.id
         }.distinctUntilChanged()
 
-    private val listOpen = MutableStateFlow(false)
-
     /** Whether the user may unpin the chat's pins, asked of TDLib for its newest one. */
     private val canUnpin: Flow<Boolean> =
         pins
@@ -109,21 +106,29 @@ internal class ChatPinnedMessages(
             } else {
                 val message = pins[index]
                 val position = pins.size - 1 - index
-                PinnedBar(message.id, position, pins.size, named.senderOf(message), named.previewOf(message), canUnpin)
+                PinnedBar(
+                    messageId = message.id,
+                    position = position,
+                    count = pins.size,
+                    sender = named.senderOf(message),
+                    preview = named.previewOf(message),
+                    canUnpin = canUnpin,
+                    thumbnail = message.content.pinnedThumbnail(),
+                )
             }
         }.onStart { emit(null) }
             .distinctUntilChanged()
 
-    /** The sheet of every pinned message; null while it is closed, or there are none. */
-    val sheet: StateFlow<PinnedSheet?> =
-        combine(listOpen, named, shown) { open, named, shownId ->
-            if (!open || named.pins.isEmpty()) {
-                null
-            } else {
-                val rows = named.pins.asReversed().map { PinnedRow(it.id, named.senderOf(it), named.previewOf(it)) }
-                PinnedSheet(rows.toImmutableList(), shownId ?: named.pins.first().id)
+    init {
+        // "Jump to message" on the pinned messages page: taken as it is asked for, so the list is at the message by the
+        // time the page leaves.
+        val jumps = repositories.pinnedJumps
+        scope.launch {
+            jumps.waiting.collect { waiting ->
+                if (PinnedJumps.Target(chatId, topic) in waiting) jumps.take(chatId, topic)?.let(::showFromPage)
             }
-        }.stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+        }
+    }
 
     /** The list shows [messageIds] now; an empty set (the list left the screen) keeps the bar as it is. */
     fun setVisible(messageIds: Set<Long>) {
@@ -135,9 +140,7 @@ internal class ChatPinnedMessages(
             PinnedEvent.ShowCurrent -> showCurrent()
             PinnedEvent.ListDragged -> chosen.value = null
             PinnedEvent.Close -> close()
-            PinnedEvent.OpenList -> listOpen.value = true
-            PinnedEvent.DismissList -> listOpen.value = false
-            is PinnedEvent.ShowFromList -> showFromList(event.messageId)
+            PinnedEvent.OpenList -> onEffect(ChatEffect.OpenPinnedMessages(topic.pinnedMessagesRoute(chatId)))
         }
     }
 
@@ -152,8 +155,7 @@ internal class ChatPinnedMessages(
         }
     }
 
-    private fun showFromList(messageId: Long) {
-        listOpen.value = false
+    private fun showFromPage(messageId: Long) {
         chosen.value = messageId
         onShow(messageId)
     }

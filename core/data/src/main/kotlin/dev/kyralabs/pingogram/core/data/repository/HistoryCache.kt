@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toPoll
 import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
+import dev.kyralabs.pingogram.core.data.mapper.toSuggestedPost
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -143,7 +144,8 @@ internal data class HistoryKey(
     /**
      * Whether [message], of this chat, belongs to this history: every message to the chat's own; to a topic's, those in
      * it (in the General topic also those without a topic); to a thread's, its replies, the message that starts it
-     * excluded (its head, which the conversation shows itself); to a Saved Messages topic's, those in it.
+     * excluded (its head, which the conversation shows itself); to a Saved Messages or direct messages topic's, those
+     * in it.
      */
     fun holds(message: Message): Boolean =
         when (topic) {
@@ -151,6 +153,7 @@ internal data class HistoryKey(
             is MessageTopic.Forum -> message.topic == topic || (topic.isGeneral && message.topic == null)
             is MessageTopic.Thread -> message.topic == topic && message.id > topic.threadId
             is MessageTopic.SavedMessages -> message.topic == topic
+            is MessageTopic.DirectMessages -> message.topic == topic
         }
 }
 
@@ -394,6 +397,7 @@ private fun TdApi.Update.historyChatId(): Long? =
         is TdApi.UpdateMessageContent -> chatId
         is TdApi.UpdateMessageEdited -> chatId
         is TdApi.UpdateMessageIsPinned -> chatId
+        is TdApi.UpdateMessageSuggestedPostInfo -> chatId
         is TdApi.UpdateMessageInteractionInfo -> chatId
         is TdApi.UpdateMessageContentOpened -> chatId
         is TdApi.UpdateMessageMentionRead -> chatId
@@ -436,6 +440,12 @@ private fun TdApi.Update.toHistoryChange(): HistoryChange? =
 
         is TdApi.UpdateMessageIsPinned -> {
             HistoryChange.Edit(messageId) { it.copy(isPinned = isPinned) }
+        }
+
+        // A suggested post approved or declined, or one the user may no longer answer.
+        is TdApi.UpdateMessageSuggestedPostInfo -> {
+            val post = suggestedPostInfo?.toSuggestedPost()
+            HistoryChange.Edit(messageId) { it.copy(suggestedPost = post) }
         }
 
         is TdApi.UpdateMessageInteractionInfo -> {

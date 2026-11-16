@@ -75,7 +75,8 @@ sealed interface TwoStepVerificationFieldError {
  * @property isWorking a request is on its way: the fields and actions wait.
  * @property floodWaitSeconds while Telegram asks to wait (`FLOOD_WAIT`), the whole seconds left; the step's main
  *   action waits meanwhile. [floodWaitTotalSeconds] is what the countdown started from.
- * @property canGoBack back returns to the step before rather than leaving the flow.
+ * @property canGoBack back returns to the step before rather than leaving the flow, [backStep], which the back gesture
+ *   previews (`docs/DESIGN_SYSTEM.md` §5.1).
  */
 @Immutable
 data class TwoStepVerificationFlowUiState(
@@ -89,6 +90,7 @@ data class TwoStepVerificationFlowUiState(
     val floodWaitSeconds: Long? = null,
     val floodWaitTotalSeconds: Long = 0,
     val canGoBack: Boolean = false,
+    val backStep: TwoStepVerificationStep? = null,
 ) {
     /** Whether the step's main action can be taken now. */
     val canSubmit: Boolean get() = !isWorking && floodWaitSeconds == null

@@ -49,6 +49,16 @@ data class MessageProperties(
      * group's recent messages, while Telegram keeps who saw them, and in groups up to a size.
      */
     val canGetViewers: Boolean = false,
+    /**
+     * Others' reactions to it can be removed (td_api.tl `messageProperties.can_delete_reactions`): the group's
+     * administrators may (`MessageInteractionRepository.removeReactions`).
+     */
+    val canDeleteReactions: Boolean = false,
+    /**
+     * Its poll's votes over time can be shown (td_api.tl `messageProperties.can_get_poll_vote_statistics`,
+     * `ChatStatisticsRepository.pollVotes`), which Telegram gives a chat's administrators.
+     */
+    val canGetPollVoteStatistics: Boolean = false,
 )
 
 /**

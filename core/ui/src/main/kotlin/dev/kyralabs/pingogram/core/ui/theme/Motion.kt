@@ -111,5 +111,7 @@ fun Modifier.predictiveBackScale(progress: () -> Float): Modifier =
 
 private const val PREDICTIVE_BACK_MIN_SCALE = 0.9f
 
-// androidx.compose.material3.internal.PredictiveBack: the curve of Material's predictive back motion.
+// androidx.compose.material3.internal.PredictiveBack: the curve of Material's predictive back motion. Not a spec
+// but how far a surface scales for how far the gesture has come, which the gesture drives and no spring can express.
+@Suppress("PingogramMotionDefault")
 private val PredictiveBackEasing = CubicBezierEasing(0.1f, 0.1f, 0f, 1f)

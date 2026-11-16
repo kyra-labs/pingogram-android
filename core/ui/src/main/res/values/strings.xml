@@ -51,6 +51,7 @@
     <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
     <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
     <string name="error_chat_full">This group is full.</string>
+    <string name="error_community_full">This community has as many chats as Telegram allows.</string>
     <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
     <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
     <string name="call_voice">Voice call</string>
@@ -63,6 +64,8 @@
     <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
     <!-- The demo for app store reviewers shows sample chats on the phone, without Telegram: what it cannot do (calls, joining links, changing the account). -->
+    <string name="error_ai_edit_limit">You\'ve used your free AI edits for now. Telegram Premium allows more.</string>
+    <string name="error_too_many_text_styles">You\'ve added as many custom styles as Telegram allows.</string>
     <string name="error_not_available_in_demo">This needs a Telegram account. The demo can\'t do it.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
@@ -135,6 +138,11 @@
     <string name="preview_game">Game</string>
     <string name="preview_invoice">Invoice</string>
     <string name="preview_story">Story</string>
+    <!-- A post whose photos and videos unlock for Telegram Stars. -->
+    <string name="preview_paid_media">Paid media</string>
+    <!-- A channel's giveaway of Telegram Premium or Telegram Stars, and the message that names its winners. -->
+    <string name="preview_giveaway">Giveaway</string>
+    <string name="preview_giveaway_winners">Giveaway winners</string>
     <string name="preview_expired_photo">Photo expired</string>
     <string name="preview_expired_video">Video expired</string>
     <string name="preview_expired_voice_message">Voice message expired</string>
@@ -143,6 +151,14 @@
     <!-- A rich message (a channel's post with headings and sections) that has no text or media to name it by. -->
     <string name="preview_rich_message">Message</string>
     <!-- A service message of a kind Pingogram does not describe yet (gifts, payments, forum topics, …). -->
+    <!-- What became of a post a subscriber suggested to a channel through its direct messages. -->
+    <string name="preview_suggested_post_approved">Suggested post approved</string>
+    <string name="preview_suggested_post_declined">Suggested post declined</string>
+    <!-- %1$s is the administrators' comment. -->
+    <string name="preview_suggested_post_declined_comment">Suggested post declined: %1$s</string>
+    <string name="preview_suggested_post_failed">The suggested post couldn\'t be published</string>
+    <string name="preview_suggested_post_paid">Suggested post paid for</string>
+    <string name="preview_suggested_post_refunded">Suggested post refunded</string>
     <string name="preview_service_other">Chat event</string>
 
     <!-- Service messages: %1$s is who did it (a first name or a chat's title); "you" strings are the current user's. -->
@@ -181,6 +197,10 @@
     <string name="preview_removed_you">%1$s removed you</string>
     <string name="preview_pinned">%1$s pinned a message</string>
     <string name="preview_you_pinned">You pinned a message</string>
+    <string name="preview_added_poll_option">%1$s added “%2$s” to the poll</string>
+    <string name="preview_you_added_poll_option">You added “%1$s” to the poll</string>
+    <string name="preview_removed_poll_option">%1$s removed “%2$s” from the poll</string>
+    <string name="preview_you_removed_poll_option">You removed “%1$s” from the poll</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>
@@ -346,7 +366,7 @@
 
     <!-- A login code (FR-A3, and changing the number); %1$s is the phone number. -->
     <string name="login_code_label">Code</string>
-    <string name="login_code_sent_telegram">We sent the code to your Telegram app on another device.</string>
+    <string name="login_code_sent_telegram">Open Telegram on a device where you\'re already signed in. The code is in a message from Telegram.</string>
     <string name="login_code_sent_sms">We sent an SMS with the code to %1$s.</string>
     <string name="login_code_sent_sms_word">We sent an SMS with a code word to %1$s.</string>
     <string name="login_code_sent_sms_phrase">We sent an SMS with a code phrase to %1$s.</string>
@@ -369,6 +389,10 @@
     <string name="login_code_resend_fragment">Get the code on Fragment</string>
     <!-- %1$s: the remaining time, e.g. "42 seconds". -->
     <string name="login_code_resend_in">You can get a new code in %1$s.</string>
+    <!-- The resend countdown by the way the next code comes; %1$s is the time left, e.g. "0:42". -->
+    <string name="login_code_resend_sms_in">Resend code by SMS in %1$s</string>
+    <string name="login_code_resend_call_in">Call me with the code in %1$s</string>
+    <string name="login_code_resend_telegram_in">Resend code to Telegram in %1$s</string>
     <!-- The birthday picker (Edit profile, suggesting a birthday to a contact): its default title. -->
     <string name="birthday_title">Birthday</string>
     <string name="birthday_show_year">Show the year</string>
@@ -388,4 +412,13 @@
     <string name="birthday_suggestion_accept">Accept</string>
     <string name="birthday_suggestion_accepted">Added to your profile</string>
     <string name="birthday_suggestion_declined">Declined</string>
+    <!-- A statistics chart for screen readers: a series' name, first, last and highest values. -->
+    <string name="chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
+    <!-- Opening the camera app to take a photo for a chat or a story, refused the camera permission. -->
+    <string name="photo_capture_permission_needed">Pingogram needs the camera permission to open your camera app</string>
+    <!-- The snackbar's action once Android no longer asks for the camera permission: the app's settings page. -->
+    <string name="photo_capture_settings">Settings</string>
+    <!-- A message reminder's day and time: "Sun, 9:00 AM" (the owner's board 29). -->
+    <string name="reminder_label_day_time">%1$s, %2$s</string>
+    <string name="reminder_label_today">Today</string>
 </resources>

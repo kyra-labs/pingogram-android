@@ -129,7 +129,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   what it did. A row that appears above the first one while the list shows its top is scrolled into view.
  * - **Archive row**: full or compact, its menu and swipe set its style ([ChatListEvent.SetArchiveRowStyle]); hidden,
  *   the top bar opens the archive. The archive's own top bar opens its settings.
- * - **Folder tabs**: a long press opens a tab's menu, "Mark all as read" and, with [onEditFolder], "Edit folder".
+ * - **Folder tabs**: on the Chats tab, a bar floating over the top of the list's sheet ([FolderBar], owner decision
+ *   2026-11-13), which the lists start below and scroll and slide under, and which stays where it is whether the
+ *   header is expanded or collapsed. A long press opens a tab's menu, "Mark all as read" and, with [onEditFolder],
+ *   "Edit folder".
  */
 @Composable
 internal fun ChatListScreen(
@@ -165,7 +168,7 @@ internal fun ChatListScreen(
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
-                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder, summary, headerActions)
+                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, summary, headerActions)
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = insets,
@@ -180,6 +183,7 @@ internal fun ChatListScreen(
                 neighbours,
                 header,
                 stories,
+                onEditFolder,
             )
         }
         SelectionToolbarHost(
@@ -219,15 +223,16 @@ private fun contentWindowInsets(
  * The list of the folder shown ([rememberShownList]) on its sheet, sliding to another folder's on a folder switch
  * ([folderSwitch]), with the list it slides against beside it while it moves ([FolderCompanion]: [neighbours] under a
  * swipe). Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again
- * whenever it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and
- * those frames stop here.
+ * whenever it measures it anew, e.g. when the connection pill changes the top bar's height, and those frames stop here.
+ * On the Chats tab the folder tabs float over the top of the sheet ([FolderBar]); the lists' padding leaves room for
+ * them, read in the layout phase ([FolderBarSpace]), so the bar's height never composes a list again.
  *
  * Each folder's list is movable content of its own, with its own list state ([FolderListStates]): when a swipe lands
  * or a tab is tapped, the two lists change places (the shown one and the companion) without either composing its rows
  * again, and a folder's list keeps where it was scrolled. The shown folder's list, and only it, asks for more chats
  * ([FolderListArgs.active]) and scrolls back to its top when the Chats tab is tapped again ([ScrollToTopOnReselect]).
  */
-@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots.
+@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots, folders.
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,
@@ -239,6 +244,7 @@ private fun ChatListBody(
     neighbours: () -> FolderNeighbourLists,
     header: @Composable () -> Unit,
     stories: (@Composable (Modifier) -> Unit)?,
+    onEditFolder: ((folderId: Int?) -> Unit)?,
 ) {
     val state = rememberShownList(uiState, listStates, folderSwitch)
     val hasStories = stories != null
@@ -246,39 +252,51 @@ private fun ChatListBody(
     ScrollToTopOnReselect(ChatsRoute, shownListState, enabled = state.kind == ChatListKind.Chats)
     val folderLists = remember { FolderLists() }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val showsTabs = uiState.kind == ChatListKind.Chats && uiState.folderTabs.isNotEmpty()
+    val folderBar = remember { FolderBarSpace() }
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
+        // Below the folder bar while it shows, read in the layout phase (FolderBarSpace).
+        val listPadding =
+            remember(sheetPadding, showsTabs) { if (showsTabs) folderBar.below(sheetPadding) else sheetPadding }
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
             Box(Modifier.fillMaxWidth().padding(sheetPadding.sidesOnly()), Alignment.TopCenter) { header() }
-            Box(Modifier.weight(1f).folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
-                folderLists.of(state.selectedFolderId)(
-                    FolderListArgs(
-                        state = state,
-                        listState = shownListState,
-                        contentPadding = sheetPadding,
-                        stories = stories,
-                        openChatId = openChatId,
-                        onEvent = onEvent,
-                        active = true,
-                        modifier = Modifier.folderSlide(folderSwitch, isRtl).fillMaxSize(),
-                    ),
-                )
-                FolderCompanion(folderSwitch, neighbours, isRtl, shownFolderId = state.selectedFolderId) {
-                    companion,
-                    modifier,
-                    ->
-                    folderLists.of(companion.selectedFolderId)(
+            Box(Modifier.weight(1f)) {
+                // First, so it is measured before the lists, which read its height in the same pass; drawn above
+                // them, and reached first by screen readers.
+                if (showsTabs) {
+                    FolderBar(uiState, onEvent, onEditFolder, folderBar, Modifier.padding(sheetPadding.sidesOnly()))
+                }
+                Box(Modifier.fillMaxSize().folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
+                    folderLists.of(state.selectedFolderId)(
                         FolderListArgs(
-                            state = companion,
-                            listState = listStates.of(companion, folderSwitch.positions, hasStories),
-                            contentPadding = sheetPadding,
+                            state = state,
+                            listState = shownListState,
+                            contentPadding = listPadding,
                             stories = stories,
                             openChatId = openChatId,
                             onEvent = onEvent,
-                            active = false,
-                            modifier = modifier,
+                            active = true,
+                            modifier = Modifier.folderSlide(folderSwitch, isRtl).fillMaxSize(),
                         ),
                     )
+                    FolderCompanion(folderSwitch, neighbours, isRtl, shownFolderId = state.selectedFolderId) {
+                        companion,
+                        modifier,
+                        ->
+                        folderLists.of(companion.selectedFolderId)(
+                            FolderListArgs(
+                                state = companion,
+                                listState = listStates.of(companion, folderSwitch.positions, hasStories),
+                                contentPadding = listPadding,
+                                stories = stories,
+                                openChatId = openChatId,
+                                onEvent = onEvent,
+                                active = false,
+                                modifier = modifier,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -347,6 +365,7 @@ private fun FolderListContent(args: FolderListArgs) {
             ChatList(
                 items = content.items,
                 pinnedCount = content.pinnedCount,
+                communities = content.communities,
                 state = state,
                 stories = args.stories,
                 listState = args.listState,
@@ -361,7 +380,8 @@ private fun FolderListContent(args: FolderListArgs) {
 }
 
 /**
- * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]), keyed by id, each row
+ * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]) with the entries of
+ * [communities] among them ([chatsWithCommunities]), keyed by id, each row
  * animating to its new place when the order changes and fading out when it leaves (archived, deleted). Outside
  * selection mode, [openChatId]'s row is open. While it is the list shown ([active]), it reports to
  * [ChatListEvent.NearEndChanged] whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh
@@ -374,6 +394,7 @@ private fun FolderListContent(args: FolderListArgs) {
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
     pinnedCount: Int,
+    communities: ImmutableList<CommunityEntry>,
     state: ChatListUiState,
     stories: (@Composable (Modifier) -> Unit)?,
     listState: LazyListState,
@@ -383,9 +404,7 @@ private fun ChatList(
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val archive = state.archive
     val selection = state.selection
-    val folderId = state.selectedFolderId
     val selectedIds = selection?.chatIds
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val rowMotion = MaterialTheme.motionScheme
@@ -398,32 +417,63 @@ private fun ChatList(
         leadingRows(stories, state, hasPinned = pinnedCount > 0, onEvent) {
             Modifier.listRow(this, maxWidth, rowMotion)
         }
-        itemsIndexed(items, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { index, item ->
+        val row: @Composable LazyItemScope.(
+            ChatListItemModel,
+            RowSegment?,
+            Modifier,
+        ) -> Unit = { item, segment, extra ->
             ChatRow(
                 item = item,
                 selected = selectedIds?.contains(item.id) == true,
                 selectionMode = selection != null,
                 open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
-                segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null,
-                modifier =
-                    Modifier
-                        .listRow(this, maxWidth, rowMotion)
-                        .then(if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier),
+                segment = segment,
+                modifier = Modifier.listRow(this, maxWidth, rowMotion).then(extra),
             )
         }
+        chatsWithCommunities(
+            items = items,
+            communities = communities,
+            enabled = selection == null,
+            onEvent = onEvent,
+            rowModifier = { Modifier.listRow(this, maxWidth, rowMotion) },
+            chatRows = { rows, firstIndex ->
+                itemsIndexed(rows, key = { _, item -> item.id }, contentType = { _, _ -> CHAT_ROW }) { offset, item ->
+                    val index = firstIndex + offset
+                    val segment = if (index < pinnedCount) RowSegment(index, pinnedCount) else null
+                    row(
+                        item,
+                        segment,
+                        if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier,
+                    )
+                }
+            },
+            chatRow = { item, segment, isLast ->
+                row(item, segment, Modifier.groupGap(top = false, bottom = isLast).communityChatInset())
+            },
+        )
         if (state.hasLockedChats) lockedChatsRow(selection == null) { Modifier.listRow(this, maxWidth, rowMotion) }
     }
     KeepTopShown(
         listState,
-        firstKey =
-            when {
-                stories != null -> STORIES_ROW
-                archive != null -> ARCHIVE_ROW
-                pinnedCount > 0 -> PINNED_HEADER
-                else -> items.firstOrNull()?.id
-            },
+        firstKey = firstRowKey(stories != null, state.archive != null, pinnedCount, items, communities),
     )
+    ReportNearEnd(listState, state.selectedFolderId, active, onEvent)
+    ReportShownRows(listState, active, onEvent)
+}
+
+/**
+ * While the list is the one shown ([active]), tells [onEvent] whether its end is within [LOAD_MORE_THRESHOLD] rows:
+ * at once, on every change, afresh for another folder ([folderId]), and false when it stops.
+ */
+@Composable
+private fun ReportNearEnd(
+    listState: LazyListState,
+    folderId: Int?,
+    active: Boolean,
+    onEvent: (ChatListEvent) -> Unit,
+) {
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId, active) {
         if (!active) return@LaunchedEffect

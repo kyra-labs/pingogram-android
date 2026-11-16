@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHostState
@@ -54,6 +53,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowEvent as Event
@@ -283,8 +283,8 @@ private fun StepActions(
     secondary: String? = null,
     onSecondary: () -> Unit = {},
 ) {
-    state.floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = state.floodWaitTotalSeconds) }
-    if (state.isWorking) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+    FloodWaitSlot(seconds = state.floodWaitSeconds, totalSeconds = state.floodWaitTotalSeconds)
+    StepProgress(state.isWorking)
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (secondary != null) Arrangement.SpaceBetween else Arrangement.End,

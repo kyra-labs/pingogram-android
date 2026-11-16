@@ -20,3 +20,9 @@ val LocalLockedChatsLauncher = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 /** Opens a chat from a screen of a feature that cannot depend on the conversation's; null where nothing provides it. */
 val LocalChatLauncher = staticCompositionLocalOf<((chatId: Long) -> Unit)?> { null }
+
+/**
+ * Opens a chat at one of its messages from a screen of a feature that cannot depend on the conversation's (a
+ * reminder's message on the Reminders page); null where nothing provides it.
+ */
+val LocalMessageLauncher = staticCompositionLocalOf<((chatId: Long, messageId: Long) -> Unit)?> { null }

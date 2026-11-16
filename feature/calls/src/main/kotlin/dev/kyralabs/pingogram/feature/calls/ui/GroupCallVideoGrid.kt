@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,10 +20,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -52,7 +61,8 @@ internal val PlaceholderParticipantVideo: ParticipantVideo = { _, _, modifier ->
  * The voice chat's videos above its participants (`docs/adr/0024-video-in-voice-chats.md`): the pinned one across the
  * width at 16:9, the others two to a row, square, the user's own camera last; a single video alone across the width.
  * Each tile has `large` corners, the participant's name on a `mediaOverlay` pill, a `primary` outline while they speak,
- * and toggles its pin when tapped.
+ * and toggles its pin when tapped. A tile that comes after the grid first showed fades in on the effects spring; its
+ * bounds do not animate (`docs/DESIGN_SYSTEM.md` §5.1, Q-15).
  */
 @Composable
 internal fun VideoGrid(
@@ -75,23 +85,40 @@ internal fun VideoGrid(
         } else {
             0
         }
+    // Tiles there when the grid first shows are simply there; those that come later fade in.
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing.small)) {
         tiles.take(wide).forEach { tile ->
             key(tile?.tileKey) {
-                Tile(tile, state, videos, self, onEvent, WIDE_ASPECT, Modifier.fillMaxWidth())
+                Tile(tile, state, videos, self, onEvent, WIDE_ASPECT, Modifier.fillMaxWidth().fadesIn(shown))
             }
         }
         tiles.drop(wide).chunked(COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(spacing.small)) {
                 row.forEach { tile ->
                     // Keyed, so a tile keeps its renderer as pinning moves it.
-                    key(tile?.tileKey) { Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f)) }
+                    key(tile?.tileKey) {
+                        Tile(tile, state, videos, self, onEvent, 1f, Modifier.weight(1f).fadesIn(shown))
+                    }
                 }
                 // A lone tile in the last row keeps its column's width.
                 repeat(COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
+}
+
+/**
+ * Fades this tile in on [callMotionScheme]'s default effects spring as it first composes, if [animate], its opacity
+ * read in the draw phase; at once while power saving holds the call screens still.
+ */
+@Composable
+private fun Modifier.fadesIn(animate: Boolean): Modifier {
+    val alpha = remember { Animatable(if (animate) 0f else 1f) }
+    val spec = callMotionScheme().defaultEffectsSpec<Float>()
+    LaunchedEffect(alpha) { alpha.animateTo(1f, spec) }
+    return graphicsLayer { this.alpha = alpha.value }
 }
 
 /** A participant's [video], or with null the user's own camera. */
@@ -135,6 +162,11 @@ private fun VideoTile(
         stringResource(if (video.isScreen) R.string.call_remote_screen else R.string.call_remote_video, name)
     val pinned = stringResource(R.string.group_call_video_pinned)
     val action = stringResource(if (video.isPinned) R.string.group_call_unpin else R.string.group_call_pin)
+    // The "speaking" outline fades as the avatar rings beside it do: on the fast effects spring, read in the draw
+    // phase, at once while power saving holds the call screens still.
+    val outlineSpec =
+        if (LocalStillCallAnimations.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val outline = animateFloatAsState(if (video.isSpeaking) 1f else 0f, outlineSpec, label = "speakingOutline")
     Box(
         modifier
             .clip(shape)
@@ -143,12 +175,6 @@ private fun VideoTile(
                 role = Role.Button,
                 onClickLabel = action,
                 onClick = onTogglePin,
-            ).then(
-                if (video.isSpeaking) {
-                    Modifier.border(MaterialTheme.sizes.avatarRing, MaterialTheme.colorScheme.primary, shape)
-                } else {
-                    Modifier
-                },
             ).semantics {
                 contentDescription = description
                 if (video.isPinned) stateDescription = pinned
@@ -177,6 +203,13 @@ private fun VideoTile(
                 Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.small),
             )
         }
+        // Over the video, as a border of the tile would be, its opacity read in the draw phase.
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer { alpha = outline.value.coerceIn(0f, 1f) }
+                .border(MaterialTheme.sizes.avatarRing, MaterialTheme.colorScheme.primary, shape),
+        )
     }
 }
 

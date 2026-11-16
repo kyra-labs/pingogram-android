@@ -25,6 +25,17 @@ interface VoiceNoteRepository {
     fun discardVoiceNote(path: String)
 
     /**
+     * Cuts the finished recording at [path] to the part from [startMillis] to [endMillis], on the device, into a new
+     * file of the same format, by its path, deleting the recording. Fails with `DomainError.FileUnavailable` when it
+     * cannot be cut, keeping the recording.
+     */
+    suspend fun trimVoiceNote(
+        path: String,
+        startMillis: Long,
+        endMillis: Long,
+    ): Outcome<String>
+
+    /**
      * Sends [voiceNote] to chat [chatId] as [options] say, replying as [replyTo] says if it is not null. Succeeds
      * once TDLib accepted the message, which it then shows as being sent while it uploads; its file is then TDLib's to
      * upload and deleted once uploaded. A refused voice note's file is deleted.

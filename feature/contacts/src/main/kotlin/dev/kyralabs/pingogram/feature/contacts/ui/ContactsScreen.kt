@@ -70,6 +70,8 @@ import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
 import dev.kyralabs.pingogram.core.ui.component.tabHeaderActionSize
@@ -294,6 +296,7 @@ private fun ContactsList(
     val showsSync = state.sync != ContactSyncUi.Hidden
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val motionScheme = MaterialTheme.motionScheme
+    val itemMotion = rememberItemMotion(motionScheme)
     val listPadding = remember(contentPadding) { contentPadding.withTop(0.dp) }
     val showsIndex = content is ContactsContent.Contacts && content.showsIndex
     // The rows end before the index, so their trailing icons and buttons never sit under its letters.
@@ -313,7 +316,11 @@ private fun ContactsList(
                 leadingItems(state, syncControls, callbacks, maxWidth, motionScheme)
                 content.sections.forEach { section ->
                     stickyHeader(key = "$HEADER:${section.letter}", contentType = HEADER) {
-                        LetterHeader(section.letter, Modifier.widthIn(max = maxWidth).fillMaxWidth())
+                        // Moves with its rows as they come and go (docs/DESIGN_SYSTEM.md §5 Lists).
+                        LetterHeader(
+                            section.letter,
+                            Modifier.animateItem(this, itemMotion).widthIn(max = maxWidth).fillMaxWidth(),
+                        )
                     }
                     contactItems(section.contacts, onEvent, onEditContact, maxWidth, motionScheme)
                 }

@@ -6,8 +6,10 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -65,13 +68,31 @@ class PingogramNavigationBarTest {
     private val selections = mutableListOf<TopLevelDestination>()
 
     @Test
-    fun `the selected tab shows its label, the others their icons named by their labels`() {
+    fun `every tab shows its label on a phone, the selected one with its icon`() {
         setBar(selected = TopLevelDestination.Chats)
 
         composeRule.onNode(hasText(string(R.string.nav_chats)) and isSelectable()).assertIsSelected()
-        iconTab(R.string.nav_contacts).assertIsNotSelected()
-        iconTab(R.string.nav_settings).assertIsNotSelected()
-        composeRule.onNode(hasText(string(R.string.nav_contacts))).assertDoesNotExist()
+        composeRule.onNode(hasText(string(R.string.nav_contacts)) and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText(string(R.string.nav_settings)) and isSelectable()).assertIsNotSelected()
+        // The labels name the tabs: no icon of the tabs not selected is heard on its own.
+        composeRule.onAllNodes(hasContentDescription(string(R.string.nav_contacts))).assertCountEquals(0)
+    }
+
+    @Test
+    fun `New chat is a circle as tall as the pill`() {
+        setBar(selected = TopLevelDestination.Chats, newChat = { BarNewChatButton(shown = true, onClick = {}) })
+
+        val pill = labeledTab(R.string.nav_chats).fetchSemanticsNode().boundsInRoot
+        val newChat =
+            composeRule
+                .onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val barHeight = with(composeRule.density) { NAVIGATION_BAR_HEIGHT.toPx() }
+        assertEquals(barHeight, newChat.height, 1f)
+        assertEquals(newChat.width, newChat.height, 1f)
+        // The tab's touch target is the pill's whole height, the same as the button's.
+        assertEquals(pill.height, newChat.height, 1f)
     }
 
     @Test
@@ -84,6 +105,28 @@ class PingogramNavigationBarTest {
         iconTab(R.string.nav_chats).assertIsNotSelected()
         iconTab(R.string.nav_contacts).assertIsNotSelected()
         composeRule.onNode(hasText(string(R.string.nav_chats))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the labels are measured off the first frame as the first frame asks for them, then never again`() {
+        NavigationLabelWidths.clear()
+        NavigationLabelWidths.warmUp(RuntimeEnvironment.getApplication())
+        var key: NavigationLabelWidths.Key? = null
+        var measured = 0
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                val firstFrame = rememberNavigationLabelsKey()
+                val measurer = rememberTextMeasurer()
+                key = firstFrame
+                measured = remember { NavigationLabelWidths.measure(firstFrame, measurer) }
+            }
+        }
+        composeRule.waitForIdle()
+        val firstFrame = checkNotNull(key)
+
+        // The first frame's key is the warm-up's, with the width it would have measured itself.
+        assertEquals(measured, NavigationLabelWidths.cached(firstFrame))
+        assertEquals(measured, NavigationLabelWidths.widthPx(firstFrame) { error("measured again") })
     }
 
     @Test
@@ -122,7 +165,7 @@ class PingogramNavigationBarTest {
     }
 
     @Test
-    fun `the experimental Add contact button opens Add contact while shown, and is gone otherwise`() {
+    fun `the Add contact button opens Add contact while shown, and is gone otherwise`() {
         var shown by mutableStateOf(true)
         var clicks = 0
         composeRule.setContent {
@@ -208,6 +251,31 @@ class PingogramNavigationBarTest {
         val tolerance = with(composeRule.density) { OVERSHOOT_TOLERANCE.toPx() }
         val range = (minOf(before, after) - tolerance)..(maxOf(before, after) + tolerance)
         assertTrue("$before → $during → $after", during.all { it in range })
+    }
+
+    @Test
+    fun `switching tabs recomposes each changed tab once, not with each frame of its animation`() {
+        var selected by mutableStateOf(TopLevelDestination.Chats)
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                PingogramNavigationBar(selected = selected, onSelect = {})
+            }
+        }
+        composeRule.waitForIdle()
+        val counter = RecompositionCounter()
+        counter.start()
+        composeRule.mainClock.autoAdvance = false
+
+        selected = TopLevelDestination.Contacts
+        repeat(SWITCH_FRAMES) {
+            composeRule.mainClock.advanceTimeByFrame()
+            composeRule.waitForIdle()
+        }
+
+        // The tab left and the tab chosen, once each; their color, indicator and room follow in the draw and layout
+        // phases.
+        val tabs = counter.recomposedOwnFunctions.count { it.endsWith(".NavigationTab") }
+        assertTrue("${counter.recomposedOwnFunctions}", tabs <= CHANGED_TABS)
     }
 
     // The Settings tab's account menu (docs/adr/0031-multiple-accounts.md)
@@ -367,6 +435,7 @@ class PingogramNavigationBarTest {
     private fun setBar(
         selected: TopLevelDestination,
         accountMenu: AccountMenuActions? = null,
+        newChat: (@Composable () -> Unit)? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -374,6 +443,7 @@ class PingogramNavigationBarTest {
                     selected = selected,
                     onSelect = { selections += it },
                     accountMenu = accountMenu,
+                    newChat = newChat,
                 )
             }
         }
@@ -408,7 +478,11 @@ class PingogramNavigationBarTest {
         SemanticsMatcher("has no custom actions") { SemanticsActions.CustomActions !in it.config }
 
     private companion object {
+        const val CHANGED_TABS = 2
         const val LARGE_FONT_SCALE = 2f
+
+        /** `sizes.floatingNavigationBar`: the pill's height and the round button's diameter (§6.1). */
+        val NAVIGATION_BAR_HEIGHT = 56.dp
 
         /** Enough frames for the tabs' springs to play out. */
         const val SWITCH_FRAMES = 40

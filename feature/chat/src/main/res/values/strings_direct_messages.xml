@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A channel's direct messages as its administrators see them: who wrote to the channel, one conversation each. -->
+<resources>
+    <plurals name="direct_subtitle_people">
+        <item quantity="one">%1$d person wrote</item>
+        <item quantity="other">%1$d people wrote</item>
+    </plurals>
+    <!-- %1$s: "12 people wrote"; %2$d: how many conversations are unread. -->
+    <plurals name="direct_subtitle_unread">
+        <item quantity="one">%1$s · %2$d unread</item>
+        <item quantity="other">%1$s · %2$d unread</item>
+    </plurals>
+    <string name="direct_search">Search names</string>
+    <string name="direct_filter_all">All</string>
+    <string name="direct_filter_unread">Unread</string>
+    <!-- People who pay Telegram Stars for each message they send to the channel. -->
+    <string name="direct_filter_paid">Paid</string>
+    <!-- A filter chip with its count: "All · 12". -->
+    <string name="direct_filter_count">%1$s · %2$d</string>
+    <string name="direct_sender_unknown">Unknown sender</string>
+    <string name="direct_menu">Open options</string>
+    <string name="direct_mark_read">Mark as read</string>
+    <string name="direct_mark_unread">Mark as unread</string>
+    <string name="direct_paid">Pays per message</string>
+    <string name="direct_marked_unread">Marked as unread</string>
+    <plurals name="direct_unread">
+        <item quantity="one">%1$d unread message</item>
+        <item quantity="other">%1$d unread messages</item>
+    </plurals>
+    <string name="direct_empty_title">No messages yet</string>
+    <string name="direct_empty_body">When people write to the channel, their conversations show here.</string>
+    <string name="direct_empty_filtered_title">Nobody here</string>
+    <string name="direct_empty_filtered_body">No conversation matches this filter or search.</string>
+    <string name="direct_error_title">The messages couldn\'t be loaded</string>
+</resources>

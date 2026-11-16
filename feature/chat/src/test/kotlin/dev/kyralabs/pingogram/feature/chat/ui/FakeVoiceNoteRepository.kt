@@ -25,6 +25,21 @@ class FakeVoiceNoteRepository : VoiceNoteRepository {
         discardedVoiceNotes += path
     }
 
+    /** The path and part of every [trimVoiceNote] call. */
+    val trimmedVoiceNotes = mutableListOf<Triple<String, Long, Long>>()
+
+    /** What [trimVoiceNote] answers; the trimmed file's path by default. */
+    var onTrimVoiceNote: suspend (String) -> Outcome<String> = { Outcome.Success(it.replace("voice.", "trimmed.")) }
+
+    override suspend fun trimVoiceNote(
+        path: String,
+        startMillis: Long,
+        endMillis: Long,
+    ): Outcome<String> {
+        trimmedVoiceNotes += Triple(path, startMillis, endMillis)
+        return onTrimVoiceNote(path)
+    }
+
     override suspend fun sendVoiceNote(
         chatId: Long,
         voiceNote: RecordedVoiceNote,

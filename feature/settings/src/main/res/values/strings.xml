@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <!-- A frozen account (`docs/DESIGN_SYSTEM.md` §6 "Frozen account"). %1$s is the date Telegram deletes the account. -->
+    <string name="settings_frozen_title">Your account is frozen</string>
+    <string name="settings_frozen_text">Telegram froze your account for breaking its terms of service. You can read your chats, but you can\'t send messages. Unless an appeal succeeds, Telegram deletes the account on %1$s.</string>
+    <string name="settings_frozen_text_no_date">Telegram froze your account for breaking its terms of service. You can read your chats, but you can\'t send messages until an appeal succeeds.</string>
+    <string name="settings_frozen_appeal">Appeal</string>
     <!-- Spoken by screen readers for the back button of a settings page. -->
     <string name="settings_back">Back</string>
     <!-- The page beside Settings home on a wide window while no page is open. -->
@@ -1244,6 +1249,31 @@
     <string name="settings_proxy_link_connected">Proxy turned on</string>
     <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
     <string name="settings_proxy_link_done">Done</string>
+    <!-- Log in with Telegram: a website's or app's login request (docs/DESIGN_SYSTEM.md §6). -->
+    <string name="settings_oauth_loading">Reading the login request</string>
+    <string name="settings_oauth_title">Log in to %1$s with Telegram?</string>
+    <string name="settings_oauth_website">Website</string>
+    <string name="settings_oauth_app">App</string>
+    <string name="settings_oauth_unverified">Unverified app</string>
+    <string name="settings_oauth_gets">%1$s gets</string>
+    <string name="settings_oauth_gets_what">Your name, username and photo</string>
+    <string name="settings_oauth_as">From your account, %1$s</string>
+    <string name="settings_oauth_browser">Browser</string>
+    <string name="settings_oauth_location">Location, by its address</string>
+    <string name="settings_oauth_messages_bot">Let %1$s message me</string>
+    <string name="settings_oauth_messages">Let its bot message me</string>
+    <string name="settings_oauth_phone">Share my phone number</string>
+    <string name="settings_oauth_ton">It also asks for your TON wallet, which Pingogram doesn\'t share.</string>
+    <string name="settings_oauth_code_title">Which code does %1$s show?</string>
+    <string name="settings_oauth_code_text">Pick the code you see on the website. A wrong one cancels the login.</string>
+    <string name="settings_oauth_allow">Allow</string>
+    <string name="settings_oauth_decline">Decline</string>
+    <string name="settings_oauth_working">Asking Telegram</string>
+    <string name="settings_oauth_done">You\'re logged in to %1$s</string>
+    <string name="settings_oauth_done_text">Pingogram opened it in your browser to go on. It\'s listed in Privacy and security, Websites, where you can log out of it.</string>
+    <string name="settings_oauth_failed">Couldn\'t log in</string>
+    <string name="settings_oauth_try_again">Try again</string>
+    <string name="settings_oauth_close">Close</string>
 
     <!-- Data and storage → Network usage -->
     <string name="settings_network_usage">Network usage</string>
@@ -1451,6 +1481,38 @@
     <!-- Settings home in the experimental look (docs/DESIGN_SYSTEM.md §13.9). -->
     <string name="settings_home_make_it_yours">Make it yours</string>
     <string name="settings_home_alerts_privacy">Alerts and privacy</string>
+    <string name="settings_home_on_this_phone">On this phone</string>
+    <string name="settings_home_on_this_phone_footer">Kept on this phone only. Never sent to Telegram.</string>
+    <string name="settings_bookmarks">Bookmarks</string>
+    <string name="settings_bookmarks_summary">Messages you saved with tags and notes</string>
+    <!-- Message reminders, kept on this phone (the owner's board 29). -->
+    <string name="settings_reminders">Reminders</string>
+    <string name="settings_reminders_summary">Messages to come back to</string>
+    <plurals name="settings_reminders_upcoming">
+        <item quantity="one">%1$s upcoming</item>
+        <item quantity="other">%1$s upcoming</item>
+    </plurals>
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_loading">Loading reminders</string>
+    <string name="reminders_on_this_phone">Kept on this phone only</string>
+    <!-- The group of reminders not done yet, with how many: "Upcoming · 3". -->
+    <string name="reminders_upcoming">Upcoming · %1$d</string>
+    <string name="reminders_done">Done</string>
+    <string name="reminders_unknown_chat">Chat</string>
+    <!-- A reminder's message in a group, after who sent it: "Aisha: Train leaves 6:40". -->
+    <string name="reminders_preview_sender">%1$s: %2$s</string>
+    <!-- A reminder's note, as the user wrote it. -->
+    <string name="reminders_note">Note: %1$s</string>
+    <string name="reminders_mark_done">Mark done</string>
+    <string name="reminders_mark_not_done">Mark not done</string>
+    <string name="reminders_delete">Delete</string>
+    <string name="reminders_deleted">Reminder deleted</string>
+    <string name="reminders_undo">Undo</string>
+    <string name="reminders_sort">Sort reminders</string>
+    <string name="reminders_sort_time">By time</string>
+    <string name="reminders_sort_chat">By chat</string>
+    <string name="reminders_empty_title">No reminders yet</string>
+    <string name="reminders_empty_body">Long-press any message and choose Remind me. It comes back when you need it, even if the chat is muted. Stays on this phone. Not sent to Telegram.</string>
     <string name="settings_home_more">More</string>
     <string name="settings_home_app">App</string>
     <string name="settings_home_stickers_emoji">Stickers and emoji</string>
@@ -1540,4 +1602,150 @@
     <string name="settings_profile_color_cyan">Cyan</string>
     <string name="settings_profile_color_blue">Blue</string>
     <string name="settings_profile_color_pink">Pink</string>
+    <!-- Voice message transcription (docs/DESIGN_SYSTEM.md §6, board 28d): the row in Appearance → Chats and its page. -->
+    <string name="settings_transcription">Voice message transcription</string>
+    <string name="settings_transcription_summary">Text of voice and round video messages, made on this phone</string>
+    <string name="settings_transcription_loading">Loading transcription settings</string>
+    <string name="settings_transcription_section_messages">Voice and round video messages</string>
+    <string name="settings_transcription_automatic">Transcribe voice messages automatically</string>
+    <string name="settings_transcription_automatic_summary">Text appears under every voice and round video message you receive</string>
+    <string name="settings_transcription_privacy_title">Uses Android’s own speech recognition, on this phone</string>
+    <string name="settings_transcription_privacy">Pingogram bundles no model, asks for no new permission and sends nothing anywhere. Works offline.</string>
+    <string name="settings_transcription_section_languages">Languages on this phone</string>
+    <string name="settings_transcription_language_ready">Ready</string>
+    <string name="settings_transcription_language_downloading">Downloading</string>
+    <string name="settings_transcription_language_not_on_device">Not available on this device</string>
+    <string name="settings_transcription_no_languages">Android lists no speech languages yet</string>
+    <string name="settings_transcription_language_settings">Android language settings</string>
+    <string name="settings_transcription_language_settings_summary">Android downloads and manages speech languages</string>
+    <string name="settings_transcription_footer">Needs Android 13 or newer; on older versions the Transcribe button isn’t shown. Telegram also offers transcription on its servers for Telegram Premium accounts. That’s separate.</string>
+    <string name="settings_transcription_unavailable">This phone can’t transcribe</string>
+    <string name="settings_transcription_unavailable_summary">Transcription needs Android 13 or newer with Android’s own speech recognition.</string>
+    <string name="settings_transcription_no_page">This phone has no page for speech languages</string>
+
+    <!-- Focus profiles (board 31), kept on this phone only. -->
+    <string name="settings_focus">Focus</string>
+    <string name="settings_focus_summary">Quiet the chats that can wait</string>
+    <string name="settings_focus_profiles">Profiles</string>
+    <string name="settings_focus_profiles_footer">Focus changes notifications only. Chats it holds back still notify, silently, and keep their place in the chat list.</string>
+    <string name="settings_focus_new_profile">New profile</string>
+    <string name="settings_focus_edit">Edit profile</string>
+    <string name="settings_focus_on_now">On now</string>
+    <string name="settings_focus_state_on">On</string>
+    <string name="settings_focus_state_off">Off</string>
+    <string name="settings_focus_turn_on">Turn on</string>
+    <string name="settings_focus_turn_off">Turn off</string>
+    <string name="settings_focus_by_hand">Turned on by hand</string>
+    <string name="settings_focus_on_schedule">On a schedule</string>
+    <string name="settings_focus_by_hand_choice">By hand</string>
+    <string name="settings_focus_schedule">%1$s · %2$s</string>
+    <string name="settings_focus_range">%1$s–%2$s</string>
+    <string name="settings_focus_range_next_day">%1$s–%2$s, next day</string>
+    <string name="settings_focus_next_day">%1$s, next day</string>
+    <string name="settings_focus_every_day">Every day</string>
+    <string name="settings_focus_weekdays">Weekdays</string>
+    <string name="settings_focus_weekends">Weekends</string>
+    <plurals name="settings_focus_folders">
+        <item quantity="one">%d folder</item>
+        <item quantity="other">%d folders</item>
+    </plurals>
+    <plurals name="settings_focus_chats">
+        <item quantity="one">%d chat</item>
+        <item quantity="other">%d chats</item>
+    </plurals>
+    <string name="settings_focus_calls_from_contacts">calls from contacts</string>
+    <string name="settings_focus_allows">Lets through %1$s</string>
+    <string name="settings_focus_allows_nothing">Holds back every chat</string>
+    <string name="settings_focus_empty_title">No Focus profiles yet</string>
+    <string name="settings_focus_empty_body">A profile quiets the chats that can wait, on a schedule or when you turn it on. It stays on this phone.</string>
+    <string name="settings_focus_templates">Start with</string>
+    <string name="settings_focus_template_work">Work hours</string>
+    <string name="settings_focus_template_work_summary">Weekdays, 9 to 6</string>
+    <string name="settings_focus_template_sleep">Sleep</string>
+    <string name="settings_focus_template_sleep_summary">Every night, 10:30 to 7</string>
+    <string name="settings_focus_template_weekend">Weekend</string>
+    <string name="settings_focus_template_weekend_summary">By hand · calls from contacts still ring</string>
+    <string name="settings_focus_template_blank">Start from scratch</string>
+    <string name="settings_focus_template_blank_summary">Choose everything yourself</string>
+    <string name="settings_focus_while_on">While Focus is on</string>
+    <string name="settings_focus_in_chat_list">Show Focus in the chat list header</string>
+    <string name="settings_focus_in_chat_list_summary">Tap it to switch or turn off</string>
+    <string name="settings_focus_status">Tell people you\'re focusing</string>
+    <string name="settings_focus_status_summary">Telegram has no status for it, so Focus stays on this phone</string>
+    <string name="settings_focus_name">Name</string>
+    <string name="settings_focus_name_required">Give the profile a name.</string>
+    <string name="settings_focus_icon">Icon</string>
+    <string name="settings_focus_icon_work">Work</string>
+    <string name="settings_focus_icon_sleep">Sleep</string>
+    <string name="settings_focus_icon_weekend">Weekend</string>
+    <string name="settings_focus_icon_reading">Reading</string>
+    <string name="settings_focus_icon_fitness">Fitness</string>
+    <string name="settings_focus_icon_driving">Driving</string>
+    <string name="settings_focus_allow_folders">Allow folders</string>
+    <string name="settings_focus_allow_folders_footer">Chats in these folders still notify while the profile is on.</string>
+    <string name="settings_focus_also_allow">Also allow</string>
+    <string name="settings_focus_also_allow_footer">These chats still notify, whatever folder they are in.</string>
+    <string name="settings_focus_add_chats">Add chats</string>
+    <!-- A chat's name, %1$s; removing it from those a Focus profile allows -->
+    <string name="settings_focus_remove_chat">Remove %1$s</string>
+    <string name="settings_focus_chat_picker_title">Allow chats</string>
+    <string name="settings_focus_no_folders">You have no chat folders. While the profile is on, every chat notifies silently.</string>
+    <string name="settings_focus_turns_on">Turns on</string>
+    <string name="settings_focus_from">From</string>
+    <string name="settings_focus_to">To</string>
+    <string name="settings_focus_time_done">Done</string>
+    <string name="settings_focus_calls">Allow calls from contacts</string>
+    <string name="settings_focus_calls_summary">Calls from your contacts still ring</string>
+    <string name="settings_focus_save">Save</string>
+    <string name="settings_focus_delete">Delete profile</string>
+    <string name="settings_focus_delete_title">Delete this profile?</string>
+    <string name="settings_focus_delete_text">If it\'s on, Focus turns off.</string>
+    <string name="settings_focus_delete_confirm">Delete</string>
+    <!-- Keyword alerts (board 30), kept on this phone only. -->
+    <string name="settings_keyword_alerts">Keyword alerts</string>
+    <string name="settings_keyword_alerts_summary">Words that alert you, checked on this phone</string>
+    <string name="settings_keyword_alerts_intro">Get notified when a message contains one of these words, even in busy or muted chats.</string>
+    <string name="settings_keyword_alerts_add_word">Add word</string>
+    <string name="settings_keyword_alerts_add_word_hint">A word or phrase</string>
+    <string name="settings_keyword_alerts_add">Add</string>
+    <!-- %1$d: the most words, 20 -->
+    <plurals name="settings_keyword_alerts_full">
+        <item quantity="one">You can keep up to %1$d word. Remove it to add another.</item>
+        <item quantity="other">You can keep up to %1$d words. Remove one to add another.</item>
+    </plurals>
+    <!-- %1$s: an alert word; read by screen readers on the word's chip -->
+    <string name="settings_keyword_alerts_remove">%1$s, remove</string>
+    <!-- %1$s: an alert word, %2$d: how many unread messages matched it in the last 7 days; read by screen readers on its chip -->
+    <plurals name="settings_keyword_alerts_remove_matches">
+        <item quantity="one">%1$s, %2$d match, remove</item>
+        <item quantity="other">%1$s, %2$d matches, remove</item>
+    </plurals>
+    <string name="settings_keyword_alerts_matching">Matches whole words, in any letter case, with or without accents. The numbers are this week\'s matches you haven\'t read yet, counted on this phone.</string>
+    <!-- The empty state's sample word on its illustration -->
+    <string name="settings_keyword_alerts_sample">launch</string>
+    <string name="settings_keyword_alerts_empty_title">No alert words yet</string>
+    <string name="settings_keyword_alerts_empty_body">Add a word and Pingogram will tell you when someone mentions it. Checked on this phone. Your words aren\'t sent anywhere.</string>
+    <string name="settings_keyword_alerts_try">Try</string>
+    <!-- Common words the empty page suggests, one tap adding each -->
+    <string name="settings_keyword_alerts_suggest_urgent">urgent</string>
+    <string name="settings_keyword_alerts_suggest_meeting">meeting</string>
+    <string name="settings_keyword_alerts_add_name">Add your name</string>
+    <string name="settings_keyword_alerts_add_username">Add your username</string>
+    <!-- %1$s: a suggested word -->
+    <string name="settings_keyword_alerts_add_named">Add %1$s</string>
+    <string name="settings_keyword_alerts_where">Where to look</string>
+    <string name="settings_keyword_alerts_where_all">All chats</string>
+    <string name="settings_keyword_alerts_where_folders">Chosen folders</string>
+    <string name="settings_keyword_alerts_where_folders_summary">Choose the folders to look in</string>
+    <string name="settings_keyword_alerts_no_folders">You have no chat folders</string>
+    <string name="settings_keyword_alerts_edit_folders">Edit</string>
+    <string name="settings_keyword_alerts_where_muted">Muted chats only</string>
+    <string name="settings_keyword_alerts_where_muted_summary">Chats you\'ve muted but still care about</string>
+    <string name="settings_keyword_alerts_alert">Alert</string>
+    <string name="settings_keyword_alerts_when_muted">Alert even when the chat is muted</string>
+    <string name="settings_keyword_alerts_when_muted_summary">Ignores mute for matching messages</string>
+    <string name="settings_keyword_alerts_in_chat_list">Show “Keyword alerts” in the chat list</string>
+    <string name="settings_keyword_alerts_in_chat_list_summary">A tab of only the chats with a match</string>
+    <string name="settings_keyword_alerts_muted_note">Muted chats get no push from Telegram, so their alerts come while Pingogram is connected. In other chats, the chat\'s own notification alerts you.</string>
+    <string name="settings_keyword_alerts_folders_title">Look in these folders</string>
 </resources>

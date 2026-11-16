@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.media.ui
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.Orientation
@@ -21,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -56,6 +58,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaViewerPreviewStates
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
+import dev.kyralabs.pingogram.feature.media.ui.zoom.ViewerZoomIndicator
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -70,9 +73,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   in front keeps the page shown; newer media to the end. Each page is a [MediaPage]. The page the pager settles on
  *   goes to the view model ([MediaViewerEvent.PageSettled]). While the photo is zoomed in, the pager does not turn.
  * - **Chrome**: [ViewerTopBar] (back, sender and date, "3 of 120") and [ViewerBottomBar] (caption, a video's controls,
- *   and the floating toolbar of actions, [ViewerToolbar]: Share and Save where Telegram allows them, Delete where TDLib
- *   does, and More with "Show in chat" and Copy), faded in and out on the motion scheme's effects springs when the
- *   media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]). Delete asks first
+ *   and the floating toolbar of actions, [ViewerToolbar]: Forward, Share and Save where Telegram allows them, and
+ *   More with "Show in chat", Copy and Delete where TDLib allows it), faded in and out on the motion scheme's effects
+ *   springs when the media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]). Delete asks first
  *   ([DeleteMediaDialog]); on Android 8–9 the reason for the storage permission shows when the state asks for it
  *   ([StorageRationaleDialog]).
  * - **Leaving**: predictive back ([PredictiveBackDismiss]) shrinks the content towards 90% and fades the background
@@ -101,18 +104,22 @@ internal fun MediaViewerScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     videoSurface: @Composable (Modifier) -> Unit = {},
     canPictureInPicture: Boolean = false,
+    dragOut: MediaDragOut? = null,
 ) {
     // The photo grows out of its bubble into its page: the viewer comes in once it has one.
     PostponeOverlayEnter(ready = state !is MediaViewerUiState.Loading)
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }
+        val touchExploration = rememberTouchExploration()
+        SideEffect { chrome.keptShown = touchExploration }
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
         val leave = remember(dismiss, onBack) { { dismiss.dismiss(onBack) } }
         PredictiveBackDismiss(dismiss, onBack)
         ImmersiveSystemBars(hidden = content != null && !chrome.visible)
         val zoom = remember { ZoomState() }
+        val zoomed by remember(zoom) { derivedStateOf { zoom.isZoomed } }
         val scrim = MaterialTheme.colorScheme.scrim
         BoxWithConstraints(modifier.fillMaxSize().viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave)) {
             val height = constraints.maxHeight.toFloat()
@@ -125,7 +132,8 @@ internal fun MediaViewerScreen(
                 },
                 bottomBar = {
                     if (content != null) {
-                        Chrome(visible = chrome.visible, dismiss, height, afterEnter = true) {
+                        // While zoomed the zoom's indicator takes the toolbar's place (board 25).
+                        Chrome(visible = chrome.visible && !zoomed, dismiss, height, afterEnter = true) {
                             ViewerBottomBar(
                                 content.current,
                                 content.playback,
@@ -146,28 +154,20 @@ internal fun MediaViewerScreen(
                 val swipeUp = { onEvent(MediaViewerEvent.PictureInPicture) }
                 val exits = DismissExits(height, onBack, swipeUp.takeIf { canPictureInPicture && content.playsVideo })
                 DismissibleContent(dismiss, zoom, exits) {
-                    ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding))
+                    ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding), dragOut)
+                    // Inside the dismissible content, so a swipe that starts on them still closes or goes to PiP.
+                    if (content != null) CenterChrome(content, chrome, dismiss, height, onEvent)
                 }
             }
+            ViewerZoomIndicator(zoom, visible = chrome.visible)
         }
-        if (content?.actions?.showsStorageRationale == true) {
-            StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
-        }
-        val deleteConfirmation = content?.actions?.deleteConfirmation
-        if (content != null && deleteConfirmation != null) {
-            DeleteMediaDialog(
-                confirmation = deleteConfirmation,
-                media = content.current.media,
-                onConfirm = { onEvent(MediaViewerEvent.DeleteConfirmed(it)) },
-                onDismiss = { onEvent(MediaViewerEvent.DeleteDismissed) },
-            )
-        }
+        if (content != null) ViewerDialogs(content, onEvent)
     }
 }
 
 /**
  * The toolbar of actions on the current item of [content] ([ViewerToolbar]), with its full file's state for a Share,
- * Save or Copy that waits for it; Copy for photos only.
+ * Save or Copy that waits for it; Copy for photos only, the speed for videos only.
  */
 private fun actionsOf(
     content: MediaViewerUiState.Content,
@@ -175,23 +175,9 @@ private fun actionsOf(
 ): @Composable () -> Unit {
     val media = content.current.media
     val file = ItemFile(media.fileId, content.files[media.fileId])
-    return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, file, onEvent) }
-}
-
-/** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
-@Stable
-internal class ChromeState(
-    visible: Boolean = true,
-) {
-    var visible by mutableStateOf(visible)
-        private set
-
-    fun toggle() {
-        visible = !visible
-    }
-
-    companion object {
-        val Saver: Saver<ChromeState, Boolean> = Saver(save = { it.visible }, restore = { ChromeState(it) })
+    val speed = content.actions.speed.takeIf { media is ViewerMedia.Clip }
+    return {
+        ViewerToolbar(content.actions, photoFileId = (media as? ViewerMedia.Image)?.fileId, file, speed, onEvent)
     }
 }
 
@@ -232,7 +218,14 @@ private fun DismissibleContent(
                     enabled = !zoomed && !dismiss.isDismissed,
                     onDragStarted = { dismiss.onDragStarted() },
                     onDragStopped = { velocity ->
-                        dismiss.onDragStopped(velocity, exits.height, settle, scope, exits.onSwipeUp, exits.onBack)
+                        dismiss.onDragStopped(
+                            velocity,
+                            exits.height,
+                            settle,
+                            scope,
+                            exits.onSwipeUp,
+                            onDismiss = exits.onBack,
+                        )
                     },
                 ),
         content = content,
@@ -248,6 +241,7 @@ private fun ViewerContent(
     onEvent: (MediaViewerEvent) -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
+    dragOut: MediaDragOut? = null,
 ) {
     OpenMediaTraceEffect(shown = state is MediaViewerUiState.Content)
     when (state) {
@@ -269,7 +263,7 @@ private fun ViewerContent(
         }
 
         is MediaViewerUiState.Content -> {
-            MediaPager(state, chrome, zoom, onEvent, videoSurface)
+            MediaPager(state, chrome, zoom, onEvent, videoSurface, dragOut)
         }
     }
 }
@@ -279,19 +273,23 @@ private fun ViewerContent(
  * the background while a gesture closes the viewer (on a page [height] pixels tall).
  */
 @Composable
-private fun Chrome(
+internal fun Chrome(
     visible: Boolean,
     dismiss: DismissState,
     height: Float,
+    modifier: Modifier = Modifier,
     afterEnter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // The bottom bar waits for the way in to end (rememberEnterSettled); the top bar shows from the start.
+    // The bottom bar waits for the way in to end (rememberEnterSettled), then fades in; the top bar shows from the
+    // start.
     if (afterEnter && !rememberEnterSettled()) return
     val motionScheme = MaterialTheme.motionScheme
+    val visibleState = remember { MutableTransitionState(visible && !afterEnter) }
+    visibleState.targetState = visible
     AnimatedVisibility(
-        visible = visible,
-        modifier = Modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
+        visibleState = visibleState,
+        modifier = modifier.graphicsLayer { alpha = 1f - dismiss.fraction(height) },
         enter = fadeIn(motionScheme.defaultEffectsSpec()),
         exit = fadeOut(motionScheme.fastEffectsSpec()),
     ) {
@@ -302,7 +300,8 @@ private fun Chrome(
 /**
  * The pages of [content], starting on its current item and keyed by message id; the page settled on goes to [onEvent]
  * by its message id and resets [zoom]. Only the settled page of a shown photo zooms. A tap shows a spoiler, or else
- * shows or hides [chrome].
+ * shows or hides [chrome]. With [dragOut], the settled page's file can be dragged into another app where Telegram lets
+ * it leave the chat ([MediaActions.canSave]).
  */
 @Composable
 private fun MediaPager(
@@ -311,25 +310,17 @@ private fun MediaPager(
     zoom: ZoomState,
     onEvent: (MediaViewerEvent) -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
+    dragOut: MediaDragOut? = null,
 ) {
     val items = content.items
     val currentItems by rememberUpdatedState(items)
-    val currentOnEvent by rememberUpdatedState(onEvent)
     val zoomed by remember(zoom) { derivedStateOf { zoom.isZoomed } }
     // Not saved: after a rotation or process death the view model's current item is the page to start on.
     val pagerState = remember { PagerState(currentPage = content.currentIndex) { currentItems.size } }
-    LaunchedEffect(pagerState, zoom) {
-        var settledId: Long? = null
-        snapshotFlow { currentItems.getOrNull(pagerState.settledPage)?.messageId }.collect { messageId ->
-            // By id: older media loading in front moves the settled index, not the page.
-            if (messageId != null && messageId != settledId) {
-                settledId = messageId
-                zoom.reset()
-                currentOnEvent(MediaViewerEvent.PageSettled(messageId))
-            }
-        }
-    }
+    SettledPageEffect(pagerState, items, zoom, onEvent)
     val scope = rememberCoroutineScope()
+    // Taps, keys and screen readers turn the page as a swipe settles: on the default spatial spring.
+    val turn = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize().pagesKeys(pagerState, content, zoom, onEvent),
@@ -340,20 +331,22 @@ private fun MediaPager(
         val item = items[page]
         val isShown = page == pagerState.settledPage
         val pageZoom = zoom.takeIf { isShown && item.media is ViewerMedia.Image && !item.isHidden }
-        val onTap = if (item.isHidden) ({ onEvent(MediaViewerEvent.RevealSpoiler(item.messageId)) }) else chrome::toggle
+        val onTap = pageTap(item, chrome, onEvent)
         val info = PageInfo(item, page, items.size, content.count?.positionOf(page))
+        val playback = content.playback?.takeIf { it.messageId == item.messageId }
+        val onHold = { held: Boolean -> onEvent(MediaViewerEvent.HoldLivePhoto(item.messageId, held)) }
+        val live = LiveActions(playing = playback != null, onHold).takeIf { item.isLivePhoto }
         MediaPage(
             item = item,
             files = content.files,
-            playback = content.playback?.takeIf { it.messageId == item.messageId },
+            playback = playback,
             onTap = onTap,
             onPlay = { onEvent(MediaViewerEvent.PlayPause) },
+            onCancelStream = { onEvent(MediaViewerEvent.CancelStream) },
             videoSurface = videoSurface,
             onSideTap =
-                { end: Boolean ->
-                    val target = page + if (end) 1 else -1
-                    if (target in items.indices) scope.launch { pagerState.animateScrollToPage(target) }
-                }.takeIf { !item.isHidden },
+                sideTurn(page, items.size) { scope.launch { pagerState.animateScrollToPage(it, animationSpec = turn) } }
+                    .takeIf { !item.isHidden && !chrome.keptShown },
             modifier =
                 Modifier.pageSemantics(
                     page = info,
@@ -365,13 +358,26 @@ private fun MediaPager(
                             pageZoom,
                             isShown && zoomed,
                             scope,
-                        ) { pagerState.animateScrollToPage(it) },
-                    onTap = onTap,
+                            live,
+                            content.actions.takeIf { isShown },
+                            onEvent,
+                        ) {
+                            pagerState.animateScrollToPage(it, animationSpec = turn)
+                        },
+                    onTap = onTap.takeUnless { chrome.keptShown && !item.isHidden },
                 ),
             zoom = pageZoom,
+            onHold = onHold.takeIf { item.isLivePhoto },
+            onDragOut = dragOut.forPage(content, item, isShown),
         )
     }
 }
+
+/** A live photo's custom actions: "Play live photo", or "Stop live photo" while it [playing], through [hold]. */
+private class LiveActions(
+    val playing: Boolean,
+    val hold: (held: Boolean) -> Unit,
+)
 
 /** Page [index] of [count], showing [item] at [position] among the chat's media (null while unknown). */
 private class PageInfo(
@@ -392,7 +398,7 @@ private fun Modifier.pageSemantics(
     chromeVisible: Boolean,
     zoomed: Boolean,
     actions: (Resources) -> List<CustomAccessibilityAction>,
-    onTap: () -> Unit,
+    onTap: (() -> Unit)?,
 ): Modifier {
     val resources = LocalResources.current
     return semantics {
@@ -404,9 +410,12 @@ private fun Modifier.pageSemantics(
                 chromeVisible -> R.string.media_hide_controls
                 else -> R.string.media_show_controls
             }
-        onClick(label = resources.getString(clickLabel)) {
-            onTap()
-            true
+        // With TalkBack the controls always show: the page has no tap to hide them (board 25).
+        if (onTap != null) {
+            onClick(label = resources.getString(clickLabel)) {
+                onTap()
+                true
+            }
         }
         customActions = actions(resources)
     }
@@ -414,15 +423,20 @@ private fun Modifier.pageSemantics(
 
 /**
  * The custom actions of a page for screen readers, built from the resources when the semantics are read: turn to the
- * older and newer page ([turn], in [scope]), and zoom the photo in and out with [zoom], on the motion scheme's default
- * spatial spring; out only while [zoomed] in.
+ * older and newer page ([turn], in [scope]), zoom the photo in and out with [zoom], on the motion scheme's default
+ * spatial spring (out only while [zoomed] in), play or stop a live photo ([live]), and save, share or delete the shown
+ * media ([media]), as the toolbar does.
  */
+@Suppress("LongParameterList") // The page, its zoom, its live photo, its actions, and how to turn pages.
 @Composable
 private fun pageActions(
     page: PageInfo,
     zoom: ZoomState?,
     zoomed: Boolean,
     scope: CoroutineScope,
+    live: LiveActions?,
+    media: MediaActions?,
+    onEvent: (MediaViewerEvent) -> Unit,
     turn: suspend (page: Int) -> Unit,
 ): (Resources) -> List<CustomAccessibilityAction> {
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
@@ -440,6 +454,25 @@ private fun pageActions(
                 .takeIf { page.index < page.count - 1 },
             zoom?.let { action(R.string.media_zoom_in) { it.step(ZOOM_STEP, spec, scope) } },
             zoom?.takeIf { zoomed }?.let { action(R.string.media_zoom_out) { it.step(1 / ZOOM_STEP, spec, scope) } },
+            live?.let {
+                if (it.playing) {
+                    action(R.string.media_live_stop) {
+                        it.hold(false)
+                    }
+                } else {
+                    action(R.string.media_live_play) { it.hold(true) }
+                }
+            },
+            // The toolbar's own actions, on the photo itself (board 25), while none is under way.
+            media
+                ?.takeIf {
+                    it.canSave && it.pending == null
+                }?.let { action(R.string.media_save) { onEvent(MediaViewerEvent.Save) } },
+            media
+                ?.takeIf {
+                    it.canSave && it.pending == null
+                }?.let { action(R.string.media_share) { onEvent(MediaViewerEvent.Share) } },
+            media?.takeIf { it.canDelete }?.let { action(R.string.media_delete) { onEvent(MediaViewerEvent.Delete) } },
         )
     }
 }
@@ -452,7 +485,7 @@ private fun pageDescription(
 ): String {
     val kind =
         when (item.media) {
-            is ViewerMedia.Image -> UiR.string.preview_photo
+            is ViewerMedia.Image -> if (item.isLivePhoto) R.string.media_live_photo else UiR.string.preview_photo
             is ViewerMedia.Clip -> UiR.string.preview_video
             is ViewerMedia.Gif -> UiR.string.preview_gif
         }

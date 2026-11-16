@@ -4,14 +4,9 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -77,10 +73,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.effectsEnter
+import dev.kyralabs.pingogram.core.ui.theme.effectsExit
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.stateCrossfade
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.R
@@ -223,14 +224,8 @@ private fun InGroupCall(
     val commenting = visibility == CommentsVisibility.Shown && !state.isStream && state.hasControls
     Column(Modifier.fillMaxSize()) {
         Header(state, onEvent, onMinimize, visibility, extras.comments.onEvent)
-        AnimatedVisibility(
+        CallGrowingVisibility(
             visible = state.video.isSharingScreen,
-            enter =
-                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                    fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
-            exit =
-                shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
-                    fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             ScreenSharingPill(
@@ -238,43 +233,86 @@ private fun InGroupCall(
                 modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
             )
         }
-        val camera = state.video.camera
-        if (camera != null && !state.isStream && state.video.remote.isEmpty()) {
-            // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md); with the others'
-            // videos it joins their grid.
-            SelfView(
-                mirror = camera == CameraFacing.Front,
-                canSwitch = state.video.canSwitchCamera,
-                aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
-                video = videos.self,
-                onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(vertical = spacing.small)
-                        .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
-                        .fillMaxWidth(SELF_VIEW_WIDTH),
-            )
-        }
-        if (commenting) {
-            CommentingBody(state, onEvent, videos, extras)
-            return@Column
-        }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (state.isStream) {
-                videos.stream(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = spacing.medium, vertical = spacing.small)
-                        .clip(MaterialTheme.shapes.large),
-                )
-            } else {
-                Participants(state, videos, onEvent, extras.onAddPeople)
+        OwnCamera(state, videos, onEvent)
+        // With or without the comments pane: a large layout change, so the two layouts crossfade on the effects springs
+        // while the space they take changes on the slow spatial spring (docs/DESIGN_SYSTEM.md §5); at once while power
+        // saving holds the call screens still.
+        val motion = callMotionScheme()
+        AnimatedContent(
+            targetState = commenting,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            transitionSpec = {
+                (effectsEnter(motion) togetherWith effectsExit(motion))
+                    .using(SizeTransform(clip = false) { _, _ -> motion.slowSpatialSpec() })
+            },
+            label = "voiceChatBody",
+        ) { withComments ->
+            Column(Modifier.fillMaxSize()) {
+                if (withComments) {
+                    CommentingBody(state, onEvent, videos, extras)
+                } else {
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        if (state.isStream) {
+                            videos.stream(
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = spacing.medium, vertical = spacing.small)
+                                    .clip(MaterialTheme.shapes.large),
+                            )
+                        } else {
+                            Participants(state, videos, onEvent, extras.onAddPeople)
+                        }
+                        extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
+                    }
+                    // The docked panel goes when the call ends, shrinking away as it came.
+                    CallGrowingVisibility(visible = state.hasControls, expandFrom = Alignment.Bottom) {
+                        Controls(state, onEvent)
+                    }
+                }
             }
-            extras.snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter)) }
         }
-        if (state.hasControls) Controls(state, onEvent)
     }
+}
+
+/**
+ * The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md), growing in and shrinking away
+ * as the sharing pill above it does; with the others' videos it joins their grid.
+ */
+@Composable
+private fun ColumnScope.OwnCamera(
+    state: GroupCallUiState.InCall,
+    videos: GroupCallVideos,
+    onEvent: (GroupCallEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    val camera = state.video.camera
+    val shownCamera = rememberLastNonNull(camera)
+    CallGrowingVisibility(
+        visible = camera != null && !state.isStream && state.video.remote.isEmpty(),
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+    ) {
+        SelfView(
+            mirror = shownCamera == CameraFacing.Front,
+            canSwitch = state.video.canSwitchCamera,
+            aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
+            video = videos.self,
+            onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
+            modifier =
+                Modifier
+                    .padding(vertical = spacing.small)
+                    .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
+                    .fillMaxWidth(SELF_VIEW_WIDTH),
+        )
+    }
+}
+
+/** [value], or the last one that was not null: what content that is leaving goes on showing. */
+@Composable
+internal fun <T : Any> rememberLastNonNull(value: T?): T? {
+    val last = remember { arrayOfNulls<Any>(1) }
+    if (value != null) last[0] = value
+    @Suppress("UNCHECKED_CAST") // Only ever set to a T above.
+    return value ?: last[0] as T?
 }
 
 /** A live story being watched (board 12): its own layout ([LiveStoryCall]). */
@@ -364,18 +402,25 @@ private fun CompactControls(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (state.canUnmute) {
-            Toggle(
-                checked = state.isMuted,
-                icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
-                label = R.string.call_mute,
-            ) { onEvent(GroupCallEvent.ToggleMute) }
-        } else {
-            Toggle(
-                checked = state.isHandRaised,
-                icon = R.drawable.ic_back_hand,
-                label = R.string.group_call_raise_hand,
-            ) { onEvent(GroupCallEvent.ToggleHand) }
+        // Mute and Raise hand swap as the docked panel's do.
+        AnimatedContent(
+            targetState = state.canUnmute,
+            transitionSpec = stateCrossfade(callMotionScheme()),
+            label = "compactMicrophone",
+        ) { canUnmute ->
+            if (canUnmute) {
+                Toggle(
+                    checked = state.isMuted,
+                    icon = if (state.isMuted) R.drawable.ic_mic_off_filled else UiR.drawable.ic_mic_filled,
+                    label = R.string.call_mute,
+                ) { onEvent(GroupCallEvent.ToggleMute) }
+            } else {
+                Toggle(
+                    checked = state.isHandRaised,
+                    icon = R.drawable.ic_back_hand,
+                    label = R.string.group_call_raise_hand,
+                ) { onEvent(GroupCallEvent.ToggleHand) }
+            }
         }
         RouteButton(state.route, state.routes, labeled = false) { onEvent(GroupCallEvent.SelectRoute(it)) }
         if (state.video.canSend) {
@@ -422,11 +467,7 @@ private fun Header(
             }
         }
         // A conference call's emojis, once Telegram verified its state (docs/adr/0025-conference-calls.md).
-        AnimatedVisibility(
-            visible = state.emojis.isNotEmpty(),
-            enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-            exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-        ) {
+        CallGrowingVisibility(visible = state.emojis.isNotEmpty()) {
             KeyEmojis(state.emojis, stringResource(R.string.group_call_key_explanation))
         }
     }
@@ -449,13 +490,19 @@ private fun RowScope.HeaderRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() },
         )
+        // Screen readers hear the status without the timer, which would be announced every second (board 27).
+        val spoken = statusText(state, withDuration = false)
         Text(
             text = statusText(state),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            modifier =
+                Modifier.clearAndSetSemantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = spoken
+                },
         )
     }
     if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
@@ -474,9 +521,15 @@ private fun GroupCallChat.displayTitle(): String =
         else -> title.ifBlank { stringResource(R.string.voice_chat) }
     }
 
-/** "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05". */
+/**
+ * "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05" ("12 participants" without
+ * [withDuration], or "Connected" while the count is not known).
+ */
 @Composable
-internal fun statusText(state: GroupCallUiState.InCall): String {
+internal fun statusText(
+    state: GroupCallUiState.InCall,
+    withDuration: Boolean = true,
+): String {
     val count =
         state.participantCount?.let {
             pluralStringResource(
@@ -490,10 +543,23 @@ internal fun statusText(state: GroupCallUiState.InCall): String {
             )
         }
     return when (val stage = state.stage) {
-        GroupCallStage.Joining -> stringResource(R.string.group_call_joining)
-        GroupCallStage.Reconnecting -> stringResource(R.string.call_status_reconnecting)
-        GroupCallStage.Connected -> listOfNotNull(count, state.duration).joinToString(" · ")
-        is GroupCallStage.Ended -> endText(stage.reason)
+        GroupCallStage.Joining -> {
+            stringResource(R.string.group_call_joining)
+        }
+
+        GroupCallStage.Reconnecting -> {
+            stringResource(R.string.call_status_reconnecting)
+        }
+
+        GroupCallStage.Connected -> {
+            listOfNotNull(count, state.duration.takeIf { withDuration })
+                .joinToString(" · ")
+                .ifEmpty { stringResource(R.string.call_status_connected_spoken) }
+        }
+
+        is GroupCallStage.Ended -> {
+            endText(stage.reason)
+        }
     }
 }
 
@@ -515,6 +581,9 @@ private fun Participants(
     onAddPeople: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
+    // Rows and videos come, move and go on the theme's item motion, still while power saving holds the call screens
+    // still; the videos' bounds do not animate (Q-15).
+    val motion = rememberItemMotion(callMotionScheme())
     LazyColumn(
         modifier =
             Modifier.fillMaxSize().windowInsetsPadding(
@@ -531,6 +600,7 @@ private fun Participants(
                     videos.self,
                     onEvent,
                     Modifier
+                        .animateItem(this, motion, placement = false)
                         .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                         .padding(horizontal = spacing.small, vertical = spacing.small),
                 )
@@ -538,11 +608,17 @@ private fun Participants(
         }
         if (state.canInvite) {
             item(key = "add", contentType = "add") {
-                AddPeopleRow(onAddPeople, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
+                AddPeopleRow(
+                    onAddPeople,
+                    Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem(this, motion),
+                )
             }
         }
         items(state.participants, key = { it.key }, contentType = { "participant" }) { participant ->
-            ParticipantRow(participant, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
+            ParticipantRow(
+                participant,
+                Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem(this, motion),
+            )
         }
     }
 }
@@ -673,20 +749,16 @@ private fun Controls(
                     .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val motion = MaterialTheme.motionScheme
+            val motion = callMotionScheme()
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 if (!state.isStream) {
                     AnimatedContent(
                         targetState = state.canUnmute,
-                        transitionSpec = {
-                            fadeIn(motion.defaultEffectsSpec())
-                                .togetherWith(fadeOut(motion.fastEffectsSpec()))
-                                .using(SizeTransform(clip = false))
-                        },
+                        transitionSpec = stateCrossfade(motion),
                         label = "microphone",
                     ) { canUnmute ->
                         if (canUnmute) {
-                            LabeledButton(R.string.call_mute) {
+                            LabeledButton(stringResource(R.string.call_mute)) {
                                 Toggle(
                                     checked = state.isMuted,
                                     icon =
@@ -695,7 +767,7 @@ private fun Controls(
                                 ) { onEvent(GroupCallEvent.ToggleMute) }
                             }
                         } else {
-                            LabeledButton(R.string.group_call_raise_hand) {
+                            LabeledButton(stringResource(R.string.group_call_raise_hand)) {
                                 Toggle(
                                     checked = state.isHandRaised,
                                     icon = R.drawable.ic_back_hand,
@@ -720,7 +792,7 @@ private fun CameraButton(
     on: Boolean,
     onEvent: (GroupCallEvent) -> Unit,
 ) {
-    LabeledButton(R.string.call_camera) {
+    LabeledButton(stringResource(R.string.call_camera)) {
         Toggle(
             checked = on,
             icon = if (on) R.drawable.ic_videocam_filled else R.drawable.ic_videocam_off_filled,

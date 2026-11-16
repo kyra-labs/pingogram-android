@@ -67,6 +67,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.InlineResultsButton
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -106,21 +107,12 @@ internal fun InlineResultsArea(
     now: () -> Instant = Instant::now,
 ) {
     val bot = inline.state.takeIf { enabled }
-    val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(bot) }
     val visible = state.isShown(bot)
     if (visible) shown = bot
     LaunchedEffect(bot?.queryKey) { state.onQuery(bot?.queryKey) }
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter =
-            expandVertically(motionScheme.defaultSpatialSpec(), expandFrom = Alignment.Bottom) +
-                fadeIn(motionScheme.defaultEffectsSpec()),
-        exit =
-            shrinkVertically(motionScheme.fastSpatialSpec(), shrinkTowards = Alignment.Bottom) +
-                fadeOut(motionScheme.fastEffectsSpec()),
-    ) {
+    // Shrinks away as it grew in, on the default spatial spring (docs/DESIGN_SYSTEM.md §5.1, Q-01).
+    GrowingVisibility(visible = visible, modifier = modifier, expandFrom = Alignment.Bottom) {
         shown?.let { InlineResultsPanel(it, state.highlighted, inline.canSchedule, inline.onEvent, now = now) }
     }
 }

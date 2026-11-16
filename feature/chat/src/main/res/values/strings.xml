@@ -65,6 +65,11 @@
     <string name="chat_forwarded_from">Forwarded from %1$s</string>
     <!-- A channel or chat a message was forwarded from (%1$s), with the signature of its author (%2$s). -->
     <string name="chat_forwarded_name_signed">%1$s (%2$s)</string>
+    <!-- What tapping "Forwarded from …" does, spoken by screen readers and the bubble's custom action: it opens the
+         profile, chat or post the message was forwarded from. -->
+    <string name="chat_forward_open_source">Open source</string>
+    <!-- A snackbar after tapping "Forwarded from …" of someone whose privacy settings hide their account. -->
+    <string name="chat_forward_source_hidden">This person hides their account in forwarded messages</string>
     <!-- Reply quotes whose replied message cannot be shown (yet). -->
     <string name="chat_reply_loading">Loading…</string>
     <string name="chat_reply_deleted">Deleted message</string>
@@ -142,6 +147,18 @@
     <string name="composer_join_group">Join group</string>
     <string name="composer_join_channel">Join channel</string>
     <string name="composer_request_to_join">Request to join</string>
+    <!-- A channel's direct messages (the owner's boards 7a and 7b): the user's private thread with the channel. -->
+    <string name="composer_message_channel">Message channel</string>
+    <!-- %1$s: the Telegram Stars each message costs, as a number. ★ stands for Telegram Stars. -->
+    <string name="composer_message_channel_paid">Message · %1$s ★</string>
+    <plurals name="composer_message_channel_paid_description">
+        <item quantity="one">Message channel, %d Telegram Star per message</item>
+        <item quantity="other">Message channel, %d Telegram Stars per message</item>
+    </plurals>
+    <plurals name="composer_channel_charges">
+        <item quantity="one">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+        <item quantity="other">This channel charges %d ★ per message. Pingogram can\'t pay yet.</item>
+    </plurals>
     <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
     <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->
@@ -164,6 +181,8 @@
     <string name="composer_schedule_back">Back</string>
     <string name="composer_schedule_confirm">Schedule</string>
     <string name="composer_schedule_past">Choose a time in the future</string>
+    <string name="composer_schedule_repeat">Repeat</string>
+    <string name="composer_schedule_repeat_never">Never</string>
     <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
     <string name="composer_scheduled">Message scheduled for %1$s</string>
     <!-- The bar above the text field while replying: its close button. -->
@@ -226,6 +245,13 @@
     <string name="panel_tab_stickers">Stickers</string>
     <string name="panel_tab_gifs">GIFs</string>
     <string name="panel_gifs_search">Search GIFs</string>
+    <!-- Above the GIFs while the message field holds text, which a GIF tapped below takes as its caption. -->
+    <string name="chat_gif_caption_note">Your text goes with the GIF as its caption</string>
+    <!-- The caption's place, "Below" and "Above" the GIF, for screen readers. -->
+    <string name="chat_gif_caption_below_description">Caption below the GIF</string>
+    <string name="chat_gif_caption_above_description">Caption above the GIF</string>
+    <string name="chat_gif_caption_below">Below</string>
+    <string name="chat_gif_caption_above">Above</string>
     <string name="panel_gifs_clear">Clear search</string>
     <string name="panel_gifs_empty_title">No saved GIFs</string>
     <string name="panel_gifs_empty_body">GIFs you send show here. Search above to find one.</string>
@@ -276,6 +302,42 @@
     <string name="voice_state_paused">Paused</string>
     <string name="voice_pause">Pause recording</string>
     <string name="voice_resume">Resume recording</string>
+    <!-- A paused voice recording's trim, for screen readers: the part that will be sent, %1$s to %2$s, of all of it (%3$s); times as "0:07". -->
+    <string name="voice_trim_description">Trim: keeps %1$s to %2$s of %3$s</string>
+    <string name="voice_trim_start_later">Start one second later</string>
+    <string name="voice_trim_start_earlier">Start one second earlier</string>
+    <string name="voice_trim_end_earlier">End one second earlier</string>
+    <string name="voice_trim_end_later">End one second later</string>
+    <!-- Voice message transcription (docs/DESIGN_SYSTEM.md §6, board 28): the bubble's button, for screen readers. -->
+    <string name="transcription_transcribe">Transcribe voice message</string>
+    <string name="transcription_transcribe_video">Transcribe video message</string>
+    <!-- The button and the text button that hide a transcript. -->
+    <string name="transcription_hide">Hide text</string>
+    <!-- Under a voice message while Android's recognizer, on the phone, makes its text. -->
+    <string name="transcription_transcribing">Transcribing on this phone…</string>
+    <!-- Under the first transcript made on the phone: where it was made. -->
+    <string name="transcription_on_this_phone">On this phone</string>
+    <!-- Under a transcript made by "Transcribe voice messages automatically". -->
+    <string name="transcription_automatic">Transcribed automatically</string>
+    <!-- Under a long transcript cut after a few lines. -->
+    <string name="transcription_show_more">Show more</string>
+    <!-- In place of a transcript where the recognizer heard no words. -->
+    <string name="transcription_no_words">No words heard</string>
+    <!-- Where no speech language for the message is ready on the phone, above a link to Android's settings. -->
+    <string name="transcription_unavailable">Not available on this device.</string>
+    <string name="transcription_language_settings">Android language settings</string>
+    <string name="transcription_failed">Couldn’t transcribe this message.</string>
+    <string name="transcription_try_again">Try again</string>
+    <!-- What screen readers hear of a transcript, after the voice message: "Text, transcribed on this phone: …". -->
+    <string name="transcription_a11y_text">Text, transcribed on this phone: %1$s</string>
+    <!-- Snackbar at a tap on Transcribe without the microphone permission, with an action that asks for it. -->
+    <string name="transcription_permission_rationale">Android lets apps use its speech recognition only with the microphone permission. Pingogram records nothing for it.</string>
+    <string name="transcription_permission_allow">Allow</string>
+    <!-- Snackbar after the microphone permission was refused, with an action that opens the app's settings. -->
+    <string name="transcription_permission_denied">Allow the microphone in Settings to transcribe voice messages</string>
+    <string name="transcription_permission_settings">Settings</string>
+    <!-- Snackbar where the phone has no page for its speech languages. -->
+    <string name="transcription_no_settings">This phone has no page for speech languages</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
     <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
     <string name="voice_permission_allow">Allow</string>
@@ -384,13 +446,13 @@
     <string name="poll_remove_option">Remove option %1$d</string>
     <!-- Screen readers: the radio button that marks option %1$d as the quiz's correct answer. -->
     <string name="poll_correct_option">Option %1$d is the correct answer</string>
-    <string name="poll_choose_correct">Choose the correct answer</string>
+    <string name="poll_choose_correct">Choose the correct answers</string>
     <string name="poll_settings">Settings</string>
     <string name="poll_anonymous">Anonymous voting</string>
     <string name="poll_anonymous_channel">Polls in channels are always anonymous</string>
     <string name="poll_multiple">Multiple answers</string>
     <string name="poll_quiz">Quiz mode</string>
-    <string name="poll_quiz_note">One answer is correct, and votes can\'t be changed</string>
+    <string name="poll_quiz_note">Some answers are correct, and votes can\'t be changed</string>
 
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
@@ -403,6 +465,111 @@
     <string name="message_action_copy">Copy text</string>
     <!-- Opens the forward sheet, to send the message on to other chats. -->
     <string name="message_action_forward">Forward</string>
+    <string name="message_action_bookmark">Bookmark</string>
+    <!-- Message reminders, kept on this phone (the owner's board 29). -->
+    <string name="message_action_remind">Remind me</string>
+    <string name="reminder_title">Remind me</string>
+    <string name="reminder_when">When</string>
+    <string name="reminder_in_one_hour">In 1 hour</string>
+    <string name="reminder_this_evening">This evening</string>
+    <string name="reminder_tomorrow_morning">Tomorrow morning</string>
+    <string name="reminder_next_week">Next week</string>
+    <!-- The reminder sheet's "Next week" with when it rings: its weekday and time, e.g. "Next week · Mon, 9:00 AM". -->
+    <string name="reminder_next_week_at">Next week · %1$s</string>
+    <string name="reminder_pick">Pick a date and time</string>
+    <string name="reminder_note">Note (optional)</string>
+    <string name="reminder_on_this_phone">Stays on this phone. Not sent to Telegram.</string>
+    <string name="reminder_cancel">Cancel</string>
+    <string name="reminder_set">Set reminder</string>
+    <string name="reminder_delete">Delete reminder</string>
+    <string name="reminder_set_for">Reminder set for %1$s</string>
+    <string name="reminder_undo">Undo</string>
+    <string name="reminder_deleted">Reminder deleted</string>
+    <!-- A message's reminder as screen readers hear it in the bubble: "Reminder Sun, 9:00 AM". -->
+    <string name="chat_bubble_reminder">Reminder %1$s</string>
+    <!-- The reminder chip in a bubble's meta, for screen readers: it opens the reminder to change or delete it. -->
+    <string name="reminder_chip_open">Change reminder</string>
+    <!-- The drop zone over the conversation while files are dragged from another app (board 35a): %1$s is the chat. -->
+    <string name="drop_title">Drop to send to %1$s</string>
+    <string name="drop_media">Photos and videos. You can add a caption before sending.</string>
+    <string name="drop_files">Files. You can add a caption before sending.</string>
+    <!-- The bookmark sheet (docs/DESIGN_SYSTEM.md §6 "Bookmarks"), kept on this phone. -->
+    <string name="bookmark_title">Bookmark</string>
+    <string name="bookmark_tags">Tags</string>
+    <string name="bookmark_new_tag">New tag</string>
+    <string name="bookmark_tag_name">Tag name</string>
+    <string name="bookmark_add_tag">Add</string>
+    <string name="bookmark_note">Note (optional)</string>
+    <string name="bookmark_on_this_phone">Bookmarks stay on this phone and are never sent to Telegram. Telegram\'s own Saved Messages tags are separate and need Telegram Premium.</string>
+    <string name="bookmark_cancel">Cancel</string>
+    <string name="bookmark_save">Save</string>
+    <string name="bookmark_remove">Remove bookmark</string>
+    <string name="bookmark_saved">Bookmarked</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+    <!-- The Bookmarks page (docs/DESIGN_SYSTEM.md §6 "Bookmarks"). -->
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_back">Back</string>
+    <string name="bookmarks_all">All</string>
+    <!-- Under the Bookmarks page's title. %d: how many messages are bookmarked -->
+    <plurals name="bookmarks_saved">
+        <item quantity="one">%d saved on this phone</item>
+        <item quantity="other">%d saved on this phone</item>
+    </plurals>
+    <string name="bookmarks_open_in_chat">Open in chat</string>
+    <string name="bookmarks_undo">Undo</string>
+    <string name="bookmarks_empty_title">Nothing bookmarked yet</string>
+    <string name="bookmarks_empty_body">Long-press a message and choose Bookmark to keep it here with tags and a note. Bookmarks stay on this phone.</string>
+    <!-- Saved Messages' card to the Bookmarks page: "Bookmarks · 27". -->
+    <plurals name="saved_bookmarks_card">
+        <item quantity="one">Bookmarks · %d</item>
+        <item quantity="other">Bookmarks · %d</item>
+    </plurals>
+    <string name="saved_bookmarks_on_this_phone">From all your chats, kept on this phone</string>
+    <!-- Editing the bookmarks' tags (docs/DESIGN_SYSTEM.md §6 "Bookmarks", board 34c). -->
+    <string name="bookmarks_edit_tags">Edit tags</string>
+    <string name="bookmarks_search">Search bookmarks</string>
+    <string name="bookmarks_no_matches">No bookmarks found</string>
+    <string name="bookmark_tags_title">Edit tags</string>
+    <string name="bookmark_tags_footer">Tags show in this order when you bookmark a message and on the Bookmarks page. They stay on this phone.</string>
+    <plurals name="bookmark_tag_count">
+        <item quantity="one">%d bookmark</item>
+        <item quantity="other">%d bookmarks</item>
+    </plurals>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_rename">Rename %1$s</string>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_delete">Delete %1$s</string>
+    <string name="bookmark_tag_move_up">Move up</string>
+    <string name="bookmark_tag_move_down">Move down</string>
+    <string-array name="bookmark_tag_colors">
+        <item>Color: Red</item>
+        <item>Color: Orange</item>
+        <item>Color: Violet</item>
+        <item>Color: Green</item>
+        <item>Color: Teal</item>
+        <item>Color: Blue</item>
+        <item>Color: Pink</item>
+        <item>Color: Gold</item>
+    </string-array>
+    <!-- The question before deleting a tag: %1$s is its name. -->
+    <string name="bookmark_tag_delete_title">Delete “%1$s”?</string>
+    <!-- What deleting a tag does to the bookmarks that have other tags too. -->
+    <plurals name="bookmark_tag_delete_others">
+        <item quantity="one">%d bookmark keeps its other tags.</item>
+        <item quantity="other">%d bookmarks keep their other tags.</item>
+    </plurals>
+    <!-- What deleting a tag does to the bookmarks that have only it. -->
+    <plurals name="bookmark_tag_delete_alone">
+        <item quantity="one">%d bookmark with only this tag will have no tag.</item>
+        <item quantity="other">%d bookmarks with only this tag will have no tag.</item>
+    </plurals>
+    <string name="bookmark_tag_delete_kept">No bookmark is removed.</string>
+    <string name="bookmark_tag_delete_unused">No bookmark has this tag.</string>
+    <string name="bookmark_tag_delete_confirm">Delete tag</string>
+    <!-- %1$s is the tag's name. -->
+    <string name="bookmark_tag_deleted">“%1$s” deleted</string>
+    <string name="bookmark_tags_empty_title">No tags yet</string>
+    <string name="bookmark_tags_empty_body">Tags sort your bookmarks. Add one here, or when you bookmark a message.</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->
@@ -511,6 +678,11 @@
         <item quantity="other">%d files</item>
     </plurals>
     <!-- Screen readers: the shared text shown below the title, %1$s. -->
+    <!-- What the share sheet sends when the stories viewer shares a story. -->
+    <string name="share_story">1 story</string>
+    <!-- The share sheet opened by the Quick compose widget's "Voice" (board 33): a tap on a chat opens it recording. -->
+    <string name="share_voice_title">Record a voice message</string>
+    <string name="share_voice_hint">Tap a chat to start recording in it</string>
     <string name="share_text_description">Shared text: %1$s</string>
     <!-- When the user can send messages in none of their chats. -->
     <string name="share_no_chats">No chats to send to</string>
@@ -601,6 +773,7 @@
     <string name="search_no_messages_for_day">No messages on this day or before it</string>
     <!-- Screen readers hear this in the description of the message the search shows. -->
     <string name="chat_bubble_search_match">matches your search</string>
+    <string name="chat_bubble_keyword_match">has a word of your keyword alerts</string>
     <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
     <string name="bot_keyboard_show">Show bot keyboard</string>
     <string name="bot_keyboard_hide">Show keyboard</string>
@@ -698,4 +871,106 @@
     <string name="chat_wave">Wave</string>
     <!-- Screen readers: the pane of stickers suggested above the composer for the emoji typed alone. -->
     <string name="panel_sticker_suggestions">Sticker suggestions</string>
+
+    <!-- The welcome pack a new member of a group sees (the owner's board 6). -->
+    <string name="welcome_pack_label">Welcome message · only you see this</string>
+    <string name="welcome_pack_title">Welcome message</string>
+    <string name="welcome_pack_got_it">Got it</string>
+    <string name="welcome_pack_open">Open the welcome message</string>
+    <!-- The AI text editor of the composer: Telegram's AI fixes, rewrites or translates the message being written. -->
+    <string name="ai_editor_menu">Edit with AI</string>
+    <string name="ai_editor_title">Edit with AI</string>
+    <string name="ai_editor_consent_text">Telegram\'s AI can fix, rewrite or translate what you write. Your text is sent to Telegram\'s AI only when you tap Fix, Rewrite or Translate. Nothing is sent to the chat until you send it yourself.</string>
+    <string name="ai_editor_not_now">Not now</string>
+    <string name="ai_editor_continue">Continue</string>
+    <string name="ai_editor_mode_fix">Fix</string>
+    <string name="ai_editor_mode_rewrite">Rewrite</string>
+    <string name="ai_editor_mode_translate">Translate</string>
+    <string name="ai_editor_action_fix">Fix text</string>
+    <string name="ai_editor_action_rewrite">Rewrite</string>
+    <string name="ai_editor_action_translate">Translate</string>
+    <string name="ai_editor_style">Style</string>
+    <string name="ai_editor_keep_style">Keep its style</string>
+    <!-- A style a user made: %1$s is its title. -->
+    <string name="ai_editor_custom_style">%1$s · custom</string>
+    <string name="ai_editor_no_styles">Telegram hasn\'t sent its styles yet.</string>
+    <string name="ai_editor_language">Translate into</string>
+    <string name="ai_editor_add_emoji">Add emoji</string>
+    <string name="ai_editor_working">Telegram\'s AI is working…</string>
+    <string name="ai_editor_note">Nothing is sent to the chat until you send it. \"Use\" puts the result in the message field.</string>
+    <string name="ai_editor_cancel">Cancel</string>
+    <string name="ai_editor_use">Use</string>
+    <!-- Screen readers: %1$s is the text Telegram's AI gave. -->
+    <string name="ai_editor_result_description">Result: %1$s</string>
+    <plurals name="ai_editor_changes">
+        <item quantity="one">%d change</item>
+        <item quantity="other">%d changes</item>
+    </plurals>
+    <string name="ai_editor_used">Text replaced</string>
+    <string name="ai_editor_undo">Undo</string>
+    <!-- A style of the AI editor that someone shared by a link. -->
+    <string name="ai_style_custom">Custom style</string>
+    <plurals name="ai_style_used_by">
+        <item quantity="one">Custom style · used by %1$s person</item>
+        <item quantity="other">Custom style · used by %1$s people</item>
+    </plurals>
+    <plurals name="ai_style_limit">
+        <item quantity="one">You can add %d custom style. Telegram Premium allows more.</item>
+        <item quantity="other">You can add up to %d custom styles. Telegram Premium allows more.</item>
+    </plurals>
+    <string name="ai_style_before">Before</string>
+    <string name="ai_style_after">After</string>
+    <string name="ai_style_add">Add style</string>
+    <string name="ai_style_remove">Remove style</string>
+    <string name="ai_style_close">Close</string>
+    <string name="ai_style_not_found">Style not found</string>
+    <string name="ai_style_try_again">Try again</string>
+    <!-- The chat action bar: what Telegram suggests about a chat someone new started. %1$s is the other person's first name. -->
+    <string name="action_bar_not_contact_named">%1$s isn\'t in your contacts</string>
+    <string name="action_bar_not_contact">Not in your contacts</string>
+    <string name="action_bar_spam">Someone you don\'t know added you here</string>
+    <string name="action_bar_share_phone_title_named">%1$s can\'t see your phone number</string>
+    <string name="action_bar_share_phone_title">This contact can\'t see your phone number</string>
+    <!-- Who asked to join which group or channel and when: %1$s the person, %2$s the group or channel, %3$s the day. -->
+    <string name="action_bar_join_group_named">%1$s asked to join %2$s on %3$s</string>
+    <string name="action_bar_join_channel_named">%1$s asked to join your channel %2$s on %3$s</string>
+    <string name="action_bar_join_group">Asked to join %1$s on %2$s</string>
+    <string name="action_bar_join_channel">Asked to join your channel %1$s on %2$s</string>
+    <!-- What Telegram tells of the account: %1$s is a month and year ("March 2024"). -->
+    <string name="action_bar_registered">Joined Telegram in %1$s</string>
+    <!-- %1$s is a country or region ("Germany"). -->
+    <string name="action_bar_phone_country">Phone number from %1$s</string>
+    <!-- %1$s is a day ("Oct 3, 2026"). -->
+    <string name="action_bar_name_changed">Changed their name on %1$s</string>
+    <string name="action_bar_photo_changed">Changed their photo on %1$s</string>
+    <string name="action_bar_block">Block</string>
+    <string name="action_bar_report">Report</string>
+    <string name="action_bar_add_contact">Add contact</string>
+    <string name="action_bar_share_phone">Share my phone number</string>
+    <string name="action_bar_close">Close</string>
+    <string name="action_bar_cancel">Cancel</string>
+    <string name="action_bar_block_title_named">Block %1$s?</string>
+    <string name="action_bar_block_title">Block this person?</string>
+    <string name="action_bar_block_text">They won\'t be able to message or call you. You can unblock them in Privacy and security.</string>
+    <string name="action_bar_blocked">Blocked</string>
+    <string name="action_bar_contact_added">Added to your contacts</string>
+    <string name="action_bar_phone_shared">Phone number shared</string>
+    <!-- The label of a photo, video or file dragged out of a bubble into another app (board 35c). -->
+    <string name="drag_out_photo">Photo</string>
+    <string name="drag_out_video">Video</string>
+    <string name="drag_out_file">File</string>
+    <plurals name="drag_out_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <!-- The keyword match bar (board 30), where a keyword alert opened the conversation: the word, then which match
+         of how many, the newest first. The word's trailing space, before the count ("2 of 4"), is kept by the quotes;
+         screen readers hear the count as "Match 2 of 4" each time it changes. -->
+    <string name="keyword_match_word">"Keyword: %1$s · "</string>
+    <string name="keyword_match_position">%1$d of %2$d</string>
+    <string name="keyword_match_position_spoken">Match %1$d of %2$d</string>
+    <string name="keyword_match_pane">Keyword matches</string>
+    <string name="keyword_match_older">Older match</string>
+    <string name="keyword_match_newer">Newer match</string>
+    <string name="keyword_match_close">Close keyword matches</string>
 </resources>

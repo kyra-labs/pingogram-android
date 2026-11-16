@@ -13,8 +13,10 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbum
+import dev.kyralabs.pingogram.feature.media.profilemusic.ProfileMusicSection
 import dev.kyralabs.pingogram.feature.media.storyalbum.StoryAlbumsSection
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
+import dev.kyralabs.pingogram.feature.profile.navigation.pollStatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
 
@@ -48,6 +50,9 @@ internal fun NavGraphBuilder.profile(
                 modifier = modifier,
             )
         },
+        profileMusic = { userId, isSelf, modifier -> ProfileMusicSection(userId, isSelf, modifier) },
+        // Deleting the chat with a deleted account takes the conversation below with it.
+        onChatDeleted = { navController.popBackStackToChats() },
     )
 }
 
@@ -91,6 +96,11 @@ internal fun NavGraphBuilder.chatInfo(
         },
         onSaved = { navController.popBackStackAfterGroupChange() },
     )
+}
+
+/** A poll's statistics, pushed above the conversation (its entry is in the poll's message actions). */
+internal fun NavGraphBuilder.pollStatistics(navController: NavHostController) {
+    pollStatisticsScreen(onBack = { navController.popBackStack() })
 }
 
 /** Pushes the info page of group or channel [chatId], unless it is shown already. */

@@ -159,7 +159,21 @@ internal object MediaPreviewData {
             currentIndex = 1,
             count = count,
             files = persistentMapOf(21 to FileState.Downloaded("/files/21.mp4", 12_000_000)),
-            playback = VideoPlayback(VIDEO, isPlaying = true, showsFrame = false, progress = { VIDEO_PROGRESS }),
+            playback =
+                VideoPlayback(
+                    VIDEO,
+                    isPlaying = true,
+                    showsFrame = false,
+                    progress = { VIDEO_PROGRESS },
+                    canHandOff = true,
+                ),
+        )
+
+    /** The video playing as it loads, a third of its 54 MB on the device, before its first frame (board 25). */
+    val videoStreaming: MediaViewerUiState.Content =
+        video.copy(
+            files = persistentMapOf(21 to FileState.Downloading(18_000_000, 54_000_000, isActive = true)),
+            playback = VideoPlayback(VIDEO, isPlaying = true, showsFrame = false, progress = { 0f }, canHandOff = true),
         )
 
     /** The video while power saving keeps it from playing by itself: its play button waits for a tap. */
@@ -167,6 +181,38 @@ internal object MediaPreviewData {
         video.copy(
             playback =
                 VideoPlayback(VIDEO, isPlaying = false, showsFrame = false, progress = { 0f }, waitsForTap = true),
+        )
+
+    /** The video playing at 1.5×: its controls show the speed chip, More its speed. */
+    val videoFaster: MediaViewerUiState.Content =
+        video.copy(
+            playback =
+                VideoPlayback(
+                    VIDEO,
+                    isPlaying = true,
+                    showsFrame = false,
+                    progress = { VIDEO_PROGRESS },
+                    canHandOff = true,
+                    speed = FASTER,
+                ),
+            actions = MediaActions(canSave = true, speed = FASTER),
+        )
+
+    /** A live photo (board 25): "LIVE" at its top start; its motion plays while it is held. */
+    val livePhoto: MediaViewerUiState.Content =
+        photo.copy(
+            items =
+                persistentListOf(
+                    photoItem.copy(
+                        media =
+                            ViewerMedia.Image(
+                                samplePhoto,
+                                samplePhoto.sizes.last(),
+                                motion = sampleVideo.copy(duration = 2, supportsStreaming = false),
+                            ),
+                    ),
+                    videoItem,
+                ),
         )
 
     /** A spoiler not revealed yet. */
@@ -179,6 +225,8 @@ internal object MediaPreviewData {
     val loading = MediaViewerUiState.Loading
 
     private const val VIDEO_PROGRESS = 0.33f
+
+    private const val FASTER = 1.5f
 }
 
 /**

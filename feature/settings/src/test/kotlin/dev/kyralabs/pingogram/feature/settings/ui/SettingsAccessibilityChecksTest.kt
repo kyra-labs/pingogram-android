@@ -18,9 +18,16 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusChatPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusEditScreen
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordAlertsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordAlertsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.keywords.KeywordFoldersContent
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockScreen
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockUiState
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerContent
@@ -68,9 +75,12 @@ import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetP
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetUiState
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
+import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -243,6 +253,27 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun chatsShownFirst() =
         check { ChatsShownFirstScreen(ChatsShownFirstPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun focus() =
+        check { FocusScreen(FocusPreviewStates.content, onEvent = {}, onOpenProfile = { _, _ -> }, onBack = {}) }
+
+    @Test
+    fun focusEdit() = check { FocusEditScreen(FocusPreviewStates.editing, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun focusChatPicker() = check { FocusChatPickerContent(FocusPreviewStates.chatPicker, onEvent = {}) }
+
+    @Test
+    fun keywordAlerts() = check { KeywordAlertsScreen(KeywordAlertsPreviewStates.words, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun keywordAlertsEmpty() =
+        check { KeywordAlertsScreen(KeywordAlertsPreviewStates.empty, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun keywordFolders() =
+        check { KeywordFoldersContent(KeywordAlertsPreviewStates.words, persistentSetOf(1), onEvent = {}) }
 
     @Test
     fun chatsShownFirstPicker() = check { ShownFirstPickerContent(ChatsShownFirstPreviewStates.picker, onEvent = {}) }
@@ -468,6 +499,12 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun powerSaving() = check { PowerSavingScreen(SettingsPreviewData.powerSaving, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun transcription() =
+        check {
+            TranscriptionSettingsScreen(TranscriptionSettingsPreviewData.content, onEvent = {}, onBack = {})
+        }
 
     @Test
     fun activeSessions() = check { ActiveSessionsScreen(SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }

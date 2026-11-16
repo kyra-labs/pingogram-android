@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -35,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.LayoutAwareModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
@@ -109,7 +113,7 @@ internal fun ChatRow(
         backgroundContent = {
             SwipeBackground(state, start?.reveal, end?.reveal, iconScale, SwipeFeedback(threshold, iconSpec))
         },
-        modifier = modifier,
+        modifier = modifier.confirmOnCommit(state),
         enableDismissFromStartToEnd = start != null,
         enableDismissFromEndToStart = end != null,
         gesturesEnabled = !selectionMode && !swipes.changesFolder && (start != null || end != null),
@@ -145,8 +149,7 @@ internal fun ChatRow(
 
 /**
  * What [SwipeToDismissBox] calls once the row settled swiped away towards a direction: runs that side's action, [start]
- * or [end] as the row shows it then, with a `Confirm` haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and
- * springs the row back.
+ * or [end] as the row shows it then, and springs the row back; its haptic came at the release ([confirmOnCommit]).
  *
  * One instance for the row's whole life, so one swipe runs one action. The box runs its `onDismiss` again whenever it
  * gets another instance while the row is still away (material3 1.5.0-beta01 keys its effect on it), and the action
@@ -163,7 +166,6 @@ private fun rememberOnSwiped(
     onEvent: (ChatListEvent) -> Unit,
 ): (SwipeToDismissBoxValue) -> Unit {
     val scope = rememberCoroutineScope()
-    val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     val currentStart by rememberUpdatedState(start)
     val currentEnd by rememberUpdatedState(end)
     val currentOnEvent by rememberUpdatedState(onEvent)
@@ -178,13 +180,35 @@ private fun rememberOnSwiped(
                     // Away from its place without a direction: only a restored state could be, and it is not saved.
                     SwipeToDismissBoxValue.Settled -> null
                 }
-            if (action != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                }
-                currentOnEvent(ChatListEvent.RowAction(chatId, action))
-            }
+            if (action != null) currentOnEvent(ChatListEvent.RowAction(chatId, action))
             scope.launch { state.reset() }
+        }
+    }
+}
+
+/**
+ * The `Confirm` haptic of a swipe that commits (`docs/DESIGN_SYSTEM.md` §5), on Android 14 and later, at the release
+ * rather than once the row settled away (M-017): watching the row's touches without taking them, it reads where the
+ * box sends the row once the finger lifts, a fling's speed included. It starts with the first touch, so a row that only
+ * scrolls by costs nothing.
+ */
+@Composable
+private fun Modifier.confirmOnCommit(state: SwipeToDismissBoxState): Modifier {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return this
+    val haptics by rememberUpdatedState(LocalHapticFeedback.current)
+    return pointerInput(state) {
+        while (true) {
+            awaitPointerEventScope {
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                do {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                } while (event.changes.any { it.pressed })
+            }
+            // The box decides where the row goes as it handles the release, after this pass.
+            withFrameNanos {}
+            if (state.targetValue != SwipeToDismissBoxValue.Settled) {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -154,11 +155,13 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 assertEquals(
                     listOf(
                         MessageAction.Reply,
+                        MessageAction.RemindMe,
                         MessageAction.Copy,
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -178,8 +181,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 assertEquals(
                     listOf(
                         MessageAction.Reply,
+                        MessageAction.RemindMe,
                         MessageAction.Copy,
                         MessageAction.Forward,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -203,7 +208,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
-                assertEquals(listOf(MessageAction.Select), viewModel.sheet?.actions)
+                assertEquals(listOf(MessageAction.RemindMe, MessageAction.Select), viewModel.sheet?.actions)
             }
 
         @Test
@@ -218,6 +223,41 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `a message whose chat protects its content cannot be bookmarked, kept on the phone as it would be`() =
+            runViewModelTest {
+                allowing(saved = false)
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowMessageActions(2))
+
+                assertEquals(false, MessageAction.Bookmark in viewModel.sheet!!.actions)
+            }
+
+        @Test
+        fun `a secret chat's messages have no reminder, whose notification would show them`() =
+            runViewModelTest {
+                allowing()
+                users.setUsers(user(ADA, firstName = "Ada", lastName = "Lovelace"), user(ME, firstName = "Me"))
+                chats.setChats(chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)))
+                messages.setHistory(PRIVATE_CHAT, history(outgoing(1), message(2)))
+                val viewModel = viewModel()
+
+                send(viewModel, ChatEvent.ShowMessageActions(2))
+
+                assertEquals(false, MessageAction.RemindMe in viewModel.sheet!!.actions)
+            }
+
+        @Test
+        fun `remind me opens the reminder sheet's event`() {
+            assertEquals(ReminderEvent.Open(7), MessageAction.RemindMe.eventFor(7))
+        }
+
+        @Test
+        fun `bookmark opens the bookmark sheet's event`() {
+            assertEquals(BookmarkEvent.Open(7), MessageAction.Bookmark.eventFor(7))
+        }
+
+        @Test
         fun `a message without a text or caption has nothing to copy or edit`() =
             runViewModelTest {
                 val sticker = outgoing(1).copy(content = MessageContent.Dice("🎲", value = 3))
@@ -228,9 +268,11 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 assertEquals(
                     listOf(
                         MessageAction.Reply,
+                        MessageAction.RemindMe,
                         MessageAction.Forward,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -248,10 +290,12 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 assertEquals(
                     listOf(
                         MessageAction.Reply,
+                        MessageAction.RemindMe,
                         MessageAction.Copy,
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Unpin,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -291,9 +335,11 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 assertEquals(
                     listOf(
+                        MessageAction.RemindMe,
                         MessageAction.Copy,
                         MessageAction.Forward,
                         MessageAction.Pin,
+                        MessageAction.Bookmark,
                         MessageAction.Select,
                         MessageAction.Delete,
                     ),
@@ -1177,7 +1223,13 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 val viewModel = privateChat()
 
                 assertEquals(
-                    MessageShortcuts(canReply = true, canCopy = true, canReplyElsewhere = true, canForward = true),
+                    MessageShortcuts(
+                        canReply = true,
+                        canCopy = true,
+                        canReplyElsewhere = true,
+                        canForward = true,
+                        canRemind = true,
+                    ),
                     viewModel.state.shortcuts,
                 )
             }
@@ -1195,6 +1247,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         canReplyElsewhere = true,
                         canCopyLink = true,
                         canForward = true,
+                        canRemind = true,
                     ),
                     viewModel.state.shortcuts,
                 )

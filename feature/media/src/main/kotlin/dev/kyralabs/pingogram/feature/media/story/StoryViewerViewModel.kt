@@ -17,13 +17,17 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryContent
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
+import dev.kyralabs.pingogram.core.domain.model.StoryInteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -73,9 +77,11 @@ import kotlin.time.TimeSource
  *   viewed, as Telegram's terms ask: there is no hidden viewing and no stealth mode), once per showing, and closed
  *   (`closeStory`) when it leaves, the screen stops or the viewer closes.
  * - **Pausing**: while a finger holds the story, the pager moves, the reactions are open, the reply field has the
- *   keyboard, or the screen is stopped ([Pause]).
+ *   keyboard, a system back gesture is under way, or the screen is stopped ([Pause]).
+ *   During a back gesture nothing closes the viewer or moves it to the next chat but the gesture itself.
  * - **Reactions**: the emoji TDLib offers for stories without Telegram Premium; a tap sets one or takes it back,
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
+ * - **Live stories** (board 26): the call's title and how many watch, from [liveCall] (`GroupCallRepository`).
  * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
  *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat.
  * - **Saved state**: the chats, the one shown and its story, so after process death the viewer opens where it was.
@@ -83,9 +89,10 @@ import kotlin.time.TimeSource
  *
  * It takes the repositories it combines, the clock, the time source, the application scope (to close the story
  * after the view model is cleared) and its player, hence `LongParameterList` is suppressed; it is large because it
- * plays, navigates and reacts in one place, hence `TooManyFunctions`.
+ * plays, navigates and reacts in one place, hence `TooManyFunctions` and `LargeClass` (its own story's actions and
+ * the viewers' list are parts of their own already: `OwnStoryActions`, `StoryViewersViewModel`).
  */
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StoryViewerViewModel internal constructor(
@@ -100,6 +107,7 @@ class StoryViewerViewModel internal constructor(
     private val applicationScope: CoroutineScope,
     private val videoPlayer: VideoPlayer,
     private val albumRepository: StoryAlbumRepository? = null,
+    private val liveCall: (groupCallId: Int) -> Flow<GroupCall?> = { flowOf(null) },
 ) : ViewModel() {
     @Inject
     constructor(
@@ -112,6 +120,7 @@ class StoryViewerViewModel internal constructor(
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
         albumRepository: StoryAlbumRepository,
+        groupCallRepository: GroupCallRepository,
     ) : this(
         savedStateHandle.toRoute<StoryViewerRoute>(),
         savedStateHandle,
@@ -124,6 +133,7 @@ class StoryViewerViewModel internal constructor(
         applicationScope,
         videoPlayer,
         albumRepository,
+        groupCallRepository::groupCall,
     )
 
     /** The reply field's text, never saved. */
@@ -141,6 +151,9 @@ class StoryViewerViewModel internal constructor(
     /** Where the user left each chat in this viewer, by story id, so swiping back returns there. */
     private val leftAt = MutableStateFlow<PersistentMap<Long, Int>>(persistentMapOf())
 
+    /** Whether a screen reader explores by touch: stories then never move on by themselves. */
+    private var screenReader = false
+
     private val pauses = MutableStateFlow(setOf(Pause.Stopped))
     private val muted = MutableStateFlow(false)
     private val retries = MutableStateFlow(0)
@@ -150,12 +163,15 @@ class StoryViewerViewModel internal constructor(
     private val effectChannel = Channel<StoryViewerEffect>(Channel.BUFFERED)
     val effects: Flow<StoryViewerEffect> = effectChannel.receiveAsFlow()
 
+    private val ownStory =
+        OwnStoryActions(storyRepository, viewModelScope, effectChannel) { paused -> setPaused(Pause.Menu, paused) }
+
     private val timeline =
         StoryTimeline(
             player = videoPlayer,
             scope = viewModelScope,
             timeSource = timeSource,
-            onEnd = ::next,
+            onEnd = ::onStoryEnded,
             onFailed = ::onPlaybackFailed,
         )
 
@@ -171,6 +187,9 @@ class StoryViewerViewModel internal constructor(
     /** Files downloaded at visible or prefetch priority in this viewer, each asked for once. */
     private val requestedFiles = mutableSetOf<Int>()
     private var failedPlayback: StoryKey? = null
+
+    /** The story ended during a back gesture ([onStoryEnded]); the viewer moves on if the gesture is cancelled. */
+    private var endedDuringBack = false
 
     private val currentChatId: Flow<Long?> =
         combine(posters, position) { posters, position -> posters?.getOrNull(position.posterIndex) }
@@ -222,8 +241,8 @@ class StoryViewerViewModel internal constructor(
         }
 
     private val chrome: Flow<Chrome> =
-        combine(pauses, muted, reactions, interaction) { pauses, muted, reactions, interaction ->
-            Chrome(pauses.isNotEmpty(), muted, reactions, interaction)
+        combine(pauses, muted, reactions, interaction, ownStory.state) { pauses, muted, reactions, interaction, own ->
+            Chrome(pauses.isNotEmpty(), muted, reactions, interaction, own, isHeld = Pause.Held in pauses)
         }
 
     private val me: Flow<Long?> = userRepository.myUserId
@@ -234,15 +253,9 @@ class StoryViewerViewModel internal constructor(
             position,
             shown,
             timeline.state,
-            combine(chrome, me, currentChat()) { chrome, me, chat -> Triple(chrome, me, chat) },
-        ) {
-            pages,
-            position,
-            shown,
-            timeline,
-            (chrome, me, chat),
-            ->
-            stateOf(pages, position, shown, timeline, chrome, me, chat)
+            combine(chrome, me, currentChat(), userRepository.users, ::Extras),
+        ) { pages, position, shown, timeline, extras ->
+            stateOf(pages, position, shown, timeline, extras)
         }.distinctUntilChanged()
             .onStart { start() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoryViewerUiState.Loading)
@@ -263,6 +276,14 @@ class StoryViewerViewModel internal constructor(
 
             is StoryViewerEvent.Hold -> {
                 setPaused(Pause.Held, event.held)
+            }
+
+            is StoryViewerEvent.ScreenReader -> {
+                screenReader = event.on
+            }
+
+            is StoryViewerEvent.BackGesture -> {
+                onBackGesture(event.active)
             }
 
             is StoryViewerEvent.Paging -> {
@@ -293,21 +314,33 @@ class StoryViewerViewModel internal constructor(
                 sendReply()
             }
 
-            is StoryViewerEvent.ReactionsOpen -> {
-                interaction.update { it.copy(reactionsOpen = event.open) }
-                setPaused(Pause.Reactions, event.open)
+            is StoryViewerEvent.ReactionsOpen, is StoryViewerEvent.ViewersOpen -> {
+                onSheetOpen(event)
+            }
+
+            is StoryViewerEvent.Share -> {
+                onShareEvent(event)
             }
 
             is StoryViewerEvent.React -> {
                 react(event.reaction)
             }
 
+            is StoryViewerEvent.Own -> {
+                onOwnStoryEvent(event)
+            }
+
             StoryViewerEvent.Retry -> {
-                failedPlayback = null
-                requestedFiles.clear()
-                retries.update { it + 1 }
+                retry()
             }
         }
+    }
+
+    /** "Try again" on a story that failed: its file is asked for anew, and the player tries it again. */
+    private fun retry() {
+        failedPlayback = null
+        requestedFiles.clear()
+        retries.update { it + 1 }
     }
 
     override fun onCleared() {
@@ -500,7 +533,18 @@ class StoryViewerViewModel internal constructor(
             }
 
             is StoryContent.Live -> {
-                flowOf(Shown.still(key, story, StoryMedia.Live(key.chatId, content.groupCallId)))
+                // The call's title and how many watch (board 26), as TDLib knows them; the notice shows without them.
+                liveCall(content.groupCallId)
+                    .onStart { emit(null) }
+                    .map { call ->
+                        StoryMedia.Live(
+                            chatId = key.chatId,
+                            groupCallId = content.groupCallId,
+                            title = call?.title.orEmpty(),
+                            watching = call?.participantCount ?: 0,
+                        )
+                    }.distinctUntilChanged()
+                    .map { Shown.still(key, story, it) }
             }
 
             StoryContent.Unsupported -> {
@@ -582,6 +626,29 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
+    /**
+     * The story in the timeline ended: the next story shows, or the viewer closes after the last. During a back
+     * gesture (which pauses the timeline, so this only follows an end already on its way) it waits for the gesture:
+     * the viewer neither closes nor slides to the next chat under the user's finger.
+     */
+    private fun onStoryEnded() {
+        // With TalkBack nothing moves on by itself (board 26): "Next story" does.
+        if (Pause.Back in pauses.value) {
+            endedDuringBack = true
+        } else if (!screenReader) {
+            next()
+        }
+    }
+
+    /** Pauses the story for a back gesture; a cancelled one resumes it, and moves on if it ended meanwhile. */
+    private fun onBackGesture(active: Boolean) {
+        setPaused(Pause.Back, active)
+        if (!active && endedDuringBack) {
+            endedDuringBack = false
+            next()
+        }
+    }
+
     /** The next chat, or after the last one the viewer closes. */
     private fun nextPoster() {
         val posters = posters.value ?: return
@@ -621,8 +688,10 @@ class StoryViewerViewModel internal constructor(
         val leaving = posters.getOrNull(current.posterIndex)
         if (leaving != null && current.storyId != null) leftAt.update { it.putting(leaving, current.storyId) }
         currentActive = null
-        interaction.update { it.copy(reactionsOpen = false) }
+        interaction.update { it.copy(reactionsOpen = false, viewersOpen = false) }
         setPaused(Pause.Reactions, false)
+        setPaused(Pause.Viewers, false)
+        ownStory.closeMenu()
         position.value = Position(index, storyId = null)
     }
 
@@ -666,6 +735,44 @@ class StoryViewerViewModel internal constructor(
         }
     }
 
+    /** The row of reactions, or the list of viewers of the user's own story, opened or closed: either pauses it. */
+    private fun onSheetOpen(event: StoryViewerEvent) {
+        when (event) {
+            is StoryViewerEvent.ReactionsOpen -> {
+                interaction.update { it.copy(reactionsOpen = event.open) }
+                setPaused(Pause.Reactions, event.open)
+            }
+
+            is StoryViewerEvent.ViewersOpen -> {
+                interaction.update { it.copy(viewersOpen = event.open) }
+                setPaused(Pause.Viewers, event.open)
+            }
+
+            else -> {}
+        }
+    }
+
+    /** The ⋮ menu of the user's own story, and its Delete with its question. */
+    private fun onOwnStoryEvent(event: StoryViewerEvent.Own) {
+        val key = currentKeyNow()
+        ownStory.onEvent(event, key) { deleted -> if (currentKeyNow() == deleted) next() }
+    }
+
+    /**
+     * The share button pauses the story and opens the share sheet for it, where the user may send it to chats; the
+     * screen resumed again, once the sheet closed, plays it on.
+     */
+    private fun onShareEvent(event: StoryViewerEvent.Share) {
+        if (event is StoryViewerEvent.Share.Resumed) {
+            if (event.resumed) setPaused(Pause.Sharing, false)
+            return
+        }
+        val canShare = (uiState.value as? StoryViewerUiState.Content)?.canShare == true
+        val key = currentKeyNow()?.takeIf { canShare } ?: return
+        setPaused(Pause.Sharing, true)
+        effectChannel.trySend(StoryViewerEffect.Share(key.chatId, key.storyId))
+    }
+
     private fun react(reaction: ReactionType.Emoji) {
         val key = currentKeyNow() ?: return
         val chosen = (uiState.value as? StoryViewerUiState.Content)?.reactions?.chosen
@@ -687,10 +794,11 @@ class StoryViewerViewModel internal constructor(
         position: Position,
         shown: Shown?,
         timeline: TimelineState?,
-        chrome: Chrome,
-        me: Long?,
-        chat: Chat?,
+        extras: Extras,
     ): StoryViewerUiState {
+        val chrome = extras.chrome
+        val me = extras.me
+        val chat = extras.chat
         if (pages.isEmpty()) return StoryViewerUiState.Loading
         val index = position.posterIndex.coerceIn(pages.indices)
         val page = pages[index]
@@ -714,9 +822,20 @@ class StoryViewerViewModel internal constructor(
                     progress = played?.progress ?: NO_PROGRESS,
                 ),
             isPaused = chrome.isPaused,
+            isHeld = chrome.isHeld,
             isMuted = chrome.isMuted,
             reply = replyOf(story, chat, isOwn, chrome.interaction),
             reactions = story?.takeUnless { isOwn }?.let { reactionsOf(it, chrome) },
+            own = chrome.own.takeIf { story?.canBeDeleted == true },
+            canShare = story?.canBeForwarded == true && !isOwn,
+            views =
+                story?.interactions?.takeIf { isOwn }?.let {
+                    viewsOf(
+                        it,
+                        extras.users,
+                        chrome.interaction.viewersOpen,
+                    )
+                },
         )
     }
 
@@ -761,15 +880,6 @@ class StoryViewerViewModel internal constructor(
         savedStateHandle[KEY_STORY] = position.storyId
     }
 
-    /** Why the story does not play; it plays while there is none. */
-    private enum class Pause {
-        Stopped,
-        Held,
-        Paging,
-        Typing,
-        Reactions,
-    }
-
     /** The chat shown, by its index among the posters, and its story; null until chosen. */
     private data class Position(
         val posterIndex: Int,
@@ -781,6 +891,7 @@ class StoryViewerViewModel internal constructor(
         val reactionsOpen: Boolean = false,
         val pendingReaction: PendingReaction? = null,
         val isSendingReply: Boolean = false,
+        val viewersOpen: Boolean = false,
     )
 
     /** A reaction, or none ([reaction] null), set but not yet confirmed by TDLib. */
@@ -788,11 +899,21 @@ class StoryViewerViewModel internal constructor(
         val reaction: ReactionType?,
     )
 
+    /** What the state needs besides the story: the chrome, the user's id, the current chat and the users known. */
+    private data class Extras(
+        val chrome: Chrome,
+        val me: Long?,
+        val chat: Chat?,
+        val users: Map<Long, User>,
+    )
+
     private data class Chrome(
         val isPaused: Boolean,
         val isMuted: Boolean,
         val reactions: ImmutableList<ReactionType.Emoji>?,
         val interaction: Interaction,
+        val own: OwnStoryUi,
+        val isHeld: Boolean = false,
     )
 
     private companion object {
@@ -860,4 +981,37 @@ private fun pageOf(
         storyCount = stories.size,
         shownIndex = shownIndex,
     )
+}
+
+/** The views pill of the user's own story from its [interactions], with the faces of the users TDLib announced. */
+private fun viewsOf(
+    interactions: StoryInteractionInfo,
+    users: Map<Long, User>,
+    isOpen: Boolean,
+): StoryViewsUi =
+    StoryViewsUi(
+        viewCount = interactions.viewCount,
+        reactionCount = interactions.reactionCount,
+        recent =
+            interactions.recentViewerIds
+                .mapNotNull { id -> users[id]?.let { StoryViewerFace(id, it.firstName, it.profilePhoto) } }
+                .take(RECENT_FACES)
+                .toImmutableList(),
+        isOpen = isOpen,
+    )
+
+/** How many faces the views pill shows. */
+private const val RECENT_FACES = 3
+
+/** Why the story does not play; it plays while there is none. */
+private enum class Pause {
+    Stopped,
+    Held,
+    Paging,
+    Typing,
+    Reactions,
+    Menu,
+    Viewers,
+    Back,
+    Sharing,
 }

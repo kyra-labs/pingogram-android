@@ -101,6 +101,7 @@ internal fun ComposerField(
     trailingIcons: (@Composable RowScope.() -> Unit)? = null,
     onKeyEvent: (KeyEvent) -> Boolean = { false },
     hint: String? = null,
+    onAiEdit: (() -> Unit)? = null,
 ) {
     val labels = rememberFormattingLabels()
     val focusManager = LocalFocusManager.current
@@ -133,8 +134,7 @@ internal fun ComposerField(
                     }.onPreviewKeyEvent { event ->
                         onKeyEvent(event) || fieldKey(event, text, onSend, onLink, sendKeys) ||
                             tabKey(event, focusManager)
-                    }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
-                    .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
+                    }.fieldMenus(FieldMenus(text, labels, onLink, onAiEdit), { textLayout.lineCount }, hasSelection),
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
             outputTransformation = outputTransformation,
@@ -271,6 +271,9 @@ private class FieldCustomEmoji(
 @Stable
 private class TextLayoutHolder {
     var result by mutableStateOf<TextLayoutResult?>(null)
+
+    /** The field's lines in its last layout; 0 before the first. */
+    val lineCount: Int get() = result?.lineCount ?: 0
 
     /** Keeps the field's new layout [result], for [customEmoji] too. */
     fun update(

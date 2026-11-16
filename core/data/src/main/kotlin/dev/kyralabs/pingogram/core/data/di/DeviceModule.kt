@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidPickedSongRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultDemoRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDevicePushRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.data.transcription.AndroidVoiceTranscriber
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
@@ -34,8 +36,10 @@ import dev.kyralabs.pingogram.core.domain.repository.DevicePushRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedSongRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
 
 /**
  * What belongs to the device rather than to an account (`docs/adr/0031-multiple-accounts.md`): the network, Battery
@@ -73,6 +77,9 @@ interface DeviceModule {
     fun pickedPhotoRepository(repository: AndroidPickedPhotoRepository): PickedPhotoRepository
 
     @Binds
+    fun pickedSongRepository(repository: AndroidPickedSongRepository): PickedSongRepository
+
+    @Binds
     fun sharedStorageRepository(repository: AndroidSharedStorageRepository): SharedStorageRepository
 
     @Binds
@@ -95,4 +102,7 @@ interface DeviceModule {
 
     @Binds
     fun deviceLanguageDetector(detector: AndroidDeviceLanguageDetector): DeviceLanguageDetector
+
+    @Binds
+    fun voiceTranscriber(transcriber: AndroidVoiceTranscriber): VoiceTranscriber
 }

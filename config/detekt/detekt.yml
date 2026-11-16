@@ -64,6 +64,16 @@ style:
       - '**/testGms/**'
       - '**/core/ui/src/main/kotlin/**/theme/**'
       - '**/core/testing/src/main/**'
+  ForbiddenImport:
+    # Every modal sheet goes through core:ui's PingogramBottomSheet, which keeps it below the status bar
+    # (docs/DESIGN_SYSTEM.md §6 "Bottom sheets"); only that wrapper calls Material's.
+    active: true
+    imports:
+      - value: 'androidx.compose.material3.ModalBottomSheet'
+        reason: 'Use dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet: it stops below the status bar.'
+    excludes:
+      - '**/test/**'
+      - '**/core/ui/src/main/kotlin/**/component/BottomSheet.kt'
   UnusedPrivateMember:
     # Private previews are only called by tooling (@Preview or our multi-preview annotation).
     ignoreAnnotated: ['Preview', 'PingogramPreviews']
@@ -75,3 +85,26 @@ pingogram:
     # Literal colors, text sizes, sizes, shapes and animation specs in :feature:* production code
     # (CLAUDE.md hard rule 4, docs/DESIGN_SYSTEM.md §1).
     active: true
+  PingogramMotionDefault:
+    # Animations in :feature:* and :app production code that leave their spec to Compose's defaults, and literal
+    # tweens, durations and easings in :app and core:ui (docs/DESIGN_SYSTEM.md §5 and §5.1 Q-26,
+    # docs/plans/motion-expressive-plan.md §4). Every check is on.
+    active: true
+    checks:
+      - visibility
+      - content
+      - crossfade
+      - contentSize
+      - asState
+      - transitions
+      - springDefault
+      - loops
+      - schemeDirect
+      - otherAnimators
+      - literals
+      - items
+      - sizeTransform
+      - pagerScroll
+      - panes
+      - coil
+      - compositionRead

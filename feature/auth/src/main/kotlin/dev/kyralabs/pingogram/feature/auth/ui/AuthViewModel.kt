@@ -134,6 +134,7 @@ class AuthViewModel internal constructor(
             AuthEvent.OpenTermsOfService -> sendEffect(AuthEffect.OpenUrl(TERMS_OF_SERVICE_URL))
             AuthEvent.OpenTelegramPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(TELEGRAM_PRIVACY_POLICY_URL))
             AuthEvent.OpenPingogramPrivacyPolicy -> sendEffect(AuthEffect.OpenUrl(PINGOGRAM_PRIVACY_POLICY_URL))
+            AuthEvent.OpenAppLanguages -> sendEffect(AuthEffect.OpenAppLanguages)
             AuthEvent.ShowDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = true
             AuthEvent.DismissDemoDialog -> savedStateHandle[DEMO_DIALOG_KEY] = false
             AuthEvent.OpenDemo -> openDemo()
@@ -164,11 +165,9 @@ class AuthViewModel internal constructor(
             AuthEvent.SubmitNewPassword -> submitNewPassword()
             is AuthEvent.FirstNameChanged -> onFirstNameChanged(event.firstName)
             is AuthEvent.LastNameChanged -> onLastNameChanged(event.lastName)
-            is AuthEvent.TermsAcceptedChanged -> updateRegistration { it.copy(termsAccepted = event.accepted) }
-            AuthEvent.ShowTermsOfService -> updateRegistration { it.copy(isTermsOpen = true) }
             AuthEvent.DismissTermsOfService -> updateRegistration { it.copy(isTermsOpen = false) }
-            AuthEvent.AcceptTermsOfService -> closeTermsOfService(accepted = true)
-            AuthEvent.DeclineTermsOfService -> closeTermsOfService(accepted = false)
+            AuthEvent.AcceptTermsOfService -> updateRegistration { it.copy(termsAccepted = true, isTermsOpen = false) }
+            AuthEvent.DeclineTermsOfService -> declineTermsOfService()
             AuthEvent.SubmitRegistration -> submitRegistration()
             is AuthEvent.EmailAddressChanged -> onEmailAddressChanged(event.emailAddress)
             AuthEvent.SubmitEmailAddress -> submitEmailAddress()
@@ -270,6 +269,8 @@ class AuthViewModel internal constructor(
             updatePhone { it.copy(error = DomainError.PhoneNumberInvalid) }
             return
         }
+        // Too short for its country: said once under the field; the next "Next" sends it, and Telegram decides.
+        phone.warnedIfTooShort()?.let { warned -> return updatePhone { warned } }
         launchAction(
             AuthAction.SubmitPhoneNumber,
             ErrorField.Phone,
@@ -562,21 +563,23 @@ class AuthViewModel internal constructor(
         updateRegistration { it.copy(lastName = input.take(MAX_NAME_LENGTH), lastNameError = null) }
     }
 
-    /** Accepting or declining the terms closes them; declining un-accepts them. */
-    private fun closeTermsOfService(accepted: Boolean) {
-        updateRegistration { it.copy(termsAccepted = accepted, isTermsOpen = false) }
+    /** Declining the terms closes them and goes back to the phone number: no account without them (board 23). */
+    private fun declineTermsOfService() {
+        updateRegistration { it.copy(termsAccepted = false, isTermsOpen = false) }
+        changePhoneNumber()
     }
 
     private fun submitRegistration() {
-        if (model.step !is AuthStep.WaitRegistration) return
+        val step = model.step as? AuthStep.WaitRegistration ?: return
         val form = model.registration
         when {
             form.firstName.isBlank() -> {
                 updateRegistration { it.copy(firstNameError = DomainError.FirstNameInvalid) }
             }
 
-            // Registering accepts the terms, so they must have been accepted first.
-            !form.termsAccepted -> {
+            // Registering accepts the terms, which the screen says; where Telegram asks for them to be accepted
+            // explicitly (show_popup), only once they were in its dialog.
+            step.termsOfService.mustShowPopup && !form.termsAccepted -> {
                 updateRegistration { it.copy(isTermsOpen = true) }
             }
 

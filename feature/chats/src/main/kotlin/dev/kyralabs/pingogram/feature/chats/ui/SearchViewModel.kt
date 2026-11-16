@@ -15,7 +15,9 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chats.R
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -202,6 +204,7 @@ class SearchViewModel internal constructor(
             SearchEvent.ClearRecents -> changeRecents { searchRepository.clearRecentChats() }
             SearchEvent.LoadMoreMessages -> commands.tryEmit(Command.LoadMore)
             SearchEvent.Retry -> commands.tryEmit(Command.Retry)
+            SearchEvent.SearchPosts -> commands.tryEmit(Command.SearchPosts)
         }
     }
 
@@ -236,13 +239,14 @@ class SearchViewModel internal constructor(
         filter: SearchFilter,
     ): Flow<SearchState> =
         channelFlow {
-            val search = QuerySearch(query, filter, searchRepository, this)
+            val search = QuerySearch(query, filter, searchRepository, this, clock::now)
             search.start()
             launch {
                 commands.collect { command ->
                     when (command) {
                         Command.Retry -> search.retry()
                         Command.LoadMore -> search.loadMore()
+                        Command.SearchPosts -> search.searchPosts()
                     }
                 }
             }
@@ -303,6 +307,8 @@ class SearchViewModel internal constructor(
             global = global.mapItems { it.toSearchItem(sources) },
             messages = state.messages.toSection(sources, highlight),
             filter = state.filter,
+            posts = state.posts.toPrompt(sources),
+            postsLeft = state.postLimits?.takeIf { state.posts == PostGate.None }?.leftText(),
         )
     }
 
@@ -321,6 +327,7 @@ class SearchViewModel internal constructor(
     private enum class Command {
         Retry,
         LoadMore,
+        SearchPosts,
     }
 
     internal companion object {
@@ -356,6 +363,36 @@ private fun MessagePages.toSection(
         moreError = error.takeIf { hasFirstPage },
     )
 }
+
+/** What search of public posts says before them; the next free search's time as the chat list words times. */
+private fun PostGate.toPrompt(sources: SearchRowSources): PostsPrompt =
+    when (this) {
+        PostGate.None -> {
+            PostsPrompt.None
+        }
+
+        PostGate.Checking -> {
+            PostsPrompt.Checking
+        }
+
+        is PostGate.Offered -> {
+            PostsPrompt.Offer(limits.left, limits.dailyFree)
+        }
+
+        is PostGate.Exhausted -> {
+            PostsPrompt.Exhausted(
+                limits.dailyFree,
+                sources.timeFormatter.format(limits.nextFreeAt, sources.now),
+            )
+        }
+
+        is PostGate.Failed -> {
+            PostsPrompt.Failed(error)
+        }
+    }
+
+/** "6 of 10 free searches left today", under the posts found. */
+private fun PostLimits.leftText(): UiText = UiText.plural(R.plurals.search_posts_left, left, left, dailyFree)
 
 private fun SearchSection<Chat>.ids(): Set<Long> =
     (this as? SearchSection.Items)

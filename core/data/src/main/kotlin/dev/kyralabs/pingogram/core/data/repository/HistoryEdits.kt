@@ -10,5 +10,5 @@ internal fun HistoryCache.editing(
 ): HistoryCache {
     val change = HistoryChange.Edit(messageId, edit)
     val edited = windows.filterKeys { it.chatId == chatId }.mapValues { (_, window) -> window.applying(change) }
-    return if (edited.isEmpty()) this else copy(windows = windows.putAll(edited))
+    return if (edited.isEmpty()) this else copy(windows = windows.puttingAll(edited))
 }

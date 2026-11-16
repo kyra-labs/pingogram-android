@@ -19,7 +19,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SecureTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -50,6 +49,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -208,7 +208,7 @@ private fun CancelButton(onClick: () -> Unit) {
 }
 
 /**
- * The 2-step verification password a bot's button needs: a [ModalBottomSheet] with "Enter your password"
+ * The 2-step verification password a bot's button needs: a [PingogramBottomSheet] with "Enter your password"
  * (`titleLargeEmphasized`), which bot asks (`bodyMedium` `onSurfaceVariant`), the password in a filled
  * `SecureTextField` that takes the focus, why the last try failed below it (with a `Reject` haptic, a polite live
  * region), a `LinearWavyProgressIndicator` while Telegram checks it, "Cancel" at the start and a default "Confirm"
@@ -225,7 +225,7 @@ internal fun BotPasswordSheet(
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val currentOnEvent by rememberUpdatedState(onEvent)
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(BotButtonEvent.DismissDialog) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(BotButtonEvent.DismissDialog) }, sheetState = sheetState) {
         BotPasswordContent(dialog, password, onEvent)
     }
 }

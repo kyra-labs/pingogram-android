@@ -145,6 +145,33 @@ class TdlibChatStatisticsRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository.statistics(CHAT))
         }
 
+    @Test
+    fun `a poll's votes come as its graph, in the theme's colors`() =
+        runTest {
+            client.on(
+                TdApi.GetPollVoteStatistics::class,
+                TdResult.Success(TdApi.PollVoteStatistics(TdApi.StatisticalGraphData(LINES, ""))),
+            )
+
+            val graph = (repository.pollVotes(CHAT, 77) as Outcome.Success).value
+
+            assertTrue(graph is StatisticGraph.Loaded)
+            val sent = client.sentOf<TdApi.GetPollVoteStatistics>().single()
+            assertEquals(77L, sent.messageId)
+            assertEquals(false, sent.isDark)
+        }
+
+    @Test
+    fun `a poll's votes Telegram is still counting come as a token`() =
+        runTest {
+            client.on(
+                TdApi.GetPollVoteStatistics::class,
+                TdResult.Success(TdApi.PollVoteStatistics(TdApi.StatisticalGraphAsync("votes-token"))),
+            )
+
+            assertEquals(Outcome.Success(StatisticGraph.Pending("votes-token")), repository.pollVotes(CHAT, 77))
+        }
+
     private companion object {
         const val CHAT = -100L
         const val LINES =

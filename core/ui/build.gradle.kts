@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.pingogram.android.library)
     alias(libs.plugins.pingogram.android.compose)
     alias(libs.plugins.pingogram.android.roborazzi)
+    // Kotlin warnings fail the build here (docs/audit/v1-readiness.md).
+    alias(libs.plugins.pingogram.kotlin.warnings)
 }
 
 dependencies {
@@ -40,5 +42,6 @@ dependencies {
     // docs/adr/0027-streaming-media.md). media3-exoplayer, in the features that play, depends on it already.
     implementation(libs.media3.datasource)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
 }

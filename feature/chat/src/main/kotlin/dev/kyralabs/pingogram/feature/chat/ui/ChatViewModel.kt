@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
@@ -43,6 +44,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
@@ -92,19 +94,26 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
 import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.messageChannelButton
+import dev.kyralabs.pingogram.feature.chat.ui.directmessages.withMessageChannel
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.ChatGiveaways
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.withKeywordMatch
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
+import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
+import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
@@ -131,8 +140,13 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.ChatTranscripts
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.withTranscripts
+import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
@@ -278,7 +292,7 @@ import java.util.Locale
  *   history, what is sent goes into it, its name in the header, its unread state, and its pins.
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
  *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
- *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
+ *   and the page of them all (`PinnedMessagesRoute`, opened through [ChatEffect.OpenPinnedMessages]).
  * - **Translation** ([ChatTranslation], `REQUIREMENTS.md` FR-C3): a message's "Translate" and "Show original", the
  *   translations in place of the bubbles' texts (copied only into the bubbles they change), and the translate bar
  *   ([ChatUiState.translateBar]) where Telegram suggests translating the chat, which translates the messages on screen.
@@ -358,6 +372,7 @@ class ChatViewModel internal constructor(
     pollRepository: PollRepository,
     checklistRepository: ChecklistRepository,
     scheduledMessageRepository: ScheduledMessageRepository,
+    giveawayRepository: GiveawayRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -365,6 +380,8 @@ class ChatViewModel internal constructor(
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
+    private val appInfo: AppInfo = AppInfo(versionName = ""),
+    transcriptionRepositories: TranscriptionRepositories? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -405,7 +422,10 @@ class ChatViewModel internal constructor(
         pollRepository: PollRepository,
         checklistRepository: ChecklistRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
+        giveawayRepository: GiveawayRepository,
         targetPreferences: TargetPreferences,
+        appInfo: AppInfo,
+        transcriptionRepositories: TranscriptionRepositories,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -447,12 +467,15 @@ class ChatViewModel internal constructor(
         pollRepository,
         checklistRepository,
         scheduledMessageRepository,
+        giveawayRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
+        appInfo = appInfo,
+        transcriptionRepositories = transcriptionRepositories,
     )
 
     /**
@@ -583,6 +606,8 @@ class ChatViewModel internal constructor(
             replies = composer,
             onEffect = { effectChannel.trySend(it) },
             originalByDefault = { originalQualityByDefault.value },
+            pollLimits = { pollRepository.limits() },
+            now = { clock.now().epochSecond },
         )
 
     private val recorder =
@@ -602,7 +627,10 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
-    private val shares = ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope)
+    private val shares =
+        ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope) {
+            effectChannel.trySend(ChatEffect.RecordVoiceNow)
+        }
 
     /** Replying to a message in another chat, both ways ([ChatReplyElsewhere]). */
     private val replyElsewhere =
@@ -775,7 +803,11 @@ class ChatViewModel internal constructor(
             inThread = topic != null,
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
-            translationAction = { translation.actionFor(it) },
+            translationAction = { message ->
+                // A bubble showing its summary offers its full text back, not a translation of the summary.
+                val summary = summaries.actionFor(message)
+                listOfNotNull(translation.actionFor(message).takeIf { summary != MessageAction.ShowFullText }, summary)
+            },
             onRetractVote = { polls.retract(it) },
             onStopPoll = { polls.askStop(it) },
         )
@@ -894,6 +926,29 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val summaries =
+        ChatSummaries(
+            chatId = chatId,
+            repositories = translationRepositories,
+            history = history,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** Voice message transcription on the device; none where tests leave it out. */
+    private val transcripts =
+        transcriptionRepositories?.let { repositories ->
+            ChatTranscripts(
+                chatId = chatId,
+                repositories = repositories,
+                history = history,
+                savedState = savedStateHandle,
+                scope = viewModelScope,
+                onEffect = { effectChannel.trySend(it) },
+            )
+        }
+
     private val polls =
         ChatPolls(
             chatId = chatId,
@@ -901,6 +956,21 @@ class ChatViewModel internal constructor(
             users = userRepository,
             chats = chatRepository,
             history = history,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    private val pollOptions =
+        PollOptionAdding(
+            chatId = chatId,
+            repository = pollRepository,
             messageOf = { id ->
                 history.replayCache
                     .firstOrNull()
@@ -935,6 +1005,20 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    private val giveaways =
+        ChatGiveaways(
+            chatId = chatId,
+            repository = giveawayRepository,
+            chats = chatRepository,
+            history = history,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** A giveaway's details ("Learn more"); null while the sheet is closed. Kept out of [uiState]. */
+    val giveawayInfoSheet: StateFlow<GiveawayInfoSheet?> get() = giveaways.sheet
 
     private val dateTimes =
         ChatDateTimes(
@@ -1033,6 +1117,9 @@ class ChatViewModel internal constructor(
                 }
             }.distinctUntilChanged()
 
+    /** "Message channel" of a channel whose subscribers write to its administrators; null for other chats. */
+    private val messageChannel = messageChannelButton(group.map { it.supergroup }, chatJoinRepository, groupRepository)
+
     /** The chats the messages name, by id: their titles and photos, which change far less often than the chats. */
     private val referencedChats: Flow<ImmutableMap<Long, ChatRef>> =
         combine(history, replies, composer.mode) { history, replies, mode ->
@@ -1052,7 +1139,8 @@ class ChatViewModel internal constructor(
         combine(
             chat,
             group,
-            chatActionRepository.actions(chatId),
+            // A topic's or thread's conversation shows only what is done in it (TDLib reports it for the chat too).
+            topic?.let { chatActionRepository.actions(chatId, it) } ?: chatActionRepository.actions(chatId),
             savedStateHandle.getStateFlow<Long?>(KEY_UNREAD_AFTER, null),
             thread.state,
             ::ChatSources,
@@ -1083,9 +1171,6 @@ class ChatViewModel internal constructor(
             onShow = window::showMessage,
         )
 
-    /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
-    val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
-
     private val scheduled =
         ChatScheduledMessages(
             chatId = chatId,
@@ -1108,6 +1193,9 @@ class ChatViewModel internal constructor(
             onShow = window::showMessage,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    /** The keyword alert match the match bar shows, whose words its bubble marks (board 30); null without a bar. */
+    private val keywordShown = MutableStateFlow<KeywordShown?>(null)
 
     private val search =
         ChatSearch(
@@ -1172,13 +1260,19 @@ class ChatViewModel internal constructor(
             .combine(bots.state) { state, bots -> state.withBots(bots) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
+            .combine(messageChannel) { state, button -> state.withMessageChannel(button) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
-            .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
-            .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
+            .combine(translation.bubbles.combine(summaries.bubbles, ::withSummaries)) { state, translations ->
+                state.withTranslations(translations)
+            }.combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
-            .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
+            .combine(transcripts?.bubbles ?: flowOf(persistentMapOf())) { state, transcripts ->
+                state.withTranscripts(transcripts, canTranscribe = this.transcripts?.isAvailable == true)
+            }.combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
+            .combine(keywordShown) { state, shown -> state.withKeywordMatch(shown) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
+            .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
             .combine(richMessages.state) { state, rich -> state.withRichMessages(rich) }
             .flowOn(dispatcher)
@@ -1197,6 +1291,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch(Dispatchers.Main) {
             composer.start()
             attachments.start()
+            if (attachments.isPollOpen.value) attachments.loadPollLimits()
             shares.start()
             replyElsewhere.start()
             bots.start()
@@ -1207,6 +1302,8 @@ class ChatViewModel internal constructor(
             autoDownloads.start()
             customEmojis.start(composer.text)
             translation.start()
+            summaries.start()
+            giveaways.restore()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
@@ -1223,6 +1320,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.SetMuted -> headerActions.setMuted(event.isMuted)
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
+            is ChatEvent.KeywordMatchShown -> keywordShown.value = event.match
             is ChatEvent.OpenThread -> thread.open(event.messageId)
             ChatEvent.Retry -> retry()
             ChatEvent.JoinChat -> joining.join()
@@ -1234,6 +1332,10 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
+            is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
+            is ChatEvent.OpenForwardSource -> event.source.open(chatId, window::showMessage, effectChannel::trySend)
+            ChatEvent.OpenUpdatePage -> effectChannel.trySend(ChatEffect.OpenUrl(LATEST_RELEASE_URL))
+            ChatEvent.ReportChat -> reporting.start(emptyList(), wholeChat = true)
             is ChatEvent.OpenMention -> mentions.open(event.target)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
@@ -1254,10 +1356,14 @@ class ChatViewModel internal constructor(
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
+            is SummaryEvent -> summaries.onEvent(event)
+            is TranscriptionEvent -> transcripts?.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
+            is GiveawayEvent -> giveaways.onEvent(event)
             is DateTimeEvent -> dateTimes.onEvent(event)
             is ChecklistEvent -> checklists.onEvent(event)
+            is PollOptionEvent -> pollOptions.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
             else -> onMessageEvent(event)
         }
@@ -1268,6 +1374,7 @@ class ChatViewModel internal constructor(
         when (event) {
             is PollEvent.RetractVote -> messageActions.retractVote(event.messageId)
             is PollEvent.StopPoll -> messageActions.stopPoll(event.messageId)
+            is PollEvent.OpenStatistics -> effectChannel.trySend(ChatEffect.OpenPollStatistics(chatId, event.messageId))
             else -> polls.onEvent(event)
         }
     }
@@ -1317,7 +1424,7 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.Wave -> attachments.wave(event.messageId)
 
-            is ChatEvent.SendAnimation -> attachments.sendAnimation(event.animation)
+            is ChatEvent.SendAnimation -> attachments.sendAnimation(event, composer)
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 
@@ -1330,6 +1437,10 @@ class ChatViewModel internal constructor(
             ChatEvent.OpenPoll -> attachments.openPoll()
 
             ChatEvent.DismissPoll -> attachments.dismissPoll()
+
+            is ChatEvent.PickPollPhoto -> attachments.pickPollPhoto(event.uri)
+
+            ChatEvent.RemovePollPhoto -> attachments.removePollPhoto()
 
             // A poll goes out anonymous in a channel.
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
@@ -1385,6 +1496,7 @@ class ChatViewModel internal constructor(
         views.setVisible(messageIds)
         pinned.setVisible(messageIds)
         translation.setVisible(messageIds)
+        transcripts?.onVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
         val messages =
             history.replayCache
@@ -1466,17 +1578,19 @@ class ChatViewModel internal constructor(
             composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
                 .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
-        val me = people.myUserId?.let(people.users::get)
-        val options = attachOptions(chat, user, people.myUserId, isPremium = me?.isPremium == true)
+        val premium = people.myUserId?.let(people.users::get)?.isPremium == true
+        val options = attachOptions(chat, user, people.myUserId, isPremium = premium)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
+        val bar = overlays.bar(chat, history, people)
         return ChatUiState(
             header = header,
             content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
             unreadMentionCount = chat.unreadMentionCount,
+            showsUpdateLink = !appInfo.isFromAppStore,
             groupMemberCount = group.memberCount.takeIf { chat.isGroup },
             typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
+            composer = if (canWrite) composer.withBar(bar, options, premium) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
@@ -1510,6 +1624,9 @@ class ChatViewModel internal constructor(
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
+
+        /** Where "Update Pingogram" leads from a message this version cannot show: the latest GitHub release. */
+        const val LATEST_RELEASE_URL = "https://github.com/kyra-labs/pingogram-android/releases/latest"
 
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
@@ -1680,8 +1797,14 @@ private data class ChatGroup(
 private fun ComposerUiState.Available.withBar(
     bar: ComposerBar?,
     attachOptions: ImmutableList<AttachOption>,
+    canRepeat: Boolean,
 ): ComposerUiState.Available =
-    copy(bar = bar, attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions)
+    copy(
+        bar = bar,
+        attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions,
+        // A Telegram Premium subscriber may repeat what they schedule; an edit schedules nothing.
+        canRepeat = canRepeat && canSchedule && bar !is ComposerBar.Edit,
+    )
 
 /** The state with [sendAs] on the composer, where the user can write and is not editing: an edit keeps its sender. */
 private fun ChatUiState.withSendAs(sendAs: SendAsChoice?): ChatUiState {

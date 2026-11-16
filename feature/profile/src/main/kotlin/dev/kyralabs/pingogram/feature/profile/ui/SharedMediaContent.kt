@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -99,32 +101,33 @@ internal fun LazyGridScope.sharedMediaItems(
     actions: SharedMediaActions,
     cellSizePx: Int,
     margin: Dp,
+    motion: ItemMotion,
     showTabs: Boolean = true,
     @StringRes emptyBody: Int = R.string.profile_media_empty_body,
 ) {
     val chatId = media.chatId ?: return
     if (showTabs) {
-        fullSpan(key = TABS, contentType = TABS) {
+        fullSpan(key = TABS, contentType = TABS, motion = motion) {
             SharedMediaTabRow(media.selected, onSelect = { onEvent(SharedMediaEvent.Select(it)) }, margin = margin)
         }
     }
     when (val content = media.content) {
         null, SharedMediaContent.Loading -> {
-            fullSpan(key = STATE, contentType = STATE) { MediaLoading() }
+            fullSpan(key = STATE, contentType = STATE, motion = motion) { MediaLoading() }
         }
 
         SharedMediaContent.Empty -> {
-            fullSpan(key = STATE, contentType = STATE) { MediaEmpty(media.selected, emptyBody) }
+            fullSpan(key = STATE, contentType = STATE, motion = motion) { MediaEmpty(media.selected, emptyBody) }
         }
 
         is SharedMediaContent.Error -> {
-            fullSpan(key = STATE, contentType = STATE) {
+            fullSpan(key = STATE, contentType = STATE, motion = motion) {
                 MediaError(content, onRetry = { onEvent(SharedMediaEvent.Retry) })
             }
         }
 
         is SharedMediaContent.Items -> {
-            itemsWithMore(content, chatId, onEvent, actions, cellSizePx, margin)
+            itemsWithMore(content, chatId, onEvent, actions, cellSizePx, margin, motion)
         }
     }
 }
@@ -137,6 +140,7 @@ private fun LazyGridScope.itemsWithMore(
     actions: SharedMediaActions,
     cellSizePx: Int,
     margin: Dp,
+    motion: ItemMotion,
 ) {
     val items = content.items
     val rows = items.count { it !is SharedMediaItem.Media }
@@ -150,7 +154,7 @@ private fun LazyGridScope.itemsWithMore(
     ) { index, item ->
         when (item) {
             is SharedMediaItem.Media -> {
-                MediaCell(item, cellSizePx, onClick = { actions.onOpenMedia(chatId, item.messageId) })
+                MediaCell(item, cellSizePx, motion, onClick = { actions.onOpenMedia(chatId, item.messageId) })
             }
 
             is SharedMediaItem.File -> {
@@ -158,7 +162,7 @@ private fun LazyGridScope.itemsWithMore(
                     item = item,
                     shapes = ListItemDefaults.segmentedShapes(rowIndices[index], rows),
                     onClick = { actions.onOpenMessage(chatId, item.messageId) },
-                    modifier = Modifier.padding(horizontal = margin).animateItem(),
+                    modifier = Modifier.padding(horizontal = margin).animateItem(this, motion),
                 )
             }
 
@@ -167,18 +171,18 @@ private fun LazyGridScope.itemsWithMore(
                     item = item,
                     shapes = ListItemDefaults.segmentedShapes(rowIndices[index], rows),
                     onClick = { actions.onOpenUrl(item.url) },
-                    modifier = Modifier.padding(horizontal = margin).animateItem(),
+                    modifier = Modifier.padding(horizontal = margin).animateItem(this, motion),
                 )
             }
         }
     }
     when (val more = content.more) {
         MoreMedia.Loading -> {
-            fullSpan(key = MORE, contentType = MORE) { MediaLoading() }
+            fullSpan(key = MORE, contentType = MORE, motion = motion) { MediaLoading() }
         }
 
         is MoreMedia.Failed -> {
-            fullSpan(key = MORE, contentType = MORE) {
+            fullSpan(key = MORE, contentType = MORE, motion = motion) {
                 MoreError(more, onRetry = { onEvent(SharedMediaEvent.LoadMore) })
             }
         }
@@ -212,12 +216,19 @@ internal fun SharedMediaLoadMoreEffect(
     }
 }
 
+/**
+ * A full-width item that comes, moves and goes on [motion]'s springs, as the tab's items do, so a tab change
+ * crossfades its loading, empty or error state with the items on the effects springs (`docs/DESIGN_SYSTEM.md` §5.1).
+ */
 private fun LazyGridScope.fullSpan(
     key: Any,
     contentType: Any,
+    motion: ItemMotion,
     content: @Composable LazyGridItemScope.() -> Unit,
 ) {
-    item(key = key, span = { GridItemSpan(maxLineSpan) }, contentType = contentType, content = content)
+    item(key = key, span = { GridItemSpan(maxLineSpan) }, contentType = contentType) {
+        Box(Modifier.animateItem(this, motion)) { content() }
+    }
 }
 
 /** The content type of an item's composable: a grid cell or a row of one kind. */

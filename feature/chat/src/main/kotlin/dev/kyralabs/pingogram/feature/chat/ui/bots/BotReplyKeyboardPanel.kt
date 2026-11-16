@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +55,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.PanelArea
 import dev.kyralabs.pingogram.feature.chat.ui.composer.PanelContent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.panelHeight
 import dev.kyralabs.pingogram.feature.chat.ui.preview.BotKeyboardPreviewData
+import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // A bot's keyboard in the system keyboard's place (docs/DESIGN_SYSTEM.md §6 "Bot keyboard").
@@ -197,7 +199,7 @@ internal fun BotReplyKeyboardPanel(
         }
         onPress(position)
     }
-    if (keyboard.resize && panel.isOpen) {
+    if (keyboard.resize && panel.isShown) {
         ResizedPanelArea(panel) { KeyboardRows(keyboard, press) }
     } else {
         PanelArea(panel) { KeyboardRows(keyboard, press) }
@@ -233,8 +235,9 @@ private fun KeyboardRows(
 
 /**
  * The panel's place for a keyboard that may be resized: as tall as [content] (above the navigation bar), at most the
- * panel's height, and at least the system keyboard's while it comes and goes, so the composer does not jump. Measured
- * in the layout phase, where the insets are read.
+ * panel's height, and at least the system keyboard's while it comes and goes, so the composer does not jump. While the
+ * panel grows in or shrinks away ([ComposerPanelState.shown]) it takes that part of [content]'s height, which keeps its
+ * own, clipped. Measured in the layout phase, where the insets and the panel's growth are read.
  */
 @Composable
 private fun ResizedPanelArea(
@@ -245,15 +248,18 @@ private fun ResizedPanelArea(
     val navigationBars = WindowInsets.navigationBars
     val bottom = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
     Box(
-        Modifier.fillMaxWidth().layout { measurable, constraints ->
-            val navigationBar = navigationBars.getBottom(this)
-            val rows =
-                measurable.measure(
-                    constraints.copy(minHeight = 0, maxHeight = (maxHeight - navigationBar).coerceAtLeast(0)),
-                )
-            val height = maxOf(rows.height + navigationBar, bottom.getBottom(this))
-            layout(constraints.maxWidth, height) { rows.place(0, 0) }
-        },
+        Modifier
+            .fillMaxWidth()
+            .layout { measurable, constraints ->
+                val navigationBar = navigationBars.getBottom(this)
+                val rows =
+                    measurable.measure(
+                        constraints.copy(minHeight = 0, maxHeight = (maxHeight - navigationBar).coerceAtLeast(0)),
+                    )
+                val shown = (rows.height * panel.shown.value).roundToInt()
+                val height = maxOf(shown + navigationBar, bottom.getBottom(this))
+                layout(constraints.maxWidth, height) { rows.place(0, 0) }
+            }.clipToBounds(),
     ) {
         content()
     }

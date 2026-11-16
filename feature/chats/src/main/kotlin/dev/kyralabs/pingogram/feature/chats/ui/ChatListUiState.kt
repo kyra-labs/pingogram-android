@@ -6,8 +6,10 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -56,9 +58,14 @@ data class ChatListSummary(
     val unreadChats: Int = 0,
     val mentionChats: Int = 0,
     val account: HeaderAccount? = null,
+    /** The chats Catch-up would go through (`CatchUpChats`). */
+    val catchUpChats: Int = 0,
 ) {
     /** The status line shows: something is unread. */
     val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0
+
+    /** The header offers Catch-up: from `CatchUpChats.MIN_CHATS` chats to catch up on (owner decision 2026-11-15). */
+    val offersCatchUp: Boolean get() = catchUpChats >= CatchUpChats.MIN_CHATS
 }
 
 /** The signed-in user as the header's avatar shows them. */
@@ -102,8 +109,47 @@ sealed interface ChatListContent {
          * header (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner decision 2026-11-06). 0 shows neither.
          */
         val pinnedCount: Int = 0,
-    ) : ChatListContent
+        /**
+         * The communities whose chats show as one entry (`docs/DESIGN_SYSTEM.md` §6 "Community entry"), in the order
+         * of their places: each stands before the row of [items] at [CommunityEntry.before], and its chats are not in
+         * [items]. Empty outside the main list.
+         */
+        val communities: ImmutableList<CommunityEntry> = persistentListOf(),
+    ) : ChatListContent {
+        /** Every chat of the list: [items], then the chats of [communities]. */
+        val allRows: List<ChatListItemModel>
+            get() = if (communities.isEmpty()) items else items + communities.flatMap { it.chats }
+    }
 }
+
+/**
+ * A community the user joined whose chats show as one entry in the main list (td_api.tl
+ * `community.are_chats_collapsed`; the owner's board 19b), in the place of its newest chat.
+ *
+ * @property name the community's name, as plain text.
+ * @property chats its chats in the main list, in TDLib's order, mapped as any row; pinned chats stay pinned instead.
+ * @property unreadChatCount how many of [chats] have unread messages (or are marked as unread), which the entry's badge
+ *   counts as Telegram's apps do (owner decision 2026-11-15); 0 shows none.
+ * @property isMuted the community's notifications are muted: the badge takes the muted style.
+ * @property isExpanded its chats show below it, inset; kept on this device.
+ * @property before the index in [ChatListContent.Content.items] of the row the entry stands before.
+ */
+@Immutable
+data class CommunityEntry(
+    val id: Long,
+    val name: String,
+    val photo: ProfilePhoto?,
+    val chats: ImmutableList<ChatListItemModel>,
+    val unreadChatCount: Int,
+    val isMuted: Boolean,
+    val isExpanded: Boolean,
+    val before: Int,
+) {
+    override fun toString() = "CommunityEntry(id=$id, chats=${chats.size}, isExpanded=$isExpanded, …)"
+}
+
+/** The folder id of the "Keyword alerts" tab ([FolderTab.KeywordAlerts]), which no TDLib folder has. */
+internal const val KEYWORD_ALERTS_FOLDER_ID = Int.MIN_VALUE
 
 /** A tab above the chat list. */
 @Immutable
@@ -114,11 +160,28 @@ sealed interface FolderTab {
     /** Any chat of the tab's list is unread, muted ones included: its menu offers "Mark all as read". */
     val hasUnread: Boolean
 
+    /** The folder the tab selects: null for "All chats", [KEYWORD_ALERTS_FOLDER_ID] for "Keyword alerts". */
+    val folderId: Int?
+
     /** The main list. */
     data class AllChats(
         override val unreadCount: Int,
         override val hasUnread: Boolean = unreadCount > 0,
-    ) : FolderTab
+    ) : FolderTab {
+        override val folderId: Int? get() = null
+    }
+
+    /**
+     * "Keyword alerts" (board 30, owner decision 2026-11-15): the [chatCount] chats with a match of the user's keyword
+     * alerts in the last week, last among the tabs while there are any and the user asked for the tab. No menu.
+     */
+    data class KeywordAlerts(
+        val chatCount: Int,
+    ) : FolderTab {
+        override val unreadCount: Int get() = chatCount
+        override val hasUnread: Boolean get() = false
+        override val folderId: Int get() = KEYWORD_ALERTS_FOLDER_ID
+    }
 
     /**
      * Chat folder [id], [title] as plain text (its custom emoji show as their fallback emoji), and TDLib's name of its
@@ -131,6 +194,8 @@ sealed interface FolderTab {
         override val hasUnread: Boolean = unreadCount > 0,
         val iconName: String = "",
     ) : FolderTab {
+        override val folderId: Int get() = id
+
         override fun toString() = "Folder(id=$id, unreadCount=$unreadCount, …)"
     }
 }
@@ -149,6 +214,8 @@ sealed interface FolderTab {
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property isPinned pinned in the list shown.
  * @property unreadCount unread messages; 0 shows no count.
+ * @property unreadTopicCount a forum's topics with unread messages, which its badge counts instead of the messages, as
+ *   Telegram's apps do (owner decision 2026-11-15); null where it is no forum, or before its topics are counted.
  * @property hasUnreadMention unread messages that mention the current user.
  * @property hasUnreadReactions reactions to the current user's messages that they have not seen.
  * @property isMarkedAsUnread marked as unread by the user, with nothing unread.
@@ -158,6 +225,10 @@ sealed interface FolderTab {
  * @property actions what the user can do to the chat, in the order screen readers list them ([rowActions]); the row's
  *   swipes are two of them ([startSwipeAction], [endSwipeAction]).
  * @property avatarShape the avatar's shape: a rounded square for a forum, a circle otherwise ([AvatarShape.ofChat]).
+ * @property topics a forum's topics, the newest message first, which its row names on a line of its own above the
+ *   preview, as Telegram's apps do (owner decision 2026-11-15); null where it is no forum, or before they are loaded.
+ * @property keyword the word of the user's keyword alerts the chat matched, as a chip, on the "Keyword alerts" tab
+ *   only (board 30); null elsewhere.
  */
 @Immutable
 data class ChatListItemModel(
@@ -180,12 +251,27 @@ data class ChatListItemModel(
     val preview: ChatPreview,
     val actions: ImmutableList<ChatRowAction>,
     val avatarShape: AvatarShape = AvatarShape.Circle,
+    val unreadTopicCount: Int? = null,
+    val topics: ImmutableList<RowTopic>? = null,
+    val keyword: String? = null,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread
 
     override fun toString() = "ChatListItemModel(id=$id, unreadCount=$unreadCount, …)"
 }
+
+/**
+ * A topic a forum's row names: its [name], the [color] of its icon (null for General, which has a symbol of its own),
+ * and whether it has unread messages ([isUnread]).
+ */
+@Immutable
+data class RowTopic(
+    val id: Int,
+    val name: String,
+    val color: TopicColor?,
+    val isUnread: Boolean,
+)
 
 /** A badge after a chat's title, from Telegram's verification of the user, group or channel. */
 enum class TitleBadge {

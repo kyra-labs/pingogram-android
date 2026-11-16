@@ -17,11 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -40,7 +38,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -48,12 +45,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.feature.settings.ui.qr.StepBadge
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -97,7 +96,7 @@ internal fun ProxyLinkSheet(
     onDismiss: () -> Unit,
     sheetState: SheetState,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         ProxyLinkContent(state, onEvent, onClose)
     }
 }
@@ -170,10 +169,7 @@ private fun Question(
         )
     }
     state.error?.let { ConnectError(it) }
-    if (state.connecting) {
-        val connecting = stringResource(R.string.settings_proxy_link_connecting)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = connecting })
-    }
+    StepProgress(state.connecting, stringResource(R.string.settings_proxy_link_connecting))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,17 +205,15 @@ private fun ProxyDetails(
     val colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     Column(Modifier.fillMaxWidth()) {
         ListItem(
-            headlineContent = {
-                Text(
-                    text = stringResource(R.string.settings_proxy_address, proxy.server, proxy.port.toString()),
-                    style = MaterialTheme.typography.bodyLarge.numericContent,
-                )
-            },
             supportingContent = { Text(proxyKindName(proxy.type.kind)) },
             colors = colors,
-        )
+        ) {
+            Text(
+                text = stringResource(R.string.settings_proxy_address, proxy.server, proxy.port.toString()),
+                style = MaterialTheme.typography.bodyLarge.numericContent,
+            )
+        }
         ListItem(
-            headlineContent = { Text(proxyCheckText(state.check)) },
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             colors = colors,
             trailingContent = {
@@ -229,7 +223,9 @@ private fun ProxyDetails(
                     }
                 }
             },
-        )
+        ) {
+            Text(proxyCheckText(state.check))
+        }
     }
 }
 

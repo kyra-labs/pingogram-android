@@ -32,6 +32,16 @@ class ShareIntentsTest {
     }
 
     @Test
+    fun `the Quick compose widget's Voice asks for a chat to record a voice message in, and nothing else`() {
+        val share = shareOf(Intent(ACTION_NEW_VOICE_MESSAGE).putExtra(Intent.EXTRA_TEXT, "ignored"), notOwn)!!
+
+        assertTrue(share.content.voiceNote)
+        assertEquals("", share.content.text.text)
+        assertTrue(share.content.files.isEmpty())
+        assertNull(share.chatId)
+    }
+
+    @Test
     fun `a shared photo goes as media, with its text as caption`() {
         val share =
             shareOf(

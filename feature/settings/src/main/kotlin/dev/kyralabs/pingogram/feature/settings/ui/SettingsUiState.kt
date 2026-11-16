@@ -84,6 +84,15 @@ enum class SettingsPage {
 
     /** The user's QR code, from the account card. */
     MyQrCode,
+
+    /** Focus profiles (board 31), in "On this phone". */
+    Focus,
+
+    /** Keyword alerts (board 30), in "On this phone". */
+    KeywordAlerts,
+
+    /** The message reminders kept on this phone (the owner's board 29), in "On this phone". */
+    Reminders,
 }
 
 /**

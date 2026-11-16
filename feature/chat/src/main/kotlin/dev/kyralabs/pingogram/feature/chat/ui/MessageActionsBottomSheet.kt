@@ -26,7 +26,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
@@ -39,9 +38,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -52,9 +53,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The actions of a long-pressed message (`REQUIREMENTS.md` FR-C6, FR-C7; `docs/DESIGN_SYSTEM.md` §6 "Message actions",
- * "Reactions picker"): a [ModalBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which scrolls
- * sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more; then
- * the actions as list items, reporting and deleting in `error`.
+ * "Reactions picker"): a [PingogramBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which
+ * scrolls sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more;
+ * then the actions as list items, reporting and deleting in `error`.
  *
  * - **Reactions picker** ([ReactionPickerContent]), while [MessageActionsSheet.showsPicker]: it takes the place of the
  *   quick reactions and the actions, the sheet's content crossfading on the motion scheme's default effects springs
@@ -91,7 +92,7 @@ internal fun MessageActionsBottomSheet(
     val collapse: () -> Unit =
         remember(hideThen) { { hideThen { event -> currentOnEvent(event) }(ChatEvent.CollapseReactions) } }
     val motion = MaterialTheme.motionScheme
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             currentOnEvent(if (currentOnClose != null) ChatEvent.CollapseReactions else ChatEvent.DismissMessageActions)
         },
@@ -132,6 +133,7 @@ private fun ActionsContent(
         modifier =
             Modifier
                 .verticalScroll(rememberScrollState())
+                .testTag(MESSAGE_ACTIONS_TAG)
                 .padding(bottom = MaterialTheme.spacing.large),
     ) {
         if (sheet.reactions.isNotEmpty() || sheet.picker != null) QuickReactions(sheet, choose, onExpand)
@@ -236,18 +238,23 @@ internal val MessageAction.label: Int
             MessageAction.Resend -> R.string.message_action_resend
             MessageAction.Reply -> R.string.message_action_reply
             MessageAction.ReplyElsewhere -> R.string.message_action_reply_elsewhere
+            MessageAction.RemindMe -> R.string.message_action_remind
             MessageAction.Copy -> R.string.message_action_copy
             MessageAction.CopyLink -> R.string.message_action_copy_link
             MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
             MessageAction.Translate -> R.string.message_action_translate
             MessageAction.ShowOriginal -> R.string.message_action_show_original
+            MessageAction.Summarize -> R.string.message_action_summarize
+            MessageAction.ShowFullText -> R.string.message_action_show_full_text
             MessageAction.Forward -> R.string.message_action_forward
+            MessageAction.Bookmark -> R.string.message_action_bookmark
             MessageAction.Edit -> R.string.message_action_edit
             MessageAction.Pin -> R.string.message_action_pin
             MessageAction.PinForSelf -> R.string.message_action_pin_for_self
             MessageAction.Unpin -> R.string.message_action_unpin
             MessageAction.RetractVote -> R.string.message_action_retract_vote
             MessageAction.StopPoll -> R.string.message_action_stop_poll
+            MessageAction.PollStatistics -> R.string.message_action_poll_statistics
             MessageAction.SaveToDownloads -> R.string.message_action_save_to_downloads
             MessageAction.Select -> R.string.message_action_select
             MessageAction.Report -> R.string.message_action_report
@@ -262,15 +269,19 @@ internal val MessageAction.icon: Int
             MessageAction.Resend -> UiR.drawable.ic_refresh
             MessageAction.Reply -> UiR.drawable.ic_reply
             MessageAction.ReplyElsewhere -> R.drawable.ic_chat_paste_go
+            MessageAction.RemindMe -> UiR.drawable.ic_alarm
             MessageAction.Copy -> UiR.drawable.ic_content_copy
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
+            MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_summarize
             MessageAction.Forward -> UiR.drawable.ic_forward
+            MessageAction.Bookmark -> R.drawable.ic_bookmark
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
-            MessageAction.RetractVote -> UiR.drawable.ic_history
+            MessageAction.RetractVote -> UiR.drawable.ic_undo
             MessageAction.StopPoll -> R.drawable.ic_block
+            MessageAction.PollStatistics -> UiR.drawable.ic_bar_chart
             MessageAction.SaveToDownloads -> UiR.drawable.ic_download
             MessageAction.Select -> UiR.drawable.ic_check_circle
             MessageAction.Report -> UiR.drawable.ic_error
@@ -285,17 +296,22 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)
         MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(messageId)
+        MessageAction.RemindMe -> ReminderEvent.Open(messageId)
         MessageAction.Copy -> ChatEvent.Copy(messageId)
         MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(messageId)
         MessageAction.Translate -> TranslationEvent.Translate(messageId)
         MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(messageId)
+        MessageAction.Summarize -> SummaryEvent.Summarize(messageId)
+        MessageAction.ShowFullText -> SummaryEvent.ShowFullText(messageId)
         MessageAction.Forward -> ChatEvent.Forward(messageId)
+        MessageAction.Bookmark -> BookmarkEvent.Open(messageId)
         MessageAction.Edit -> ChatEvent.Edit(messageId)
         MessageAction.Pin -> ChatEvent.Pin(messageId)
         MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)
         MessageAction.Unpin -> ChatEvent.Unpin(messageId)
         MessageAction.RetractVote -> PollEvent.RetractVote(messageId)
         MessageAction.StopPoll -> PollEvent.StopPoll(messageId)
+        MessageAction.PollStatistics -> PollEvent.OpenStatistics(messageId)
         MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(messageId)
         MessageAction.Select -> SelectionEvent.Select(messageId)
         MessageAction.Report -> SelectionEvent.Report(messageId)

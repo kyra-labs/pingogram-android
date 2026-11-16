@@ -27,10 +27,13 @@ import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
+import dev.kyralabs.pingogram.core.navigation.OauthLoginRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
+import dev.kyralabs.pingogram.core.navigation.TextStyleRoute
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 
 /**
  * Hands [link], a Telegram link another app opened Pingogram with, to [onOpen] once the main graph shows, after
@@ -75,8 +78,9 @@ internal fun OpenLinkEffect(
  *   (`StickerSetRoute`, a dialog destination of the settings pages' graph); a **QR code
  *   login** the page that asks before logging the device in (`QrLoginRoute`); a **boost** link the chat's boosts
  *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`); a **proxy** the sheet that asks before
- *   connecting through it (`ProxyLinkRoute`, a dialog destination of the settings pages' graph). Each of them changes
- *   nothing by itself.
+ *   connecting through it (`ProxyLinkRoute`, a dialog destination of the settings pages' graph); a request to **log in
+ *   with Telegram**, handed over by another app, the sheet that asks before anything is shared (`OauthLoginRoute`, the
+ *   same). Each of them changes nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
  *   goes to, never sent by itself.
  * - A **group call's** link (`t.me/call/…`) opens the voice chat's screen through [onJoinGroupCall], which asks before
@@ -104,10 +108,12 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.ChatInvite -> navigate(ChatInviteRoute(target.inviteLink)) { launchSingleTop = true }
         is LinkTarget.ChatFolderInvite -> navigate(ChatFolderInviteRoute(target.inviteLink)) { launchSingleTop = true }
         is LinkTarget.StickerSet -> navigate(StickerSetRoute(name = target.name)) { launchSingleTop = true }
+        is LinkTarget.TextCompositionStyle -> navigate(TextStyleRoute(target.name)) { launchSingleTop = true }
         is LinkTarget.QrCodeLogin -> navigate(QrLoginRoute(target.link)) { launchSingleTop = true }
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }
         is LinkTarget.ProxyServer -> navigate(target.proxy.linkRoute()) { launchSingleTop = true }
+        is LinkTarget.OauthLogin -> navigate(OauthLoginRoute(target.url)) { launchSingleTop = true }
         is LinkTarget.MessageDraft -> onShare(SharedContent(text = target.text))
         else -> return target is LinkTarget.GroupCall && onJoinGroupCall?.invoke(target.link) != null
     }
@@ -127,13 +133,19 @@ private fun NavHostController.openLinkedChat(
     val openChat = current?.takeIf { it.destination.hasRoute<ChatRoute>() }?.toRoute<ChatRoute>()
     val sameChat = openChat?.chatId == target.chatId
     if (sameChat && target.messageId == null) return
-    if (besideList) return navigateToChat(target.chatId, target.messageId, besideList = true)
-    navigate(ChatRoute(target.chatId, target.messageId)) {
-        when {
-            sameChat -> popUpTo<ChatRoute> { inclusive = true }
-            fromOutside -> popUpTo(TopLevelDestination.Start.route)
+    if (besideList) {
+        navigateToChat(target.chatId, target.messageId, besideList = true)
+    } else {
+        navigate(ChatRoute(target.chatId, target.messageId)) {
+            when {
+                sameChat -> popUpTo<ChatRoute> { inclusive = true }
+                fromOutside -> popUpTo(TopLevelDestination.Start.route)
+            }
         }
     }
+    // A link's `?t=` to a video plays it from there, above its conversation.
+    val messageId = target.messageId ?: return
+    target.videoSeconds?.let { navigateToMediaViewer(target.chatId, messageId, startSeconds = it) }
 }
 
 /** The route of the sheet that asks before connecting through this proxy. */

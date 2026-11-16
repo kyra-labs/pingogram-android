@@ -2,10 +2,12 @@ package dev.kyralabs.pingogram.widget
 
 import android.app.Application
 import dev.kyralabs.pingogram.core.data.repository.OpenChats
+import dev.kyralabs.pingogram.core.data.repository.SecretChatLinkPreviews
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
@@ -14,6 +16,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -96,6 +99,12 @@ class RecentChatsWidgetUpdaterTest {
                     files,
                     FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
                     dispatcher,
+                ),
+            messages =
+                TdlibMessageRepository(
+                    client,
+                    backgroundScope,
+                    SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
                 ),
         )
     }
@@ -206,6 +215,20 @@ class RecentChatsWidgetUpdaterTest {
             assertEquals(3, content.chats.first().unreadCount)
             content.chats.forEach { assertNotNull(it.avatar) }
             assertTrue(widgets.updates > 0)
+        }
+
+    @Test
+    fun `the unread counter gets TDLib's unread messages and the chats' mentions`() =
+        runTest {
+            val updater = updater(FakeWidgets(0))
+            chats()
+            client.emit(TdApi.UpdateChatUnreadMentionCount(GROUP, 2))
+            client.emit(TdApi.UpdateUnreadMessageCount(TdApi.ChatListMain(), 50, 47))
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(47 to 2, content.unreadMessages to content.mentions)
         }
 
     @Test

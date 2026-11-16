@@ -10,7 +10,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -32,7 +29,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
-import dev.kyralabs.pingogram.feature.settings.ui.twostep.FloodWaitNote
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.FloodWaitSlot
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepFieldSpec
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepPasswordField
 import java.text.NumberFormat
@@ -99,11 +96,8 @@ internal fun DeleteActions(
     passwordEntered: Boolean,
     onEvent: (DeleteAccountEvent) -> Unit,
 ) {
-    state.floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = state.floodWaitTotalSeconds) }
-    if (state.isDeleting) {
-        val deleting = stringResource(R.string.settings_delete_account_deleting)
-        LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = deleting })
-    }
+    FloodWaitSlot(seconds = state.floodWaitSeconds, totalSeconds = state.floodWaitTotalSeconds)
+    StepProgress(state.isDeleting, stringResource(R.string.settings_delete_account_deleting))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         Button(
             onClick = { onEvent(DeleteAccountEvent.RequestDeletion) },

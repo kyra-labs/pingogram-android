@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import android.content.res.Resources
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +32,8 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,6 +48,7 @@ import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
+import dev.kyralabs.pingogram.core.ui.component.revealHorizontally
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
@@ -53,6 +57,8 @@ import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -186,7 +192,10 @@ internal data class RowSelection(
  * tells screen readers whether it is selected.
  */
 @Composable
-internal fun SelectionCheck(isSelected: Boolean) {
+internal fun SelectionCheck(
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val colors = MaterialTheme.colorScheme
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1f else SELECTION_CHECK_RESTING_SCALE,
@@ -201,7 +210,7 @@ internal fun SelectionCheck(isSelected: Boolean) {
         contentDescription = null,
         tint = if (isSelected) colors.primary else colors.outline,
         modifier =
-            Modifier
+            modifier
                 .padding(end = MaterialTheme.spacing.small)
                 .graphicsLayer {
                     scaleX = scale

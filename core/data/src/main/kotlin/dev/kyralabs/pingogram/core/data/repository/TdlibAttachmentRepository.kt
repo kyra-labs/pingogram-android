@@ -190,10 +190,15 @@ class TdlibAttachmentRepository internal constructor(
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
+        caption: FormattedText?,
+        captionAbove: Boolean,
     ): Outcome<Unit> =
         client.sendMessage(
             chatId,
-            animation.toInputMessageAnimation(),
+            animation.toInputMessageAnimation(
+                caption?.takeIf { it.text.isNotBlank() }?.toTdFormattedText(),
+                captionAbove,
+            ),
             options,
             replyTo?.toInputMessageReplyTo(),
         )

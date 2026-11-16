@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
@@ -38,9 +39,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -108,6 +111,9 @@ class RecentChatsWidgetUpdater
             // §2). The system shows the widget's last content meanwhile.
             val started = scope.async { delay(START_UPDATE_DELAY) }
             scope.launch {
+                // Asking the launcher which widgets are placed (a binder call, then a state read per widget) and
+                // loading their content wait too, unless a widget asks first (a process started for it).
+                merge(flow { emit(started.await()) }, placed.filterNotNull().map { }).first()
                 if (placed.value == null) placed.compareAndSet(null, widgets.slots())
                 placed
                     .filterNotNull()
@@ -120,7 +126,10 @@ class RecentChatsWidgetUpdater
                         widgets.updateAll()
                     }
             }
-            scope.launch { accounts.collect { known -> moveWidgetsOfGone(known.keys) } }
+            // Once the placed widgets are known: those of an account that left the device meanwhile move too.
+            scope.launch {
+                combine(accounts, placed.filterNotNull()) { known, _ -> known.keys }.collect(::moveWidgetsOfGone)
+            }
         }
 
         /** A widget of the account in [slot] asked for its content. */
@@ -206,19 +215,26 @@ class RecentChatsWidgetUpdater
                     combine(chatRepository.chatList(ChatListType.Main), account.chatLock.lockedChatIds) { all, locked ->
                         if (locked.isEmpty()) all else all.filterNot { it.id in locked }
                     }
+                val unread = chatRepository.unreadMessageCount(ChatListType.Main).map { it.unreadUnmutedCount }
                 combine(
-                    chats,
+                    combine(chats, unread, ::Pair),
                     account.users.users,
                     account.users.myUserId,
                     account.groups.supergroups,
                     loaded,
-                ) { list, users, me, supergroups, done ->
+                ) { (list, unreadMessages), users, me, supergroups, done ->
                     val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot)
                     val shown = list.take(MAX_CHATS)
                     if (rows.isEmpty() && !done) {
                         null
                     } else {
-                        Rows(rows, shown.map { it.photo }, shown.map { it.isForumIn(supergroups) })
+                        Rows(
+                            rows,
+                            shown.map { it.photo },
+                            shown.map { it.isForumIn(supergroups) },
+                            unreadMessages,
+                            list.sumOf { it.unreadMentionCount },
+                        )
                     }
                 }.distinctUntilChanged()
                     .debounce(UPDATE_DELAY)
@@ -236,14 +252,18 @@ class RecentChatsWidgetUpdater
                     val corner = forumCorner.takeIf { forums[index] }
                     row.copy(avatar = avatars.bitmap(photos[index], row.id, row.title, size, corner))
                 },
+                unreadMessages = unreadMessages,
+                mentions = mentions,
             )
         }
 
-        /** The widget's rows, the chats' photos and which are forums, compared as a whole before avatars are drawn. */
+        /** The rows, their photos, which are forums, and the totals: compared as a whole before avatars are drawn. */
         private data class Rows(
             val rows: List<WidgetChat>,
             val photos: List<ProfilePhoto?>,
             val forums: List<Boolean>,
+            val unreadMessages: Int,
+            val mentions: Int,
         )
 
         private enum class State { Loading, SignedOut, Locked, Chats }
@@ -267,8 +287,8 @@ class RecentChatsWidgetUpdater
     }
 
 /**
- * What the widget reads of one account: its login, chats, users, supergroups (which are forums), locked chats, and
- * avatars from its files.
+ * What the widgets read of one account: its login, chats, users, groups (which supergroups are forums, and where the
+ * user may write), locked chats, avatars from its files, and a chat's messages for the Conversation widget.
  */
 internal data class WidgetAccount(
     val auth: AuthRepository,
@@ -277,6 +297,7 @@ internal data class WidgetAccount(
     val groups: GroupRepository,
     val chatLock: ChatLockRepository,
     val avatars: AvatarIcons,
+    val messages: MessageRepository,
 )
 
 /** Whether this chat is a forum, whose avatar is a rounded square. */
@@ -312,6 +333,7 @@ internal class WidgetAccounts
                     groups = repositories.groupRepository(),
                     chatLock = repositories.chatLockRepository(),
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
+                    messages = repositories.messageRepository(),
                 )
             }
     }

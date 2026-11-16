@@ -58,6 +58,31 @@ class DismissStateTest {
         assertEquals(false, state.isDismissed)
     }
 
+    // The stories viewer closes on a swipe down only (docs/DESIGN_SYSTEM.md §5.1, Q-24).
+
+    @Test
+    fun `down only, a swipe up past the threshold closes nothing`() {
+        val state = DismissState()
+        var closed = 0
+        state.draggableState.dispatchRawDelta(-HEIGHT * FAR)
+
+        state.onDragStopped(velocity = 0f, height = HEIGHT, spec = snap(), scope = scope, downOnly = true) { closed++ }
+
+        assertEquals(0, closed)
+        assertEquals(false, state.isDismissed)
+    }
+
+    @Test
+    fun `down only, a swipe down past the threshold still closes`() {
+        val state = DismissState()
+        var closed = 0
+        state.draggableState.dispatchRawDelta(HEIGHT * FAR)
+
+        state.onDragStopped(velocity = 0f, height = HEIGHT, spec = snap(), scope = scope, downOnly = true) { closed++ }
+
+        assertEquals(1, closed)
+    }
+
     private companion object {
         const val HEIGHT = 2_000f
         const val FAR = 0.5f

@@ -144,6 +144,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "INVITE_HASH_INVALID" to DomainError.InviteLinkInvalid,
         "INVITE_HASH_EMPTY" to DomainError.InviteLinkInvalid,
         "USERS_TOO_MUCH" to DomainError.ChatFull,
+        // Communities: addCommunityChat, processCommunityAddChatRequest.
+        "COMMUNITY_PEERS_TOO_MUCH" to DomainError.CommunityFull,
         // Chat folders: messages.updateDialogFilter, chatlists.checkChatlistInvite, chatlists.joinChatlistInvite.
         "DIALOG_FILTERS_TOO_MUCH" to DomainError.TooManyChatFolders,
         "CHATLISTS_TOO_MUCH" to DomainError.TooManyChatFolders,
@@ -166,6 +168,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHAT_TOO_BIG" to DomainError.MessageViewersUnavailable,
         // Polls: messages.sendVote in a poll that was closed meanwhile.
         "MESSAGE_POLL_CLOSED" to DomainError.PollClosed,
+        // The AI text editor: messages.composeMessageWithAI, account.saveTone.
+        "AICOMPOSE_FLOOD_PREMIUM" to DomainError.AiEditLimitReached,
+        "TONES_SAVED_TOO_MANY" to DomainError.TooManyTextStyles,
         // The demo's client (core:demo's DemoTdlibClient.NOT_AVAILABLE) for what its sample data cannot do.
         "NOT_AVAILABLE_IN_DEMO" to DomainError.NotAvailableInDemo,
     )

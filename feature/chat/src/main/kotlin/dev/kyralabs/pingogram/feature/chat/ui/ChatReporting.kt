@@ -58,9 +58,15 @@ internal class ChatReporting(
 
     private var reporting: Job? = null
 
-    /** Reports [messageIds]: opens the sheet and asks TDLib for the reasons. Nothing while a report is open. */
-    fun start(messageIds: List<Long>) {
-        if (messageIds.isEmpty() || mutableSheet.value != null) return
+    /**
+     * Reports [messageIds], or the [wholeChat] without them (its action bar's "Report"): opens the sheet and asks TDLib
+     * for the reasons. Nothing while a report is open.
+     */
+    fun start(
+        messageIds: List<Long>,
+        wholeChat: Boolean = false,
+    ) {
+        if ((messageIds.isEmpty() && !wholeChat) || mutableSheet.value != null) return
         this.messageIds = messageIds.distinct().sorted()
         options = emptyList()
         commentOption = null

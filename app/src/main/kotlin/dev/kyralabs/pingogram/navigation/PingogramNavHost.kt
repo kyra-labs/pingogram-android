@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.PageToOpen
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
@@ -31,6 +32,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
+import dev.kyralabs.pingogram.core.navigation.WidgetReplyRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
@@ -42,6 +45,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -53,6 +57,8 @@ import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStory
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
 import dev.kyralabs.pingogram.ui.ChatsListDetail
+import dev.kyralabs.pingogram.widget.widgetChatPicker
+import dev.kyralabs.pingogram.widget.widgetReply
 
 /**
  * The app's single `NavHost`: the login flow ([AuthRoute]) and the signed-in app ([MainGraph]). [uiState] (signed in
@@ -70,7 +76,7 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *   into it while nothing below composes anew.
  *
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
- * ([predictiveBackPopExit]); the viewer follows the gesture itself.
+ * ([predictiveBackPopExit]), full-screen ones included; the viewers follow the gesture themselves.
  *
  * The `NavHost` sits in the app shell's `SharedTransitionLayout`, whose scope comes through
  * `LocalSharedTransitionScope` (`PingogramApp`, [ProvideSharedTransitionScope]), and each destination that shares
@@ -101,11 +107,12 @@ internal fun PingogramNavHost(
     search: GlobalSearchState,
     modifier: Modifier = Modifier,
     headerActions: ChatListHeaderActions? = null,
-    chatToOpen: Long? = null,
+    chatToOpen: ChatToOpen? = null,
     onChatOpened: () -> Unit = {},
-    lockedChatsToOpen: Boolean = false,
-    onLockedChatsOpened: () -> Unit = {},
+    pageToOpen: PageToOpen? = null,
+    onPageOpened: () -> Unit = {},
     onOpenLinkTarget: (LinkTarget) -> Unit = {},
+    shares: ShareInbox? = null,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
@@ -122,22 +129,17 @@ internal fun PingogramNavHost(
         popEnterTransition = { popEnter(motionScheme, axisDistance) },
         popExitTransition = { popExit(motionScheme, axisDistance) },
         predictivePopEnterTransition = { predictiveBackPopEnter() },
-        predictivePopExitTransition = {
-            if (initialState.destination.isFullScreen()) {
-                popExit(motionScheme, axisDistance)
-            } else {
-                predictiveBackPopExit(motionScheme)
-            }
-        },
+        // Full-screen pages too (the QR code scanner, New story's picking): the gesture shrinks them as it does others.
+        predictivePopExitTransition = { predictiveBackPopExit(motionScheme) },
     ) {
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions)
+        mainGraph(navController, search, besideList, onOpenLinkTarget, headerActions, shares)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
-    OpenLockedChatsEffect(navController, uiState, lockedChatsToOpen, onLockedChatsOpened)
+    OpenPageEffect(navController, uiState, pageToOpen, onPageOpened)
     ReturnFromPictureInPictureEffect(navController)
 }
 
@@ -214,6 +216,7 @@ private fun NavGraphBuilder.mainGraph(
     besideList: State<Boolean>,
     onOpenLinkTarget: (LinkTarget) -> Unit,
     headerActions: ChatListHeaderActions?,
+    shares: ShareInbox? = null,
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
@@ -270,11 +273,17 @@ private fun NavGraphBuilder.mainGraph(
         chatScreens(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
+        pollStatistics(navController)
         chatInvite(navController)
         chatFolderInvite(navController)
+        oauthLogin(navController)
         mediaViewer(navController)
-        stories(navController)
+        stories(navController, shares)
         share(navController)
+        // A Conversation widget's "Choose a chat" (board 33), a sheet above whatever shows.
+        widgetChatPicker(onClose = { navController.popBackStack<WidgetChatPickerRoute>(inclusive = true) })
+        // A Conversation widget's Reply (board 33), its small reply sheet above whatever shows.
+        widgetReply(onClose = { navController.popBackStack<WidgetReplyRoute>(inclusive = true) })
     }
 }
 

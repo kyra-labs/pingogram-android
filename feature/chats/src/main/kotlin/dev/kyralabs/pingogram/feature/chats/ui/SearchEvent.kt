@@ -41,6 +41,9 @@ sealed interface SearchEvent {
 
     /** "Try again": every section that failed, and the page of messages that failed, search again. */
     data object Retry : SearchEvent
+
+    /** Searches the posts of public channels, spending one of the day's free searches. */
+    data object SearchPosts : SearchEvent
 }
 
 /** One-off effects of [SearchViewModel], handled by the screen once each (`docs/ARCHITECTURE.md`, ViewModels). */

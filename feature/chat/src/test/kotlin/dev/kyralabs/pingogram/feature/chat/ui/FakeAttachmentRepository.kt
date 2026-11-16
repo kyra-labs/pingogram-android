@@ -51,6 +51,12 @@ class FakeAttachmentRepository : AttachmentRepository {
     /** The sticker, options and reply of every [sendSticker] call. */
     val sentStickers = mutableListOf<Triple<Sticker, SendOptions, Long?>>()
     val sentAnimations = mutableListOf<Triple<Animation, SendOptions, Long?>>()
+
+    /** Each GIF's caption (null for none) and whether it goes above it. */
+    val animationCaptions = mutableListOf<Pair<FormattedText?, Boolean>>()
+
+    /** What sending a GIF answers. */
+    var animationResult: Outcome<Unit> = Outcome.Success(Unit)
     var onSendSticker: suspend (Sticker) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     val sentPolls = mutableListOf<SentPoll>()
@@ -168,11 +174,14 @@ class FakeAttachmentRepository : AttachmentRepository {
         animation: Animation,
         options: SendOptions,
         replyTo: ReplyTarget?,
+        caption: FormattedText?,
+        captionAbove: Boolean,
     ): Outcome<Unit> {
         replyTargets += replyTo
         val replyToMessageId = replyTo?.messageId
         sentAnimations += Triple(animation, options, replyToMessageId)
-        return Outcome.Success(Unit)
+        animationCaptions += caption to captionAbove
+        return animationResult
     }
 
     override suspend fun sendPoll(

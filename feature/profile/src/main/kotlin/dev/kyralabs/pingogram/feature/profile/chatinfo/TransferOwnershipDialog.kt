@@ -83,7 +83,7 @@ internal fun TransferOwnershipDialog(
                         },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
-                if (dialog.isTransferring) SavingIndicator()
+                SavingIndicator(dialog.isTransferring)
             }
         },
         confirmButton = {

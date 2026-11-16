@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
+import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -86,17 +87,20 @@ class MainActivityViewModel internal constructor(
             .map { it.isSet && it.hideContent }
             .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
-    private val mutableChatToOpen = MutableStateFlow<Long?>(null)
+    private val mutableChatToOpen = MutableStateFlow<ChatToOpen?>(null)
 
     /**
      * The chat a notification or a conversation shortcut asked to open, until the app opened it ([onChatOpened]):
      * once the account is known to be logged in, and never in the login flow.
      */
-    val chatToOpen: StateFlow<Long?> = mutableChatToOpen.asStateFlow()
+    val chatToOpen: StateFlow<ChatToOpen?> = mutableChatToOpen.asStateFlow()
 
-    /** Asks to open chat [chatId]; a later request replaces one not opened yet. */
-    fun openChat(chatId: Long) {
-        mutableChatToOpen.value = chatId
+    /** Asks to open chat [chatId], at [messageId] where named; a later request replaces one not opened yet. */
+    fun openChat(
+        chatId: Long,
+        messageId: Long? = null,
+    ) {
+        mutableChatToOpen.value = ChatToOpen(chatId, messageId)
     }
 
     /** The chat of [chatToOpen] was opened, or dropped because nobody is logged in. */
@@ -104,17 +108,18 @@ class MainActivityViewModel internal constructor(
         mutableChatToOpen.value = null
     }
 
-    private val mutableLockedChatsToOpen = MutableStateFlow(false)
+    private val mutablePageToOpen = MutableStateFlow<PageToOpen?>(null)
 
     /**
-     * Whether a locked chat's notification asked to open Locked chats (`docs/adr/0029-locked-chats.md`), until the app
-     * opened them ([setLockedChatsToOpen] false); like [chatToOpen], once logged in and never in the login flow.
+     * A page something outside the app asked to open, until the app opened it, or dropped it because nobody is logged
+     * in ([setPageToOpen] null): Locked chats, which a locked chat's notification opens
+     * (`docs/adr/0029-locked-chats.md`), Focus, which its Quick Settings tile opens (board 31), or a Conversation
+     * widget's chat picker or reply sheet (board 33); like [chatToOpen], once logged in and never in the login flow.
      */
-    val lockedChatsToOpen: StateFlow<Boolean> = mutableLockedChatsToOpen.asStateFlow()
+    val pageToOpen: StateFlow<PageToOpen?> = mutablePageToOpen.asStateFlow()
 
-    /** Asks to open Locked chats ([open]), or reports them opened. */
-    fun setLockedChatsToOpen(open: Boolean) {
-        mutableLockedChatsToOpen.value = open
+    fun setPageToOpen(page: PageToOpen?) {
+        mutablePageToOpen.value = page
     }
 
     private val mutableLinkToOpen = MutableStateFlow<String?>(null)
@@ -185,4 +190,26 @@ class MainActivityViewModel internal constructor(
     internal companion object {
         val SPLASH_SCREEN_TIMEOUT = 300.milliseconds
     }
+}
+
+/** A page something outside the app asks to open ([MainActivityViewModel.pageToOpen]). */
+sealed interface PageToOpen {
+    /** Locked chats, from a locked chat's notification. */
+    data object LockedChats : PageToOpen
+
+    /** The Chats tab with its Focus switcher, from the Focus tile's long press. */
+    data object FocusSwitcher : PageToOpen
+
+    /** Settings → Focus, from the Focus tile while there is no profile to turn on. */
+    data object Focus : PageToOpen
+
+    /** The chat picker of the Conversation widget [appWidgetId], from its "Choose a chat" (board 33). */
+    data class WidgetChat(
+        val appWidgetId: Int,
+    ) : PageToOpen
+
+    /** The reply sheet of chat [chatId], from a Conversation widget's Reply (board 33), in the chat's account. */
+    data class WidgetReply(
+        val chatId: Long,
+    ) : PageToOpen
 }

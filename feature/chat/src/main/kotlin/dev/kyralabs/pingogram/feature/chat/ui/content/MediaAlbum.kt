@@ -128,7 +128,7 @@ internal fun MediaAlbum(
 }
 
 /** Places each item at its cell of [album], scaled down if the constraints are narrower than the album. */
-private class AlbumMeasurePolicy(
+internal class AlbumMeasurePolicy(
     private val album: AlbumLayout,
 ) : MeasurePolicy {
     override fun MeasureScope.measure(

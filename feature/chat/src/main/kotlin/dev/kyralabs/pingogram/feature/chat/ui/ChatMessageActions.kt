@@ -47,9 +47,9 @@ import kotlinx.coroutines.launch
  *
  * - **Sheet** ([show]): TDLib's properties of the message ([MessageActionRepository.properties], from memory) and its
  *   available reactions, both asked at once; it opens once the properties are there, with the reactions if TDLib gave
- *   them, and only the actions TDLib allows ([actionsOf]), with "Translate" or "Show original" where
- *   [translationAction] offers one (asked at the same time). A failure is a snackbar instead. The pictures of its
- *   custom emoji follow once it is open.
+ *   them, and only the actions TDLib allows ([actionsOf]), with "Translate" or "Show original", and "Summarize" or
+ *   "Show full text", where [translationAction] offers them (asked at the same time). A failure is a snackbar
+ *   instead. The pictures of its custom emoji follow once it is open.
  * - **Reactions picker** (`REQUIREMENTS.md` FR-C7): every reaction TDLib offers by section, after the message's own
  *   reactions, where that shows more than the quick row and the bubble ([reactionPicker]). The sheet opens at it from a
  *   bubble's "+N" ([show] with `showsPicker`), and switches to it and back ([showPicker]).
@@ -93,7 +93,7 @@ internal class ChatMessageActions(
     private val inThread: Boolean = false,
     private val onSave: (List<Message>) -> Unit = {},
     private val onSelectionDeleted: () -> Unit = {},
-    private val translationAction: suspend (Message) -> MessageAction? = { null },
+    private val translationAction: suspend (Message) -> List<MessageAction> = { emptyList() },
     private val onRetractVote: (messageId: Long) -> Unit = {},
     private val onStopPoll: (messageId: Long) -> Unit = {},
 ) {
@@ -288,6 +288,7 @@ internal class ChatMessageActions(
                 canGetViewers = properties.canGetViewers,
                 reactions = reactionsMessage.listedReactions.toImmutableList(),
                 opensReactions = reactions,
+                canDeleteReactions = properties.canDeleteReactions,
             )
         onEffect(ChatEffect.OpenInteractions(request))
     }
@@ -479,11 +480,12 @@ internal class ActionContext(
 /**
  * What the actions sheet offers for [message] with TDLib's [properties], in its order: who saw it where TDLib lists
  * them, who added its reactions where TDLib lists them and it has some (as Telegram's apps put them, after the quick
- * reactions), sending a failed message again, replying and editing where the user can write, replying in another chat
- * where TDLib allows it, copying a text or caption the chat lets be saved, copying the message's link where TDLib makes
- * one (to it in its topic or thread in a conversation that is one, [inThread]), forwarding where TDLib allows it (never
- * protected content), pinning or unpinning (also for the user alone in a private chat), saving its file (an album's
- * files) to Downloads where the chat lets it be saved, selecting, reporting where TDLib allows it, deleting.
+ * reactions), sending a failed message again, replying where the user can write, replying in another chat where TDLib
+ * allows it and a reminder ([replyActions]), copying a text or caption the chat lets be saved, copying the message's
+ * link where TDLib makes one (to it in its topic or thread in a conversation that is one, [inThread]), forwarding where
+ * TDLib allows it (never protected content), editing where the user can write, pinning or unpinning (also for the user
+ * alone in a private chat), saving its file (an album's files) to Downloads where the chat lets it be saved, selecting,
+ * reporting where TDLib allows it, deleting.
  */
 internal fun ActionContext.actionsOf(
     message: Message,
@@ -493,8 +495,7 @@ internal fun ActionContext.actionsOf(
     buildList {
         addAll(interactionActions(message, properties))
         if (message.canBeResent) add(MessageAction.Resend)
-        if (properties.canBeReplied && canWrite) add(MessageAction.Reply)
-        if (properties.canBeRepliedInAnotherChat) add(MessageAction.ReplyElsewhere)
+        addAll(replyActions(message, properties))
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
         if (properties.canGetLink) add(if (inThread) MessageAction.CopyThreadLink else MessageAction.CopyLink)
         if (properties.canBeForwarded) add(MessageAction.Forward)
@@ -517,7 +518,8 @@ private fun ActionContext.interactionActions(
 /**
  * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), and stopping an open poll
  * where TDLib lets the user edit the message (td_api.tl: `stopPoll` needs `can_be_edited`), which only its author and
- * the chat's editors can.
+ * the chat's editors can; and its statistics where Telegram gives them (`canGetPollVoteStatistics`: the chat's
+ * administrators, once enough people voted).
  */
 private fun pollActions(
     message: Message,
@@ -527,15 +529,21 @@ private fun pollActions(
     return listOfNotNull(
         MessageAction.RetractVote.takeIf { poll.canRetractVote },
         MessageAction.StopPoll.takeIf { properties.canBeEdited && !poll.isClosed },
+        MessageAction.PollStatistics.takeIf { properties.canGetPollVoteStatistics },
     )
 }
 
-/** Saving [message]'s files where the chat lets it be saved, selecting, reporting and deleting where TDLib allows. */
+/**
+ * Bookmarking and saving [message]'s files where the chat lets it be saved (bookmarks never in secret chats),
+ * selecting, reporting and deleting where TDLib allows.
+ */
 private fun ActionContext.laterActions(
     message: Message,
     properties: MessageProperties,
 ): List<MessageAction> =
     buildList {
+        // Bookmarks keep what the message says on this device: never for a secret chat or content kept from saving.
+        if (properties.canBeSaved && chat.type !is ChatType.Secret) add(MessageAction.Bookmark)
         val hasFiles = albumOf(message).any { it.downloadsFile != null }
         if (properties.canBeSaved && hasFiles) add(MessageAction.SaveToDownloads)
         add(MessageAction.Select)
@@ -544,13 +552,13 @@ private fun ActionContext.laterActions(
     }
 
 /**
- * The actions with [translation] ("Translate" or "Show original", `ChatTranslation`) after copying, or replying where
- * the text cannot be copied, else first; as they were without one.
+ * The actions with [translation] ("Translate" or "Show original", `ChatTranslation`; "Summarize" or "Show full
+ * text", `ChatSummaries`) after copying, or replying where the text cannot be copied, else first; as they were without.
  */
-private fun List<MessageAction>.withTranslation(translation: MessageAction?): List<MessageAction> {
-    if (translation == null) return this
+private fun List<MessageAction>.withTranslation(translation: List<MessageAction>): List<MessageAction> {
+    if (translation.isEmpty()) return this
     val after = indexOfLast { it == MessageAction.Copy || it == MessageAction.Reply || it == MessageAction.Resend }
-    return toMutableList().apply { add(after + 1, translation) }
+    return toMutableList().apply { addAll(after + 1, translation) }
 }
 
 /** Unpinning a pinned [message], else pinning it, also for the user alone where that is possible. */

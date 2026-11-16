@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
@@ -58,6 +59,7 @@ internal fun MinimizeButton(
 ) {
     IconButton(
         onClick = onMinimize,
+        shapes = IconButtonDefaults.shapes(),
         colors =
             if (overlay) {
                 IconButtonDefaults.filledIconButtonColors(
@@ -174,7 +176,9 @@ internal fun RouteButton(
     val other = routes.firstOrNull { it.type == AudioRouteType.Earpiece }
     val simple = routes.all { it.type == AudioRouteType.Speaker || it.type == AudioRouteType.Earpiece }
     var menuOpen by remember { mutableStateOf(false) }
-    LabeledButton(if (simple) R.string.call_speaker else R.string.call_audio, labeled) {
+    // With a headset or Bluetooth, the label names the route in use ("Bluetooth"), as the board shows it.
+    val routeLabel = route?.takeIf { !simple }?.label()
+    LabeledButton(routeLabel ?: stringResource(if (simple) R.string.call_speaker else R.string.call_audio), labeled) {
         Box {
             Toggle(
                 checked =
@@ -286,7 +290,7 @@ internal fun Toggle(
 /** A button over its label; the label is for sight only, as the button carries it for screen readers. */
 @Composable
 internal fun LabeledButton(
-    @StringRes label: Int,
+    label: String,
     labeled: Boolean = true,
     button: @Composable () -> Unit,
 ) {
@@ -298,9 +302,11 @@ internal fun LabeledButton(
         button()
         Spacer(Modifier.height(MaterialTheme.spacing.small))
         Text(
-            stringResource(label),
+            label,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.clearAndSetSemantics {},
         )
     }

@@ -110,5 +110,5 @@ private fun reduce(
 ): PersistentMap<Int, Call> {
     if (update !is TdApi.UpdateCall) return calls
     val call = update.call.toCall()
-    return if (calls[call.id] == call) calls else calls.put(call.id, call)
+    return if (calls[call.id] == call) calls else calls.putting(call.id, call)
 }

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AddedReactionsPage
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageViewer
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import kotlinx.collections.immutable.ImmutableList
@@ -38,6 +39,25 @@ interface MessageInteractionRepository {
         offset: String = "",
         limit: Int = PAGE_SIZE,
     ): Outcome<AddedReactionsPage>
+
+    /**
+     * Removes [sender]'s reactions from message [messageId] of chat [chatId] (`deleteMessageReactionsFromSender`), as
+     * the group's administrators may where TDLib allows it (`MessageProperties.canDeleteReactions`).
+     */
+    suspend fun removeReactions(
+        chatId: Long,
+        messageId: Long,
+        sender: MessageSender,
+    ): Outcome<Unit>
+
+    /**
+     * Removes every recent reaction [sender] added in chat [chatId] (`deleteAllRecentMessageReactionsFromSender`), as
+     * the group's administrators may.
+     */
+    suspend fun removeAllRecentReactions(
+        chatId: Long,
+        sender: MessageSender,
+    ): Outcome<Unit>
 
     companion object {
         /** The reactions a page holds, as many as a page of blocked users. */

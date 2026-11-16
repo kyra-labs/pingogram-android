@@ -43,6 +43,9 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
+import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -76,21 +79,12 @@ internal fun CommandSuggestionsArea(
     val suggestions = bots.suggestions.takeIf { enabled }
     val onSend = bots.onSendCommand
     val onInsert = bots.onInsertCommand
-    val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(suggestions) }
     val visible = state.isShown(suggestions)
     if (visible) shown = suggestions
     LaunchedEffect(suggestions?.query) { state.onQuery(suggestions?.query) }
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter =
-            expandVertically(motionScheme.defaultSpatialSpec(), expandFrom = Alignment.Bottom) +
-                fadeIn(motionScheme.defaultEffectsSpec()),
-        exit =
-            shrinkVertically(motionScheme.fastSpatialSpec(), shrinkTowards = Alignment.Bottom) +
-                fadeOut(motionScheme.fastEffectsSpec()),
-    ) {
+    // Shrinks away as it grew in, on the default spatial spring (docs/DESIGN_SYSTEM.md §5.1, Q-01).
+    GrowingVisibility(visible = visible, modifier = modifier, expandFrom = Alignment.Bottom) {
         shown?.let { CommandSuggestionList(it, state.highlighted, onSend, onInsert) }
     }
 }
@@ -109,6 +103,7 @@ internal fun CommandSuggestionList(
     LaunchedEffect(highlighted) { if (highlighted >= 0) listState.animateScrollToItem(highlighted) }
     val title = pluralStringResource(R.plurals.bot_command_suggestions, commands.size, commands.size)
     val colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    val motion = rememberItemMotion()
     LazyColumn(
         state = listState,
         modifier =
@@ -129,7 +124,7 @@ internal fun CommandSuggestionList(
                 selected = index == highlighted,
                 onClick = { onSend(item.text) },
                 shapes = ListItemDefaults.segmentedShapes(index, commands.size),
-                modifier = Modifier.commandSemantics(item, insert),
+                modifier = Modifier.animateItem(this, motion).commandSemantics(item, insert),
                 colors = colors,
                 leadingContent = item.bot?.let { bot -> { CommandBotAvatar(bot, colors.containerColor) } },
                 trailingContent = { InsertCommandButton(insert) },

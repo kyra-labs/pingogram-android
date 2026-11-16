@@ -109,7 +109,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Below the frame, as tall as the composer's pill whether or not it shows anything, so pages line up as they slide:
  * the reply field ("Reply privately…", the rounded tonal field in `extraLarge` corners as the composer's, user
  * content), which pauses the story while it has the keyboard, with its send button once it holds text; and the
- * reaction button with the row of reactions above it ([StoryReactionsRow]).
+ * reaction button with the row of reactions above it ([StoryReactionsRow]), then the share button where the story may
+ * be sent to chats ([canShare], board 26). The user's own story shows its views pill ([StoryViewsPill]) across the bar
+ * instead.
  */
 @Composable
 internal fun StoryBottomBar(
@@ -117,6 +119,8 @@ internal fun StoryBottomBar(
     reactions: StoryReactionsUi?,
     replyText: TextFieldState,
     onEvent: (StoryViewerEvent) -> Unit,
+    views: StoryViewsUi? = null,
+    canShare: Boolean = false,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxWidth()) {
@@ -126,7 +130,7 @@ internal fun StoryBottomBar(
             // Over the frame's bottom, taking no room: the frame keeps its size while the reactions show.
             modifier = Modifier.overlayAbove(),
             enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
-            exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+            exit = shrinkVertically(motionScheme.defaultSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
         ) {
             if (reactions != null) {
                 StoryReactionsRow(reactions, onReact = { onEvent(StoryViewerEvent.React(it)) })
@@ -141,7 +145,9 @@ internal fun StoryBottomBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.small),
         ) {
-            if (reply != null) {
+            if (views != null) {
+                StoryViewsPill(views, onClick = { onEvent(StoryViewerEvent.ViewersOpen(true)) }, Modifier.weight(1f))
+            } else if (reply != null) {
                 StoryReplyField(replyText, reply, onEvent, Modifier.weight(1f))
                 if (replyText.text.isNotBlank()) {
                     FilledIconButton(
@@ -160,6 +166,14 @@ internal fun StoryBottomBar(
             }
             if (reactions != null) {
                 StoryReactionButton(reactions, onClick = { onEvent(StoryViewerEvent.ReactionsOpen(!reactions.isOpen)) })
+            }
+            if (canShare) {
+                IconButton(onClick = { onEvent(StoryViewerEvent.Share.Open) }, shapes = IconButtonDefaults.shapes()) {
+                    Icon(
+                        painter = painterResource(UiR.drawable.ic_share),
+                        contentDescription = stringResource(R.string.story_share),
+                    )
+                }
             }
         }
     }
@@ -218,6 +232,13 @@ private fun StoryReactionButton(
     ) {
         if (chosen != null) {
             Text(chosen, style = MaterialTheme.typography.titleLarge, modifier = Modifier.clearAndSetSemantics {})
+        } else if (reactions.isOpen) {
+            // Filled in `primary` while the reactions show (board 26).
+            Icon(
+                painter = painterResource(UiR.drawable.ic_favorite_filled),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         } else {
             Icon(painter = painterResource(UiR.drawable.ic_favorite), contentDescription = null)
         }

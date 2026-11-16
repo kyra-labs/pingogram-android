@@ -50,14 +50,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.ListReorderState
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.dragHandle
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.rememberListReorderState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -175,7 +176,7 @@ private fun TopicList(
         rememberListReorderState(listState, pinnedIds, rowKey = { it }) { onEvent(ForumTopicsEvent.Reorder(it)) }
     val topics = content.topics.withPinnedIn(reorder.order)
     val pinnedOrder = reorder.order
-    val placement = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    val motion = rememberItemMotion()
     LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
         items(topics, key = { it.id }, contentType = { CONTENT_TYPE_TOPIC }) { topic ->
             val position = pinnedOrder.indexOf(topic.id)
@@ -197,14 +198,19 @@ private fun TopicList(
                 handleModifier = if (movable) Modifier.dragHandle(reorder, topic.id) else Modifier,
                 modifier =
                     Modifier
-                        .then(if (dragged) Modifier else Modifier.animateItem(placementSpec = placement))
+                        // The dragged row follows the finger, not a placement spring.
+                        .animateItem(this, motion, placement = !dragged)
                         .zIndex(if (dragged) 1f else 0f)
                         .graphicsLayer { translationY = if (dragged) reorder.offset else 0f },
             )
         }
         if (content.isLoadingMore || content.moreError != null) {
             item(key = KEY_MORE, contentType = KEY_MORE) {
-                MoreTopics(content, onRetry = { onEvent(ForumTopicsEvent.Retry) })
+                MoreTopics(
+                    content,
+                    onRetry = { onEvent(ForumTopicsEvent.Retry) },
+                    modifier = Modifier.animateItem(this, motion),
+                )
             }
         }
     }
@@ -217,9 +223,10 @@ private fun TopicList(
 private fun MoreTopics(
     content: TopicsContent.Content,
     onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val error = content.moreError
-    Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
         if (error == null) {
             LoadingIndicator()
         } else {

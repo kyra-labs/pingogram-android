@@ -5,7 +5,12 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
+import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
+import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -13,9 +18,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCommunityRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibKeywordHitRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
@@ -79,6 +86,31 @@ interface UpdateCacheModule {
     @IntoSet
     fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
 
+    /** TDLib announces the AI editor's styles only with `updateTextCompositionStyles`, once per start. */
+    @Binds
+    @IntoSet
+    fun aiTextCache(repository: TdlibAiTextRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's transcripts when it logs out. */
+    @Binds
+    @IntoSet
+    fun transcriptCache(repository: FileTranscriptRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's reminders when it logs out. */
+    @Binds
+    @IntoSet
+    fun reminderCache(repository: FileReminderRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
+    @Binds
+    @IntoSet
+    fun bookmarkCache(repository: FileBookmarkRepository): TdlibUpdateCache
+
+    /** It matches new messages with the keyword alert words, and deletes the account's matches when it logs out. */
+    @Binds
+    @IntoSet
+    fun keywordHitCache(repository: TdlibKeywordHitRepository): TdlibUpdateCache
+
     /** TDLib announces each community only with `updateCommunity`. */
     @Binds
     @IntoSet
@@ -92,6 +124,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun savedMessagesTopicCache(repository: TdlibSavedMessagesTopicRepository): TdlibUpdateCache
+
+    /** TDLib announces a channel's direct messages topics only with `updateDirectMessagesChatTopic`. */
+    @Binds
+    @IntoSet
+    fun directMessagesTopicCache(repository: TdlibDirectMessagesTopicRepository): TdlibUpdateCache
 
     /** TDLib announces each call, an incoming one too, only with `updateCall`. */
     @Binds
@@ -126,6 +163,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
+
+    /** For whether the account is frozen, which TDLib announces only as an update. */
+    @Binds
+    @IntoSet
+    fun accountFreezeCache(repository: TdlibAccountFreezeRepository): TdlibUpdateCache
 
     /** For the reaction notification settings, which TDLib announces once per start and cannot be asked for. */
     @Binds

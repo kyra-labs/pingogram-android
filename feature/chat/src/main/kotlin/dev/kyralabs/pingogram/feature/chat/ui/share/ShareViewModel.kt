@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
@@ -48,6 +49,8 @@ import javax.inject.Inject
  * - **One chat picked**: [ShareEvent.Send] hands the share to that chat's conversation ([ShareInbox.deliver]), which
  *   puts the text into its composer, or the files into its attach preview with the text as their caption, for the
  *   user to send there; the sheet closes with [ShareClose.OpenChat].
+ * - **A story** (from the stories viewer): [ShareEvent.Send] sends it to each chat picked, one or several, as
+ *   several chats get a share, since it cannot wait in a composer. Secret chats are left out: a story cannot go there.
  * - **Several**: [ShareEvent.Send] sends the share to each, the comment first ([ShareRepository.share]), in
  *   [applicationScope], as the sheet and this view model go as it closes; what came of it goes to [results], whose
  *   snackbar the app shell shows.
@@ -122,12 +125,18 @@ class ShareViewModel internal constructor(
         if (content == null) {
             MutableStateFlow(null)
         } else {
-            val targets = chatTargets.targets { _, access, _ -> access == WriteAccess.Allowed }
+            val isStory = content.story != null
+            val targets =
+                chatTargets.targets { chat, access, _ ->
+                    access == WriteAccess.Allowed && !(isStory && chat.type is ChatType.Secret)
+                }
             combine(targets, selected) { found, selected ->
                 ShareSheet(
                     text = ShareSummary.of(content.text.text),
                     fileCount = content.files.size,
                     fileKind = content.kind,
+                    isStory = isStory,
+                    isVoiceNote = content.voiceNote,
                     targets = found.targets,
                     selectedIds = selected,
                     isSearching = found.isSearching,
@@ -150,20 +159,29 @@ class ShareViewModel internal constructor(
         }
     }
 
+    /** Picks or unpicks [chatId]; for a voice message to record, opens that chat at once. */
     private fun toggle(chatId: Long) {
-        selected.update { if (chatId in it) it.remove(chatId) else it.add(chatId) }
+        if (content?.voiceNote == true) {
+            selected.value = persistentSetOf(chatId)
+            send()
+            return
+        }
+        selected.update { if (chatId in it) it.removing(chatId) else it.adding(chatId) }
     }
 
-    /** The one chat picked opens with the share; several get it, after the comment. Nothing while none is picked. */
+    /**
+     * The one chat picked opens with the share; several get it, after the comment, as does any chat a story is shared
+     * to. Nothing while none is picked.
+     */
     private fun send() {
         val content = content ?: return
         val chatIds = selected.value.toList()
-        when (chatIds.size) {
-            0 -> {
+        when {
+            chatIds.isEmpty() -> {
                 return
             }
 
-            1 -> {
+            chatIds.size == 1 && content.story == null -> {
                 val chatId = chatIds.single()
                 inbox.deliver(chatId, content)
                 closedState.value = ShareClose.OpenChat(chatId)

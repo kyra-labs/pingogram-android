@@ -9,6 +9,8 @@ internal class ChatListPreviewStates : PreviewParameterProvider<ChatListUiState>
         listOf(
             "Content with folders" to ChatListPreviewData.contentWithFolders,
             "Content" to ChatListPreviewData.content,
+            "Communities" to ChatListPreviewData.withCommunities,
+            "Keyword alerts" to ChatListPreviewData.keywordAlerts,
             "Archive row" to ChatListPreviewData.contentWithArchive,
             "Compact archive row" to ChatListPreviewData.contentWithCompactArchive,
             "Hidden archive row" to ChatListPreviewData.contentWithHiddenArchive,

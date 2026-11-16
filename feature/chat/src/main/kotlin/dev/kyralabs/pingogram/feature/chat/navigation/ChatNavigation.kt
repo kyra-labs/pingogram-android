@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.navigation
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +23,7 @@ import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.chat.ui.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 
@@ -37,7 +37,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
  * [onOpenChatInfo] the info page of a group or channel, from its title; [onOpenThread] pushes a forum topic or a
  * message thread opened from it, a [ChatDestination] too; [onOpenScheduledMessages] the list of the chat's scheduled
  * messages, from their bar (`scheduledMessagesScreen`). [onOpenNextChat] opens the next unread channel, which a read
- * channel offers, in the conversation's place ([onOpenChat] without it).
+ * channel offers, in the conversation's place ([onOpenChat] without it). [onOpenMessage] opens a chat at a message:
+ * the original of a post forwarded from a channel ([onOpenChat] without it).
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
@@ -48,6 +49,7 @@ fun NavGraphBuilder.chatScreen(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     composable<ChatDestination> { entry ->
         val route = entry.toRoute<ChatDestination>()
@@ -64,6 +66,7 @@ fun NavGraphBuilder.chatScreen(
                 onOpenChatInfo = onOpenChatInfo,
                 onOpenScheduledMessages = onOpenScheduledMessages,
                 onOpenNextChat = onOpenNextChat,
+                onOpenMessage = onOpenMessage,
             )
         }
     }
@@ -76,7 +79,7 @@ fun NavGraphBuilder.chatScreen(
  * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
  * were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page, which the
  * layout pushes above itself or shows beside the conversation; [onOpenScheduledMessages] the chat's scheduled messages,
- * which it pushes above itself.
+ * which it pushes above itself; [onOpenMessage] a chat at a message, the original of a post forwarded from a channel.
  *
  * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
  * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own
@@ -108,23 +111,30 @@ fun ChatPane(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     key(chatId, messageId) {
         var threads by rememberSaveable(stateSaver = PaneThreads.Saver) { mutableStateOf(PaneThreads()) }
-        BackHandler(enabled = threads.entries.isNotEmpty()) { threads = threads.popped() }
+        // Back from a topic or thread follows the predictive back gesture, the one below sliding in with its progress
+        // (docs/DESIGN_SYSTEM.md §5.1, Q-08).
+        val steps =
+            rememberSeekableSteps(
+                current = threads,
+                backTo = threads.popped().takeIf { threads.entries.isNotEmpty() },
+                key = { it.entries },
+                onBack = { threads = threads.popped() },
+            )
         val motionScheme = MaterialTheme.motionScheme
         val distance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
-        AnimatedContent(
-            targetState = threads,
+        steps.transition.AnimatedContent(
             transitionSpec = {
-                val forward = targetState.entries.size >= initialState.entries.size
+                val forward = targetState.size >= initialState.size
                 sharedAxisXEnter(motionScheme, distance, forward) togetherWith
                     sharedAxisXExit(motionScheme, distance, forward)
             },
-            contentKey = { it.entries.lastOrNull() },
-            label = "paneThreads",
+            contentKey = { it.lastOrNull() },
         ) { shown ->
-            val top = shown.entries.lastOrNull()
+            val top = shown.lastOrNull()
             CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
                 ChatRoute(
                     chatId = top?.chatId ?: chatId,
@@ -139,6 +149,7 @@ fun ChatPane(
                     onOpenChatInfo = onOpenChatInfo,
                     focusComposer = focusComposer && top == null,
                     onOpenScheduledMessages = onOpenScheduledMessages,
+                    onOpenMessage = onOpenMessage,
                 )
             }
         }
@@ -148,7 +159,9 @@ fun ChatPane(
 /** The forum topic or message thread of a [ChatDestination]; null for the whole chat. */
 private val ChatDestination.topic: MessageTopic?
     get() =
-        topicId?.let(MessageTopic::Forum) ?: threadId?.let(MessageTopic::Thread)
+        topicId?.let(MessageTopic::Forum)
+            ?: threadId?.let(MessageTopic::Thread)
+            ?: directMessagesTopicId?.let(MessageTopic::DirectMessages)
 
 /** The destination of [topic] of chat [chatId]. */
 private fun destinationOf(
@@ -161,6 +174,8 @@ private fun destinationOf(
 
     // Saved Messages shows its topics as tabs of its own conversation.
     is MessageTopic.SavedMessages -> ChatDestination(chatId)
+
+    is MessageTopic.DirectMessages -> ChatDestination(chatId, directMessagesTopicId = topic.topicId)
 }
 
 /** A forum topic or message thread [topic] of chat [chatId], opened in the detail pane. */
@@ -178,7 +193,10 @@ private data class PaneThreads(
     fun popped() = PaneThreads(entries.dropLast(1))
 
     companion object {
-        /** Saves them as a flat list of chat id, kind (0 topic, 1 thread, 2 Saved Messages topic) and id. */
+        /**
+         * Saves them as a flat list of chat id, kind (0 topic, 1 thread, 2 Saved Messages topic, 3 direct messages
+         * topic) and id.
+         */
         val Saver: Saver<PaneThreads, LongArray> =
             Saver(
                 save = { threads ->
@@ -188,6 +206,7 @@ private data class PaneThreads(
                                 is MessageTopic.Forum -> listOf(chatId, KIND_TOPIC, topic.topicId.toLong())
                                 is MessageTopic.Thread -> listOf(chatId, KIND_THREAD, topic.threadId)
                                 is MessageTopic.SavedMessages -> listOf(chatId, KIND_SAVED, topic.topicId)
+                                is MessageTopic.DirectMessages -> listOf(chatId, KIND_DIRECT, topic.topicId)
                             }
                         }.toLongArray()
                 },
@@ -198,6 +217,7 @@ private data class PaneThreads(
                                 when (kind) {
                                     KIND_TOPIC -> MessageTopic.Forum(id.toInt())
                                     KIND_SAVED -> MessageTopic.SavedMessages(id)
+                                    KIND_DIRECT -> MessageTopic.DirectMessages(id)
                                     else -> MessageTopic.Thread(id)
                                 }
                             PaneThread(chatId, topic)
@@ -209,6 +229,7 @@ private data class PaneThreads(
         private const val KIND_TOPIC = 0L
         private const val KIND_THREAD = 1L
         private const val KIND_SAVED = 2L
+        private const val KIND_DIRECT = 3L
         private const val SAVED_FIELDS = 3
     }
 }

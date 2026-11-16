@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paid posts (td_api.tl messagePaidMedia): photos and videos that unlock for Telegram Stars. Pingogram shows them
+     and offers no purchase (REQUIREMENTS.md §1.2); the kind of content ("Paid media") is core:ui's preview string. -->
+<resources>
+    <!-- The price on the locked album's pill, before the star symbol: %1$s is the number of Telegram Stars. -->
+    <string name="paid_media_price">%1$s</string>
+    <!-- For screen readers: the price. %1$s is the number with the digits of the user's language. -->
+    <plurals name="paid_media_stars">
+        <item quantity="one">%1$s Telegram Star</item>
+        <item quantity="other">%1$s Telegram Stars</item>
+    </plurals>
+    <!-- Under the price: how many photos and videos the post holds. -->
+    <plurals name="paid_media_photos">
+        <item quantity="one">%1$d photo</item>
+        <item quantity="other">%1$d photos</item>
+    </plurals>
+    <plurals name="paid_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <plurals name="paid_media_items">
+        <item quantity="one">%1$d photo or video</item>
+        <item quantity="other">%1$d photos and videos</item>
+    </plurals>
+    <!-- Under a locked post: Pingogram cannot pay for it (REQUIREMENTS.md §1.2). -->
+    <string name="paid_media_note">Pingogram can\'t pay yet. Open this post in another Telegram app to unlock it.</string>
+    <!-- The label on a post the user paid for, before the star symbol: %1$s is the number of Telegram Stars. -->
+    <string name="paid_media_bought">Bought · %1$s</string>
+    <!-- For screen readers: a post the user paid for. %1$s is "25 Telegram Stars". -->
+    <string name="paid_media_bought_description">Bought for %1$s</string>
+    <!-- For screen readers: a locked post. %1$s is "3 photos", %2$s is "25 Telegram Stars". -->
+    <string name="paid_media_locked_description">Paid media, %1$s, %2$s</string>
+</resources>

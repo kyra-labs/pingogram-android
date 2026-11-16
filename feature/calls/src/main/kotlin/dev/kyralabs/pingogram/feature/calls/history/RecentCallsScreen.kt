@@ -59,6 +59,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -234,11 +237,13 @@ private fun CallList(
             snapshotFlow { nearEnd }.distinctUntilChanged().filter { it }.collect { event(RecentCallsEvent.LoadMore) }
         }
     }
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
         items(content.items, key = { it.key }, contentType = { it::class }) { item ->
             when (item) {
                 is RecentCallsItem.Day -> {
-                    DayHeader(item)
+                    // Headers move with the calls as one is deleted.
+                    Box(Modifier.animateItem(this, motion)) { DayHeader(item) }
                 }
 
                 is RecentCallsItem.Call -> {
@@ -246,12 +251,12 @@ private fun CallList(
                         call = item,
                         onClick = { onEvent(RecentCallsEvent.CallBack(item)) },
                         onDelete = { onEvent(RecentCallsEvent.Delete(item)) },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(this, motion),
                     )
                 }
             }
         }
-        footer(content, onRetry = { onEvent(RecentCallsEvent.Retry) })
+        footer(content, motion, onRetry = { onEvent(RecentCallsEvent.Retry) })
     }
 }
 
@@ -259,16 +264,22 @@ private fun CallList(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun LazyListScope.footer(
     content: RecentCallsContent.Calls,
+    motion: ItemMotion,
     onRetry: () -> Unit,
 ) {
     when {
         content.pageError != null -> {
-            item(key = FOOTER, contentType = FOOTER) { PageError(errorText(content.pageError), onRetry) }
+            item(key = FOOTER, contentType = FOOTER) {
+                Box(Modifier.animateItem(this, motion)) { PageError(errorText(content.pageError), onRetry) }
+            }
         }
 
         content.loadingMore -> {
             item(key = FOOTER, contentType = FOOTER) {
-                Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.medium), Alignment.Center) {
+                Box(
+                    Modifier.animateItem(this, motion).fillMaxWidth().padding(MaterialTheme.spacing.medium),
+                    Alignment.Center,
+                ) {
                     LoadingIndicator(Modifier.size(MaterialTheme.sizes.inlineProgressIndicator))
                 }
             }
@@ -292,7 +303,13 @@ private fun PageError(
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodyMedium,
         )
-        TextButton(onClick = onRetry) { Text(stringResource(R.string.recent_calls_try_again)) }
+        TextButton(
+            onClick = onRetry,
+            shapes = ButtonDefaults.shapes(),
+            contentPadding = ButtonDefaults.TextButtonContentPadding,
+        ) {
+            Text(stringResource(R.string.recent_calls_try_again))
+        }
     }
 }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Who may see the user's birthday, the Birthday privacy setting's choice, in a birthday suggestion's text. -->
+    <string name="chat_birthday_privacy_everybody">Everybody</string>
+    <string name="chat_birthday_privacy_contacts">My contacts</string>
+    <string name="chat_birthday_privacy_nobody">Nobody</string>
+</resources>

@@ -108,6 +108,8 @@ dependencies {
     // HiltWorkerFactory for WorkManager's configuration (PingogramApplication); WorkManager itself comes with
     // core:notifications.
     implementation(libs.androidx.hilt.work)
+    // hiltViewModel() for the Conversation widget's chat picker, a dialog destination of :app's own.
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     // Transfers and "Keep connected" (foss) start their foreground services only while the app is in the foreground
     // (ProcessLifecycleOwner).

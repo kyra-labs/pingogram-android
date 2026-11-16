@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -37,6 +38,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -63,124 +66,7 @@ import kotlin.reflect.cast
  * reactions, replies, errors and process death, on fakes of the repositories and the player and the test clock.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class StoryViewerViewModelTest {
-    private val stories = FakeStoryRepository()
-    private val chats = FakeChatRepository()
-    private val files = FakeFileRepository()
-    private val users = FakeUserRepository()
-    private val player = FakeVideoPlayer()
-    private val created = mutableListOf<StoryViewerViewModel>()
-    private val albums = FakeStoryAlbumRepository()
-
-    @BeforeEach
-    fun setUp() {
-        Dispatchers.setMain(StandardTestDispatcher())
-        // Ada, a user: stories 10, 11 and 12, seen up to 10. A channel: stories 20 and 21, none seen.
-        chats.chats.value =
-            mapOf(
-                ADA to MediaFixtures.chat(ADA, "Ada").copy(type = ChatType.Private(ADA)),
-                CHANNEL to MediaFixtures.chat(CHANNEL, "News"),
-                ME to MediaFixtures.chat(ME, "Me").copy(type = ChatType.Private(ME)),
-            )
-        stories.setActive(active(ADA, order = 9, maxRead = 10, ids = listOf(10, 11, 12)))
-        stories.setActive(active(CHANNEL, order = 5, maxRead = 0, ids = listOf(20, 21)))
-        listOf(10, 11, 12).forEach { stories.setStory(photoStory(it, ADA)) }
-        listOf(20, 21).forEach { stories.setStory(photoStory(it, CHANNEL, canBeReplied = false)) }
-    }
-
-    @AfterEach
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    /**
-     * [runTest] that clears every view model the test made once [testBody] ends, which stops what still runs in their
-     * scopes, such as the timeline's ticker.
-     */
-    private fun runViewModelTest(testBody: suspend TestScope.() -> Unit) =
-        runTest {
-            try {
-                testBody()
-            } finally {
-                created.toList().forEach(::clear)
-            }
-        }
-
-    /** Clears [viewModel] as leaving the screen does: through a [ViewModelStore], which closes what it holds. */
-    private fun clear(viewModel: StoryViewerViewModel) {
-        val store = ViewModelStore()
-        val factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(
-                    modelClass: KClass<T>,
-                    extras: CreationExtras,
-                ): T = modelClass.cast(viewModel)
-            }
-        ViewModelProvider.create(store, factory)[StoryViewerViewModel::class]
-        store.clear()
-        created -= viewModel
-    }
-
-    private fun active(
-        chatId: Long,
-        order: Long,
-        maxRead: Int,
-        ids: List<Int>,
-    ) = ActiveStories(chatId, StoryList.Main, order, maxRead, ids.map { StoryInfo(it, 0) }.toImmutableList())
-
-    private fun photoStory(
-        id: Int,
-        chatId: Long,
-        canBeReplied: Boolean = true,
-        chosen: ReactionType? = null,
-    ) = Story(
-        id = id,
-        posterChatId = chatId,
-        date = NOW.epochSecond - THREE_HOURS,
-        content = StoryContent.Photo(Photo(persistentListOf(PhotoSize("x", 1080, 1920, FileRef(fileOf(id), 1))), null)),
-        caption = FormattedText("Story $id", persistentListOf()),
-        canBeReplied = canBeReplied,
-        chosenReaction = chosen,
-    )
-
-    private fun fileOf(storyId: Int) = FILE_BASE + storyId
-
-    private fun downloaded(vararg storyIds: Int) =
-        storyIds.forEach { files.setFile(fileOf(it), FileState.Downloaded("/files/$it.jpg", 1)) }
-
-    /** A view model opened on [route], whose state is collected and whose screen is started, as by the screen. */
-    private fun TestScope.viewModel(
-        route: StoryViewerRoute = StoryViewerRoute(ADA),
-        handle: SavedStateHandle = SavedStateHandle(),
-        started: Boolean = true,
-        albums: StoryAlbumRepository? = null,
-    ): StoryViewerViewModel {
-        val viewModel =
-            StoryViewerViewModel(
-                route = route,
-                savedStateHandle = handle,
-                storyRepository = stories,
-                chatRepository = chats,
-                fileRepository = files,
-                userRepository = users,
-                clock = FakeWallClock(NOW),
-                timeSource = testScheduler.timeSource,
-                applicationScope = backgroundScope,
-                videoPlayer = player,
-                albumRepository = albums,
-            )
-        created += viewModel
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
-        runCurrent()
-        if (started) viewModel.onEvent(StoryViewerEvent.Started(true))
-        runCurrent()
-        return viewModel
-    }
-
-    private val StoryViewerViewModel.content get() = uiState.value as StoryViewerUiState.Content
-
-    private val StoryViewerViewModel.shownStory get() = content.posters[content.current].chatId to content.story.storyId
-
+internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
     @Test
     fun `opens at the route's chat on its first unseen story, among the stories list's chats`() =
         runViewModelTest {
@@ -321,15 +207,135 @@ class StoryViewerViewModelTest {
             viewModel.onEvent(StoryViewerEvent.Hold(true))
             runCurrent()
             assertTrue(viewModel.content.isPaused)
+            assertTrue(viewModel.content.isHeld)
             advanceTimeBy(PHOTO_MILLIS * 2)
             assertEquals(ADA to 11, viewModel.shownStory)
 
             viewModel.onEvent(StoryViewerEvent.Hold(false))
             runCurrent()
             assertFalse(viewModel.content.isPaused)
+            assertFalse(viewModel.content.isHeld)
             advanceTimeBy(PHOTO_MILLIS / 2 + TICK_MILLIS)
             runCurrent()
             assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
+    fun `with TalkBack a story's end does not move on, Next does`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+            viewModel.onEvent(StoryViewerEvent.ScreenReader(true))
+
+            advanceTimeBy(PHOTO_MILLIS * 2)
+            runCurrent()
+            assertEquals(ADA to 11, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.Next)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
+    fun `a back gesture pauses the story, and a cancelled one plays on from there`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+            advanceTimeBy(PHOTO_MILLIS / 2)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            runCurrent()
+            assertTrue(viewModel.content.isPaused)
+            advanceTimeBy(PHOTO_MILLIS * 2)
+            assertEquals(ADA to 11, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+            advanceTimeBy(PHOTO_MILLIS / 2 + TICK_MILLIS)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
+    fun `a back gesture and a finger holding the story pause it apart, and it plays once neither does`() =
+        runViewModelTest {
+            downloaded(11)
+            val viewModel = viewModel()
+
+            viewModel.onEvent(StoryViewerEvent.Hold(true))
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            viewModel.onEvent(StoryViewerEvent.Hold(false))
+            runCurrent()
+            assertTrue(viewModel.content.isPaused)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
+    fun `the last story's end does not close the viewer during a back gesture, only once it is cancelled`() =
+        runViewModelTest {
+            downloaded(11, 12, 20, 21)
+            val viewModel = viewModel()
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Next)
+                viewModel.onEvent(StoryViewerEvent.Next)
+                runCurrent()
+                viewModel.onEvent(StoryViewerEvent.Next)
+                runCurrent()
+                assertEquals(CHANNEL to 21, viewModel.shownStory)
+
+                viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+                runCurrent()
+                advanceTimeBy(PHOTO_MILLIS * 2)
+                runCurrent()
+                expectNoEvents()
+                assertEquals(CHANNEL to 21, viewModel.shownStory)
+
+                viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+                runCurrent()
+                advanceTimeBy(PHOTO_MILLIS + TICK_MILLIS)
+                runCurrent()
+                assertEquals(StoryViewerEffect.Close, awaitItem())
+            }
+        }
+
+    @Test
+    fun `a video's end during a back gesture waits for it, so the next chat does not slide in under the finger`() =
+        runViewModelTest {
+            val video =
+                StoryContent.Video(
+                    durationMillis = 12_000,
+                    width = 720,
+                    height = 1280,
+                    isAnimation = false,
+                    minithumbnail = null,
+                    thumbnail = null,
+                    file = FileRef(fileOf(12), 1),
+                )
+            downloaded(11)
+            stories.setStory(photoStory(12, ADA).copy(content = video))
+            files.setFile(fileOf(12), FileState.Downloaded("/files/12.mp4", 1))
+            val viewModel = viewModel()
+            viewModel.onEvent(StoryViewerEvent.Next)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(true))
+            runCurrent()
+            // An end already on its way as the player paused.
+            player.end()
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+            assertEquals(0, viewModel.content.current)
+
+            viewModel.onEvent(StoryViewerEvent.BackGesture(false))
+            runCurrent()
+            assertEquals(1, viewModel.content.current)
+            assertEquals(CHANNEL to 20, viewModel.shownStory)
         }
 
     @Test
@@ -481,6 +487,39 @@ class StoryViewerViewModelTest {
         }
 
     @Test
+    fun `a story that may be sent on has the share button, which pauses it until the screen is back`() =
+        runViewModelTest {
+            stories.setStory(photoStory(11, ADA, canBeForwarded = true))
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.canShare)
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Share.Open)
+                runCurrent()
+                assertEquals(StoryViewerEffect.Share(ADA, 11), awaitItem())
+            }
+            assertTrue(viewModel.content.isPaused)
+
+            viewModel.onEvent(StoryViewerEvent.Share.Resumed(true))
+            runCurrent()
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
+    fun `a story that may not be sent on has no share button, and sharing it does nothing`() =
+        runViewModelTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.canShare)
+
+            viewModel.effects.test {
+                viewModel.onEvent(StoryViewerEvent.Share.Open)
+                runCurrent()
+                expectNoEvents()
+            }
+            assertFalse(viewModel.content.isPaused)
+        }
+
+    @Test
     fun `a video the player cannot play says so and moves on after a photo's time`() =
         runViewModelTest {
             val video = StoryContent.Video(12_000, 720, 1280, false, null, null, FileRef(fileOf(11), 1))
@@ -495,6 +534,20 @@ class StoryViewerViewModelTest {
                 runCurrent()
                 assertEquals(ADA to 12, viewModel.shownStory)
             }
+        }
+
+    @Test
+    fun `a live story names its call and how many watch, as TDLib knows them`() =
+        runViewModelTest {
+            stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Live(groupCallId = 77)))
+            val call = MutableStateFlow<GroupCall?>(null)
+            val viewModel = viewModel(liveCall = { id -> call.takeIf { id == 77 } ?: flowOf(null) })
+            assertEquals(StoryMedia.Live(ADA, 77), viewModel.content.story.media)
+
+            call.value = liveCall(title = "Sunset from the ferry", watching = 128)
+            runCurrent()
+
+            assertEquals(StoryMedia.Live(ADA, 77, "Sunset from the ferry", 128), viewModel.content.story.media)
         }
 
     @Test
@@ -513,7 +566,7 @@ class StoryViewerViewModelTest {
     fun `what the viewer cannot show says so and moves on`() =
         runViewModelTest {
             stories.setStory(photoStory(11, ADA).copy(content = StoryContent.Unsupported))
-            stories.deleteStory(ADA, 12)
+            stories.removeStory(ADA, 12)
             val viewModel = viewModel()
             assertEquals(StoryMedia.Unsupported, viewModel.content.story.media)
 
@@ -641,16 +694,23 @@ class StoryViewerViewModelTest {
             assertEquals(listOf(ADA, CHANNEL), restored.content.posters.map { it.chatId })
             assertEquals(CHANNEL to 21, restored.shownStory)
         }
-
-    private companion object {
-        const val ADA = 2L
-        const val CHANNEL = 3L
-        const val ME = 1L
-        const val FILE_BASE = 100
-        const val THREE_HOURS = 10_800L
-        const val PHOTO_MILLIS = StoryContent.PHOTO_DURATION_MILLIS
-        const val TICK_MILLIS = 40L
-        const val PROGRESS_TOLERANCE = 0.02f
-        val NOW: Instant = Instant.parse("2026-10-18T09:41:30Z")
-    }
 }
+
+private fun liveCall(
+    title: String,
+    watching: Int,
+) = GroupCall(
+    id = 77,
+    title = title,
+    isActive = true,
+    scheduledStartDate = 0,
+    isRtmpStream = false,
+    isJoined = false,
+    needRejoin = false,
+    canBeManaged = false,
+    participantCount = watching,
+    loadedAllParticipants = false,
+    recentSpeakers = persistentListOf(),
+    muteNewParticipants = false,
+    duration = 0,
+)

@@ -72,6 +72,8 @@ sealed interface AuthStepUiState {
      *   (from TDLib, e.g. `--- --- ----`); null if unknown. More digits than slots may follow.
      * @property isChangingNumber the user came back from a later step to use another number.
      * @property countryPicker the open country picker, or null.
+     * @property expectedLength while the number looks too short for its country and "Next" was pressed once: how many
+     *   digits the country's numbers have (board 23); "Next" then sends it anyway, and Telegram decides.
      */
     @Immutable
     data class PhoneNumber(
@@ -82,6 +84,7 @@ sealed interface AuthStepUiState {
         val error: DomainError?,
         val isChangingNumber: Boolean,
         val countryPicker: CountryPickerUiState?,
+        val expectedLength: Int? = null,
     ) : AuthStepUiState {
         override fun toString() = "PhoneNumber(country=${country?.isoCode}, error=$error, …)"
     }
@@ -151,8 +154,9 @@ sealed interface AuthStepUiState {
     }
 
     /**
-     * FR-A5: a new account. Registering requires [termsAccepted]; [isTermsOfServiceOpen] shows the terms, which open
-     * by themselves when Telegram requires it.
+     * FR-A5: a new account. Registering accepts Telegram's terms of service, which the screen says
+     * (`docs/DESIGN_SYSTEM.md` §6 "Sign-up terms"); [isTermsOfServiceOpen] shows them in a dialog, which opens by
+     * itself where Telegram asks for them to be accepted explicitly (`show_popup`), and registering waits for that.
      *
      * @property minUserAge the minimum age to accept the terms; 0 if there is none.
      */
@@ -164,7 +168,6 @@ sealed interface AuthStepUiState {
         val lastNameError: DomainError?,
         val termsOfServiceText: String,
         val minUserAge: Int,
-        val termsAccepted: Boolean,
         val isTermsOfServiceOpen: Boolean,
     ) : AuthStepUiState
 

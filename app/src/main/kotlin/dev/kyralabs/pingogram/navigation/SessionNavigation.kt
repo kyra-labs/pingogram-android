@@ -17,6 +17,7 @@ import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
+import dev.kyralabs.pingogram.core.navigation.MakeStickerRoute
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.navigation.NewStoryRoute
 import dev.kyralabs.pingogram.core.navigation.QrScannerRoute
@@ -28,14 +29,20 @@ internal fun NavDestination?.isInMainGraph(): Boolean = this?.hierarchy?.any { i
 
 /**
  * Whether this destination of the signed-in app takes the whole window, without the navigation bar or rail: the media
- * viewer, [MediaViewerRoute], the stories viewer, [StoryViewerRoute], posting a story, [NewStoryRoute], and the QR
- * code scanner, [QrScannerRoute].
+ * viewer, [MediaViewerRoute], the stories viewer, [StoryViewerRoute], posting a story, [NewStoryRoute], making a
+ * sticker, [MakeStickerRoute], and the QR code scanner, [QrScannerRoute].
  */
-internal fun NavDestination?.isFullScreen(): Boolean =
-    this?.hasRoute<MediaViewerRoute>() == true ||
-        this?.hasRoute<StoryViewerRoute>() == true ||
-        this?.hasRoute<NewStoryRoute>() == true ||
-        this?.hasRoute<QrScannerRoute>() == true
+internal fun NavDestination?.isFullScreen(): Boolean = this != null && FULL_SCREEN.any { route -> hasRoute(route) }
+
+/** The destinations [isFullScreen] names. */
+private val FULL_SCREEN =
+    listOf(
+        MediaViewerRoute::class,
+        StoryViewerRoute::class,
+        NewStoryRoute::class,
+        MakeStickerRoute::class,
+        QrScannerRoute::class,
+    )
 
 /** Whether this destination is the login flow, [AuthRoute]. */
 internal fun NavDestination?.isAuth(): Boolean = this?.hasRoute<AuthRoute>() == true
@@ -60,12 +67,15 @@ internal fun NavController.navigateToAuthGraph() {
 }
 
 /**
- * Opens chat [chatId] above the chat list, for a notification or a conversation shortcut: whatever was open above the
- * chat list is left, so back returns to the chat list, then leaves the app. Pushed on every window, as the archive
- * pushes chats.
+ * Opens chat [chatId] above the chat list, at message [messageId] where one is named (a reminder's notification), for a
+ * notification or a conversation shortcut: whatever was open above the chat list is left, so back returns to the chat
+ * list, then leaves the app. Pushed on every window, as the archive pushes chats.
  */
-internal fun NavController.navigateToChatAboveList(chatId: Long) {
-    navigate(ChatRoute(chatId)) {
+internal fun NavController.navigateToChatAboveList(
+    chatId: Long,
+    messageId: Long? = null,
+) {
+    navigate(ChatRoute(chatId, messageId)) {
         popUpTo(TopLevelDestination.Start.route)
         launchSingleTop = true
     }

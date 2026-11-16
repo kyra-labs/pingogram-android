@@ -30,4 +30,22 @@ sealed interface TranslationEffect : ChatEffect {
 
     /** The translate bar was closed: a snackbar says single messages still translate from their actions. */
     data object BarHidden : TranslationEffect
+
+    /** Telegram did not summarize: the error's text, or that summarizing failed where Telegram gave no reason. */
+    data class SummaryFailed(
+        val error: DomainError,
+    ) : TranslationEffect
+}
+
+/** What the user does with Telegram's summaries of long messages (`ChatSummaries`), sent to [ChatViewModel]. */
+sealed interface SummaryEvent : ChatEvent {
+    /** "Summarize" in a message's actions: its bubble shows Telegram's summary of it. */
+    data class Summarize(
+        val messageId: Long,
+    ) : SummaryEvent
+
+    /** "Show full text" in a message's actions or its bubble's custom action: its bubble shows its own text again. */
+    data class ShowFullText(
+        val messageId: Long,
+    ) : SummaryEvent
 }

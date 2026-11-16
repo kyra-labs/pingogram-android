@@ -9,12 +9,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +29,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -112,27 +114,34 @@ internal fun LockedChatsScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
-        when (state) {
-            LockedChatsUiState.Loading, LockedChatsUiState.Locked -> {
-                SettingsLoading(stringResource(R.string.locked_chats_loading))
-            }
+        StateCrossfade(
+            state,
+            modifier = Modifier.fillMaxWidth(),
+            contentKey = { it::class },
+            label = "LockedChatsPage",
+        ) { shown ->
+            when (shown) {
+                LockedChatsUiState.Loading, LockedChatsUiState.Locked -> {
+                    SettingsLoading(stringResource(R.string.locked_chats_loading))
+                }
 
-            LockedChatsUiState.NoPasscode -> {
-                SettingsGroup(footer = stringResource(R.string.locked_chats_footer)) {
-                    item { shapes ->
-                        SettingsRow(
-                            title = stringResource(R.string.settings_passcode_lock),
-                            shapes = shapes,
-                            icon = R.drawable.ic_pin,
-                            supportingContent = { Text(stringResource(R.string.locked_chats_needs_passcode)) },
-                            onClick = onOpenPasscodeLock,
-                        )
+                LockedChatsUiState.NoPasscode -> {
+                    SettingsGroup(footer = stringResource(R.string.locked_chats_footer)) {
+                        item { shapes ->
+                            SettingsRow(
+                                title = stringResource(R.string.settings_passcode_lock),
+                                shapes = shapes,
+                                icon = R.drawable.ic_pin,
+                                supportingContent = { Text(stringResource(R.string.locked_chats_needs_passcode)) },
+                                onClick = onOpenPasscodeLock,
+                            )
+                        }
                     }
                 }
-            }
 
-            is LockedChatsUiState.Content -> {
-                LockedChatsGroup(state, onEvent, onOpenChat)
+                is LockedChatsUiState.Content -> {
+                    LockedChatsGroup(shown, onEvent, onOpenChat)
+                }
             }
         }
     }
@@ -233,9 +242,10 @@ private fun LockedChatsPicker(
     picker: LockedChatsPickerUiState,
     onEvent: (LockedChatsEvent) -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(LockedChatsEvent.ClosePicker) },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState =
+            rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
         LockedChatsPickerContent(picker, onEvent)
     }

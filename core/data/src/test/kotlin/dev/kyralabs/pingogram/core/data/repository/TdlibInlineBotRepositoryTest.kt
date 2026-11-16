@@ -182,7 +182,7 @@ class TdlibInlineBotRepositoryTest {
                     TdApi.InlineQueryResults(
                         QUERY_ID,
                         TdApi.InlineQueryResultsButton("Open", TdApi.InlineQueryResultsButtonTypeWebApp("https://x")),
-                        results.map { it as TdApi.InlineQueryResult }.toTypedArray(),
+                        results,
                         "",
                     ),
                 ),

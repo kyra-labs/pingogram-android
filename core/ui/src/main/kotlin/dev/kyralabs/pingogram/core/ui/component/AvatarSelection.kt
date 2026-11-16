@@ -29,10 +29,11 @@ import kotlinx.coroutines.launch
  * [mark]'s container color while the avatar fades out under it, and its check grows in on top. Deselecting runs it
  * backwards.
  *
- * A modifier node rather than a composable with an effect, as for the online dot: the progress animates in the node's
- * own coroutine scope on [animationSpec] (a spatial spring) and is read only while drawing, so selecting never
- * recomposes or lays out (`docs/PERFORMANCE.md` §4). With reduced motion the caller passes a snap
- * (`snapWhenReducedMotion`), which skips the morph. A lazy list that reuses the node for another item shows its state
+ * A modifier node rather than a composable with an effect, as for the online dot: the morph and the check's size
+ * animate in the node's own coroutine scope on [animationSpec] (a spatial spring) and the fades on [fadeSpec] (an
+ * effects spring, which never overshoots), read only while drawing, so selecting never recomposes or lays out
+ * (`docs/PERFORMANCE.md` §4). With reduced motion the caller passes snaps (`snapWhenReducedMotion`), which skip the
+ * morph. A lazy list that reuses the node for another item shows its state
  * at once.
  */
 internal fun Modifier.avatarSelection(
@@ -40,7 +41,8 @@ internal fun Modifier.avatarSelection(
     avatarShape: RoundedPolygon,
     mark: SelectedMark,
     animationSpec: FiniteAnimationSpec<Float>,
-): Modifier = this then AvatarSelectionElement(selected, avatarShape, mark, animationSpec)
+    fadeSpec: FiniteAnimationSpec<Float>,
+): Modifier = this then AvatarSelectionElement(selected, avatarShape, mark, animationSpec, fadeSpec)
 
 /**
  * What a selected avatar shows: [check] in [checkColor] on its shape in [containerColor]; [check] is null while the
@@ -61,10 +63,11 @@ private data class AvatarSelectionElement(
     val avatarShape: RoundedPolygon,
     val mark: SelectedMark,
     val animationSpec: FiniteAnimationSpec<Float>,
+    val fadeSpec: FiniteAnimationSpec<Float>,
 ) : ModifierNodeElement<AvatarSelectionNode>() {
-    override fun create() = AvatarSelectionNode(selected, avatarShape, mark, animationSpec)
+    override fun create() = AvatarSelectionNode(selected, avatarShape, mark, animationSpec, fadeSpec)
 
-    override fun update(node: AvatarSelectionNode) = node.update(selected, avatarShape, mark, animationSpec)
+    override fun update(node: AvatarSelectionNode) = node.update(selected, avatarShape, mark, animationSpec, fadeSpec)
 }
 
 private class AvatarSelectionNode(
@@ -72,9 +75,14 @@ private class AvatarSelectionNode(
     private var avatarShape: RoundedPolygon,
     private var mark: SelectedMark,
     private var animationSpec: FiniteAnimationSpec<Float>,
+    private var fadeSpec: FiniteAnimationSpec<Float>,
 ) : Modifier.Node(),
     DrawModifierNode {
+    // The morph and the check's size, on the spatial spring.
     private var progress = Animatable(selected.progress)
+
+    // The avatar's fade under the selection and the selection's own, on the effects spring.
+    private var fade = Animatable(selected.progress)
 
     // Set when a lazy list reuses the node for another item, which shows its state at once rather than animating.
     private var showNextChangeAtOnce = false
@@ -91,6 +99,7 @@ private class AvatarSelectionNode(
         avatarShape: RoundedPolygon,
         mark: SelectedMark,
         animationSpec: FiniteAnimationSpec<Float>,
+        fadeSpec: FiniteAnimationSpec<Float>,
     ) {
         if (avatarShape != this.avatarShape) {
             this.avatarShape = avatarShape
@@ -99,13 +108,16 @@ private class AvatarSelectionNode(
         }
         this.mark = mark
         this.animationSpec = animationSpec
+        this.fadeSpec = fadeSpec
         if (selected != this.selected) {
             this.selected = selected
             if (isAttached && !showNextChangeAtOnce) {
                 coroutineScope.launch { progress.animateTo(selected.progress, animationSpec) }
+                coroutineScope.launch { fade.animateTo(selected.progress, fadeSpec) }
             } else {
-                // A plain field: the update invalidates drawing, which reads the new animatable.
+                // Plain fields: the update invalidates drawing, which reads the new animatables.
                 progress = Animatable(selected.progress)
+                fade = Animatable(selected.progress)
             }
         }
     }
@@ -117,31 +129,34 @@ private class AvatarSelectionNode(
     // Detaching cancels a running animation; start from the end state when attached again.
     override fun onDetach() {
         progress = Animatable(selected.progress)
+        fade = Animatable(selected.progress)
     }
 
     override fun ContentDrawScope.draw() {
         showNextChangeAtOnce = false
-        // The spatial spring overshoots: past 1 the check grows a little further, the rest stays at its end.
+        // The spatial spring overshoots: past 1 the check grows a little further, the morph stays at its end. The
+        // effects spring does not, so the fades end exactly.
         val value = progress.value
         val shown = value.coerceIn(0f, 1f)
-        if (shown == 0f) {
+        val opacity = fade.value.coerceIn(0f, 1f)
+        if (shown == 0f && opacity == 0f) {
             drawContent()
             return
         }
-        if (shown < 1f) {
+        if (opacity < 1f) {
             // The avatar fades out under the growing selection, so its edges do not show between the burst's points.
-            layerPaint.alpha = 1f - shown
+            layerPaint.alpha = 1f - opacity
             drawContext.canvas.saveLayer(size.toRect(), layerPaint)
             drawContent()
             drawContext.canvas.restore()
         }
-        drawPath(selectionPath(shown), mark.containerColor, alpha = shown)
+        drawPath(selectionPath(shown), mark.containerColor, alpha = opacity)
         val iconSize = size.minDimension * CHECK_SIZE_RATIO * value.coerceAtLeast(0f)
         val check = mark.check ?: return
         translate(left = (size.width - iconSize) / 2, top = (size.height - iconSize) / 2) {
             with(
                 check,
-            ) { draw(Size(iconSize, iconSize), alpha = shown, colorFilter = ColorFilter.tint(mark.checkColor)) }
+            ) { draw(Size(iconSize, iconSize), alpha = opacity, colorFilter = ColorFilter.tint(mark.checkColor)) }
         }
     }
 

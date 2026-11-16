@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateFile
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** Streaming a TDLib file while it downloads (`docs/adr/0028-streaming-media.md`). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibFileStreamRepositoryTest {
     /** The file as TDLib has it now, which `getFile` answers. */
     private var current = partial(offset = 0, prefix = 0, active = false)

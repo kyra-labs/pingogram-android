@@ -22,6 +22,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -29,6 +30,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.R
@@ -60,11 +62,19 @@ class MediaViewerScreenTest {
     private var backs = 0
     private var state by mutableStateOf<MediaViewerUiState>(MediaPreviewData.photo)
 
-    private fun setScreen(initial: MediaViewerUiState = MediaPreviewData.photo) {
+    private fun setScreen(
+        initial: MediaViewerUiState = MediaPreviewData.photo,
+        canPictureInPicture: Boolean = false,
+    ) {
         state = initial
         composeRule.setContent {
             PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
-                MediaViewerScreen(state = state, onEvent = { events += it }, onBack = { backs++ })
+                MediaViewerScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onBack = { backs++ },
+                    canPictureInPicture = canPictureInPicture,
+                )
             }
         }
         composeRule.waitForIdle()
@@ -82,6 +92,15 @@ class MediaViewerScreenTest {
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
 
     // Pages
+
+    @Test
+    fun `a streaming video's ring has a button that stops it loading`() {
+        setScreen(MediaPreviewData.videoStreaming)
+
+        composeRule.onNodeWithContentDescription(string(R.string.media_streaming_cancel)).performClick()
+
+        assertEquals(MediaViewerEvent.CancelStream, events.last())
+    }
 
     @Test
     fun `the pager starts on the current item`() {
@@ -237,6 +256,41 @@ class MediaViewerScreenTest {
     }
 
     @Test
+    fun `a video's controls play, move 10 seconds either way and mute`() {
+        setScreen(MediaPreviewData.video)
+
+        composeRule.onNodeWithContentDescription("Back 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Forward 10 seconds").performClick()
+        composeRule.onNodeWithContentDescription("Mute").performClick()
+
+        assertTrue(MediaViewerEvent.SeekBy(-10) in events)
+        assertTrue(MediaViewerEvent.SeekBy(10) in events)
+        assertTrue(MediaViewerEvent.SetMuted(true) in events)
+    }
+
+    @Test
+    fun `a swipe up on a playing video takes it into picture-in-picture`() {
+        setScreen(MediaPreviewData.video, canPictureInPicture = true)
+
+        composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top) }
+        composeRule.waitForIdle()
+
+        assertTrue(MediaViewerEvent.PictureInPicture in events)
+        assertEquals(0, backs)
+    }
+
+    @Test
+    fun `a swipe up on a video that has not started closes the viewer, as a swipe down does`() {
+        setScreen(MediaPreviewData.videoWaitingForTap, canPictureInPicture = true)
+
+        composeRule.onRoot().performTouchInput { swipeUp(startY = centerY, endY = top) }
+        composeRule.waitForIdle()
+
+        assertEquals(1, backs)
+        assertTrue(events.none { it == MediaViewerEvent.PictureInPicture })
+    }
+
+    @Test
     fun `a short drag down springs back`() {
         setScreen()
 
@@ -368,12 +422,28 @@ class MediaViewerScreenTest {
     // Delete, More and tooltips
 
     @Test
-    fun `Delete shows where it is allowed and asks first`() {
+    fun `Delete is in More where it is allowed, not in the toolbar, and asks first`() {
         setScreen(MediaPreviewData.allActions)
 
-        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertHasClickAction().performClick()
+        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertDoesNotExist()
+        moreButton().performClick()
+        composeRule.onNode(hasText(string(R.string.media_delete))).assertIsDisplayed().performClick()
 
         assertEquals(MediaViewerEvent.Delete, events.last())
+    }
+
+    @Test
+    fun `the toolbar is Forward, Share, Save and More, in that order`() {
+        setScreen(MediaPreviewData.allActions)
+
+        val lefts =
+            listOf(R.string.media_forward, R.string.media_share, R.string.media_save, R.string.media_more).map {
+                composeRule
+                    .onNode(hasContentDescription(string(it)))
+                    .fetchSemanticsNode()
+                    .boundsInRoot.left
+            }
+        assertEquals(lefts.sorted(), lefts)
     }
 
     @Test
@@ -399,7 +469,10 @@ class MediaViewerScreenTest {
     fun `Delete is hidden where it is not allowed`() {
         setScreen(MediaPreviewData.withActions)
 
-        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertDoesNotExist()
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_delete))).assertDoesNotExist()
     }
 
     @Test
@@ -447,6 +520,60 @@ class MediaViewerScreenTest {
     }
 
     @Test
+    fun `More offers a video's speed, whose list picks one`() {
+        setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
+
+        moreButton().performClick()
+        composeRule.onNode(hasText(string(R.string.media_speed))).assertIsDisplayed().performClick()
+        composeRule.onNode(hasText("1.5×")).assertIsDisplayed().performClick()
+
+        assertEquals(MediaViewerEvent.SetSpeed(1.5f), events.last())
+    }
+
+    @Test
+    fun `a photo has no speed`() {
+        setScreen(MediaPreviewData.withActions)
+
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_speed))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the speed chip shows only while the speed is not 1x, and changes it`() {
+        setScreen(MediaPreviewData.video)
+        composeRule.onNode(hasContentDescription("Playback speed", substring = true)).assertDoesNotExist()
+
+        state = MediaPreviewData.videoFaster
+        composeRule.waitForIdle()
+        composeRule.onNode(hasContentDescription("Playback speed 1.5×")).assertIsDisplayed().performClick()
+        composeRule.onNode(hasText("1×")).performClick()
+
+        assertEquals(MediaViewerEvent.SetSpeed(1f), events.last())
+    }
+
+    @Test
+    fun `a live photo says so, plays while held and through its actions`() {
+        setScreen(MediaPreviewData.livePhoto)
+        val page = composeRule.onNode(hasContentDescription(string(R.string.media_live_photo), substring = true))
+
+        page.assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_live_badge))).assertDoesNotExist() // Decorative.
+        page.performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+            move()
+        }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+        page.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = false), events.last())
+        page.performCustomAction(string(R.string.media_live_play))
+        assertEquals(MediaViewerEvent.HoldLivePhoto(1, held = true), events.last())
+    }
+
+    @Test
     fun `a video cannot be copied`() {
         setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
 
@@ -464,7 +591,6 @@ class MediaViewerScreenTest {
                 R.string.media_forward,
                 R.string.media_share,
                 R.string.media_save,
-                R.string.media_delete,
                 R.string.media_more,
             )
 

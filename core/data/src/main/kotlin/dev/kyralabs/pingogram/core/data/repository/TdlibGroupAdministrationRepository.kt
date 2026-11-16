@@ -21,10 +21,10 @@ import javax.inject.Inject
 /**
  * [GroupAdministrationRepository] on TDLib: `setChatTitle`, `setChatDescription`, `setChatPhoto` (a static photo
  * from a local file, its progress from the file's `updateFile`s, or null to remove it), `setChatPermissions`,
- * `setChatSlowModeDelay`, `setChatMemberStatus`, `deleteChatHistory`, `canTransferOwnership` and
- * `transferChatOwnership`, each sent once as asked. TDLib checks the
- * rights itself and Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow
- * mode delay Telegram does not accept are refused before anything is sent.
+ * `setChatSlowModeDelay`, `setChatMemberStatus`, `deleteChatHistory`, `getChatOwnerAfterLeaving`,
+ * `canTransferOwnership` and `transferChatOwnership`, each sent once as asked. TDLib checks the rights itself and
+ * Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow mode delay Telegram
+ * does not accept are refused before anything is sent.
  */
 @Suppress("TooManyFunctions") // One function per kind of change an administrator makes, each one request.
 @AccountScoped
@@ -93,6 +93,9 @@ class TdlibGroupAdministrationRepository
         /** `deleteChatHistory` without removing the chat from the lists and without revoking for others. */
         override suspend fun clearHistory(chatId: Long): Outcome<Unit> =
             client.request(TdApi.DeleteChatHistory(chatId, false, false)).map {}
+
+        override suspend fun ownerAfterLeaving(chatId: Long): Outcome<Long> =
+            client.request(TdApi.GetChatOwnerAfterLeaving(chatId)).map { it.id }
 
         override suspend fun ownershipTransferCheck(): Outcome<OwnershipTransferCheck> =
             client.request(TdApi.CanTransferOwnership()).map { result ->

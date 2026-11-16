@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -24,29 +26,42 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.panel.GifCaption
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -63,6 +78,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * The same place shows a bot's keyboard ([content] [PanelContent.BotKeyboard], `BotReplyKeyboardPanel`), which back
  * closes unless the bot keeps it on screen ([closesOnBack] false).
+ *
+ * Opened or closed with no keyboard coming or going, the panel grows in and shrinks away ([shown], driven by
+ * [ComposerPanelEffects], `docs/DESIGN_SYSTEM.md` §5.1, Q-11); [isShown] keeps it on screen while it shrinks.
  */
 @Stable
 internal class ComposerPanelState(
@@ -90,6 +108,15 @@ internal class ComposerPanelState(
     /** The keyboard was asked for and the panel waits for it to be up. */
     var awaitsKeyboard by mutableStateOf(false)
         private set
+
+    /**
+     * How much of the panel's height its place takes: 1 open, 0 closed, in between while it grows in or shrinks away
+     * and while a back gesture previews closing it. Read in the layout phase ([PanelArea]), never in composition.
+     */
+    internal val shown = Animatable(if (open) 1f else 0f)
+
+    /** Whether the panel is on screen: open, or still shrinking away. */
+    val isShown: Boolean by derivedStateOf { isOpen || shown.value > 0f }
 
     fun open(
         content: PanelContent = PanelContent.Emoji,
@@ -173,10 +200,14 @@ internal fun PanelButton(
     }
 }
 
-/** Where the panel's stickers ([onSticker]) and GIFs ([onAnimation]) go: sent into the conversation. */
+/**
+ * Where the panel's stickers ([onSticker]) and GIFs ([onAnimation]) go: sent into the conversation, a GIF with the
+ * composer's text as its caption where [gifCaption] says so.
+ */
 internal class PanelSends(
     val onSticker: (Sticker) -> Unit,
     val onAnimation: (Animation) -> Unit,
+    val gifCaption: GifCaption? = null,
 )
 
 /**
@@ -195,6 +226,8 @@ internal fun ComposerEmojiPanel(
     showStickers: Boolean,
 ) {
     PanelArea(panelState) {
+        // Not the bot's keyboard shrinking away in the emoji panel's place.
+        if (panelState.content != PanelContent.Emoji) return@PanelArea
         EmojiPanel(
             state = panel,
             onEmoji = { emoji ->
@@ -208,15 +241,18 @@ internal fun ComposerEmojiPanel(
             onEvent = onPanelEvent,
             modifier = Modifier.fillMaxSize(),
             showStickers = showStickers,
+            gifCaption = sends.gifCaption,
         )
     }
 }
 
 /**
- * The space below the composer: the keyboard's and the navigation bar's (`safeDrawing`), or, while the panel is open,
+ * The space below the composer: the keyboard's and the navigation bar's (`safeDrawing`), or, while the panel is shown,
  * the panel's [content] in at least the keyboard's last height ([panelHeight]) and as much as the keyboard takes while
- * it comes and goes, so the composer stays where it is. Its height is read in the layout phase, never in composition:
- * a keyboard that animates in or out only lays it out again.
+ * it comes and goes, so the composer stays where it is. Opened or closed with no keyboard involved, the panel's height
+ * grows from the navigation bar's and shrinks back to it ([ComposerPanelState.shown]); [content] keeps its full height
+ * meanwhile and is clipped, so it is not measured anew in every frame. Its height is read in the layout phase, never in
+ * composition: a keyboard that animates in or out, or the panel growing, only lays it out again.
  */
 @Composable
 internal fun PanelArea(
@@ -224,25 +260,73 @@ internal fun PanelArea(
     content: @Composable () -> Unit,
 ) {
     val bottom = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+    val shown = panel.isShown
+    val full = panelHeight(panel)
     val insets =
         when {
-            !panel.isOpen -> bottom
-            panel.searching -> bottom.add(WindowInsets(bottom = searchBandHeight())).union(panelInsets(panel))
-            else -> bottom.union(panelInsets(panel))
+            !shown -> bottom
+            panel.searching -> bottom.add(WindowInsets(bottom = searchBandHeight())).union(panelInsets(panel, full))
+            else -> bottom.union(panelInsets(panel, full))
         }
-    Box(Modifier.fillMaxWidth().windowInsetsBottomHeight(insets)) {
-        if (panel.isOpen) {
+    Box(Modifier.fillMaxWidth().clipToBounds().windowInsetsBottomHeight(insets)) {
+        if (shown) {
             // Searching, the keyboard comes up below the panel's own field: the content stays above it.
             val below = if (panel.searching) bottom else WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
-            Box(Modifier.fillMaxSize().windowInsetsPadding(below)) {
+            Box(Modifier.fillMaxWidth().atLeastHeight(full).windowInsetsPadding(below)) {
                 content()
             }
         }
     }
 }
 
+/**
+ * Lays this content out at least [height] pixels tall, from the top of its place: as tall as the panel is open while
+ * its place grows or shrinks, the rest clipped.
+ */
+private fun Modifier.atLeastHeight(height: Int): Modifier =
+    layout { measurable, constraints ->
+        val tall = maxOf(constraints.maxHeight, height)
+        val placeable = measurable.measure(constraints.copy(minHeight = tall, maxHeight = tall))
+        layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, 0) }
+    }
+
+/**
+ * The open panel's height, [full] pixels from the bottom of the window, as much of it as [ComposerPanelState.shown]
+ * says above the navigation bar: read in the layout phase, so the panel growing lays the composer out again and
+ * recomposes nothing.
+ */
 @Composable
-private fun panelInsets(panel: ComposerPanelState): WindowInsets = WindowInsets(bottom = panelHeight(panel))
+private fun panelInsets(
+    panel: ComposerPanelState,
+    full: Int,
+): WindowInsets {
+    val navigationBars = WindowInsets.navigationBars
+    return remember(panel, full, navigationBars) { ShownPanelInsets(full, navigationBars) { panel.shown.value } }
+}
+
+/** [panelInsets]' insets: the navigation bar's, then [fraction] of the rest of [full]. */
+private class ShownPanelInsets(
+    private val full: Int,
+    private val navigationBars: WindowInsets,
+    private val fraction: () -> Float,
+) : WindowInsets {
+    override fun getBottom(density: Density): Int {
+        val base = navigationBars.getBottom(density)
+        return (base + (full - base) * fraction()).roundToInt().coerceAtLeast(0)
+    }
+
+    override fun getLeft(
+        density: Density,
+        layoutDirection: LayoutDirection,
+    ): Int = 0
+
+    override fun getRight(
+        density: Density,
+        layoutDirection: LayoutDirection,
+    ): Int = 0
+
+    override fun getTop(density: Density): Int = 0
+}
 
 /**
  * What a search inside the panel keeps above the keyboard, in pixels: its field and a row of results (the GIF tab's
@@ -276,8 +360,14 @@ internal fun panelHeight(panel: ComposerPanelState): Int {
 /**
  * Keeps the panel and the keyboard in step: remembers the keyboard's height each time it is fully up, and then closes
  * the panel if it was open (the user tapped the field or the keyboard button); if no keyboard comes within
- * [KEYBOARD_WAIT_MILLIS] after the button (a hardware keyboard), the panel closes anyway. Back closes the panel. A
- * composer that cannot use it ([enabled] false: recording, nothing to write in) closes it.
+ * [KEYBOARD_WAIT_MILLIS] after the button (a hardware keyboard), the panel closes anyway. A composer that cannot use it
+ * ([enabled] false: recording, nothing to write in) closes it.
+ *
+ * The panel grows in and shrinks away on the default spatial spring when it opens or closes with no keyboard coming or
+ * going (`docs/DESIGN_SYSTEM.md` §5.1, Q-11); in the keyboard's place it takes the keyboard's height at once, so the
+ * switch moves nothing. Back closes it, the place following the gesture down to 90% of the panel's height on
+ * Material's back-progress curve ([predictiveBackScale]) before it shrinks away; a cancelled gesture springs it back.
+ * With reduced motion the gesture previews nothing.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -308,7 +398,34 @@ internal fun ComposerPanelEffects(
     if (!enabled && panel.isOpen) {
         LaunchedEffect(panel) { panel.close() }
     }
-    BackHandler(enabled = panel.isOpen && panel.closesOnBack) { panel.close() }
+    val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    LaunchedEffect(panel, panel.isOpen) {
+        val target = if (panel.isOpen) 1f else 0f
+        // The keyboard comes or goes in the panel's place: it moves the composer already, the panel takes its height.
+        val keyboard = ime.getBottom(density) > 0 || imeTarget.getBottom(density) > 0
+        if (keyboard) panel.shown.snapTo(target) else panel.shown.animateTo(target, spec)
+    }
+    PanelBack(panel, spec)
+}
+
+/** Back closing the open [panel], previewed with the gesture; a cancelled gesture springs back on [spec]. */
+@Composable
+private fun PanelBack(
+    panel: ComposerPanelState,
+    spec: AnimationSpec<Float>,
+) {
+    val reducedMotion = isReducedMotion()
+    val scope = rememberCoroutineScope()
+    PredictiveBackHandler(enabled = panel.isOpen && panel.closesOnBack) { events ->
+        try {
+            events.collect { event -> if (!reducedMotion) panel.shown.snapTo(predictiveBackScale(event.progress)) }
+            panel.close()
+        } catch (cancelled: CancellationException) {
+            // A cancelled gesture, when this coroutine can no longer animate.
+            scope.launch { panel.shown.animateTo(1f, spec) }
+            throw cancelled
+        }
+    }
 }
 
 /** The most of the window the panel takes. */

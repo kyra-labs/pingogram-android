@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -14,6 +15,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.Test
  * chat repository, which reads unknown chats with getChat), the merge of local and server chats, message paging by
  * TDLib's offset, the recently found chats, and errors.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibSearchRepositoryTest {
     private val client =
         FakeTdlibClient().apply {
@@ -343,6 +346,59 @@ class TdlibSearchRepositoryTest {
         }
 
     // Recently found chats
+
+    @Test
+    fun `public post search limits are read for the query, without searching`() =
+        runTest {
+            client.on(TdApi.GetPublicPostSearchLimits::class) {
+                TdResult.Success(TdApi.PublicPostSearchLimits(10, 0, 3_600, 50, false))
+            }
+
+            val limits = (repository().publicPostSearchLimits(" android ") as Outcome.Success).value
+
+            assertEquals(PublicPostSearchLimits(10, 0, 3_600, 50, isQueryFree = false), limits)
+            assertEquals("android", client.sentOf<TdApi.GetPublicPostSearchLimits>().single().query)
+            assertTrue(client.sentOf<TdApi.SearchPublicPosts>().isEmpty())
+        }
+
+    @Test
+    fun `public posts are searched without Telegram Stars, each with its chat, paged by offset`() =
+        runTest {
+            client.on(TdApi.SearchPublicPosts::class) {
+                TdResult.Success(
+                    TdApi.FoundPublicPosts(
+                        arrayOf(message(id = 20, chatId = 2)),
+                        "o2",
+                        TdApi.PublicPostSearchLimits(10, 6, 0, 50, true),
+                        false,
+                    ),
+                )
+            }
+
+            val found = (repository().searchPublicPosts("android", offset = "o1") as Outcome.Success).value
+
+            val request = client.sentOf<TdApi.SearchPublicPosts>().single()
+            assertEquals(0L, request.starCount)
+            assertEquals("o1", request.offset)
+            assertEquals(listOf("Chat 2"), found.posts.messages.map { it.chat.title })
+            assertEquals("o2", found.posts.nextOffset)
+            assertEquals(6, found.limits?.remainingFreeQueries)
+            assertFalse(found.areLimitsExceeded)
+        }
+
+    @Test
+    fun `posts found past the limits say so, and unchanged limits are none`() =
+        runTest {
+            client.on(TdApi.SearchPublicPosts::class) {
+                TdResult.Success(TdApi.FoundPublicPosts(arrayOf(), "", null, true))
+            }
+
+            val found = (repository().searchPublicPosts("android", offset = null) as Outcome.Success).value
+
+            assertTrue(found.areLimitsExceeded)
+            assertNull(found.limits)
+            assertNull(found.posts.nextOffset)
+        }
 
     @Test
     fun `recent chats are TDLib's whole list of recently found chats, in its order`() =

@@ -17,4 +17,13 @@ interface ChatStatisticsRepository {
         chatId: Long,
         token: String,
     ): Outcome<StatisticGraph>
+
+    /**
+     * The votes over time of the poll of message [messageId] in chat [chatId] (`getPollVoteStatistics`), where TDLib
+     * allows it (`MessageProperties.canGetPollVoteStatistics`); perhaps only as a token for [graph].
+     */
+    suspend fun pollVotes(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<StatisticGraph>
 }

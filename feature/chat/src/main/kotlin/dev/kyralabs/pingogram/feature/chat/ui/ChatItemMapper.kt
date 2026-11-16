@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -239,7 +240,8 @@ private fun groupPosition(
 
 /**
  * The chats other than [chatId] that the items of [history] name, and so need looked up: senders that are chats, the
- * origins of forwards and of replies to other chats, and the senders of replied messages ([replies] among them).
+ * origins of forwards and of replies to other chats, the senders of replied messages ([replies] among them), and the
+ * channels a giveaway names ([chatIdsOf]).
  */
 internal fun referencedChatIds(
     chatId: Long,
@@ -261,6 +263,7 @@ internal fun referencedChatIds(
         for (message in history.messages) {
             addSender(message.sender)
             addOrigin(message.forwardInfo?.origin)
+            addAll(chatIdsOf(message.content))
             val replyTo = message.replyTo as? ReplyTo.Message
             addOrigin(replyTo?.origin)
             replyTo?.let { history.messages.findById(it.messageId) }?.let { addSender(it.sender) }

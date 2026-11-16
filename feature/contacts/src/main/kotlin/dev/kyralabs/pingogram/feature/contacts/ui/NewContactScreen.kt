@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.contacts.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -54,6 +53,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
+import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -63,6 +64,7 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.feature.contacts.ui.preview.NewContactPreviewStates
 import kotlinx.coroutines.launch
@@ -134,7 +136,14 @@ internal fun NewContactScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    BackHandler(enabled = state.notOnTelegram) { onEvent(NewContactEvent.ChangeNumber) }
+    // Back from "not on Telegram" to the form follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5.1, Q-08).
+    val steps =
+        rememberSeekableSteps(
+            current = state.notOnTelegram,
+            backTo = false.takeIf { state.notOnTelegram },
+            key = { it },
+            onBack = { onEvent(NewContactEvent.ChangeNumber) },
+        )
     Scaffold(
         modifier = modifier,
         // The top bar's container; the form sits on a sheet below it (ContentSheet).
@@ -153,8 +162,7 @@ internal fun NewContactScreen(
                         .padding(contentPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AnimatedContent(
-                    targetState = state.notOnTelegram,
+                steps.transition.AnimatedContent(
                     modifier =
                         Modifier
                             .padding(horizontal = windowMargin(), vertical = MaterialTheme.spacing.large)
@@ -163,7 +171,6 @@ internal fun NewContactScreen(
                         (fadeIn(motion.defaultEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec()))
                             .using(SizeTransform(clip = false) { _, _ -> motion.defaultSpatialSpec() })
                     },
-                    label = "NewContactStep",
                 ) { notOnTelegram ->
                     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
                         if (notOnTelegram) NotOnTelegram(state, onEvent) else NewContactForm(state, onEvent)
@@ -193,10 +200,13 @@ private fun NewContactForm(
         enabled = enabled,
     )
     NameFields(state, onEvent, enabled)
-    if (state.method == ContactMethod.Username) {
-        UsernameField(state, onEvent, enabled, submit)
-    } else {
-        PhoneNumberField(state, onEvent, enabled, submit)
+    // The two fields cross-fade as the method changes, the form below moving with the height between them.
+    StateCrossfade(state.method, modifier = Modifier.fillMaxWidth(), label = "ContactMethodField") { method ->
+        if (method == ContactMethod.Username) {
+            UsernameField(state, onEvent, enabled, submit)
+        } else {
+            PhoneNumberField(state, onEvent, enabled, submit)
+        }
     }
     FormEnd(
         floodWaitSeconds = state.floodWaitSeconds,
@@ -342,8 +352,9 @@ private fun ColumnScope.NotOnTelegram(
 }
 
 /**
- * The end of a contact form: the `FLOOD_WAIT` countdown and the progress of a request, then the buttons ([actions]),
- * at the end, wrapping onto more lines when they do not fit side by side.
+ * The end of a contact form: the `FLOOD_WAIT` countdown (growing in and shrinking away) and the progress of a request
+ * (in a place kept while nothing is on its way, so the button just tapped never moves; `docs/DESIGN_SYSTEM.md` §5.1),
+ * then the buttons ([actions]), at the end, wrapping onto more lines when they do not fit side by side.
  */
 @Composable
 internal fun FormEnd(
@@ -354,8 +365,8 @@ internal fun FormEnd(
     arrangement: Arrangement.Horizontal = Arrangement.End,
     actions: @Composable () -> Unit,
 ) {
-    floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = floodWaitTotalSeconds) }
-    if (isWorking) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+    FloodWaitSlot(floodWaitSeconds, floodWaitTotalSeconds)
+    ReservedProgressLine(isWorking)
     FlowRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = arrangement,

@@ -6,8 +6,6 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.preview.PinnedPreviewData
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -19,8 +17,7 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the pinned messages bar on a compact phone, light and dark, and on an expanded window (`docs/TESTING.md`,
  * `REQUIREMENTS.md` FR-C9): one pinned message the user may unpin in a private chat, the second newest of five in a
- * group ("4 of 5", its segment second from the bottom), which the user may only hide, and the sheet of every pinned
- * message, oldest first. Brand colors.
+ * group ("4 of 5", its segment second from the bottom), which the user may only hide. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -56,11 +53,10 @@ class PinnedMessagesScreenshotTest(
         variant: String,
         themeMode: ThemeMode,
     ) {
-        val (state, sheet) = STATES.getValue(stateName)
+        val state = STATES.getValue(stateName)
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
                 ChatScreen(state = state, onEvent = {}, onBack = {})
-                sheet?.let { PinnedMessagesSheet(sheet = it, onEvent = {}) }
             }
         }
         composeRule.waitForIdle()
@@ -68,13 +64,9 @@ class PinnedMessagesScreenshotTest(
     }
 
     companion object {
-        val STATES: Map<String, Pair<ChatUiState, PinnedSheet?>> =
+        val STATES: Map<String, ChatUiState> =
             with(PinnedPreviewData) {
-                mapOf(
-                    "one" to (privateWithPin to null),
-                    "many" to (groupWithPins to null),
-                    "sheet" to (groupWithPins to sheet),
-                )
+                mapOf("one" to privateWithPin, "many" to groupWithPins, "file" to groupWithFile)
             }
 
         @JvmStatic

@@ -5,7 +5,6 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -44,7 +42,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -60,6 +57,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
+import dev.kyralabs.pingogram.core.ui.component.animateItem
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
+import dev.kyralabs.pingogram.core.ui.component.selectionBackground
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -70,9 +71,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [ModalBottomSheet] of the user's contacts,
- * those in [initial] picked, to choose who sees the story. "Done" closes it, then hands the picks to [onDone]; the
- * scrim, dragging, back and "Cancel" close it without a change ([onDismiss]). The picks are forgotten once it closes.
+ * "Selected people" (`docs/DESIGN_SYSTEM.md` §6 "New story: who sees it"): a [PingogramBottomSheet] of the user's
+ * contacts, those in [initial] picked, to choose who sees the story. "Done" closes it, then hands the picks to
+ * [onDone]; the scrim, dragging, back and "Cancel" close it without a change ([onDismiss]). The picks are forgotten
+ * once it closes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +100,7 @@ internal fun StoryPeopleSheet(
             }
         }
     }
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = {
             viewModel.reset()
             currentOnDismiss()
@@ -245,9 +247,13 @@ private fun Candidates(
     state: StoryPeopleUiState.Content,
     onToggle: (Long) -> Unit,
 ) {
+    val motion = rememberItemMotion()
     LazyColumn(Modifier.fillMaxWidth()) {
         items(state.candidates, key = { it.userId }, contentType = { "person" }) { candidate ->
-            PersonRow(candidate, onToggle = { onToggle(candidate.userId) })
+            // People come and go as the search filters them, on the theme's item motion.
+            Box(Modifier.animateItem(this, motion)) {
+                PersonRow(candidate, onToggle = { onToggle(candidate.userId) })
+            }
         }
     }
 }
@@ -259,8 +265,6 @@ private fun PersonRow(
     onToggle: () -> Unit,
 ) {
     val picked = candidate.isPicked
-    val shape = if (picked) MaterialTheme.shapes.large else MaterialTheme.shapes.extraSmall
-    val color = if (picked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
     val name = candidate.name.ifBlank { stringResource(R.string.new_story_people_someone) }
     ListItem(
         leadingContent = {
@@ -278,8 +282,8 @@ private fun PersonRow(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.small)
-                .clip(shape)
-                .background(color)
+                // The list item's selected shape and color, morphing in as it is picked (§4).
+                .selectionBackground(picked)
                 .toggleable(value = picked, role = Role.Checkbox, onValueChange = { onToggle() }),
     ) {
         Text(

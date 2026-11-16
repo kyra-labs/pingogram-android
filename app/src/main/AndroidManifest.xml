@@ -190,6 +190,10 @@
                  one or several. No permission: shared content:// URIs are read with the grant they come with, once the
                  user picked a chat, and copied into the upload cache like attachments; nothing is sent before the user
                  taps send. -->
+            <!-- The Focus tile's long press (board 31): the Chats tab's Focus switcher. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -230,6 +234,73 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/recent_chats_widget_info" />
         </receiver>
+
+        <!-- The unread counter widget (board 33), drawn from the same updater; it takes nothing else either. -->
+        <receiver
+            android:name=".widget.UnreadCounterWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_unread_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/unread_counter_widget_info" />
+        </receiver>
+
+        <!-- The Quick compose widget (board 33): buttons into the app, nothing drawn from data; it takes nothing else. -->
+        <receiver
+            android:name=".widget.QuickComposeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_compose_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_compose_widget_info" />
+        </receiver>
+
+        <!-- The Conversation widget (board 33): one chat's messages and a reply, from its own updater; it takes nothing
+             else. Its "Choose a chat" opens MainActivity, whose chat picker checks the widget is this app's. -->
+        <receiver
+            android:name=".widget.ConversationWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_conversation_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/conversation_widget_info" />
+        </receiver>
+
+        <!-- The Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33). BIND_QUICK_SETTINGS_TILE is
+             what only the system holds, so only it may bind them; the app asks for no permission for them. -->
+        <service
+            android:name=".tile.FocusTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_do_not_disturb_on"
+            android:label="@string/tile_focus"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <!-- A switch for screen readers (Android 13+). -->
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+        <service
+            android:name=".tile.NewMessageTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_edit"
+            android:label="@string/tile_new_message"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <!-- WorkManager starts when first used (PingogramApplication's Configuration.Provider, with Hilt's worker
              factory), not at every process start through App Startup. -->

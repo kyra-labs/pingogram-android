@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /** Loading, errors, paging and folders of [ChatListViewModel]. */
@@ -372,4 +373,35 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
 
             assertEquals(FolderTab.AllChats(0), viewModel().state.folderTabs.last())
         }
+
+    @Test
+    fun `the chats show before the communities are read, then fold into their entry`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(id = 2), chat(id = 3))
+            communities.add(COMMUNITY, "Kyra Labs", chatIds = listOf(3))
+            communities.joinedAnswered.value = false
+
+            val viewModel = viewModel()
+
+            val waiting = viewModel.state.content as ChatListContent.Content
+            assertEquals(listOf(2L, 3L), waiting.items.map { it.id })
+            assertTrue(waiting.communities.isEmpty())
+
+            communities.joinedAnswered.value = true
+            runCurrent()
+
+            val folded = viewModel.state.content as ChatListContent.Content
+            assertEquals(listOf(2L), folded.items.map { it.id })
+            assertEquals(
+                listOf(3L),
+                folded.communities
+                    .single()
+                    .chats
+                    .map { it.id },
+            )
+        }
+
+    private companion object {
+        const val COMMUNITY = 40L
+    }
 }

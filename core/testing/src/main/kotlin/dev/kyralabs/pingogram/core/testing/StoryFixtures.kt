@@ -52,7 +52,10 @@ object StoryFixtures {
         null,
     )
 
-    /** Story [id] of chat [posterChatId]; the user may reply to it and has not reacted. */
+    /**
+     * Story [id] of chat [posterChatId]; the user may reply to it, has not reacted, and may neither delete nor forward
+     * it.
+     */
     fun story(
         id: Int = 1,
         posterChatId: Long = 42,
@@ -61,12 +64,16 @@ object StoryFixtures {
         caption: String = "",
         canBeReplied: Boolean = true,
         chosenReaction: TdApi.ReactionType? = null,
+        canBeDeleted: Boolean = false,
+        canBeForwarded: Boolean = false,
     ) = TdApi.Story().apply {
         this.id = id
         this.posterChatId = posterChatId
         posterId = TdApi.MessageSenderChat(posterChatId)
         this.date = date
         this.canBeReplied = canBeReplied
+        this.canBeDeleted = canBeDeleted
+        this.canBeForwarded = canBeForwarded
         chosenReactionType = chosenReaction
         privacySettings = TdApi.StoryPrivacySettingsEveryone(longArrayOf())
         this.content = content

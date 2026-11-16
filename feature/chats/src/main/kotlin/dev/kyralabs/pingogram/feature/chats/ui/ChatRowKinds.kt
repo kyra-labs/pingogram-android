@@ -54,6 +54,8 @@ internal fun contentIcon(content: MessageContent): Int? =
         is MessageContent.Document -> R.drawable.ic_description
         is MessageContent.Location, is MessageContent.Venue -> R.drawable.ic_location_on
         is MessageContent.Poll -> R.drawable.ic_poll_filled
+        is MessageContent.PaidMedia -> R.drawable.ic_image
+        is MessageContent.Giveaway, is MessageContent.GiveawayWinners -> R.drawable.ic_redeem
         is MessageContent.Checklist -> R.drawable.ic_checklist
         is MessageContent.Text -> if (content.linkPreview != null) R.drawable.ic_link else null
         else -> null

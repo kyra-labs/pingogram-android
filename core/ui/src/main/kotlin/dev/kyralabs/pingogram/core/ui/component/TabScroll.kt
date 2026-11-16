@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.core.ui.component
 
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -118,4 +121,24 @@ private fun DrawScope.drawEdgeFade(
         size = Size(width, size.height),
         blendMode = BlendMode.DstOut,
     )
+}
+
+/**
+ * Scrolls this list back to its first item on [spec] (`docs/DESIGN_SYSTEM.md` §5.1, Q-09: the motion scheme's default
+ * spatial spring), as a tap on the selected tab asks: a list further away than a screen jumps to within a screen of
+ * the top first, then springs the rest of the way. The distance is estimated from the items on screen and settled at
+ * the end, as items of other heights may lie above.
+ */
+suspend fun LazyListState.animateScrollToTop(spec: AnimationSpec<Float>) {
+    val shown = layoutInfo.visibleItemsInfo
+    if (shown.isEmpty()) {
+        scrollToItem(0)
+        return
+    }
+    if (firstVisibleItemIndex > shown.size) scrollToItem(shown.size)
+    val items = layoutInfo.visibleItemsInfo
+    val itemSize = items.sumOf { it.size } / items.size + layoutInfo.mainAxisItemSpacing
+    val distance = firstVisibleItemIndex * itemSize + firstVisibleItemScrollOffset
+    if (distance > 0) animateScrollBy(-distance.toFloat(), spec)
+    if (firstVisibleItemIndex != 0 || firstVisibleItemScrollOffset != 0) scrollToItem(0)
 }

@@ -331,21 +331,26 @@ class ChatListScreenTest {
     // Rows
 
     @Test
-    fun `every row is as tall as the others, whatever it shows at its end`() {
+    fun `every row is as tall as the others, whatever it shows at its end, but a forum's naming its topics`() {
         setScreen(ChatListPreviewData.content)
 
-        val heights = rowHeights()
-        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+        val (forums, others) = rowHeights().entries.partition { it.key.contains(topicsLabel()) }
+        assertEquals(others.toString(), 1, others.map { it.value }.toSet().size)
+        // A forum's row names its topics on a line of its own (docs/DESIGN_SYSTEM.md §6 "Chat list row").
+        assertTrue(forums.toString(), forums.isNotEmpty() && forums.all { it.value > others.first().value })
     }
 
     @Test
-    fun `at twice the font size every row is still as tall as the others`() {
+    fun `at twice the font size every row is still as tall as the others, but a forum's naming its topics`() {
         RuntimeEnvironment.setFontScale(LARGE_FONT_SCALE)
         setScreen(ChatListPreviewData.content)
 
-        val heights = rowHeights()
-        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+        val others = rowHeights().filterKeys { !it.contains(topicsLabel()) }
+        assertEquals(others.toString(), 1, others.values.toSet().size)
     }
+
+    /** "Topics:", which a forum's row's description names its topics after. */
+    private fun topicsLabel() = string(R.string.chat_list_a11y_topics, "").trim()
 
     @Test
     fun `an empty archive offers no New chat button`() {
@@ -446,7 +451,7 @@ class ChatListScreenTest {
 
     /** Keeps the events these tests are about: not paging, which the list reports as it lays out. */
     private fun record(event: ChatListEvent) {
-        if (event !is ChatListEvent.NearEndChanged) events += event
+        if (event !is ChatListEvent.NearEndChanged && event !is ChatListEvent.RowsShown) events += event
     }
 
     /** A row by the start of its description, which names its chat. */

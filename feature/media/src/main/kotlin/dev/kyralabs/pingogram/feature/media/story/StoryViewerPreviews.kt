@@ -56,6 +56,7 @@ internal object StoryViewerPreviewData {
         current: Int = 0,
         reply: StoryReplyUi? = StoryReplyUi(),
         reactions: StoryReactionsUi? = this.reactions,
+        canShare: Boolean = false,
     ) = StoryViewerUiState.Content(
         posters = posters,
         current = current,
@@ -64,13 +65,15 @@ internal object StoryViewerPreviewData {
         isMuted = false,
         reply = reply,
         reactions = reactions,
+        canShare = canShare,
     )
 
-    /** A photo (the preview handler's color) with a caption, from a user: the reply field and reactions. */
+    /** A photo (the preview handler's color) with a caption, from a user: the reply field, reactions and share. */
     val photo =
         content(
             StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = true),
             caption = caption,
+            canShare = true,
         )
 
     /** A video with sound, its first frame not yet shown, from a channel: reactions only. */
@@ -90,7 +93,12 @@ internal object StoryViewerPreviewData {
         )
 
     /** A live story, with "Watch live" where the app provides voice chats. */
-    val live = content(StoryMedia.Live(chatId = 42, groupCallId = 11), reply = null, reactions = null)
+    val live =
+        content(
+            StoryMedia.Live(chatId = 42, groupCallId = 11, title = "Sunset from the ferry", watching = 128),
+            reply = null,
+            reactions = null,
+        )
 
     /** Content Pingogram cannot show. */
     val unsupported = content(StoryMedia.Unsupported, reply = null, reactions = null)
@@ -102,7 +110,45 @@ internal object StoryViewerPreviewData {
             reactions = reactions.copy(chosen = ReactionType.Emoji("🔥"), isOpen = true),
         )
 
+    /** A photo still downloading (board 26): "Loading story…" in the frame, the reply bar already there. */
+    val loadingStory =
+        content(
+            StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = false),
+            caption = caption,
+        )
+
+    /** A finger holds the photo (board 26): the chrome gone, the pause badge and "Release to continue". */
+    val held = photo.copy(isPaused = true, isHeld = true)
+
     val failed = content(StoryMedia.Failed(DomainError.Network), reply = null, reactions = null)
+
+    /** The user's own story with its ⋮ menu open (board 26): no reply field, no reactions. */
+    val ownMenu =
+        content(
+            StoryMedia.Photo(fileId = 41, width = 1080, height = 1920, minithumbnail = null, isReady = true),
+            reply = null,
+            reactions = null,
+        ).copy(own = OwnStoryUi(menuOpen = true))
+
+    /** The user's own story with its views pill: 24 views, 6 reactions, three faces. */
+    val ownViews =
+        ownMenu.copy(
+            own = OwnStoryUi(),
+            views =
+                StoryViewsUi(
+                    viewCount = 24,
+                    reactionCount = 6,
+                    recent =
+                        persistentListOf(
+                            StoryViewerFace(7, "Aisha", null),
+                            StoryViewerFace(8, "Meera", null),
+                            StoryViewerFace(9, "Rahul", null),
+                        ),
+                ),
+        )
+
+    /** The user's own story, "Delete this story?" asking. */
+    val ownDeleteAsked = ownMenu.copy(own = OwnStoryUi(deleteAsked = true))
 
     const val PREVIEW_PROGRESS = 0.4f
 
@@ -114,11 +160,16 @@ internal class StoryViewerPreviewStates : PreviewParameterProvider<StoryViewerUi
     override val values =
         sequenceOf(
             StoryViewerPreviewData.photo,
+            StoryViewerPreviewData.held,
+            StoryViewerPreviewData.loadingStory,
             StoryViewerPreviewData.video,
             StoryViewerPreviewData.reacting,
             StoryViewerPreviewData.live,
             StoryViewerPreviewData.unsupported,
             StoryViewerPreviewData.failed,
+            StoryViewerPreviewData.ownMenu,
+            StoryViewerPreviewData.ownDeleteAsked,
+            StoryViewerPreviewData.ownViews,
             StoryViewerUiState.Loading,
         )
 }

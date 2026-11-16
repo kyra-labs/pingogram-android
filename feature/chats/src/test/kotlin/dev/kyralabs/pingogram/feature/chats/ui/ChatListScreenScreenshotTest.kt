@@ -58,7 +58,10 @@ class ChatListScreenScreenshotTest(
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName in setOf("selecting", "connecting", "contentWithFolders", "archiveRow"))
+        assumeTrue(
+            stateName in
+                setOf("selecting", "connecting", "contentWithFolders", "archiveRow", "communities", "keywordAlerts"),
+        )
         capture(ScreenshotVariant.Light, "fontScale200")
     }
 
@@ -76,21 +79,45 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Light, "withoutChatTypeIcons", ChatSwipes(chatTypeIcons = false))
     }
 
+    /** The folder bar with Appearance → Chat list → "Folder tabs" at "Icons and names". */
     @Test
     fun folderTabsWithIcons() {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName == "contentWithFolders")
         capture(ScreenshotVariant.Light, "folderTabsWithIcons", ChatSwipes(folderTabStyle = FolderTabStyle.IconAndText))
     }
 
+    /** The folder bar with "Folder tabs" at "Icons": the selected tab keeps its name, the others their count. */
     @Test
     fun folderTabsIconsOnly() {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName == "contentWithFolders")
         capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
-    /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
+    /** The header's Catch-up chip after the status line, from five chats to catch up on (owner decision 2026-11-15). */
+    @Test
+    fun catchUpChip() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Light, "catchUpChip", summary = ChatListPreviewData.summary.copy(catchUpChats = 12))
+    }
+
+    /** The chip in dark theme and at twice the font size, where the counts give way to it. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun catchUpChipFontScale200() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(
+            ScreenshotVariant.Dark,
+            "catchUpChipFontScale200",
+            summary = ChatListPreviewData.summary.copy(catchUpChats = 12),
+        )
+    }
+
+    /**
+     * The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for the representative state, the folder bar over the
+     * list (owner decision 2026-11-13) and the communities' entries (the owner's board 19b).
+     */
     private fun captureAudit(variant: ScreenshotVariant) {
-        assumeTrue(stateName == "content")
+        assumeTrue(stateName in setOf("content", "contentWithFolders", "communities"))
         capture(variant)
     }
 
@@ -99,6 +126,7 @@ class ChatListScreenScreenshotTest(
         variant: ScreenshotVariant,
         name: String = variant.goldenName,
         swipes: ChatSwipes = ChatSwipes(),
+        summary: ChatListSummary = ChatListPreviewData.summary,
     ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
@@ -107,7 +135,7 @@ class ChatListScreenScreenshotTest(
                     ChatListScreen(
                         state = state,
                         onEvent = {},
-                        summary = { ChatListPreviewData.summary },
+                        summary = { summary },
                         onEditFolder = {},
                     )
                 }
@@ -125,6 +153,8 @@ class ChatListScreenScreenshotTest(
             mapOf(
                 "contentWithFolders" to ChatListPreviewData.contentWithFolders,
                 "content" to ChatListPreviewData.content,
+                "communities" to ChatListPreviewData.withCommunities,
+                "keywordAlerts" to ChatListPreviewData.keywordAlerts,
                 "archiveRow" to ChatListPreviewData.contentWithArchive,
                 "selecting" to ChatListPreviewData.selecting,
                 "connecting" to ChatListPreviewData.connecting,

@@ -21,4 +21,11 @@
     <!-- The snackbars. -->
     <string name="translation_failed">Telegram couldn\'t translate this message</string>
     <string name="translation_bar_hidden">Translate bar closed. You can still translate a message from its menu.</string>
+
+    <!-- Telegram's summaries of long messages (ChatSummaries). -->
+    <string name="message_action_summarize">Summarize</string>
+    <string name="message_action_show_full_text">Show full text</string>
+    <string name="summary_by_telegram">Summary by Telegram</string>
+    <string name="summary_summarizing">Summarizing…</string>
+    <string name="summary_failed">Telegram couldn\'t summarize this message</string>
 </resources>

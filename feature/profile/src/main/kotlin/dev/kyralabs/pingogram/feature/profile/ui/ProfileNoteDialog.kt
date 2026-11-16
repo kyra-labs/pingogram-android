@@ -54,6 +54,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
+import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -113,9 +114,7 @@ internal fun ContactNoteDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 NoteField(editor, onEvent)
-                if (editor.isSaving) {
-                    LinearWavyProgressIndicator(Modifier.fillMaxWidth())
-                }
+                ReservedProgressLine(editor.isSaving)
                 NoteButtons(editor, onEvent)
             }
         }

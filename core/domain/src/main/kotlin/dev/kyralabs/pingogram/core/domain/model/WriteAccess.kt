@@ -36,6 +36,8 @@ enum class WriteAccess {
  *   members as their restriction and the chat's permissions both allow. Not a member: [WriteAccess.NotMember].
  * - **Channels**: only the owner and administrators with the right to post; everyone else reads
  *   ([WriteAccess.ReadOnly]).
+ * - **A channel's direct messages chat**: a subscriber, who is no member of it, writes as its permissions allow;
+ *   whether a message costs Telegram Stars is the composer's to say (`Supergroup.paidMessageStarCount`).
  */
 fun Chat.writeAccess(
     user: User?,
@@ -62,11 +64,19 @@ fun Chat.writeAccess(
         is ChatType.Supergroup -> {
             when {
                 supergroup == null -> WriteAccess.Unknown
+
                 type.isChannel -> channelAccess(supergroup.status)
+
+                // A subscriber writes to the channel without being a member of its direct messages chat.
+                supergroup.isDirectMessages && !supergroup.status.isMember -> permissionAccess()
+
                 else -> groupAccess(supergroup.status)
             }
         }
     }
+
+private fun Chat.permissionAccess(): WriteAccess =
+    if (permissions.canSendBasicMessages) WriteAccess.Allowed else WriteAccess.Restricted
 
 private fun Chat.groupAccess(status: ChatMemberStatus): WriteAccess =
     when {

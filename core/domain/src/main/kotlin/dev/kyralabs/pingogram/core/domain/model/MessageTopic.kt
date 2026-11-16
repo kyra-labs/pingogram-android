@@ -3,7 +3,8 @@ package dev.kyralabs.pingogram.core.domain.model
 /**
  * Where in a chat a message is, besides the chat itself (`REQUIREMENTS.md` FR-C9): a forum topic, the thread of
  * replies to one message (a channel post's comments in its discussion group, a group message's replies), or a topic of
- * Saved Messages. A conversation shows one of them, or the whole chat without one.
+ * Saved Messages, or one person's conversation in a channel's direct messages. A conversation shows one of them, or the
+ * whole chat without one.
  */
 sealed interface MessageTopic {
     /** Topic [topicId] of a forum supergroup (td_api.tl `messageTopicForum.forum_topic_id`). */
@@ -27,6 +28,14 @@ sealed interface MessageTopic {
      * user's own notes, or those forwarded from people who hide their account ([SavedMessagesTopic]).
      */
     data class SavedMessages(
+        val topicId: Long,
+    ) : MessageTopic
+
+    /**
+     * Topic [topicId] of a channel's direct messages chat (td_api.tl `messageTopicDirectMessages`): one person's
+     * conversation with the channel's administrators ([DirectMessagesTopic]).
+     */
+    data class DirectMessages(
         val topicId: Long,
     ) : MessageTopic
 

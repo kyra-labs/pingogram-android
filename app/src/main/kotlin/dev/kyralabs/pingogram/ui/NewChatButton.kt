@@ -43,10 +43,10 @@ import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
- * `docs/DESIGN_SYSTEM.md` §13.2, §6.1): a 64 dp rounded square (`sizes.experimentalFab`, the shape scale's
- * `largeIncreased`) with the filled edit symbol, on `tertiaryContainer` / `onTertiaryContainer`, named "New chat" for
- * screen readers. It shows while [shown]
- * (on the Chats tab, until New chat opens) and grows into New chat ([NewChatButtonSlot]); [onClick] opens it.
+ * `docs/DESIGN_SYSTEM.md` §6.1, §13.2; owner decision 2026-11-13): a round [FloatingActionButton], a full circle as
+ * tall as the pill (`sizes.floatingNavigationBar`), with the filled edit symbol, on `tertiaryContainer` /
+ * `onTertiaryContainer`, named "New chat" for screen readers. It shows while [shown] (on the Chats tab, until New chat
+ * opens) and grows into New chat from the circle ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
 internal fun BarNewChatButton(
@@ -54,9 +54,9 @@ internal fun BarNewChatButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = MaterialTheme.shapes.largeIncreased
+    val shape = CircleShape
     val colors = MaterialTheme.colorScheme
-    val size = MaterialTheme.sizes.experimentalFab
+    val size = MaterialTheme.sizes.floatingNavigationBar
     NewChatButtonSlot(shown = shown, shape = shape, modifier = modifier.size(size)) { transform ->
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,
@@ -154,10 +154,10 @@ internal fun RailPrimaryActions(
 }
 
 /**
- * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision to
- * confirm, 2026-11-07), where "New chat" sits on the Chats tab: beside the floating navigation bar, the same 64 dp
- * rounded square on `tertiaryContainer` with the add-person symbol. It shows while [shown] (on the Contacts tab) and
- * fades in and out; [onClick] opens Add contact.
+ * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision 2026-11-13), where "New chat" sits on
+ * the Chats tab: beside the floating navigation bar, the same round button as tall as the pill on `tertiaryContainer`
+ * with the add-person symbol. It shows while [shown] (on the Contacts tab) and fades in and out; [onClick] opens Add
+ * contact.
  */
 @Composable
 internal fun BarAddContactButton(
@@ -166,8 +166,8 @@ internal fun BarAddContactButton(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val size = MaterialTheme.sizes.experimentalFab
-    val shape = MaterialTheme.shapes.largeIncreased
+    val size = MaterialTheme.sizes.floatingNavigationBar
+    val shape = CircleShape
     FadingButton(shown, modifier.size(size)) {
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,

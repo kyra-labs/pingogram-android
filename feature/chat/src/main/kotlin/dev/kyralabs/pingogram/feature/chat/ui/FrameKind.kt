@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
+import dev.kyralabs.pingogram.core.ui.text.withKeywordMatches
 import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.text.withMentionChips
 import dev.kyralabs.pingogram.core.ui.theme.experimentalTypography
@@ -37,8 +38,9 @@ internal fun frameKindOf(bubble: ChatItem.Bubble): FrameKind =
     }
 
 /**
- * [formatted] as [bubble] shows it: the user's mentions as chips and a channel post's headline, and the words the
- * search in the chat marks, each over the cached text and kept per input.
+ * [formatted] as [bubble] shows it: the user's mentions as chips and a channel post's headline, the word of the keyword
+ * alert match the match bar shows, and the words the search in the chat marks, each over the cached text and kept per
+ * input.
  */
 @Composable
 internal fun shownText(
@@ -56,11 +58,20 @@ internal fun shownText(
         } else {
             remember(formatted, mentions, mentionContent) { formatted.withMentionChips(mentions, mentionContent) }
         }
-    val matched =
-        if (match == null) {
+    // The word of the keyword alert match the match bar shows (board 30), over the mentions.
+    val keywords = bubble.keywordMatches.takeIf { it.isNotEmpty() }
+    val keywordContent = MaterialTheme.colorScheme.onTertiaryContainer
+    val keyworded =
+        if (keywords == null) {
             chipped
         } else {
-            remember(chipped, match, matchContent) { chipped.withMatches(match, matchContent) }
+            remember(chipped, keywords, keywordContent) { chipped.withKeywordMatches(keywords, keywordContent) }
+        }
+    val matched =
+        if (match == null) {
+            keyworded
+        } else {
+            remember(keyworded, match, matchContent) { keyworded.withMatches(match, matchContent) }
         }
     // The headline of a channel post (docs/DESIGN_SYSTEM.md §13.7), last: it takes out the line
     // break after the headline, which would move the ranges the chips and the matches mark.

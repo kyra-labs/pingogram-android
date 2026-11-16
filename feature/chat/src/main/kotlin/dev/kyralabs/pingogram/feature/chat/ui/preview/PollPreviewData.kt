@@ -1,8 +1,13 @@
 package dev.kyralabs.pingogram.feature.chat.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.Poll
+import dev.kyralabs.pingogram.core.domain.model.PollMedia
+import dev.kyralabs.pingogram.core.domain.model.PollOption
+import dev.kyralabs.pingogram.core.domain.model.PollType
 import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
@@ -13,6 +18,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.GroupPosition
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
+import dev.kyralabs.pingogram.feature.chat.ui.PollAdding
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVoterRow
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVoterSection
@@ -34,6 +40,7 @@ internal object PollPreviewData {
     private const val GRACE = 41L
     private const val LINUS = 43L
     private const val ADA = 42L
+    private const val TWO_HOURS = 7_200L
 
     private val header =
         ChatHeader(
@@ -119,6 +126,37 @@ internal object PollPreviewData {
                     ),
             )
 
+    /**
+     * What polls show since 2026 (boards 4a, 4b): a poll whose field for a new answer is open, below the user's poll
+     * that closes in two hours with its description, an answer that links somewhere and its results hidden until the
+     * end.
+     */
+    val closing: ChatUiState
+        get() =
+            ChatUiState(
+                composer = ChatPreviewData.canWrite,
+                header = header,
+                content =
+                    content(
+                        poll(3, booksPoll(), sender = "Ada", senderId = ADA).copy(pollAdding = PollAdding.Open),
+                        poll(2, lunchPoll(), isOutgoing = true).copy(pollClosesIn = TWO_HOURS),
+                        ChatItem.DateSeparator(epochDay = 1, date = today),
+                    ),
+            )
+
+    /** A quiz with two correct answers, one of them found, with its score and explanation (board 4b). */
+    val quizScore: ChatUiState
+        get() =
+            ChatUiState(
+                composer = ChatPreviewData.canWrite,
+                header = header,
+                content =
+                    content(
+                        poll(2, twoAnswerQuiz(), sender = "Linus Torvalds", senderId = LINUS),
+                        ChatItem.DateSeparator(epochDay = 1, date = today),
+                    ),
+            )
+
     /** Who voted for each answer of the public poll: summer's first page with more to load, autumn's all. */
     val voters =
         PollVotersSheet(
@@ -168,6 +206,81 @@ internal object PollPreviewData {
                     PollVoterSection(optionIndex = 1, text = "Summer", count = 30, error = DomainError.Network),
                     voters.sections[1],
                 ),
+        )
+
+    private fun text(value: String) = FormattedText(value, persistentListOf())
+
+    private fun option(
+        index: Int,
+        value: String,
+        votes: Int = 0,
+        percentage: Int = 0,
+        chosen: Boolean = false,
+        correct: Boolean = false,
+        media: PollMedia? = null,
+    ) = PollOption(index, text(value), votes, percentage, chosen, correct, media = media)
+
+    private fun lunchPoll() =
+        MessageContent.Poll(
+            poll =
+                Poll(
+                    id = 21,
+                    question = text("Where do we eat on Friday?"),
+                    options =
+                        persistentListOf(
+                            option(0, "Noodle bar", chosen = true),
+                            option(1, "Green kitchen", media = PollMedia.Link("https://example.org/menu", "Menu")),
+                            option(2, "Pizza by the river"),
+                        ),
+                    totalVoterCount = 9,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = false,
+                    canSeeResults = false,
+                    isClosed = false,
+                    type = PollType.Regular,
+                ),
+            description = text("Pick before Thursday noon so we can book a table."),
+        )
+
+    private fun twoAnswerQuiz() =
+        MessageContent.Poll(
+            poll =
+                Poll(
+                    id = 22,
+                    question = text("Which of these are prime?"),
+                    options =
+                        persistentListOf(
+                            option(0, "21", votes = 3, percentage = 20),
+                            option(1, "23", votes = 6, percentage = 40, chosen = true, correct = true),
+                            option(2, "27", votes = 2, percentage = 13, chosen = true),
+                            option(index = 3, value = "29", votes = 4, percentage = 27, correct = true),
+                        ),
+                    totalVoterCount = 8,
+                    isAnonymous = true,
+                    allowsMultipleAnswers = true,
+                    canSeeResults = true,
+                    isClosed = false,
+                    type = PollType.Quiz(text("A prime has no divisor but 1 and itself: 21 = 3 × 7, 27 = 3 × 9.")),
+                ),
+            description = FormattedText.Empty,
+        )
+
+    private fun booksPoll() =
+        MessageContent.Poll(
+            poll =
+                Poll(
+                    id = 23,
+                    question = text("Next month's book?"),
+                    options = persistentListOf(option(0, "Piranesi"), option(1, "Klara and the Sun")),
+                    totalVoterCount = 4,
+                    isAnonymous = false,
+                    allowsMultipleAnswers = false,
+                    canSeeResults = false,
+                    isClosed = false,
+                    type = PollType.Regular,
+                ),
+            description = FormattedText.Empty,
+            canAddOption = true,
         )
 
     private fun poll(

@@ -137,6 +137,7 @@ internal fun MessageActionsMenu(
             anchor = anchor,
             alignRight = alignEnd == endIsRight,
             move = { motion.move.value },
+            onFit = { motion.moved = it != 0 },
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -255,6 +256,7 @@ private fun MenuLayout(
     anchor: LiftAnchor,
     alignRight: Boolean,
     move: () -> Float,
+    onFit: (Int) -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -286,6 +288,7 @@ private fun MenuLayout(
                     blockBottom > height -> height - blockBottom
                     else -> 0
                 }
+            onFit(fit)
             val y = top + (fit * move()).roundToInt()
 
             fun x(childWidth: Int): Int {
@@ -352,6 +355,7 @@ private fun MenuGroups(
             modifier
                 .width(IntrinsicSize.Max)
                 .verticalScroll(rememberScrollState())
+                .testTag(MESSAGE_ACTIONS_TAG)
                 .padding(bottom = MaterialTheme.spacing.small),
         verticalArrangement = Arrangement.spacedBy(MenuDefaults.GroupSpacing),
     ) {
@@ -407,7 +411,8 @@ private fun Modifier.popIn(
  * The menu's motion: [open] fades the scrim and the blur in ([MessageLiftState.visibility], default effects spring),
  * grows the reactions and the menu ([pop], fast spatial spring) and moves the block into view ([move], default spatial
  * spring); [close] fades it all out on the fast effects spring, the message returning to its place on the fast spatial
- * spring, then runs what closed it, once.
+ * spring, then runs what closed it, once: after the message is back where it was if it had been [moved] to fit, which
+ * takes longer than the fade (`docs/DESIGN_SYSTEM.md` §5.1, Q-16), else as soon as the fade ends.
  */
 @Stable
 private class MenuMotion(
@@ -419,6 +424,9 @@ private class MenuMotion(
     val move = Animatable(0f)
     var closing by mutableStateOf(false)
         private set
+
+    /** Whether the block was moved to fit around the message ([MenuLayout]); set as it is placed, not observed. */
+    var moved = false
     private var fade: Job? = null
 
     fun open() {
@@ -431,9 +439,11 @@ private class MenuMotion(
         if (closing) return
         closing = true
         fade?.cancel()
-        scope.launch { move.animateTo(0f, motionScheme.fastSpatialSpec()) }
+        val returning = scope.launch { move.animateTo(0f, motionScheme.fastSpatialSpec()) }
         scope.launch {
             fadeTo(0f, motionScheme.fastEffectsSpec())
+            // Removed before it is back, a moved message would snap the rest of the way into its place.
+            if (moved) returning.join()
             then()
         }
     }
@@ -479,3 +489,6 @@ private const val MESSAGE_SHARE = 4
 
 /** The lifted copy of the message, for tests. */
 internal const val LIFTED_MESSAGE_TAG = "lifted_message"
+
+/** The actions' scrolling column, in the menu and the sheet alike: the benchmarks scroll it to "Delete". */
+internal const val MESSAGE_ACTIONS_TAG = "message_actions"

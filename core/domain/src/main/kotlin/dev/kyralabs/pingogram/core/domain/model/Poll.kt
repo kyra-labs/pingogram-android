@@ -25,9 +25,31 @@ data class Poll(
     val allowsRevoting: Boolean = false,
     /** Why the user may not vote in the poll now; null where they may (td_api.tl `poll.vote_restriction_reason`). */
     val voteRestriction: PollVoteRestriction? = null,
+    /** When the poll closes by itself (Unix time, seconds); 0 where it stays open until its author stops it. */
+    val closeDate: Long = 0,
+    /** For how long after it was sent the poll stays open (seconds); 0 where [closeDate] says, or it does not close. */
+    val openPeriod: Int = 0,
 ) {
     /** The user voted: one of the answers is theirs. */
     val hasVoted: Boolean get() = options.any { it.isChosen }
+
+    /**
+     * The user voted but may not see the results until the poll closes (td_api.tl `inputMessagePoll`
+     * `hide_results_until_closes`, which `poll` tells only through `can_see_results`): before voting it cannot tell.
+     */
+    val hidesResults: Boolean get() = hasVoted && !canSeeResults && !isClosed
+
+    /** How many answers of a quiz are correct, once the user answered it or it closed; 0 before and in polls. */
+    val correctOptionCount: Int get() = options.count { it.isCorrect }
+
+    /** When the poll closes by itself, if it was sent at [sentAt] (Unix time); null where it stays open. */
+    fun closesAt(sentAt: Long): Long? =
+        when {
+            isClosed -> null
+            closeDate > 0 -> closeDate
+            openPeriod > 0 -> sentAt + openPeriod
+            else -> null
+        }
 
     /** A vote of the user's is on its way to Telegram ([PollOption.isBeingChosen]). */
     val isVoting: Boolean get() = options.any { it.isBeingChosen }
@@ -58,12 +80,21 @@ data class PollOption(
     val isCorrect: Boolean,
     /** The user's vote for this answer is on its way to Telegram (td_api.tl `pollOption.is_being_chosen`). */
     val isBeingChosen: Boolean = false,
+    /** TDLib's identifier of the answer (td_api.tl `pollOption.id`); empty until Telegram assigned one. */
+    val id: String = "",
+    /** What the answer carries beside its text, a link most often; null for none. */
+    val media: PollMedia? = null,
+    /** Who added the answer after the poll was sent (td_api.tl `pollOption.author`); null for its first answers. */
+    val author: MessageSender? = null,
 )
 
 sealed interface PollType {
     data object Regular : PollType
 
-    /** A quiz with correct answers; [explanation] is shown after a wrong answer, empty until the quiz was answered. */
+    /**
+     * A quiz with one or more correct answers ([PollOption.isCorrect]); [explanation] is shown once the quiz was
+     * answered, empty before.
+     */
     data class Quiz(
         val explanation: FormattedText,
     ) : PollType

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import android.text.format.DateFormat
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -29,6 +30,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -114,14 +116,21 @@ internal fun LinkDialog(
  * [DatePickerDialog]): a day from today up to a year ahead, as Telegram allows, then a time, on the device's 12- or
  * 24-hour clock, an hour from [now] at first, or [initial] where it is given and in the future (a scheduled message's
  * time, which rescheduling changes). A time that is not in the future asks for another. [onSchedule] gets the moment
- * in the device's time zone.
+ * in the device's time zone. Where [onScheduleRepeating] is given (the composer's own send, for a Telegram Premium
+ * subscriber), the time step also offers "Repeat" ([ScheduleRepeat]), and the moment goes there with the period chosen
+ * (0 for never) instead. [title] and [confirmLabel] name what the moment is for: a message's sending by default,
+ * a reminder's ring for "Remind me".
  */
+@Suppress("LongParameterList") // What the dialog picks for, where it starts, and where the moment goes.
 @Composable
 internal fun ScheduleDialog(
     now: () -> Instant,
     onDismiss: () -> Unit,
     onSchedule: (Instant) -> Unit,
     initial: Instant? = null,
+    onScheduleRepeating: ((Instant, Int) -> Unit)? = null,
+    @StringRes title: Int = R.string.composer_schedule,
+    @StringRes confirmLabel: Int = R.string.composer_schedule_confirm,
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val opened = remember { now().atZone(zone) }
@@ -145,6 +154,7 @@ internal fun ScheduleDialog(
         )
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     var inThePast by rememberSaveable { mutableStateOf(false) }
+    var repeatPeriod by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(timeState.hour, timeState.minute) { inThePast = false }
     val confirm = {
         val at =
@@ -156,7 +166,7 @@ internal fun ScheduleDialog(
         when {
             at == null -> Unit
             !pickingTime -> pickingTime = true
-            at.isAfter(now()) -> onSchedule(at)
+            at.isAfter(now()) -> onScheduleRepeating?.invoke(at, repeatPeriod) ?: onSchedule(at)
             else -> inThePast = true
         }
     }
@@ -164,11 +174,7 @@ internal fun ScheduleDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = confirm, enabled = dateState.selectedDateMillis != null) {
-                Text(
-                    stringResource(
-                        if (pickingTime) R.string.composer_schedule_confirm else R.string.composer_schedule_next,
-                    ),
-                )
+                Text(stringResource(if (pickingTime) confirmLabel else R.string.composer_schedule_next))
             }
         },
         dismissButton = {
@@ -177,25 +183,39 @@ internal fun ScheduleDialog(
             }
         },
     ) {
-        if (pickingTime) TimeStep(timeState, inThePast) else DateStep(dateState)
+        val repeat = repeatPeriod.takeIf { onScheduleRepeating != null }
+        if (pickingTime) {
+            TimeStep(title, timeState, inThePast, repeat) { repeatPeriod = it }
+        } else {
+            DateStep(title, dateState)
+        }
     }
 }
 
 /** The first step of [ScheduleDialog]: the day. */
 @Composable
-private fun DateStep(state: DatePickerState) {
+private fun DateStep(
+    @StringRes title: Int,
+    state: DatePickerState,
+) {
     val spacing = MaterialTheme.spacing
     DatePicker(
         state = state,
-        title = { Text(stringResource(R.string.composer_schedule), Modifier.titlePadding(spacing)) },
+        title = { Text(stringResource(title), Modifier.titlePadding(spacing)) },
     )
 }
 
-/** The second step of [ScheduleDialog]: the time, and why it cannot be [inThePast]. */
+/**
+ * The second step of [ScheduleDialog]: the time, why it cannot be [inThePast], then how often it repeats where [repeat]
+ * is given ([ScheduleRepeat], [onRepeat]).
+ */
 @Composable
 private fun TimeStep(
+    @StringRes title: Int,
     state: TimePickerState,
     inThePast: Boolean,
+    repeat: Int?,
+    onRepeat: (Int) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     Column(
@@ -204,7 +224,7 @@ private fun TimeStep(
         verticalArrangement = Arrangement.spacedBy(spacing.large),
     ) {
         Text(
-            text = stringResource(R.string.composer_schedule),
+            text = stringResource(title),
             modifier = Modifier.align(Alignment.Start).titlePadding(spacing),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge,
@@ -218,6 +238,7 @@ private fun TimeStep(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        repeat?.let { ScheduleRepeat(it, onRepeat) }
     }
 }
 

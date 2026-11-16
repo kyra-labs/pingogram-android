@@ -68,14 +68,15 @@ internal class ConversationNotification(
 
 /** One message of a [ConversationNotification], sent at [timeMillis] by [sender] (null: the current user). */
 internal class NotificationMessage(
-    val text: String,
+    val text: CharSequence,
     val timeMillis: Long,
     val sender: Person?,
 )
 
 /**
  * Builds the [ConversationNotification] of a TDLib notification group from what the repositories know: the chat, its
- * group or channel, the senders and their avatars ([AvatarIcons]). Texts are the chat list's previews
+ * group or channel, the senders and their avatars ([AvatarIcons]). A text or a caption shows as it was written
+ * ([notificationText]: its lines and formatting kept, spoilers hidden), other messages as the chat list's previews
  * ([messagePreviewText]: "Photo", "Voice message", what a service message reports), shown only where TDLib allows a
  * preview (`showPreview`, the chat's notification setting); otherwise "New message". One per account, from its own
  * repositories, the account's [slot] in what it builds.
@@ -132,7 +133,8 @@ internal class ConversationNotificationFactory(
                     val sender = if (message.isOutgoing) null else person(message.sender, senders)
                     val text =
                         if (content.showPreview) {
-                            messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
+                            notificationText(message.content, resources)
+                                ?: messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
                         } else {
                             context.getString(R.string.notification_new_message)
                         }

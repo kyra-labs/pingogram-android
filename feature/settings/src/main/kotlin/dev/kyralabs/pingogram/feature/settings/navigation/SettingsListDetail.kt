@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
@@ -33,7 +32,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.navigation.compose.NavHost
@@ -43,6 +41,7 @@ import dev.kyralabs.pingogram.core.ui.component.FollowScaffoldDirective
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.ListPaneExpansionAnchors
 import dev.kyralabs.pingogram.core.ui.component.PaneDragHandle
+import dev.kyralabs.pingogram.core.ui.component.SchemeAnimatedPane
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.showInDetailPane
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -122,13 +121,12 @@ internal fun SettingsListDetail(
         remember(navigator, scope) { { scope.launch { navigator.navigateBack(BACK_BEHAVIOR) } } }
     var lastPage by remember { mutableStateOf<SettingsPage?>(null) }
     SideEffect { if (shownPage != null) lastPage = shownPage }
-    val boundsSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntRect>()
     val paneExpansionState =
         rememberPaneExpansionState(keyProvider = navigator.scaffoldValue, anchors = ListPaneExpansionAnchors)
     NavigableListDetailPaneScaffold(
         navigator = navigator,
         listPane = {
-            AnimatedPane(boundsAnimationSpec = boundsSpec, modifier = Modifier.paneContainer(twoPanes, last = false)) {
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes, last = false)) {
                 SettingsRoute(
                     onOpenPage = openPage,
                     onOpenSubPage = subPages.open,
@@ -139,7 +137,7 @@ internal fun SettingsListDetail(
             }
         },
         detailPane = {
-            AnimatedPane(boundsAnimationSpec = boundsSpec, modifier = Modifier.paneContainer(twoPanes, last = true)) {
+            SchemeAnimatedPane(modifier = Modifier.paneContainer(twoPanes, last = true)) {
                 DetailContent(
                     // The page last shown stays while its pane slides out, so the pane does not turn empty.
                     page = shownPage ?: lastPage.takeUnless { detailVisible },

@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
@@ -62,6 +63,13 @@ sealed interface ChatEvent {
      */
     data class OpenReply(
         val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * The keyword match bar shows [match] (board 30), whose words its bubble marks; null once there is no bar.
+     */
+    data class KeywordMatchShown(
+        val match: KeywordShown?,
     ) : ChatEvent
 
     /** "Try again" after finding the chat or loading messages failed. */
@@ -122,6 +130,22 @@ sealed interface ChatEvent {
     data class OpenProfile(
         val userId: Long,
     ) : ChatEvent
+
+    /** A forwarded message's "Forwarded from …" was tapped: open where it comes from ([ForwardSource]). */
+    data class OpenForwardSource(
+        val source: ForwardSource,
+    ) : ChatEvent
+
+    /** A chat a message names was tapped (a giveaway's participating channel): open it. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatEvent
+
+    /** "Update Pingogram" on a message this version cannot show: open the latest release's page. */
+    data object OpenUpdatePage : ChatEvent
+
+    /** The action bar's "Report": the report sheet for the whole chat, without messages. */
+    data object ReportChat : ChatEvent
 
     /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
     data class OpenMention(
@@ -206,9 +230,13 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
-    /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */
+    /**
+     * A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply and its text as
+     * the caption, above the GIF with [captionAbove].
+     */
     data class SendAnimation(
         val animation: Animation,
+        val captionAbove: Boolean = false,
     ) : ChatEvent
 
     /** The attach preview's "Send without compression": its photos and videos go as files, or compressed. */
@@ -239,6 +267,14 @@ sealed interface ChatEvent {
     data class SendPoll(
         val options: SendOptions = SendOptions(),
     ) : ChatEvent
+
+    /** The photo picker gave [uri] for the poll form's photo. */
+    data class PickPollPhoto(
+        val uri: String,
+    ) : ChatEvent
+
+    /** The poll form's photo was taken away. */
+    data object RemovePollPhoto : ChatEvent
 
     /** "Checklist" in the attach menu: the form of a new checklist opens. */
     data object OpenChecklist : ChatEvent

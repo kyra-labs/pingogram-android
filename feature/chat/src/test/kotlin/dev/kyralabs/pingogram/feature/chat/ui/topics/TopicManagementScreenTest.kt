@@ -95,7 +95,7 @@ class TopicManagementScreenTest {
     }
 
     @Test
-    fun `without rights a long press opens nothing and there is no "New topic"`() {
+    fun `without rights a long press opens nothing and there is no New topic`() {
         show(TopicsPreviewData.content)
 
         composeRule.onNodeWithContentDescription("New topic").assertDoesNotExist()
@@ -107,7 +107,7 @@ class TopicManagementScreenTest {
     }
 
     @Test
-    fun `"New topic" opens the editor, which sends the name, the color and "Create"`() {
+    fun `New topic opens the editor, which sends the name, the color and Create`() {
         show(TopicsPreviewData.managed.copy(management = TopicManagementUiState(TopicsPreviewData.newTopic())))
 
         composeRule.onNodeWithText("Topic name").performTextReplacement("Roadmap")
@@ -127,7 +127,7 @@ class TopicManagementScreenTest {
     }
 
     @Test
-    fun `the top bar's "New topic" sends its event`() {
+    fun `the top bar's New topic sends its event`() {
         show(TopicsPreviewData.managed)
 
         composeRule.onNodeWithContentDescription("New topic").performClick()
@@ -156,7 +156,7 @@ class TopicManagementScreenTest {
     }
 
     @Test
-    fun `deleting asks first, and only "Delete" confirms`() {
+    fun `deleting asks first, and only Delete confirms`() {
         show(TopicsPreviewData.managed.copy(management = TopicManagementUiState(deleting = TopicsPreviewData.deleting)))
 
         composeRule.onNodeWithText("Delete topic?").assertExists()

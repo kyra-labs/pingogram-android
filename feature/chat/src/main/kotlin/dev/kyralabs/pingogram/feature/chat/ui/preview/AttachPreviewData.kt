@@ -3,7 +3,9 @@ package dev.kyralabs.pingogram.feature.chat.ui.preview
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
+import dev.kyralabs.pingogram.core.domain.model.PollLimits
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollClosing
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollDraft
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewItem
 import kotlinx.collections.immutable.persistentListOf
@@ -84,6 +86,30 @@ internal object AttachPreviewData {
             options = listOf("Mars", "Jupiter", "Venus"),
             isAnonymous = true,
             isQuiz = true,
-            correctOptionIndex = 1,
+            correctOptionIndexes = listOf(1),
+            explanation = "Jupiter is more than twice as heavy as all the other planets together.",
         )
+
+    /** Board 5a's poll: a photo, a description, four options, one with a link, closing in a day. */
+    val bookPoll =
+        PollDraft(
+            question = "Which book should we read in December?",
+            options =
+                listOf(
+                    "Tomorrow and Tomorrow and Tomorrow",
+                    "The Ministry for the Future",
+                    "Piranesi",
+                    "Klara and the Sun",
+                ),
+            links = listOf(null, "https://www.goodreads.com/book/show/50998056", null, null),
+            description = "We meet on Dec 14 at Matteo. Reviews are linked where I found them.",
+            photo = Attachment.Photo("/cache/uploads/c/poll.jpg", 1_258_291, 1280, 853),
+            isAnonymous = false,
+            allowsMultipleAnswers = true,
+            hidesResults = true,
+            closing = PollClosing.Day,
+        )
+
+    /** What Telegram allows, as it says in 2026. */
+    val limits = PollLimits(maxOptions = 12, maxOpenPeriod = 2_678_400)
 }

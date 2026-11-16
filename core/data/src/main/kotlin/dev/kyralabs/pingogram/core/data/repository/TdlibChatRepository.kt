@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
 import dev.kyralabs.pingogram.core.data.mapper.toChat
+import dev.kyralabs.pingogram.core.data.mapper.toChatActionBar
 import dev.kyralabs.pingogram.core.data.mapper.toChatDraft
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolder
 import dev.kyralabs.pingogram.core.data.mapper.toChatListType
@@ -31,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
+import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
@@ -141,6 +143,9 @@ class TdlibChatRepository
         override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
             store.state.map { it.unreadChatCounts[list] ?: UnreadChatCount.None }.distinctUntilChanged()
 
+        override fun unreadMessageCount(list: ChatListType): Flow<UnreadMessageCount> =
+            store.state.map { it.unreadMessageCounts[list] ?: UnreadMessageCount.None }.distinctUntilChanged()
+
         /** `toggleChatIsPinned`. */
         override suspend fun setPinned(
             chatId: Long,
@@ -228,6 +233,8 @@ class TdlibChatRepository
 
                     // td_api.tl has no source of its own for a Saved Messages topic: it is the chat's history.
                     is MessageTopic.SavedMessages -> TdApi.MessageSourceChatHistory()
+
+                    is MessageTopic.DirectMessages -> TdApi.MessageSourceDirectMessagesChatTopicHistory()
                 }
             return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
         }
@@ -255,6 +262,7 @@ private data class ChatCache(
      * new folder before `updateChatFolders` announces it.
      */
     val unreadChatCounts: PersistentMap<ChatListType, UnreadChatCount> = persistentMapOf(),
+    val unreadMessageCounts: PersistentMap<ChatListType, UnreadMessageCount> = persistentMapOf(),
 ) {
     fun reduce(update: TdApi.Update): ChatCache =
         when (update) {
@@ -263,6 +271,7 @@ private data class ChatCache(
             is TdApi.UpdateScopeNotificationSettings -> withScopeMute(update.scope, update.notificationSettings.isMuted)
             is TdApi.UpdateChatFolders -> withFolders(update)
             is TdApi.UpdateUnreadChatCount -> withUnreadChatCount(update)
+            is TdApi.UpdateUnreadMessageCount -> withUnreadMessageCount(update)
             else -> chatChange(update)?.let(::withChange) ?: this
         }
 
@@ -304,6 +313,12 @@ private data class ChatCache(
     private fun withUnreadChatCount(update: TdApi.UpdateUnreadChatCount): ChatCache {
         val list = update.chatList.toChatListType() ?: return this
         return copy(unreadChatCounts = unreadChatCounts.putting(list, update.toUnreadChatCount()))
+    }
+
+    private fun withUnreadMessageCount(update: TdApi.UpdateUnreadMessageCount): ChatCache {
+        val list = update.chatList.toChatListType() ?: return this
+        val count = UnreadMessageCount(update.unreadCount, update.unreadUnmutedCount)
+        return copy(unreadMessageCounts = unreadMessageCounts.putting(list, count))
     }
 }
 
@@ -417,8 +432,20 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(isTranslatable = update.isTranslatable) }
         }
 
+        is TdApi.UpdateChatHasWelcomeMessages -> {
+            ChatChange(update.chatId) { it.copy(hasWelcomeMessages = update.hasWelcomeMessages) }
+        }
+
         is TdApi.UpdateChatHasScheduledMessages -> {
             ChatChange(update.chatId) { it.copy(hasScheduledMessages = update.hasScheduledMessages) }
+        }
+
+        is TdApi.UpdateChatActionBar -> {
+            ChatChange(update.chatId) { it.copy(actionBar = update.actionBar?.toChatActionBar()) }
+        }
+
+        is TdApi.UpdateChatAccentColors -> {
+            ChatChange(update.chatId) { it.copy(profileAccentColorId = update.profileAccentColorId) }
         }
 
         else -> {

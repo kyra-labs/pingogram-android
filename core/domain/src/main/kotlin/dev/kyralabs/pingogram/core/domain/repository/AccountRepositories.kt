@@ -40,6 +40,8 @@ interface AccountRepositories {
 
     fun savedMessagesTopicRepository(): SavedMessagesTopicRepository
 
+    fun directMessagesTopicRepository(): DirectMessagesTopicRepository
+
     fun messageThreadRepository(): MessageThreadRepository
 
     fun messageInteractionRepository(): MessageInteractionRepository
@@ -88,6 +90,8 @@ interface AccountRepositories {
 
     fun storyAlbumRepository(): StoryAlbumRepository
 
+    fun profileMusicRepository(): ProfileMusicRepository
+
     fun sharedMediaRepository(): SharedMediaRepository
 
     fun sessionRepository(): SessionRepository
@@ -109,6 +113,10 @@ interface AccountRepositories {
     fun chatSettingsRepository(): ChatSettingsRepository
 
     fun reactionNotificationRepository(): ReactionNotificationRepository
+
+    fun accountFreezeRepository(): AccountFreezeRepository
+
+    fun oauthLoginRepository(): OauthLoginRepository
 
     fun quickReactionRepository(): QuickReactionRepository
 
@@ -138,7 +146,13 @@ interface AccountRepositories {
 
     fun pollRepository(): PollRepository
 
+    fun giveawayRepository(): GiveawayRepository
+
     fun checklistRepository(): ChecklistRepository
+
+    fun chatActionBarRepository(): ChatActionBarRepository
+
+    fun suggestedPostRepository(): SuggestedPostRepository
 
     fun botInfoRepository(): BotInfoRepository
 
@@ -152,7 +166,11 @@ interface AccountRepositories {
 
     fun stickerSetCreationRepository(): StickerSetCreationRepository
 
+    fun stickerMakerRepository(): StickerMakerRepository
+
     fun accentColorRepository(): AccentColorRepository
+
+    fun aiTextRepository(): AiTextRepository
 
     fun storyRepository(): StoryRepository
 
@@ -174,6 +192,8 @@ interface AccountRepositories {
 
     fun savedGifRepository(): SavedGifRepository
 
+    fun savedMessagesTagRepository(): SavedMessagesTagRepository
+
     fun stickerSetRepository(): StickerSetRepository
 
     fun linkRepository(): LinkRepository
@@ -181,6 +201,14 @@ interface AccountRepositories {
     fun shareRepository(): ShareRepository
 
     fun translationRepository(): TranslationRepository
+
+    fun transcriptRepository(): TranscriptRepository
+
+    fun reminderRepository(): ReminderRepository
+
+    fun bookmarkRepository(): BookmarkRepository
+
+    fun keywordHitRepository(): KeywordHitRepository
 
     fun customEmojiRepository(): CustomEmojiRepository
 

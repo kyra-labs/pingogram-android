@@ -57,6 +57,39 @@ class TdlibTranslationRepositoryTest {
         }
 
     @Test
+    fun `asks Telegram to summarize the message by its id, in the language asked for`() =
+        runTest {
+            client.on(TdApi.SummarizeMessage::class, TdResult.Success(TdApi.FormattedText("Short", emptyArray())))
+
+            val summary = repository.summarizeMessage(CHAT, MESSAGE, "en")
+
+            assertEquals(Outcome.Success(FormattedText("Short", persistentListOf())), summary)
+            val request = client.sentOf<TdApi.SummarizeMessage>().single()
+            assertEquals(CHAT, request.chatId)
+            assertEquals(MESSAGE, request.messageId)
+            assertEquals("en", request.translateToLanguageCode)
+            assertEquals("", request.tone)
+        }
+
+    @Test
+    fun `a summary in the message's own language asks for no language`() =
+        runTest {
+            client.on(TdApi.SummarizeMessage::class, TdResult.Success(TdApi.FormattedText("Corto", emptyArray())))
+
+            repository.summarizeMessage(CHAT, MESSAGE, null)
+
+            assertEquals("", client.sentOf<TdApi.SummarizeMessage>().single().translateToLanguageCode)
+        }
+
+    @Test
+    fun `a summary Telegram refuses is its error`() =
+        runTest {
+            client.on(TdApi.SummarizeMessage::class, TdResult.Failure(floodWait(12).toTdError()))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(12)), repository.summarizeMessage(CHAT, MESSAGE, null))
+        }
+
+    @Test
     fun `a flood wait is the time to wait`() =
         runTest {
             client.on(TdApi.TranslateMessageText::class, TdResult.Failure(floodWait(30).toTdError()))
@@ -128,6 +161,17 @@ class TdlibTranslationRepositoryTest {
 
             client.emit(TdApi.UpdateChatIsTranslatable(CHAT, false))
             assertFalse(chats.chat(CHAT).first()?.isTranslatable == true)
+        }
+
+    @Test
+    fun `a chat comes with has_welcome_messages and follows updateChatHasWelcomeMessages`() =
+        runTest {
+            val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
+            client.emit(updateNewChat(chat(id = CHAT).apply { hasWelcomeMessages = true }))
+            assertTrue(chats.chat(CHAT).first()?.hasWelcomeMessages == true)
+
+            client.emit(TdApi.UpdateChatHasWelcomeMessages(CHAT, false))
+            assertFalse(chats.chat(CHAT).first()?.hasWelcomeMessages == true)
         }
 
     private fun TdApi.Error.toTdError() = TdError(code, message)

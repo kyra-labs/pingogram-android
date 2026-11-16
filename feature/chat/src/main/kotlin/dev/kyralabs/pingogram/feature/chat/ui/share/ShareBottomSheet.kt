@@ -23,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -48,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -64,7 +64,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The share sheet (`REQUIREMENTS.md` FR-N2, direct share; `docs/DESIGN_SYSTEM.md` §6 "Share sheet"): a
- * [ModalBottomSheet] with the forward sheet's parts, for what another app shared or a `t.me/share` link. Its title,
+ * [PingogramBottomSheet] with the forward sheet's parts, for what another app shared or a `t.me/share` link. Its title,
  * what is shared below it (the start of the text, how many photos and videos or files), the search field and the
  * chats, Saved Messages first, each toggled by a tap as in the forward sheet. Once a chat is picked, the bottom grows
  * in on the default spatial spring:
@@ -95,7 +95,7 @@ internal fun ShareBottomSheet(
             {
                 val selected = currentSheet.selectedIds.size
                 if (selected > 0) {
-                    if (selected > 1) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    if (currentSheet.sendsAtOnce) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(ShareEvent.Send) }
                 }
             }
@@ -105,7 +105,7 @@ internal fun ShareBottomSheet(
         snapshotFlow { query.text.toString() }.collect { currentOnEvent(ShareEvent.QueryChanged(it)) }
     }
     var linking by remember { mutableStateOf<TextRange?>(null) }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ShareEvent.Dismiss) }, sheetState = sheetState) {
+    PingogramBottomSheet(onDismissRequest = { currentOnEvent(ShareEvent.Dismiss) }, sheetState = sheetState) {
         ShareContent(
             sheet = sheet,
             query = query,
@@ -167,7 +167,7 @@ internal fun ColumnScope.ShareContent(
         exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
     ) {
         AnimatedContent(
-            targetState = sheet.selectedIds.size > 1,
+            targetState = sheet.sendsAtOnce,
             transitionSpec = {
                 (fadeIn(motion.defaultEffectsSpec()) togetherWith fadeOut(motion.fastEffectsSpec()))
                     .using(SizeTransform(clip = false) { _, _ -> motion.defaultSpatialSpec() })
@@ -189,9 +189,20 @@ private fun ShareHeader(sheet: ShareSheet) {
     val spacing = MaterialTheme.spacing
     val resources = LocalResources.current
     Column(Modifier.fillMaxWidth().padding(horizontal = spacing.large).padding(bottom = spacing.medium)) {
-        Text(text = stringResource(R.string.share_title), style = MaterialTheme.typography.titleLargeEmphasized)
+        Text(
+            text = stringResource(if (sheet.isVoiceNote) R.string.share_voice_title else R.string.share_title),
+            style = MaterialTheme.typography.titleLargeEmphasized,
+        )
         val files =
             when {
+                sheet.isVoiceNote -> {
+                    stringResource(R.string.share_voice_hint)
+                }
+
+                sheet.isStory -> {
+                    stringResource(R.string.share_story)
+                }
+
                 sheet.fileCount == 0 -> {
                     null
                 }
@@ -318,6 +329,23 @@ private fun ShareSheetOneChatPreview() {
         Column {
             ShareContent(
                 SharePreviewData.oneChat,
+                remember { TextFieldState() },
+                remember { ComposerText() },
+                {},
+                {},
+                {},
+            )
+        }
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun ShareSheetVoiceNotePreview() {
+    PingogramPreview {
+        Column {
+            ShareContent(
+                SharePreviewData.voiceNote,
                 remember { TextFieldState() },
                 remember { ComposerText() },
                 {},

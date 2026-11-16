@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.NewChatRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
 import dev.kyralabs.pingogram.feature.chats.ui.archive.ArchiveSettingsRoute
+import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpRoute
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelTypeStep
@@ -34,6 +35,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
 import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute as ArchiveSettingsDestination
+import dev.kyralabs.pingogram.core.navigation.CatchUpRoute as CatchUpDestination
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
@@ -53,7 +55,8 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  *
  * The header (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar") holds global search's button and the signed-in user's
  * avatar, which do what [headerActions] says: open search and grow into it, open the Settings tab and its account
- * menu.
+ * menu. A row of the "Keyword alerts" tab (board 30) opens its chat at its match through [onOpenMessage], as a found
+ * message opens; without it, as any row.
  */
 @Composable
 fun ChatListPane(
@@ -66,6 +69,7 @@ fun ChatListPane(
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     ChatListRoute(
         onOpenArchive = onOpenArchive,
@@ -77,6 +81,7 @@ fun ChatListPane(
         openChatId = openChatId,
         onEditFolder = onEditFolder,
         headerActions = headerActions,
+        onOpenMessage = onOpenMessage,
     )
 }
 
@@ -100,6 +105,17 @@ fun NavGraphBuilder.archiveScreen(
  */
 fun NavGraphBuilder.archiveSettingsScreen(onBack: () -> Unit) {
     composable<ArchiveSettingsDestination> { ArchiveSettingsRoute(onBack = onBack) }
+}
+
+/**
+ * Adds Catch-up, [CatchUpDestination], to the graph: the unread chats one card at a time; [onBack] leaves it, "Open
+ * chat" calls [onOpenChat].
+ */
+fun NavGraphBuilder.catchUpScreen(
+    onBack: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
+) {
+    composable<CatchUpDestination> { CatchUpRoute(onBack = onBack, onOpenChat = onOpenChat) }
 }
 
 /**

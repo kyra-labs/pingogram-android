@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.RichBlock
+import dev.kyralabs.pingogram.core.domain.model.mediaContent
+import dev.kyralabs.pingogram.core.domain.model.mediaContents
 import dev.kyralabs.pingogram.core.domain.model.richMediaId
 import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
@@ -97,27 +99,27 @@ internal class ChatRichMessages(
         toggled.update { all ->
             val sections = all[messageId].orEmpty()
             val changed = if (sectionId in sections) sections - sectionId else sections + sectionId
-            if (changed.isEmpty()) all.remove(messageId) else all.put(messageId, changed.toPersistentSet())
+            if (changed.isEmpty()) all.removing(messageId) else all.putting(messageId, changed.toPersistentSet())
         }
         savedState[KEY_TOGGLED] = ArrayList(toggled.value.map { (id, sections) -> "$id:${sections.joinToString(",")}" })
     }
 
     private fun showAll(messageId: Long) {
-        showingAll.update { it.add(messageId) }
+        showingAll.update { it.adding(messageId) }
         savedState[KEY_SHOWING_ALL] = showingAll.value.toLongArray()
     }
 
     /** Loads the full message once; a second tap while it loads does nothing. */
     private fun loadFull(messageId: Long) {
         if (loads.containsKey(messageId)) return
-        loading.update { it.add(messageId) }
+        loading.update { it.adding(messageId) }
         loads[messageId] =
             scope.launch {
                 try {
                     val result = messages.loadFullRichMessage(chatId, messageId)
                     if (result is Outcome.Failure) onEffect(ChatEffect.ShowError(result.error))
                 } finally {
-                    loading.update { it.remove(messageId) }
+                    loading.update { it.removing(messageId) }
                     loads.remove(messageId)
                 }
             }
@@ -162,15 +164,32 @@ internal fun ChatUiState.withRichMessages(states: PersistentMap<Long, RichMessag
 }
 
 /**
- * The media viewer's effect for a rich message's media [id] ([richMediaId]), where a bubble shows that message with
- * that media; null otherwise.
+ * The media viewer's effect for a rich message's media [id] ([richMediaId]), a poll's photo or video, or a paid post's
+ * once paid for, where a bubble shows that message with that media; null otherwise.
  */
 internal fun ChatUiState.richMediaToOpen(id: Long): ChatEffect.OpenMedia? {
     val messageId = richMediaMessageId(id)
-    val rich =
+    val content =
         (content as? ChatContent.Content)?.items?.firstNotNullOfOrNull { item ->
-            ((item as? ChatItem.Bubble)?.takeIf { it.id == messageId }?.content as? MessageContent.RichMessage)?.message
+            (item as? ChatItem.Bubble)?.takeIf { it.id == messageId }?.content
         }
-    val shown = rich?.media()?.any { richMediaId(messageId, it.index) == id } == true
+    val shown =
+        when (content) {
+            is MessageContent.RichMessage -> {
+                content.message.media().any { richMediaId(messageId, it.index) == id }
+            }
+
+            is MessageContent.PaidMedia -> {
+                content.mediaContents().any { (index, _) -> richMediaId(messageId, index) == id }
+            }
+
+            is MessageContent.Poll -> {
+                content.mediaContent() != null && id == richMediaId(messageId, 0)
+            }
+
+            else -> {
+                false
+            }
+        }
     return if (shown) ChatEffect.OpenMedia(id) else null
 }

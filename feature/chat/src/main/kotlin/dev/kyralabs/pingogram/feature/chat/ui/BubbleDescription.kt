@@ -4,14 +4,19 @@ import android.content.res.Resources
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.checklistDescription
+import dev.kyralabs.pingogram.feature.chat.ui.content.paidMediaDescription
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayDescription
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.suggestedPostDescription
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptDescription
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 
 /**
@@ -20,19 +25,28 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
  * kind of media, a poll's answers with their shares and marks ([pollDescription]), a checklist's tasks
  * ([checklistDescription]), a translation's label, the text
  * (hidden spoilers read "spoiler"; a translation once shown), the link preview's title, the reactions, a self-destruct
- * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. A scheduled
+ * timer, how many buttons a bot attached, that it is the result the search in the chat shows, and the message's
+ * [reminder] ("Reminder Sun, 9:00 AM"). A scheduled
  * message's time is when it goes out, with how often it repeats. Built in the bubble's `semantics` block, so only when
  * something reads the semantics tree (`docs/PERFORMANCE.md` §4).
  */
 internal fun bubbleDescription(
     resources: Resources,
     bubble: ChatItem.Bubble,
+    reminder: UiText? = null,
 ): String {
     val sender = bubble.sender.resolve(resources)
     // A scheduled message's time is when it goes out: "Sends 9:41 AM", "Sends when Ada is online".
     val shownTime = bubble.schedule?.let { scheduleDescription(resources, it, bubble.time) } ?: bubble.time
     val time = if (bubble.isEdited) resources.getString(R.string.chat_bubble_time_edited, shownTime) else shownTime
-    val content = spokenList(resources, bubbleContent(resources, bubble))
+    val content =
+        spokenList(
+            resources,
+            bubbleContent(resources, bubble) +
+                listOfNotNull(
+                    reminder?.let { resources.getString(R.string.chat_bubble_reminder, it.resolve(resources)) },
+                ),
+        )
     val status = bubble.status?.let { resources.getString(it.spoken) }
     return if (status != null) {
         resources.getString(R.string.chat_bubble_description, sender, time, content, status)
@@ -55,7 +69,10 @@ private fun bubbleContent(
                 ?: text
         },
         bubble.contentLabel?.resolve(resources),
+        bubble.transcript?.let { transcriptDescription(resources, it) },
         pollDescription(resources, bubble),
+        paidMediaDescription(resources, bubble),
+        giveawayDescription(resources, bubble),
         checklistDescription(resources, bubble),
         bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
         bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),
@@ -76,11 +93,15 @@ private fun bubbleContent(
             resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
         },
         bubble.thread?.let { threadLinkText(resources, it) },
+        bubble.suggestedPost?.let { suggestedPostDescription(resources, it) },
         bubble.keyboard?.let { keyboard ->
             val count = keyboard.rows.sumOf { it.size }
             resources.getQuantityString(R.plurals.bot_buttons_count, count, count)
         },
         bubble.searchMatch?.let { resources.getString(R.string.chat_bubble_search_match) },
+        bubble.keywordMatches.takeIf { it.isNotEmpty() }?.let {
+            resources.getString(R.string.chat_bubble_keyword_match)
+        },
     )
 
 /** [text] of [bubble] as screen readers hear it: its hidden spoilers read "spoiler". */

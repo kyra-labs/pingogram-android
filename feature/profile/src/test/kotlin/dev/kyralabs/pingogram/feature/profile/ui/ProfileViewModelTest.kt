@@ -252,6 +252,22 @@ class ProfileViewModelTest {
         }
 
     @Test
+    fun `a private chat with sharing disabled says so, and follows the change`() =
+        runTest {
+            answerProfile()
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, true))
+            runCurrent()
+            assertTrue(viewModel.content.info.isSharingDisabled)
+
+            client.emit(TdApi.UpdateChatHasProtectedContent(ADA, false))
+            runCurrent()
+            assertFalse(viewModel.content.info.isSharingDisabled)
+        }
+
+    @Test
     fun `no personal channel, no row`() =
         runTest {
             answerProfile()
@@ -279,6 +295,8 @@ class ProfileViewModelTest {
                 assertTrue(canStartSecretChat)
                 assertEquals(ContactAction.Edit, contact)
                 assertEquals(false, isBlocked)
+                // The block row names the person by their first name: "Block Ada".
+                assertEquals("Ada", blockName)
                 assertTrue(canReport)
                 // "Export chat" exports the private chat.
                 assertEquals(ada.id, exportChatId)
@@ -328,9 +346,15 @@ class ProfileViewModelTest {
         }
 
     @Test
-    fun `a bot shows its description, and offers no secret chat and no contact`() =
+    fun `a bot shows its description, shares its link, and offers no secret chat and no contact`() =
         runTest {
-            val bot = TdApiFixtures.user(id = BOT, firstName = "Finder", type = TdApi.UserTypeBot())
+            val bot =
+                TdApiFixtures.user(
+                    id = BOT,
+                    firstName = "Finder",
+                    usernames = listOf("finderbot"),
+                    type = TdApi.UserTypeBot(),
+                )
             val description = TdApi.BotInfo().also { it.description = "Finds stickers" }
             answerProfile(user = bot, info = TdResult.Success(fullInfo(bio = "", bot = description)))
             val viewModel = viewModel(userId = BOT)
@@ -341,7 +365,17 @@ class ProfileViewModelTest {
                 assertTrue(info.isBot)
                 assertFalse(actions.canStartSecretChat)
                 assertNull(actions.contact)
+                assertEquals("finderbot", actions.shareUsername)
             }
+        }
+
+    @Test
+    fun `the block row names someone without a first name by their last name`() =
+        runTest {
+            answerProfile(user = TdApiFixtures.user(id = ADA, firstName = "", lastName = "Lovelace"))
+            val viewModel = viewModel()
+
+            assertEquals("Lovelace", viewModel.content.actions.blockName)
         }
 
     @Test
@@ -674,7 +708,7 @@ class ProfileViewModelTest {
             val items = (media.content as SharedMediaContent.Items).items
             assertEquals(listOf(9L), items.map { it.messageId })
             assertEquals(MediaKind.Photo, (items.single() as SharedMediaItem.Media).kind)
-            assertEquals(MoreMedia.None, (media.content as SharedMediaContent.Items).more)
+            assertEquals(MoreMedia.None, media.content.more)
         }
 
     @Test

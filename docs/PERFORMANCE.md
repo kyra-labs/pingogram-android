@@ -49,10 +49,23 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     key's Keystore unwrap takes most of that time, and the two used to run one after the other.
   - `PingogramApplication` parses Google Sans Flex and makes the typefaces of every style on `Default`
     (`warmUpGoogleSansFlex`). The first frame used to make them while it measured its text.
+  - Then it measures the floating navigation bar's labels with them (`NavigationLabelWidths.warmUp`, 2026-11-15), whose
+    width decides whether the tabs show their names (`labelsFit`). The first frame used to measure the three labels in
+    two styles, which made it slower without a baseline profile after #494 (`StartupBenchmark` with
+    `CompilationMode.None`: cold +19%, the warm first frame +18–22%). The width is kept for the process, so a warm start
+    measures nothing; a first frame that asks for other labels or styles (high contrast, another language before
+    Android 13) measures them itself, the same way, so the tabs never switch between names and icons after.
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
-    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads.
+    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads. Since
+    2026-11-16 the widget updaters (recent chats, Conversation) also wait that long before asking the launcher which
+    widgets are placed (a binder call, then a Glance state read per widget) and loading their chats, unless a widget
+    asks for its content first (a process started for it).
+  - The chat list's folder tabs show no "Keyword alerts" tab until the matches are read (`ChatListViewModel`'s
+    `keywordMatchCount` starts at 0), and nothing reads them while the tab is turned off, so its first content never
+    waits for the account's `keyword_hits.txt`. Focus's header pill is a view model of its own over the settings file,
+    which the splash screen already waits for; the Quick Settings tiles bind only when Quick Settings opens.
 - Done after the v0.5.0 benchmarks (review of 2026-10-25), waiting for a trace before and after on the owner's phone
   (`tools/perfetto/startup.sh` or `startup.ps1`, below):
   - **Notifications at a cold start.** TDLib restores the active notifications at every start. `NotificationRenderer`
@@ -344,7 +357,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 ## 9. Measurement & tooling
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
-  `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`; generates Baseline Profiles.
+  `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`, `OpenMediaBenchmark`,
+  `CatchUpBenchmark`, `BookmarksScrollBenchmark`; generates Baseline Profiles.
   It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
   `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
   generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
@@ -362,6 +376,15 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
   `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+- Catch-up and the Bookmarks page (`benchmark/.../ToolJourneys.kt`, 2026-11-16) read no chat either: Catch-up shows
+  the unread chats without marking them, and the journeys step through its cards with "Skip" only (never "Mark as
+  read", "Reply in place" or "Open chat"); the Bookmarks page opens from Saved Messages' card. The Baseline Profile's
+  `catchUpAndBookmarks` takes each where it shows and skips it otherwise. The benchmarks need them: Catch-up's chip
+  shows from five unread chats that are not muted, so leave as many unread on the account (the benchmark fails
+  otherwise, saying so), and Saved Messages' card shows once a message is bookmarked, so bookmark a few screens of
+  messages, some with notes and tags. `CatchUpBenchmark` measures the frames of three cards skipped one after
+  another, `BookmarksScrollBenchmark` those of the page's cards flung down and back up; no budget yet: the first run
+  on the owner's phone sets one.
 - Each run skips the other kind of test (Macrobenchmark's rules check `androidx.benchmark.enabledRules`), and the
   connected test task counts those skips as failures. So run only the kind each command is for:
   `./gradlew :app:generateBaselineProfile -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
@@ -528,6 +551,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
   P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
   the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
+- Forum rows naming their topics (2026-11-15, `docs/DESIGN_SYSTEM.md` §6 "Chat list row"): `ChatListScrollCostTest`
+  with every tenth row a forum that names three topics (its preview data's "Book club"), against the same rows without
+  the topic line, three alternating pairs on the shared 4-core machine: without P50 0.96–1.00 ms, P90 10.0–10.2 ms,
+  P99 15.3–16.4 ms, mean 2.74–2.85 ms; with P50 1.04–1.13 ms, P90 9.2–9.8 ms, P99 13.7–14.6 ms, mean 2.62–2.85 ms.
+  A forum's row composes and measures more (one layout of a tab, the other topics and the pill, each measured once),
+  but its third line leaves fewer rows on screen, so a scroll frame brings in fewer of them.
 - Story rings (2026-10-23, the same machine under other agents' builds, so only runs side by side compare):
   `ChatListScrollCostTest` with the rings row as the list's first item and without it, interleaved three times each:
   without P50 1.30 ms, P90 9.9–10.0 ms, P99 13.3–17.0 ms; with P50 1.38–1.46 ms, P90 10.0–11.1 ms, P99 12.5–15.9 ms.
@@ -607,6 +636,86 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `FolderListStates`): landing a swipe or tapping a tab moves the two compositions between the shown place and the
   companion's, recomposing no row (`ChatListRecompositionTest`), and a folder's list keeps its scroll position by
   itself.
+- The floating folder bar (2026-11-14). Since v2.1.0, `ChatListScrollBenchmark.scrollBaselineProfile` on the owner's
+  Galaxy S24 Ultra (two runs, accessibility off):
+  - `frameDurationCpuMs`: P90 8.8 → 10.7 / 11.9 ms, P95 10.7 → 12.6 / 15.9 ms, P50 6.4 → 5.5–6.0 ms;
+  - frames over 32 ms: 0 → 5.
+
+  Two changes touch the screen: the folder tabs floating in a bar over the list (#496) and the navigation bar's labels
+  (#494).
+  - **The JVM.** `ChatListScrollCostTest`, four interleaved runs at each of v2.1.0, the commit before #496, #496 and
+    #494, shows the same main thread: P90 9.3–10.3, 9.4–11.0, 9.3–11.1 and 9.2–10.2 ms, mean 2.5–2.9 ms in each. So
+    neither the bar's layout (its height reaches the lists in the layout phase, `FolderBarSpace`) nor its composition
+    reaches the scroll frames, and `ChatListRecompositionTest` checks that scrolling under it recomposes neither the bar
+    nor the rows on screen. The navigation bar is measured once, not per frame.
+  - **The cost is drawing.** The bar floats over the moving list inside the sheet's rounded clip, with a level-3 shadow
+    and a clip of its own. Its chips faded at the edges through an offscreen layer with a `DstOut` mask, and the list
+    now draws under the bar too. The RenderThread draws all of it in every frame.
+  - **A first fix that did not help** (#501): the fade paints the bar's own opaque color over the chips' edges instead
+    of masking them in an offscreen layer (`FolderBar.kt`'s `fadeIntoBar`). P90 stayed at 11.4 ms on `main`
+    (10a389e9), against 7.6 ms for v2.1.0 on the same phone the same day: a regression of about 50%.
+  - **The owner's traces** (`chat-list-scroll.sql`, v2.1.0 → `main`, per frame):
+    - RenderThread P50 3.4 → 5.4 ms, P90 6.4 → 9.5 ms;
+    - `dequeueBuffer` 0.72 → 1.55 ms, "flush commands" 1.5 → 2.0 ms;
+    - main thread P90 1.5 → 4.6 ms, mostly `postAndWait`, waiting for the RenderThread;
+    - "Texture upload(130) 1390x195" on 622 of 800 RenderThread frames on `main`, none in v2.1.0: about 397 × 56 dp,
+      the floating folder bar;
+    - "Texture upload 1440x2513" (1440x2309 in v2.1.0): the whole list area, grown by the old tab row.
+  - **The cause, from Compose's code.** `ContentSheet` clipped the sheet to a rect rounded at the top only. Compose
+    hands Android a round rect only where all four corners match (`RoundRect.isSimple`), and anything else as a path
+    (`GraphicsLayer.setPathOutline`). Android 13+ clips the layer to that path, and the GPU cannot clip to a path
+    analytically. So every draw across the sheet's rounded top corners made Skia rasterize a clip mask on the CPU and
+    upload it, in every frame:
+    - the folder bar, whose pill and level-3 shadow sit across both corners `spacing.small` below the sheet's top;
+    - the list's layer, whose mask is the whole list area.
+
+    The floating navigation bar's shadow is outside that clip, which is why v2.1.0 had no bar-sized upload.
+  - **The fix.** The sheet now clips to `SheetShape`: a round rect with `extraLarge` all round that reaches its radius
+    below the sheet, so the bottom corners fall outside it. Android gets a round rect, which the GPU clips without a
+    mask. The pixels are the same; the goldens did not change.
+  - **To check on the phone**:
+    - Run `ChatListScrollBenchmark` alone (`-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.ChatListScrollBenchmark`).
+    - Then summarize one of its iterations' traces with `tools/perfetto/chat-list-scroll.sql` (`summarize.py`). It
+      gives the main thread's and the RenderThread's frames side by side, the RenderThread's slices, and what each late
+      frame spent its longest slice on. It also lists the texture uploads by size with the slices they ran under, and
+      what each main thread frame was for (input, animation, recompose, or an invalidated draw).
+  - **After #502** (the owner's trace of 2026-11-15): the main thread's P90 was 2.2 ms against 1.5 ms in v2.1.0, and
+    901 of its 1194 frames read as "recompose" frames. That count was the summary's mistake, not recompositions:
+    - Compose wraps its frame clock's dispatch in `Recomposer:animation` and the recomposer's per-frame loop in
+      `Recomposer:recompose`, whether anything was invalid or not (Compose runtime 1.12.1). A fling's animation runs
+      through that clock, so every frame of a fling carried both. The summary counted any `Recomposer:*` slice as a
+      recomposition.
+    - It now counts a frame as "recompose" only where a composition applied changes (`Compose:applyChanges`), calls the
+      rest "animation (a fling, no recomposition)", and lists Compose's slices per frame.
+    - On the JVM, `ChatListRecompositionTest` flings the list with touch input, through the header's nested scroll as
+      the benchmark's flings do: 4 of 204 frames recompose (Material's `Scaffold` content and the header's
+      `TwoRowsTopAppBar` as the header collapses), nothing of Pingogram's in any of them.
+    - What is left of the 0.7 ms needs the next trace, read with the corrected summary: frames that apply changes would
+      point at the app's shell or at pictures loading into rows, which the JVM test leaves out; otherwise the main
+      thread waits for the RenderThread (`postAndWait`), as before #502.
+- The cache window's one long frame (2026-11-15). The owner's trace of `main` after #502 and #520
+  (`ChatListScrollBenchmark`, profile) met the budget: P90 7.1 ms, against 8.6 ms in the 2.2.0 baseline.
+  - **The main thread's remaining time** is waiting for the RenderThread (`postAndWait`, 0.67 ms a frame): drawing,
+    not app code. Only 30 of its 789 frames applied changes.
+  - **One frame of 39 ms** held a 36.1 ms `compose:lazy:cache_window:keepAroundItems`. In Compose 1.12.1 that section
+    calls `compose(index)` in the measure pass for every row of the cache window (half a screen ahead, one behind)
+    outside the viewport, so rows no prefetch composed yet are composed there, all in that frame.
+  - **The JVM does not reproduce it.** `ChatListScrollCostTest`'s "first scroll frames with each cache window"
+    composes the list anew and scrolls it, seven runs per state after one warming the JIT. Longest frame and all 20
+    frames, medians:
+
+    | List state | Longest frame | All 20 frames |
+    |---|---|---|
+    | Compose's default | 8.4 ms | 40.8 ms |
+    | ahead 0.5, behind 1 (Pingogram's) | 7.8 ms | 35.8 ms |
+    | ahead 0.25, behind 1 | 7.4 ms | 35.6 ms |
+    | ahead 0.5, behind 0.5 | 7.1 ms | 33.8 ms |
+    | ahead 0, behind 1 | 6.9 ms | 32.8 ms |
+
+    The cache window makes no first scroll frame longer there. The spike needs what only a phone pays the first time
+    (code not compiled yet, first text layouts, shaders), so the window stays as it is until a trace says which rows
+    it composed. `chat-list-scroll.sql` now lists every `keepAroundItems` over 2 ms with when it ran and what ran
+    inside it.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

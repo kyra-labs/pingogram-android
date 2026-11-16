@@ -44,6 +44,13 @@ data class Message(
     val topic: MessageTopic? = null,
     /** The buttons a bot attached to the message, current with every edit; null if there are none. */
     val replyMarkup: ReplyMarkup? = null,
+    /**
+     * The language (IETF BCP 47) Telegram can summarize the message in (td_api.tl `message.summary_language_code`,
+     * long channel posts and the like); null where Telegram offers no summary of it.
+     */
+    val summaryLanguage: String? = null,
+    /** The post it suggests to a channel, in the channel's direct messages; null for any other message. */
+    val suggestedPost: SuggestedPost? = null,
 )
 
 /** Who sent a message: a user, or a chat (a channel, or a group's anonymous admins). */

@@ -12,6 +12,9 @@ internal object SharePreviewData {
     /** A shared link, nothing picked yet. */
     val link = ShareSheet(text = "https://developer.android.com/design", targets = ForwardPreviewData.targets)
 
+    /** A voice message to record (the Quick compose widget's "Voice"): a tap on a chat opens it recording. */
+    val voiceNote = ShareSheet(isVoiceNote = true, targets = ForwardPreviewData.targets)
+
     /** [link] with one chat picked: the button opens it. */
     val oneChat = link.copy(selectedIds = persistentSetOf(ADA))
 

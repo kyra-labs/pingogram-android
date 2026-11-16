@@ -53,8 +53,11 @@ import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -106,9 +109,20 @@ internal fun ProfileScreen(
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
     storyAlbums: StoryAlbumsSlot? = null,
+    profileMusic: ProfileMusicSlot? = null,
 ) {
     val page =
-        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact, onExportChat, storyAlbums)
+        ProfilePageParts(
+            state,
+            media,
+            onEvent,
+            onMediaEvent,
+            mediaActions,
+            onEditContact,
+            onExportChat,
+            storyAlbums,
+            profileMusic,
+        )
     if (twoPanes) {
         ProfilePanes(page, onBack, snackbarHostState, modifier, gridState)
     } else {
@@ -126,6 +140,7 @@ internal class ProfilePageParts(
     val onEditContact: (() -> Unit)?,
     val onExportChat: (() -> Unit)? = null,
     val storyAlbums: StoryAlbumsSlot? = null,
+    val profileMusic: ProfileMusicSlot? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
@@ -151,7 +166,12 @@ internal fun ProfilePage(
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = profilePageColor(),
-        topBar = { ProfileTopBar((page.state as? ProfileUiState.Content)?.header, scrollBehavior, onBack) },
+        topBar = {
+            val content = page.state as? ProfileUiState.Content
+            ProfileTopBar(content?.header, scrollBehavior, onBack) { collapsed ->
+                content?.let { ProfileTopBarActions(it.actions, collapsed, page.onEvent) }
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         ProfileBody(page, innerPadding, gridState, withMedia)
@@ -211,6 +231,8 @@ private fun ProfileGrid(
         val inset = max(margin, (maxWidth - sizes.contentMaxWidth) / 2)
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
+        // Every item moves on the scheme's springs: sections that come after the first frame, and a tab's items.
+        val motion = rememberItemMotion()
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             // Below the bar, so what scrolls never shows through the transparent bar, read in the layout phase.
@@ -226,12 +248,12 @@ private fun ProfileGrid(
                     spacing,
                 ) { innerPadding.withTop(0.dp).plusBottom(spacing.extraLarge) },
         ) {
-            profileItems(state, page, inset)
+            profileItems(state, page, inset, motion)
             if (withMedia && page.media.chatId != null) {
-                fullWidth(key = MEDIA_HEADER, inset = inset, top = spacing.extraLarge) {
+                fullWidth(key = MEDIA_HEADER, inset = inset, motion = motion, top = spacing.extraLarge) {
                     ProfileSectionHeader(stringResource(R.string.profile_section_media))
                 }
-                sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, inset)
+                sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, inset, motion)
             }
         }
     }
@@ -242,9 +264,23 @@ private fun LazyGridScope.profileItems(
     state: ProfileUiState.Content,
     page: ProfilePageParts,
     inset: Dp,
+    motion: ItemMotion,
 ) {
-    fullWidth(key = ACTIONS, inset = inset) {
+    val music = page.profileMusic
+    if (music != null) {
+        // Nothing shows for another user without songs, so the section adds its own space above it.
+        fullWidth(key = MUSIC, inset = inset, motion = motion) {
+            music(state.header.userId, state.actions.isSelf, Modifier)
+        }
+    }
+    strangerItem(state, page, inset, motion)
+    fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
+    }
+    if (state.isDeletedAccount) {
+        fullWidth(key = DELETED, inset = inset, motion = motion) {
+            DeletedAccountCard(Modifier.padding(top = MaterialTheme.spacing.large))
+        }
     }
     if (state.photos.totalCount > 1) {
         item(key = PHOTOS, span = { GridItemSpan(maxLineSpan) }, contentType = PHOTOS) {
@@ -257,7 +293,7 @@ private fun LazyGridScope.profileItems(
         }
     }
     if (!state.info.isEmpty) {
-        fullWidth(key = INFO, inset = inset) {
+        fullWidth(key = INFO, inset = inset, motion = motion) {
             ProfileInfoGroup(state.info, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
         }
     }
@@ -268,7 +304,7 @@ private fun LazyGridScope.profileItems(
             actions.isBlocked != null ||
             actions.canReport
     if (hasMore) {
-        fullWidth(key = MORE, inset = inset) {
+        fullWidth(key = MORE, inset = inset, motion = motion) {
             ProfileMoreGroup(
                 actions = actions,
                 onEvent = page.onEvent,
@@ -282,9 +318,28 @@ private fun LazyGridScope.profileItems(
     val chatId = page.media.chatId
     if (albums != null && chatId != null) {
         // Nothing shows for a chat without albums, so the section adds its own space above it.
-        fullWidth(key = STORY_ALBUMS, inset = inset) {
+        fullWidth(key = STORY_ALBUMS, inset = inset, motion = motion) {
             albums(chatId, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
         }
+    }
+}
+
+/** The card about someone not in the contacts who wrote first, read before the actions as it says why they matter. */
+private fun LazyGridScope.strangerItem(
+    state: ProfileUiState.Content,
+    page: ProfilePageParts,
+    inset: Dp,
+    motion: ItemMotion,
+) {
+    val stranger = state.stranger ?: return
+    fullWidth(key = STRANGER, inset = inset, motion = motion) {
+        ProfileStrangerCard(
+            stranger = stranger,
+            actions = state.actions,
+            onEvent = page.onEvent,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+            onAddContact = page.onEditContact,
+        )
     }
 }
 
@@ -292,11 +347,14 @@ private fun LazyGridScope.profileItems(
 private fun LazyGridScope.fullWidth(
     key: String,
     inset: Dp,
+    motion: ItemMotion,
     top: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     item(key = key, span = { GridItemSpan(maxLineSpan) }, contentType = key) {
-        Box(Modifier.fillMaxWidth().padding(start = inset, end = inset, top = top)) { content() }
+        Box(Modifier.animateItem(this, motion).fillMaxWidth().padding(start = inset, end = inset, top = top)) {
+            content()
+        }
     }
 }
 
@@ -329,8 +387,11 @@ private fun ProfileError(
 internal const val PROFILE_GRID_TEST_TAG = "profile_grid"
 
 private const val ACTIONS = "actions"
+private const val DELETED = "deleted"
+private const val STRANGER = "stranger"
 private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
 private const val STORY_ALBUMS = "story-albums"
+private const val MUSIC = "music"
 private const val MEDIA_HEADER = "media-header"

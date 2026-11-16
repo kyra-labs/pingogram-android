@@ -248,6 +248,10 @@ data object PasskeysRoute
 @Serializable
 data object LockedChatsRoute
 
+/** The message reminders kept on this phone (the owner's board 29), from Settings home's "On this phone" group. */
+@Serializable
+data object RemindersRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute
@@ -331,6 +335,10 @@ data object ReactionNotificationsRoute
 @Serializable
 data object QuickReactionRoute
 
+/** Voice message transcription on the device: its switch and languages, pushed above [AppearanceRoute]. */
+@Serializable
+data object TranscriptionSettingsRoute
+
 /** The chats the forward and share sheets show first, pushed above [AppearanceRoute]. */
 @Serializable
 data object ChatsShownFirstRoute
@@ -357,6 +365,13 @@ data object ArchiveRoute
  */
 @Serializable
 data object ArchiveSettingsRoute
+
+/**
+ * Catch-up (`docs/DESIGN_SYSTEM.md` §6 "Catch-up", the owner's board 32): the unread chats one card at a time,
+ * `:feature:chats`, pushed above the Chats tab from the Catch-up chip of its header.
+ */
+@Serializable
+data object CatchUpRoute
 
 /**
  * Starting a chat (`REQUIREMENTS.md` FR-L7): new group, new channel and new contact, then the contacts,
@@ -415,17 +430,21 @@ data class ChatRoute(
     val messageId: Long? = null,
     val topicId: Int? = null,
     val threadId: Long? = null,
+    val directMessagesTopicId: Long? = null,
 )
 
 /**
  * The full-screen media viewer (`REQUIREMENTS.md` FR-C10), `:feature:media`, opened on the photo, video or GIF
  * [messageId] of chat [chatId] from the conversation, and paging through the chat's media of that kind. It is pushed
  * above everything: no navigation bar or rail, and full screen on top of the list-detail layout of the Chats tab.
+ * [startSeconds], from a message link's `?t=` (td_api.tl `messageLinkInfo.media_timestamp`), starts the video
+ * [messageId] there, in place of the time its sender marked.
  */
 @Serializable
 data class MediaViewerRoute(
     val chatId: Long,
     val messageId: Long,
+    val startSeconds: Int? = null,
 )
 
 /**
@@ -461,6 +480,16 @@ data class StoryAlbumRoute(
 data object NewStoryRoute
 
 /**
+ * Making a sticker from the photo of file [fileId] (boards 14a, 14b), `:feature:media`: the photo cropped to a square
+ * with text, emoji and an outline, then added to one of the user's sticker sets or a new one. Full screen, like the
+ * stories viewer, without the navigation bar or rail; the media viewer's "Make a sticker" opens it in its place.
+ */
+@Serializable
+data class MakeStickerRoute(
+    val fileId: Int,
+)
+
+/**
  * The forward sheet (`REQUIREMENTS.md` FR-C6) for messages [messageIds] of chat [fromChatId], `:feature:chat`: a
  * dialog destination above the screen it is opened from, which stays visible below the sheet. The media viewer opens
  * it for its current item; the conversation shows the same sheet in place, for its own messages.
@@ -472,6 +501,15 @@ data class ForwardRoute(
 )
 
 /**
+ * A shared style of Telegram's AI editor by its [name] (`docs/DESIGN_SYSTEM.md` §6 "AI text editor"),
+ * `:feature:chat`: a dialog destination above the screen it is opened from, whose sheet adds the style only on a tap.
+ */
+@Serializable
+data class TextStyleRoute(
+    val name: String,
+)
+
+/**
  * The share sheet (`REQUIREMENTS.md` FR-N2, direct share) for what another app shared, or a `t.me/share` link, kept in
  * memory under [shareId] (`ShareInbox` of `:feature:chat`): a dialog destination above the screen it is opened from,
  * which picks the chat or chats it goes to. After process death the share is gone and the sheet closes at once.
@@ -479,6 +517,24 @@ data class ForwardRoute(
 @Serializable
 data class ShareRoute(
     val shareId: Long,
+)
+
+/**
+ * The chat picker of the Conversation widget [appWidgetId] (board 33), which the widget's "Choose a chat" opens: a
+ * dialog destination of `:app` above whatever shows.
+ */
+@Serializable
+data class WidgetChatPickerRoute(
+    val appWidgetId: Int,
+)
+
+/**
+ * The small reply sheet of chat [chatId] (board 33, owner decision 2026-11-15), which a Conversation widget's Reply
+ * opens: a dialog destination of `:app` above whatever shows, in the chat's account.
+ */
+@Serializable
+data class WidgetReplyRoute(
+    val chatId: Long,
 )
 
 /**
@@ -499,6 +555,23 @@ data class ChatExportRoute(
 @Serializable
 data class ScheduledMessagesRoute(
     val chatId: Long,
+)
+
+/**
+ * Every pinned message of chat [chatId] (of its forum topic [topicId], message thread [threadId], Saved Messages topic
+ * [savedTopicId] or direct messages topic [directTopicId], if one is given),
+ * `:feature:chat`: pushed above the conversation whose pinned bar's "All pinned messages" opens it, with the shared
+ * axis
+ * on X, newest first under their months, filtered and searched on the device, each to jump to, copy or unpin
+ * (`docs/DESIGN_SYSTEM.md` §6 "Pinned messages bar").
+ */
+@Serializable
+data class PinnedMessagesRoute(
+    val chatId: Long,
+    val topicId: Int? = null,
+    val threadId: Long? = null,
+    val savedTopicId: Long? = null,
+    val directTopicId: Long? = null,
 )
 
 /**
@@ -582,6 +655,16 @@ data class ChatStatisticsRoute(
     val chatId: Long,
 )
 
+/**
+ * The statistics of the poll of message [messageId] in chat [chatId]: its votes over time and its totals, which
+ * Telegram gives the chat's administrators (`MessageProperties.canGetPollVoteStatistics`).
+ */
+@Serializable
+data class PollStatisticsRoute(
+    val chatId: Long,
+    val messageId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(
@@ -640,6 +723,17 @@ data class QrLoginRoute(
     override fun toString() = "QrLoginRoute(…)"
 }
 
+/**
+ * A request to log in to a website or an app with the Telegram account ("Log in with Telegram", `:feature:settings`):
+ * a dialog destination whose sheet asks before anything is shared. `toString()` leaves out the request's link.
+ */
+@Serializable
+data class OauthLoginRoute(
+    val url: String,
+) {
+    override fun toString() = "OauthLoginRoute(…)"
+}
+
 /** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */
 @Serializable
 data object MyQrCodeRoute
@@ -667,3 +761,32 @@ data class WelcomeMessagesRoute(
 /** The user's name color (the owner's board 22b), pushed above Edit profile. */
 @Serializable
 data object ProfileColorRoute
+
+/** Focus profiles (board 31), kept on this phone only: `:feature:settings`, pushed above the Settings tab. */
+@Serializable
+data object FocusRoute
+
+/**
+ * A Focus profile's editor, pushed above [FocusRoute]: profile [profileId], or a new one (0) started from [template]
+ * (one of `FocusTemplate`'s names in `:feature:settings`; none: from scratch).
+ */
+@Serializable
+data class FocusProfileRoute(
+    val profileId: Long = 0,
+    val template: String? = null,
+)
+
+/** Keyword alerts (board 30), kept on this phone only: `:feature:settings`, pushed above Settings. */
+@Serializable
+data object KeywordAlertsRoute
+
+/**
+ * The messages bookmarked on this phone (the owner's board 34), `:feature:chat`: pushed above Settings › On this phone
+ * or Saved Messages, with the shared axis on X, the newest first, filtered by tag.
+ */
+@Serializable
+data object BookmarksRoute
+
+/** The bookmarks' tag editor (the owner's board 34c), pushed above the Bookmarks page. */
+@Serializable
+data object BookmarkTagsRoute

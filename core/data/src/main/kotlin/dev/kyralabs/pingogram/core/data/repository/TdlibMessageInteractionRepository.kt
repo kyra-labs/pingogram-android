@@ -5,9 +5,11 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
+import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
 import dev.kyralabs.pingogram.core.domain.model.AddedReaction
 import dev.kyralabs.pingogram.core.domain.model.AddedReactionsPage
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageViewer
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepository
@@ -70,6 +72,21 @@ class TdlibMessageInteractionRepository
                 )
             }
         }
+
+        override suspend fun removeReactions(
+            chatId: Long,
+            messageId: Long,
+            sender: MessageSender,
+        ): Outcome<Unit> =
+            client
+                .request(TdApi.DeleteMessageReactionsFromSender(chatId, messageId, sender.toTdMessageSender()))
+                .map { }
+
+        override suspend fun removeAllRecentReactions(
+            chatId: Long,
+            sender: MessageSender,
+        ): Outcome<Unit> =
+            client.request(TdApi.DeleteAllRecentMessageReactionsFromSender(chatId, sender.toTdMessageSender())).map { }
 
         private companion object {
             /** The most reactions TDLib gives in one page (td_api.tl `getMessageAddedReactions.limit`). */

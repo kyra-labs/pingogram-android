@@ -93,6 +93,7 @@ data class MessageShortcuts(
     val canCopyLink: Boolean = false,
     val linksInThread: Boolean = false,
     val canForward: Boolean = false,
+    val canRemind: Boolean = false,
 )
 
 /** What the actions sheet offers for a message, each only where TDLib allows it. */
@@ -112,6 +113,12 @@ enum class MessageAction {
     /** Reply to it from another chat's composer, picked in a sheet ("Reply in another chat"). */
     ReplyElsewhere,
 
+    /** Set a reminder on it, kept on this device (`reminders.ReminderSheetViewModel`, the owner's board 29). */
+    RemindMe,
+
+    /** Open its poll's statistics, where Telegram gives them to the chat's administrators. */
+    PollStatistics,
+
     /** Copy its text or caption, as plain text. */
     Copy,
 
@@ -127,8 +134,17 @@ enum class MessageAction {
     /** Show its own text again in place of the translation its bubble shows. */
     ShowOriginal,
 
+    /** Show Telegram's summary of a long message in its bubble (`ChatSummaries`). */
+    Summarize,
+
+    /** Show its own text again in place of the summary its bubble shows. */
+    ShowFullText,
+
     /** Forward it to other chats, from the forward sheet. */
     Forward,
+
+    /** Bookmark it on this device, with tags and a note (`bookmarks.BookmarkSheetViewModel`, the owner's board 34). */
+    Bookmark,
 
     /** Edit its text or caption in the composer. */
     Edit,
@@ -232,7 +248,7 @@ sealed interface DeleteScope {
  * What screen readers and the bubbles get directly in this chat: replying where the user can write ([canWrite]),
  * copying, replying in another chat and forwarding where its content may leave it (not secret chats for the latter
  * two), message links in supergroups and channels, to the message in the topic or thread where the conversation is
- * one ([inThread]).
+ * one ([inThread]), and reminders, which secret chats leave out as the notification would show their messages.
  */
 internal fun Chat.shortcuts(
     canWrite: Boolean,
@@ -244,4 +260,5 @@ internal fun Chat.shortcuts(
     canForward = !hasProtectedContent && type !is ChatType.Secret,
     canCopyLink = type is ChatType.Supergroup,
     linksInThread = inThread,
+    canRemind = type !is ChatType.Secret,
 )

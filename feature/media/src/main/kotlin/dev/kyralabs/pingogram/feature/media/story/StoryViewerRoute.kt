@@ -10,6 +10,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -24,26 +25,28 @@ import kotlinx.coroutines.launch
 /**
  * The stories viewer of the route's chat, full screen above everything: hoists its [StoryViewerViewModel] and tells it
  * when the screen is started and stopped, which plays, pauses, and opens and closes the story for TDLib. Its
- * [StoryViewerEffect]s close the viewer ([onClose], after the last story) and show snackbars: a sent reply, a video
- * that cannot be played, an error. Videos draw on Media3's [PlayerSurface] in a `TextureView`, which scales and moves
- * with the story as it is swiped away, as the media viewer's do; choosing it is Media3's [UnstableApi].
+ * [StoryViewerEffect]s close the viewer ([onClose], after the last story), open the share sheet ([onShare]) and show
+ * snackbars: a sent reply, a video that cannot be played, an error. Videos draw on Media3's [PlayerSurface] in a
+ * `TextureView`, which scales and moves with the story as it is swiped away, as the media viewer's do; choosing it is
+ * Media3's [UnstableApi].
  */
 @OptIn(UnstableApi::class)
 @Composable
 internal fun StoryViewerRoute(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    onShare: (posterChatId: Long, storyId: Int) -> Unit = { _, _ -> },
     viewModel: StoryViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LifecycleStartEffect(viewModel) {
-        viewModel.onEvent(StoryViewerEvent.Started(true))
-        onStopOrDispose { viewModel.onEvent(StoryViewerEvent.Started(false)) }
-    }
+    val screenReader = rememberScreenReader()
+    LaunchedEffect(viewModel, screenReader) { viewModel.onEvent(StoryViewerEvent.ScreenReader(screenReader)) }
+    ViewerLifecycle(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val currentOnClose by rememberUpdatedState(onClose)
+    val currentOnShare by rememberUpdatedState(onShare)
     LaunchedEffect(viewModel) {
         var snackbar: Job? = null
         viewModel.effects.collect { effect ->
@@ -54,8 +57,17 @@ internal fun StoryViewerRoute(
                         return@collect
                     }
 
+                    is StoryViewerEffect.Share -> {
+                        currentOnShare(effect.posterChatId, effect.storyId)
+                        return@collect
+                    }
+
                     StoryViewerEffect.ReplySent -> {
                         resources.getString(R.string.story_reply_sent)
+                    }
+
+                    StoryViewerEffect.StoryDeleted -> {
+                        resources.getString(R.string.story_deleted)
                     }
 
                     StoryViewerEffect.PlaybackFailed -> {
@@ -71,6 +83,7 @@ internal fun StoryViewerRoute(
             snackbar = launch { snackbarHostState.showSnackbar(message) }
         }
     }
+    ViewersSheetHost(state, onClose = { viewModel.onEvent(StoryViewerEvent.ViewersOpen(false)) })
     StoryViewerScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -86,4 +99,34 @@ internal fun StoryViewerRoute(
             )
         },
     )
+}
+
+/**
+ * Tells [viewModel] when the screen is started and stopped, and resumed: the share sheet is a dialog destination above
+ * the viewer, which stays started below it and resumes once it closes.
+ */
+@Composable
+private fun ViewerLifecycle(viewModel: StoryViewerViewModel) {
+    LifecycleStartEffect(viewModel) {
+        viewModel.onEvent(StoryViewerEvent.Started(true))
+        onStopOrDispose { viewModel.onEvent(StoryViewerEvent.Started(false)) }
+    }
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onEvent(StoryViewerEvent.Share.Resumed(true))
+        onPauseOrDispose { viewModel.onEvent(StoryViewerEvent.Share.Resumed(false)) }
+    }
+}
+
+/** The list of who saw the user's own story, while [state] says it is open, with a view model of its own. */
+@Composable
+private fun ViewersSheetHost(
+    state: StoryViewerUiState,
+    onClose: () -> Unit,
+) {
+    val views = (state as? StoryViewerUiState.Content)?.takeIf { it.views?.isOpen == true } ?: return
+    val viewers: StoryViewersViewModel = hiltViewModel()
+    val storyId = views.story.storyId
+    LaunchedEffect(viewers, storyId) { viewers.show(storyId) }
+    val viewersState by viewers.uiState.collectAsStateWithLifecycle()
+    StoryViewersSheet(state = viewersState, onEvent = viewers::onEvent, onDismiss = onClose)
 }

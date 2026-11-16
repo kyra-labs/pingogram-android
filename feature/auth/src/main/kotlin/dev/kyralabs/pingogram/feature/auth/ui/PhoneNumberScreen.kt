@@ -30,6 +30,8 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.phone.CountryField
 import dev.kyralabs.pingogram.core.ui.phone.CountryPickerSheet
@@ -48,6 +50,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.PasskeySignInOption
 import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
+import dev.kyralabs.pingogram.feature.auth.ui.components.phoneTooShortText
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 import dev.kyralabs.pingogram.feature.auth.ui.preview.LANDSCAPE_PHONE
@@ -105,7 +108,7 @@ fun PhoneNumberScreen(
             callingCode = state.callingCode,
             number = state.number,
             numberFormat = state.numberFormat,
-            error = state.error?.let { errorText(it) },
+            error = state.error?.let { errorText(it) } ?: phoneTooShortText(state),
             onCallingCodeChange = { onEvent(AuthEvent.CallingCodeChanged(it)) },
             onNumberChange = { onEvent(AuthEvent.PhoneNumberChanged(it)) },
             onDone = submit,
@@ -165,10 +168,17 @@ private fun PhoneNumberScreenEmptyPreview() {
     AuthScreenPreview(AuthPreviewData.phoneNumberEmpty)
 }
 
+/** A number Telegram refused, and one that looks too short for its country (board 23). */
 @PingogramPreviews
 @Composable
-private fun PhoneNumberScreenErrorPreview() {
-    AuthScreenPreview(AuthPreviewData.phoneNumberError)
+private fun PhoneNumberScreenErrorPreview(
+    @PreviewParameter(PhoneNumberProblems::class) state: AuthUiState,
+) {
+    AuthScreenPreview(state)
+}
+
+private class PhoneNumberProblems : PreviewParameterProvider<AuthUiState> {
+    override val values = sequenceOf(AuthPreviewData.phoneNumberError, AuthPreviewData.phoneNumberTooShort)
 }
 
 @PingogramPreviews

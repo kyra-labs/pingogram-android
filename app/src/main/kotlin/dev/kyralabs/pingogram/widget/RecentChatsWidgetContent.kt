@@ -242,15 +242,8 @@ private fun badgeCount(count: Int): String = if (count > MAX_BADGE_COUNT) "$MAX_
 
 private const val MAX_BADGE_COUNT = 999
 
-/** Opens the app where it was; a widget has no other way to say "open the app" when it shows no chat. */
-private fun openApp(context: Context): Action =
-    actionStartActivity(
-        context.packageManager.getLaunchIntentForPackage(context.packageName)
-            ?: Intent(context, MainActivity::class.java),
-    )
-
 /** Opens New chat as the app shortcut does: the Telegram link `tg://new`, through the app's link handling. */
-private fun newChatIntent(context: Context): Intent =
+internal fun newChatIntent(context: Context): Intent =
     Intent(Intent.ACTION_VIEW, NEW_CHAT_LINK.toUri(), context, MainActivity::class.java)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 

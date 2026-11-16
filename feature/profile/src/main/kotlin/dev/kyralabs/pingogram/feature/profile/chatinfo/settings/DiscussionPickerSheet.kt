@@ -14,9 +14,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -45,9 +46,10 @@ internal fun DiscussionPickerSheet(
     picker: DiscussionPicker,
     onEvent: (ChatSettingsEvent) -> Unit,
 ) {
-    ModalBottomSheet(
+    PingogramBottomSheet(
         onDismissRequest = { onEvent(ChatSettingsEvent.CloseDiscussionPicker) },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState =
+            rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
         DiscussionPickerContent(picker, onEvent)
     }
@@ -109,13 +111,14 @@ private fun GroupList(
     LazyColumn(Modifier.fillMaxWidth()) {
         items(picker.groups, key = { it.chatId }) { group ->
             ListItem(
-                headlineContent = { Text(group.title, style = LocalTextStyle.current.userContent) },
                 modifier =
                     Modifier
                         .padding(horizontal = MaterialTheme.spacing.small)
                         .clickable { onEvent(ChatSettingsEvent.LinkDiscussion(group.chatId)) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            )
+            ) {
+                Text(group.title, style = LocalTextStyle.current.userContent)
+            }
         }
     }
 }

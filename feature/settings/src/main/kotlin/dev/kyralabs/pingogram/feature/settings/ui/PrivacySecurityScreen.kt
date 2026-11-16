@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -157,8 +158,11 @@ internal fun PrivacySecurityScreen(
             }
 
             is PrivacySecurityUiState.Content -> {
-                PrivacyCheckupCard(state, onOpen)
-                PrivacySection(state, onOpen)
+                // One child of the page with the section below it, so the gap it holds goes with it.
+                Column {
+                    PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
+                    PrivacySection(state, onOpen)
+                }
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(

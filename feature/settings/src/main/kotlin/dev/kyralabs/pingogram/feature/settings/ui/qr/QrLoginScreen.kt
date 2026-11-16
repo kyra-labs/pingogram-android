@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SessionItem
 import dev.kyralabs.pingogram.feature.settings.ui.SessionRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
+import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -159,10 +160,7 @@ private fun ConfirmStep(
                 )
             }
         }
-        if (state.isConfirming) {
-            val busy = stringResource(R.string.settings_qr_login_busy)
-            LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = busy })
-        }
+        StepProgress(state.isConfirming, stringResource(R.string.settings_qr_login_busy))
         StepActions(
             primary = R.string.settings_qr_login_confirm,
             onPrimary = { onEvent(QrLoginEvent.Confirm) },

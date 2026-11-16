@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The new poll form's parts since 2026 (docs/DESIGN_SYSTEM.md §6 "New poll"). -->
+    <string name="poll_description">Description (optional)</string>
+    <string name="poll_add_media">Add media</string>
+    <string name="poll_change_media">Change media</string>
+    <string name="poll_remove_media">Remove photo</string>
+    <string name="poll_media_photo">Photo</string>
+    <string name="poll_media_preparing">Preparing the photo…</string>
+    <string name="poll_photo_only">Polls take photos only</string>
+    <!-- "4 of 12": how many options there are, of the most Telegram allows. -->
+    <string name="poll_option_count">%1$d of %2$d</string>
+    <string name="poll_option_link">Link for option %1$d</string>
+    <string name="poll_option_link_field">Link</string>
+    <string name="poll_reorder_option">Reorder option %1$d</string>
+    <string name="poll_move_up">Move up</string>
+    <string name="poll_move_down">Move down</string>
+    <string name="poll_explanation_field">Explanation (optional)</string>
+    <string name="poll_explanation_note">Shown once someone answers</string>
+    <string name="poll_revoting">Allow changing vote</string>
+    <string name="poll_hide_results">Hide results</string>
+    <string name="poll_hide_results_note">Voters see the results once the poll closes</string>
+    <string name="poll_shuffle">Shuffle options</string>
+    <string name="poll_adding_options">Let members add options</string>
+    <string name="poll_adding_options_note">Only in public polls outside channels</string>
+    <string name="poll_closes">Closes</string>
+    <string name="poll_closes_never">Never</string>
+    <string name="poll_closes_hour">1 h</string>
+    <string name="poll_closes_day">1 day</string>
+    <string name="poll_closes_custom">Custom</string>
+</resources>

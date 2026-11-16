@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The pinned messages bar over the conversation and the sheet that lists them (REQUIREMENTS.md FR-C9). -->
+<!-- The pinned messages bar over the conversation and the page that lists them (REQUIREMENTS.md FR-C9). -->
 <resources>
     <!-- The bar's label over the pinned message. %1$d is its place counted from the newest, %2$d how many there are. -->
     <!-- No-break spaces around "of": where the label wraps at large font sizes, "4 of 5" stays together. -->
@@ -18,6 +18,47 @@
     <!-- The snackbar once the bar was hidden by someone who may not unpin. -->
     <string name="pinned_hidden">Pinned messages hidden. They come back when a new message is pinned.</string>
 
-    <!-- The sheet of every pinned message. -->
-    <string name="pinned_sheet_title">Pinned messages</string>
+
+    <!-- The pinned messages page (docs/DESIGN_SYSTEM.md §6 "Pinned messages bar"), which "All pinned messages" opens. -->
+    <string name="pinned_page_title">Pinned messages</string>
+    <!-- Under the title: the chat's name, how many are pinned and their order. %1$s is the chat's name. -->
+    <plurals name="pinned_page_subtitle">
+        <item quantity="one">%1$s · %2$d pinned · newest first</item>
+        <item quantity="other">%1$s · %2$d pinned · newest first</item>
+    </plurals>
+    <plurals name="pinned_page_subtitle_no_title">
+        <item quantity="one">%1$d pinned · newest first</item>
+        <item quantity="other">%1$d pinned · newest first</item>
+    </plurals>
+    <!-- The page's back button, for screen readers. -->
+    <string name="pinned_back">Back to chat</string>
+    <string name="pinned_search">Search pinned messages</string>
+    <string name="pinned_more">More options</string>
+    <string name="pinned_unpin_all">Unpin all</string>
+    <!-- The filter chips: "All · 23". %1$d is how many pinned messages the chip holds. -->
+    <string name="pinned_filter_all">All · %1$d</string>
+    <string name="pinned_filter_text">Text · %1$d</string>
+    <string name="pinned_filter_media">Media · %1$d</string>
+    <string name="pinned_filter_files">Files · %1$d</string>
+    <string name="pinned_filter_links">Links · %1$d</string>
+    <string name="pinned_filters">Filter pinned messages</string>
+    <!-- A card's pin badge, counted from the oldest pin: "#23". -->
+    <string name="pinned_number">#%1$d</string>
+    <!-- A pinned file's size and kind: "4.2 MB · APK". -->
+    <string name="pinned_file_size_kind">%1$s · %2$s</string>
+    <!-- A card's actions. -->
+    <string name="pinned_jump">Jump to message</string>
+    <string name="pinned_copy">Copy text</string>
+    <!-- The states. -->
+    <string name="pinned_empty_title">No pinned messages</string>
+    <string name="pinned_empty_body">Messages pinned in this chat show up here.</string>
+    <string name="pinned_none_found_title">No pinned messages found</string>
+    <string name="pinned_none_found_body">Try another filter or other words.</string>
+    <string name="pinned_error_title">Couldn\'t load the pinned messages</string>
+    <!-- The question before unpinning them all. -->
+    <string name="pinned_unpin_all_title">Unpin all messages?</string>
+    <string name="pinned_unpin_all_body">They stay in the chat, unpinned for everyone.</string>
+    <string name="pinned_unpin_all_confirm">Unpin all</string>
+    <string name="pinned_unpin_all_cancel">Cancel</string>
+    <string name="pinned_unpinned_all">All messages unpinned</string>
 </resources>

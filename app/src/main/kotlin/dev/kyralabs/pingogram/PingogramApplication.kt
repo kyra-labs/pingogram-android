@@ -14,7 +14,9 @@ import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.notifications.KeywordAlertNotifier
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
+import dev.kyralabs.pingogram.core.notifications.ReminderAlarms
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.notifications.StorageOptimization
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -22,6 +24,8 @@ import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.startup.asyncTraceSection
+import dev.kyralabs.pingogram.ui.NavigationLabelWidths
+import dev.kyralabs.pingogram.widget.ConversationWidgetUpdater
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
@@ -56,9 +60,21 @@ class PingogramApplication :
     @Inject
     lateinit var recentChatsWidgetUpdater: dagger.Lazy<RecentChatsWidgetUpdater>
 
+    /** Keeps the Conversation widgets (board 33) current while one is placed. */
+    @Inject
+    lateinit var conversationWidgetUpdater: dagger.Lazy<ConversationWidgetUpdater>
+
     /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
     @Inject
     lateinit var storageOptimization: dagger.Lazy<StorageOptimization>
+
+    /** Keeps the rings of the message reminders scheduled, for every account (the owner's board 29). */
+    @Inject
+    lateinit var reminderAlarms: dagger.Lazy<ReminderAlarms>
+
+    /** Posts the keyword alerts of muted chats, for every account (the owner's board 30). */
+    @Inject
+    lateinit var keywordAlertNotifier: dagger.Lazy<KeywordAlertNotifier>
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -110,8 +126,12 @@ class PingogramApplication :
         applicationScope.launch {
             asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
         }
-        // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
-        applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }
+        // Parses the font and makes its typefaces while the activity is created, instead of in the first frame, then
+        // measures the navigation bar's labels with them, which the first frame would otherwise do.
+        applicationScope.launch {
+            warmUpGoogleSansFlex(this@PingogramApplication)
+            NavigationLabelWidths.warmUp(this@PingogramApplication)
+        }
         startInBackground()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
@@ -144,8 +164,13 @@ class PingogramApplication :
                 shareTargetShortcuts.get().start()
                 // Redraws the home screen widget when the chats change, only while a widget is placed.
                 recentChatsWidgetUpdater.get().start()
+                conversationWidgetUpdater.get().start()
                 // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
                 storageOptimization.get().start()
+                // Schedules the message reminders' rings, a few seconds after the start too.
+                reminderAlarms.get().start()
+                // Posts a notification for each new keyword match of a muted chat, while the setting asks for it.
+                keywordAlertNotifier.get().start()
             }
         }
     }

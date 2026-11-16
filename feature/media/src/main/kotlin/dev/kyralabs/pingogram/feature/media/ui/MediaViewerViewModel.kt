@@ -17,9 +17,12 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.PowerSaving
+import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.richMediaMessageId
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
@@ -213,10 +216,31 @@ class MediaViewerViewModel internal constructor(
             effectChannel.showError(error)
         }
 
+    /**
+     * The videos that were given where to start: a link's or a sender's start time applies once, and never over a
+     * return.
+     */
+    private val startedAt = mutableSetOf<Long>()
+
+    /** The live photo held now, whose motion plays while it is ([MediaViewerEvent.HoldLivePhoto]); null for none. */
+    private val heldLivePhoto = MutableStateFlow<Long?>(null)
+
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
+            // The speed chosen before process death holds again.
+            savedStateHandle.get<Float>(KEY_SPEED)?.takeIf { it in PlaybackSpeeds }?.let(::setSpeed)
             // Picture-in-picture gave this video back: it plays on from where the window left it.
-            pictureInPicture.takeReturn(chatId, route.messageId)?.let { startAt(it.messageId, it.positionMillis) }
+            val returned = pictureInPicture.takeReturn(chatId, route.messageId)
+            if (returned != null) {
+                startedAt += returned.messageId
+                startAt(returned.messageId, returned.positionMillis)
+            } else {
+                // A message link's `?t=` wins over the time the sender marked.
+                route.startSeconds?.takeIf { it > 0 }?.let { seconds ->
+                    startedAt += route.messageId
+                    startAt(route.messageId, seconds * MILLIS_PER_SECOND)
+                }
+            }
         }
 
     /** The last [files], whose states carry over while the next ones are subscribed; main thread only. */
@@ -268,11 +292,13 @@ class MediaViewerViewModel internal constructor(
             sharing.state(currentId),
             deletion.state(currentId),
             deletion.canForward(currentId),
-        ) { actions, deletion, canForward ->
+            playback.speed,
+        ) { actions, deletion, canForward, speed ->
             actions.copy(
                 canForward = canForward,
                 canDelete = deletion.canDelete,
                 deleteConfirmation = deletion.confirmation,
+                speed = speed,
             )
         }
 
@@ -309,7 +335,9 @@ class MediaViewerViewModel internal constructor(
         viewModelScope.launch { mediaRepository.deletedMessages(chatId).collect(::onDeleted) }
         viewModelScope.launch { powerSaving.collect { playback.setAutoplay(!it.noAutoplay) } }
         viewModelScope.launch {
-            combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
+            combine(viewer, files, heldLivePhoto, ::Triple).collect { (viewer, files, held) ->
+                focus(viewer, files, held)
+            }
         }
         loadOpened(viewer.value.currentId)
     }
@@ -336,38 +364,36 @@ class MediaViewerViewModel internal constructor(
                 revealedSpoilers.update { it.adding(event.messageId) }
             }
 
-            MediaViewerEvent.PlayPause -> {
-                playback.playPause()
+            MediaViewerEvent.PlayPause, is MediaViewerEvent.HoldLivePhoto, is MediaViewerEvent.Seek,
+            is MediaViewerEvent.SeekBy, is MediaViewerEvent.SetMuted, MediaViewerEvent.CancelStream,
+            // ControlsHidden is ControlsHintViewModel's, which the route hands it: nothing here.
+            MediaViewerEvent.ControlsHidden,
+            -> {
+                onPlaybackEvent(event)
             }
 
             MediaViewerEvent.PictureInPicture -> {
                 toPictureInPicture()
             }
 
-            is MediaViewerEvent.Seek -> {
-                playback.seek(event.fraction)
+            is MediaViewerEvent.SetSpeed -> {
+                setSpeed(event.speed)
             }
 
             MediaViewerEvent.Share, MediaViewerEvent.Save, MediaViewerEvent.Copy -> {
                 event.mediaAction?.let(sharing::start)
             }
 
-            MediaViewerEvent.Delete -> {
-                deletion.request()
-            }
-
-            is MediaViewerEvent.DeleteConfirmed -> {
-                deletion.confirm(event.forEveryone)
-            }
-
-            MediaViewerEvent.DeleteDismissed -> {
-                deletion.dismiss()
+            MediaViewerEvent.Delete, is MediaViewerEvent.DeleteConfirmed, MediaViewerEvent.DeleteDismissed -> {
+                onDeletionEvent(event)
             }
 
             MediaViewerEvent.ShowInChat -> {
-                viewer.value.loadedCurrentId?.let {
-                    effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, messageIdOf(it)))
-                }
+                showInChat()
+            }
+
+            is MediaViewerEvent.MakeSticker -> {
+                makeSticker(event.fileId)
             }
 
             MediaViewerEvent.Forward -> {
@@ -387,6 +413,18 @@ class MediaViewerViewModel internal constructor(
                 sharing.permission.onResult(event.granted)
             }
         }
+    }
+
+    /** Opens the conversation at the current item's message. */
+    private fun showInChat() {
+        val current = viewer.value.loadedCurrentId ?: return
+        effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, messageIdOf(current)))
+    }
+
+    /** Opens the sticker maker on the photo of file [fileId], only where Telegram lets its content leave the chat. */
+    private fun makeSticker(fileId: Int) {
+        val content = uiState.value as? MediaViewerUiState.Content
+        if (content?.actions?.canSave == true) effectChannel.trySend(MediaViewerEffect.MakeSticker(fileId))
     }
 
     /**
@@ -425,6 +463,65 @@ class MediaViewerViewModel internal constructor(
         savedStateHandle[KEY_CURRENT] = messageId
         failedEdges.clear()
         loadMoreIfNear()
+    }
+
+    /** Play or pause tapped, or a live photo held or let go. */
+    private fun onPlaybackEvent(event: MediaViewerEvent) {
+        when (event) {
+            MediaViewerEvent.PlayPause -> {
+                playback.playPause()
+            }
+
+            is MediaViewerEvent.HoldLivePhoto -> {
+                heldLivePhoto.update { held ->
+                    if (event.held) event.messageId else held.takeIf { it != event.messageId }
+                }
+            }
+
+            is MediaViewerEvent.Seek -> {
+                playback.seek(event.fraction)
+            }
+
+            is MediaViewerEvent.SeekBy -> {
+                playback.seekBy(event.seconds)
+            }
+
+            MediaViewerEvent.CancelStream -> {
+                playback.cancelStream()
+            }
+
+            is MediaViewerEvent.SetMuted -> {
+                playback.setMuted(event.muted)
+            }
+
+            else -> {}
+        }
+    }
+
+    /** Delete asked for, its question answered, or dismissed. */
+    private fun onDeletionEvent(event: MediaViewerEvent) {
+        when (event) {
+            MediaViewerEvent.Delete -> {
+                deletion.request()
+            }
+
+            is MediaViewerEvent.DeleteConfirmed -> {
+                deletion.confirm(event.forEveryone)
+            }
+
+            MediaViewerEvent.DeleteDismissed -> {
+                deletion.dismiss()
+            }
+
+            else -> {}
+        }
+    }
+
+    /** Videos play at [speed] from now on, kept across process death; a speed the viewer does not offer is ignored. */
+    private fun setSpeed(speed: Float) {
+        if (speed !in PlaybackSpeeds) return
+        savedStateHandle[KEY_SPEED] = speed
+        playback.setSpeed(speed)
     }
 
     private fun retry() {
@@ -545,6 +642,7 @@ class MediaViewerViewModel internal constructor(
     private fun focus(
         viewer: Viewer,
         files: ImmutableMap<Int, FileState>,
+        heldLivePhoto: Long?,
     ) {
         val window = viewer.window
         val index = window?.indexOf(viewer.currentId) ?: -1
@@ -556,16 +654,25 @@ class MediaViewerViewModel internal constructor(
         }
         val message = window.messages[index]
         val media = message.content.toViewerMedia()
-        val target = media?.playTarget(message.id, files)
+        val target = media?.playTarget(message.id, files, livePhotoHeld = heldLivePhoto == message.id)
         downloads.focus(
             window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 },
             index,
             files,
             streamed = (target?.source as? PlaySource.Stream)?.fileId,
+            motion = (media as? ViewerMedia.Image)?.motion?.file?.id,
         )
+        startAtSendersTime(message)
         playback.show(target)
         sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
         deletion.focus(message.id)
+    }
+
+    /** A video the sender marked a start time in (td_api.tl `messageVideo.start_timestamp`) starts there, once. */
+    private fun startAtSendersTime(message: Message) {
+        val seconds = (message.content as? MessageContent.Video)?.startSeconds ?: return
+        if (seconds <= 0 || !startedAt.add(message.id)) return
+        playback.startAt(message.id, seconds * MILLIS_PER_SECOND)
     }
 
     /** The message of item [id]: its own, or for a rich message's media, that message. */
@@ -580,6 +687,9 @@ class MediaViewerViewModel internal constructor(
     internal companion object {
         /** The current item's message id, which survives process death. */
         const val KEY_CURRENT = "media.currentMessageId"
+
+        /** The speed videos play at, kept across process death while the viewer shows. */
+        const val KEY_SPEED = "media.speed"
 
         /** How close to either end of what is loaded the current item comes before the next page there loads. */
         const val PREFETCH_DISTANCE = 5
@@ -727,14 +837,25 @@ private fun SendChannel<MediaViewerEffect>.showError(error: DomainError) {
     if (error != DomainError.Silent) trySend(MediaViewerEffect.ShowError(error))
 }
 
+/** A live photo's motion once on the device, muted as a GIF plays. */
+private fun motionTarget(
+    messageId: Long,
+    motion: Video,
+    files: Map<Int, FileState>,
+): PlayTarget? {
+    val path = (files[motion.file.id] as? FileState.Downloaded)?.path ?: return null
+    return PlayTarget(messageId, PlaySource.File(path), VideoKind.Gif, motion.duration * MILLIS_PER_SECOND)
+}
+
 /**
  * What the player plays for this media: a video that supports it as it streams, whether on the device or not, so the
  * target stays the same as it downloads (`docs/adr/0028-streaming-media.md`); another video's or a GIF's file once it
- * is on the device; nothing for a photo.
+ * is on the device; a live photo's motion while it is held ([livePhotoHeld]); nothing for another photo.
  */
 private fun ViewerMedia.playTarget(
     messageId: Long,
     files: Map<Int, FileState>,
+    livePhotoHeld: Boolean,
 ): PlayTarget? {
     val downloaded = (files[fileId] as? FileState.Downloaded)?.path?.let(PlaySource::File)
     return when {
@@ -752,6 +873,10 @@ private fun ViewerMedia.playTarget(
 
         this is ViewerMedia.Gif -> {
             PlayTarget(messageId, downloaded, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
+        }
+
+        this is ViewerMedia.Image && motion != null && livePhotoHeld -> {
+            motionTarget(messageId, motion, files)
         }
 
         else -> {

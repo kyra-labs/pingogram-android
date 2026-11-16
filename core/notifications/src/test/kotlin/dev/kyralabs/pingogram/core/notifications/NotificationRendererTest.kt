@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.core.notifications
 
 import android.app.Notification
+import android.graphics.Typeface
+import android.text.Spanned
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.messageNotification
@@ -8,15 +11,19 @@ import dev.kyralabs.pingogram.core.testing.NotificationFixtures.notificationGrou
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.updateActiveNotifications
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.updateNotificationGroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.basicGroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.formattedText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messagePhoto
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.supergroup
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateBasicGroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateSupergroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -34,6 +41,7 @@ import org.robolectric.RobolectricTestRunner
 
 /** From TDLib's notification updates to the notifications Android shows ([NotificationRenderer]). */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationRendererTest {
     /** A logged-in account with Ada (user 42) and her private chat 100, and a channel, chat 300. */
     private suspend fun TestScope.started(
@@ -58,6 +66,29 @@ class NotificationRendererTest {
         checkNotNull(NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(this)).messages
 
     @Test
+    fun `a chat Focus holds back shows its new message silently`() =
+        runTest {
+            val harness = started()
+            harness.focus.heldBack = setOf(100)
+
+            harness.client.emit(
+                updateNotificationGroup(added = listOf(messageNotification(message = message(id = 10)))),
+            )
+            runCurrent()
+
+            val notification = checkNotNull(harness.posted(7))
+            assertEquals(Notification.GROUP_ALERT_SUMMARY, notification.groupAlertBehavior)
+            assertEquals(
+                "Hello",
+                notification
+                    .messages()
+                    .single()
+                    .text
+                    .toString(),
+            )
+        }
+
+    @Test
     fun `a new message shows as a conversation that alerts, with reply and mark as read`() =
         runTest {
             val harness = started()
@@ -71,7 +102,7 @@ class NotificationRendererTest {
             assertEquals(PingogramChannel.PrivateChats.id, notification.channelId)
             assertEquals(Notification.GROUP_ALERT_ALL, notification.groupAlertBehavior)
             val message = notification.messages().single()
-            assertEquals("Hello", message.text)
+            assertEquals("Hello", message.text.toString())
             assertEquals("Ada Lovelace", message.person?.name)
             assertEquals(
                 listOf(
@@ -108,6 +139,148 @@ class NotificationRendererTest {
             runCurrent()
 
             assertEquals(listOf("Photo", "New message"), harness.posted(7)!!.messages().map { it.text.toString() })
+        }
+
+    @Test
+    fun `a group shows each message on its own line with its sender, under the group's title`() =
+        runTest {
+            val harness = started()
+            harness.client.emit(updateUser(user(id = 43, firstName = "Grace", lastName = "Hopper")))
+            harness.client.emit(updateBasicGroup(basicGroup(id = 5)))
+            harness.client.emit(updateNewChat(chat(id = 200, type = TdApi.ChatTypeBasicGroup(5), title = "Team")))
+            runCurrent()
+
+            harness.client.emit(
+                updateNotificationGroup(
+                    groupId = 9,
+                    chatId = 200,
+                    added =
+                        listOf(
+                            messageNotification(
+                                id = 1,
+                                message = message(id = 10, chatId = 200, content = messageText("Hi")),
+                            ),
+                            messageNotification(
+                                id = 2,
+                                message =
+                                    message(
+                                        id = 11,
+                                        chatId = 200,
+                                        sender = TdApi.MessageSenderUser(43),
+                                        content = messageText("Line one\nLine two"),
+                                    ),
+                            ),
+                            messageNotification(
+                                id = 3,
+                                message = message(id = 12, chatId = 200, content = messageText("Bye")),
+                            ),
+                        ),
+                ),
+            )
+            runCurrent()
+
+            val notification = checkNotNull(harness.posted(9))
+            val style =
+                checkNotNull(NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification))
+            assertTrue(style.isGroupConversation)
+            assertEquals("Team", style.conversationTitle.toString())
+            assertEquals(
+                listOf("Ada" to "Hi", "Grace" to "Line one\nLine two", "Ada" to "Bye"),
+                style.messages.map {
+                    it.person
+                        ?.name
+                        .toString()
+                        .substringBefore(' ') to it.text.toString()
+                },
+            )
+        }
+
+    @Test
+    fun `a private chat's messages each keep their lines, not one paragraph`() =
+        runTest {
+            val harness = started()
+            val release = "Pingogram 2.2.0\nArchitecture: x86_64\n\nBuild: GMS\nSize: 58 MB"
+
+            harness.client.emit(
+                updateNotificationGroup(
+                    added =
+                        listOf(
+                            messageNotification(id = 1, message = message(id = 10, content = messageText("First"))),
+                            messageNotification(
+                                id = 2,
+                                message = message(id = 11, content = messagePhoto(caption = formattedText(release))),
+                            ),
+                        ),
+                ),
+            )
+            runCurrent()
+
+            val texts = harness.posted(7)!!.messages().map { it.text.toString() }
+            assertEquals(listOf("First", "Photo · \u2068$release\u2069"), texts)
+        }
+
+    @Test
+    fun `formatting shows in the notification and spoilers stay hidden`() =
+        runTest {
+            val harness = started()
+            val text =
+                TdApi.FormattedText(
+                    "Bold and secret",
+                    arrayOf(
+                        TdApi.TextEntity(0, 4, TdApi.TextEntityTypeBold()),
+                        TdApi.TextEntity(9, 6, TdApi.TextEntityTypeSpoiler()),
+                    ),
+                )
+
+            harness.client.emit(
+                updateNotificationGroup(
+                    added =
+                        listOf(
+                            messageNotification(
+                                message = message(id = 10, content = TdApi.MessageText(text, null, null)),
+                            ),
+                        ),
+                ),
+            )
+            runCurrent()
+
+            val shown =
+                harness
+                    .posted(7)!!
+                    .messages()
+                    .single()
+                    .text
+            assertEquals("Bold and Spoiler", shown.toString())
+            assertFalse("secret" in shown.toString())
+            val bold = (shown as Spanned).getSpans(0, shown.length, StyleSpan::class.java).single()
+            assertEquals(Typeface.BOLD, bold.style)
+            assertEquals(0 to 4, shown.getSpanStart(bold) to shown.getSpanEnd(bold))
+        }
+
+    @Test
+    fun `a very long text is cut with an ellipsis`() =
+        runTest {
+            val harness = started()
+
+            harness.client.emit(
+                updateNotificationGroup(
+                    added =
+                        listOf(
+                            messageNotification(message = message(id = 10, content = messageText("a".repeat(5_000)))),
+                        ),
+                ),
+            )
+            runCurrent()
+
+            val shown =
+                harness
+                    .posted(7)!!
+                    .messages()
+                    .single()
+                    .text
+                    .toString()
+            assertEquals(NOTIFICATION_TEXT_MAX_LENGTH + 1, shown.length)
+            assertTrue(shown.endsWith("…"))
         }
 
     @Test

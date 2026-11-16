@@ -10,8 +10,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineChatsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
-import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollAlert
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsBottomSheet
@@ -34,8 +34,6 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     sendAsSheet?.let { SendAsBottomSheet(it, viewModel::onEvent) }
     val secretChatSheet by viewModel.secretChatSheet.collectAsStateWithLifecycle()
     secretChatSheet?.let { SecretChatBottomSheet(it, viewModel::onEvent) }
-    val pinnedSheet by viewModel.pinnedSheet.collectAsStateWithLifecycle()
-    pinnedSheet?.let { PinnedMessagesSheet(it, viewModel::onEvent) }
     val botButtonDialog by viewModel.botButtonDialog.collectAsStateWithLifecycle()
     botButtonDialog?.let { BotButtonDialogHost(it, viewModel.botButtonPassword, viewModel::onEvent) }
     val switchInlineSheet by viewModel.switchInlineSheet.collectAsStateWithLifecycle()
@@ -54,8 +52,8 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
 }
 
 /**
- * The sheets of a message's actions: the chats to reply in, who voted in a poll, the question before a stop, and a
- * tapped date.
+ * The sheets of a message's actions: the chats to reply in, who voted in a poll, the question before a stop, a
+ * giveaway's details and a tapped date.
  */
 @Composable
 private fun MessageSheets(viewModel: ChatViewModel) {
@@ -65,6 +63,8 @@ private fun MessageSheets(viewModel: ChatViewModel) {
     pollVotersSheet?.let { PollVotersBottomSheet(it, viewModel::onEvent) }
     val stopPollDialog by viewModel.stopPollDialog.collectAsStateWithLifecycle()
     if (stopPollDialog != null) StopPollAlert(viewModel::onEvent)
+    val giveawayInfoSheet by viewModel.giveawayInfoSheet.collectAsStateWithLifecycle()
+    giveawayInfoSheet?.let { GiveawayInfoBottomSheet(it, viewModel::onEvent) }
     val dateTimeSheet by viewModel.dateTimeSheet.collectAsStateWithLifecycle()
     dateTimeSheet?.let { DateTimeBottomSheet(it, viewModel::onEvent) }
 }

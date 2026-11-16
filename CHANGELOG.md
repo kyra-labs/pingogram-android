@@ -10,51 +10,336 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
+- The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
+  pinned messages page shows a pinned video's or GIF's picture with its length.
+- Catch-up names each sender on a line of their own in their color, shows the chat you're on in its progress bar,
+  and offers "Reply in place" only where you can write.
+- Keyword alerts' words show how many unread messages they matched this week, and "Add" sits inside the field. With
+  no words yet, the page shows only the field and the suggestions. A keyword alert says its chat is muted.
+- A Conversation widget for the home screen, 4 × 2 or 2 × 2: one chat's newest messages and Reply. A widget you place
+  asks you to choose its chat in the app.
+- The Conversation widget's Reply opens a small sheet in the app to write and send a message to its chat, then goes
+  back to the home screen.
+- A live story in the stories viewer says "LIVE" after the poster's name, shows its segment in red, and names the
+  live stream with how many are watching, beside "Watch live" and a button to skip it.
+- Zoomed into a photo, the media viewer shows how far ("2.5×", fading after a moment), a mini-map of where you are in
+  the photo and "Double-tap to fit", in place of its toolbar.
+- A Quick compose widget for the home screen: "New" at 1 × 1, "Message" and "Voice" from 2 × 1. "Voice" asks which
+  chat to record in, then opens it already recording a voice message, locked, for you to send or delete.
+- The stories viewer has a share button beside the reaction: it sends someone else's story to the chats you pick, with
+  an optional comment, where Telegram lets it be sent on.
+- A video that plays as it loads says how much of it came ("Streaming · 33%", "18 MB of 54 MB · plays as it loads")
+  until its first frame shows; the cancel button in its ring stops it loading, and a tap on play starts it again.
+- The first time you hide the media viewer's controls with a tap, "Tap to show controls" says how to bring them back,
+  once on the phone.
+- Settings → Notifications → Keyword alerts, kept on this phone only: up to 20 words or phrases (whole words, any
+  letter case, with or without accents), where to look (all chats, some folders, or muted chats only), and whether
+  muted chats alert too. Its suggestions offer your first name and username. A message with one of your words in a
+  muted chat alerts in a "Keyword alerts" notification, the word in bold, with "Open" (at the message) and "Mark as
+  read"; matching runs on the phone while Pingogram is connected.
+- With "Show Keyword alerts in the chat list" on, the folder tabs end in "Keyword alerts" while chats had a match in
+  the last week: those chats, the newest match first, each with its word, opening at the match.
+- A chat opened from a keyword alert shows "Keyword: launch · 1 of 4" at the top, whose arrows step through the chat's
+  matches of the last week; the message shown is outlined, its word highlighted.
+- With TalkBack on, the media viewer's controls always show and taps at its edges no longer turn pages: the pages
+  turn through their actions.
+- An "Unread counter" home screen widget: how many messages wait, your mentions and the first unread chats, or "All
+  read"; a tap opens your chats.
+- The media viewer's video controls: play or pause in the middle between "Back 10 seconds" and "Forward 10 seconds",
+  and a mute button beside the seek bar, which screen readers move 10 s at a time and hear as "0:48 of 2:31".
+- Holding a story now hides its bar and caption and shows a pause badge with "Release to continue"; with TalkBack on,
+  stories no longer move on by themselves.
+- A story still downloading says "Loading story…" under its loading indicator; its reply field works meanwhile.
+- Catch-up can answer a chat in place: "Reply in place" replies to the message that mentions you (or the newest), then
+  marks the chat as read and moves to the next one.
+- Focus profiles, kept on this phone: while one is on, only the chats it allows make a sound or buzz; the others'
+  notifications still show, silently. Calls ring only where the profile allows calls from contacts and the caller is
+  one; the others show "Incoming call · Focus is on" without ringing. Settings → On this phone → Focus lists them, turns
+  one on or off by hand, and starts new ones from Work hours, Sleep, Weekend or scratch: a name, an icon, the folders
+  and chats it lets through, a schedule of days and times (one across midnight is one range) or by hand, and whether
+  calls from contacts ring. While one is on, the Chats header shows it ("Focus: Work hours · until 6:00 PM"); a tap
+  opens a switcher to change the profile, turn Focus off, or keep it on until the schedule ends, for an hour or until
+  turned off. The page's "Show Focus in the chat list header" hides it. A Focus tile in Quick Settings turns the last
+  used profile on or off, its long press opens the switcher.
+- A "New message" tile in Quick Settings opens New chat.
+- On tablets, foldables and in split screen, files dragged from another app can be dropped onto a chat: they open
+  in the attach preview, ready for a caption.
+- Long-press a photo, video or file in a chat and keep moving to drag it into another app. Never from secret chats or
+  chats that protect their content.
+- The same works in the media viewer: long-press the photo, video or GIF and keep moving to drag it into another app.
+- Bookmarks, kept on this phone only: "Bookmark" in a message's actions saves it with tags of your own (or none) and
+  a note. The Bookmarks page lists them, the newest first, filtered by a tag; open it from Settings › On this phone, or
+  from Saved Messages once you have a bookmark. Its "Edit tags" renames, recolors, reorders and deletes your tags, and
+  its search finds bookmarks by their chat, text, note or tags. Long-press a bookmark to change its tags or note.
+- "Remind me" in a message's actions sets a reminder on it: in an hour, this evening, tomorrow morning, next week
+  ("Next week · Mon, 9:00 AM": the first day of next week as your language counts it) or at a time you pick, with a
+  note. It stays on this phone, never sent to Telegram, and rings in a "Reminders"
+  notification channel of its own, even in a muted chat; its "Open" opens the chat at the message, and "Snooze 1 h"
+  moves it an hour on.
+- Settings → On this phone → Reminders lists your reminders, upcoming and done, by time or by chat: swipe one to mark
+  it done or delete it, with "Undo".
+- A message with a reminder shows when it rings next to its time; tap it to change or delete the reminder.
+- A reminder on the Reminders page opens its chat at the message it was set on.
+- The sign-in screens' offline banner shows the "Wi-Fi off" symbol, and a deleted account's avatar a crossed-out
+  person, both Material Symbols.
+- Voice and round video messages can be transcribed on the phone, with Android's own speech recognition (Android 13 and
+  later): a button beside the message shows its text, long ones with "Show more". Nothing is sent anywhere; where the
+  message's language is not on the phone, a link opens Android's language settings.
+- Settings → Appearance → Chats → "Voice message transcription": transcribe other people's voice and round video
+  messages automatically as they show, and see which speech languages Android has ready on the phone.
+- Catch-up: from five unread chats, a chip under the chat list's title opens them one card at a time, those that
+  mention you first, then the most recent. Each card shows the newest unread messages, with "Mark as read", "Open chat"
+  and "Skip"; then "All caught up" says what you read and skipped, and offers the skipped chats again. Muted chats and
+  channels are left out unless you include them in its settings. Nothing is marked as read unless you mark it or open
+  the chat.
+- Catch-up's cards swipe: right marks the chat as read, left skips it (the other way round in right-to-left
+  languages).
 
+### Changed
+- Forum topics' six colors are drawn in six of the theme's sender hues (blue, gold, green, violet, pink, red), so
+  they all look different in light, dark, AMOLED and high contrast, in the topic list, the topic editor and the chat
+  list's forum rows.
+- A group message shouts, large and without a bubble, only when its one word has at least three capital letters:
+  "OK" and "NO" keep their bubble.
+- Keyword alerts show Material's price tag symbol in the chat list's tab and chips and in the match bar, and screen
+  readers hear "Match 2 of 4" each time the match bar steps to another match.
+- Message summaries show Material Symbols' summarize symbol, in the message's actions and beside "Summary by
+  Telegram", and a poll's "Retract vote" the undo symbol.
+- "Edit with AI" shows Material Symbols' sparkles (auto_awesome) in the composer's menu and on the badge of its first-use
+  and shared style sheets, in place of the edit symbol.
+- The archive row's long press offers only "Hide from chat list", as the row is always compact; "Make compact" and
+  "Show chat names" are gone from its menu and from screen readers' actions.
+- Message reminders follow the owner's board 29 more closely: each choice of the reminder sheet has its own symbol, its
+  buttons stack at large font scales, and it names the sender in groups only. A reminder's notification shows the chat's
+  avatar and the sender in groups. "Remind me" is a screen reader action on every message, and the Reminders page
+  announces when it becomes empty. A locked chat's reminders stay off the page while the chat is hidden, and ring
+  without naming the chat or showing the message.
+- The login code step follows the owner's board 23: the countdown names how the next code comes ("Resend code by SMS in
+  0:42") and screen readers hear it only as it ends, Next waits until the code is complete, the code field is disabled
+  during a flood wait, whose countdown is announced once a minute, and a phone number that looks too short shows the
+  error symbol before its warning.
+- Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
+  have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
+  everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
+  stack one under the other.
+- Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
+  for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
+  its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
+- Home screen widgets ask the launcher which of them are placed, and load their chats, 5 seconds after Pingogram
+  starts rather than while it starts, unless a widget asks first; the chat list no longer waits for keyword alerts
+  before showing its first chats.
+- In a call, Hold and "Add people" moved into a More button: the panel is Mute, the audio route, Camera, More and End.
+- The Welcome screen has a new look: Pingogram's logo in the theme's colors among chat avatars, the wordmark, "Your
+  Telegram account, in Material 3 Expressive." and a note that Pingogram is an unofficial client. On Android 13 and
+  later, a language button at the top opens Android's list of the app's languages.
+- The media viewer: its top start button reads "Close" with the close symbol; a long caption ends in "Show more"
+  (and "Show less"); taps turn pages within 96 dp of either side, at most a third of the width; at large font the
+  video's times go under the seek bar; screen readers can save, share and delete from the photo itself, and its page
+  actions read "Previous" and "Next".
+- Signing up has no terms checkbox any more: the screen says that signing up accepts Telegram's Terms of Service, with
+  a link to them. Only where Telegram asks for its terms to be accepted does a dialog show them, with Accept and
+  Decline; Decline goes back to the phone number.
+- A bot's profile has Message, Mute and Share, which shares the bot's link.
+- The media viewer's toolbar is Forward, Share, Save and More: Delete moved into More, in red in a group of its own.
+  The top bar's "3 of 128" is a chip.
+- At large font sizes the chat list's Focus pill wraps onto two lines instead of cutting its text, and the New
+  message tile in Quick Settings says "Pingogram" under its name.
+- Your own story has a ⋮ menu in the stories viewer with Delete, which asks first, then moves on to your next story.
+- Videos in the media viewer play at 0.5×, 1.25×, 1.5× or 2×, chosen from More; a chip among the controls shows the
+  speed while it is not 1×.
+- Logging in with a QR code shows the code in a frame of the theme's main color, with Pingogram's logo on the frame's
+  edge, outside the code, so every scanner reads it.
+- Settings → Focus: "ON NOW" is a pill beside the profile's name, screen readers hear each profile as one card
+  with its switch as an action, the templates show their symbols on their shapes, and the Weekend template turns on
+  by hand. In the editor every icon sits on its own shape, the days fit one row, and From and To are tiles side by
+  side.
+- A live photo in the media viewer shows "LIVE" and plays its motion while it is pressed and held, instead of looping
+  by itself.
+- Your own story shows how many saw it and reacted, in a pill that opens the list of viewers: search, and filters for
+  reactions and contacts.
+- Tapping "Forwarded from …" opens where a message comes from: the sender's profile, or the chat at the original
+  post. For someone who hides their account, a message says so.
+- Widgets: a new Conversation widget asks you to sign in or unlock first where it needs to, before "Choose a chat";
+  a forum's avatar is a rounded square there; the unread counter stacks its avatars and keeps only the number at the
+  largest font size; buttons and the reply field follow the launcher's inner corners on Android 12 and later.
+- Signing in, a phone number shorter than its country's numbers gets a note under the field the first time you tap
+  Next ("Too short for India numbers, which have 10 digits"). Tapping Next again sends it anyway; numbers Pingogram
+  can't be sure about, such as anonymous +888 ones, are never held back.
+- The app opens a little faster: the navigation bar's tab names are measured while it starts, not in its first frame.
+- Signing in, countdowns show as a clock ("Try again in 4:59", "a new code in 0:42"), and waiting after too many
+  attempts is a warning rather than an error. The code step has "Didn't get the code?", which names the number and
+  offers the other way to get a code, with "Wrong number?" moved up beside where the code went.
+- Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
+  headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
+  timer every second, and the rating's stars as "Rating, 4 of 5".
+- A deleted account's profile has one action, "Delete chat", which asks first and then deletes the chat for you, and
+  says what is kept: you can still read your messages with them, but they can't receive new ones.
+- The stories viewer dims the story while its reactions show, keeps the segments (dimmed) while a story is held,
+  titles your own story "Your story", and tells screen readers what kind of story it is, who posted it and how long
+  ago, with "React" as an action; a story that can't be shown says the viewer moves on.
+- A forum's row in the chat list counts its topics with unread messages instead of the messages, and a community's
+  entry counts its chats with unread messages, in a speech-bubble badge.
+- A profile's actions are Message, Mute and Call; "Secret chat" moved into the ⋮ menu at the top. Once the profile
+  scrolls, the top bar keeps a Call button where the person can be called.
+- Watching a live story no longer asks for the microphone: you join muted and can't speak in it, so Pingogram never
+  opens the microphone there. Voice chats and group calls still ask as before.
+- A forum's row in the chat list names its newest topics above its last message, as Telegram does: the newest topic on a
+  tab joined to the message, the others after it, those with unread messages in bold.
+- A channel's or group's info page shows its header in the profile color the channel or group chose, as profiles do.
+- "All pinned messages" opens a page of its own: the pins newest first under their months, with their whole text,
+  photos, files and links, filters by kind with their counts, search, and "Jump to message", Copy and Unpin on each
+  (Unpin all from its menu).
+- The profile of someone not in your contacts who wrote first shows a card with how many groups you share and Block,
+  Report and Add contact. A phone number hidden by someone's privacy settings now says so instead of disappearing.
+- Libraries updated: Material 3 to the release candidate `1.5.0-rc01` (allowed by CLAUDE.md rule 7: no stable release
+  has the Expressive components yet), AndroidX Core Telecom 1.1.0 and Roborazzi 1.78.0.
+- The Android Gradle Plugin updated to 9.5.1. Its lint cannot load the checks Lifecycle 2.11.0 bundles and skips them,
+  so that warning (`ObsoleteLintCustomCheck`) is turned off until a stable Lifecycle ships checks it loads.
+- A profile's block row names the person: "Block Aisha" and "Unblock Aisha". A bot's still says "Stop and block bot".
+
+### Fixed
+- The attach preview scrolls its photos above the caption at large font sizes, so Send stays in view.
+- When a photo or video takes more than half a second to load into the media viewer, it fades in with the viewer
+  instead of jumping into the middle of its grow-from-the-message animation; closing still shrinks it back.
+- Notifications show a message as it was written: its lines stay apart instead of running into one paragraph, bold,
+  italic and code keep their look, a long message shows more than one line, and spoilers stay hidden.
+- A photo, video or GIF going back into its message no longer draws over the top bar, the pinned message or the
+  composer, and the conversation takes taps as soon as the media viewer starts closing instead of up to a second
+  later.
+- Tall bottom sheets (Send to, Forward, the attach menu and the others) stop below the status bar again instead of
+  rising behind it.
+- In a forum, a topic's top bar shows only who is typing in that topic, no longer someone typing in another topic.
+- A forum's topic list shows a hidden General topic, closed, as Telegram does; keeps the pinned topics in the forum's
+  order; shows a muted topic's counts in the muted colors; and shows a topic's own custom emoji icon.
+- The microphone turns into send without a hitch when typing starts, and the text field keeps its width meanwhile.
+
+## [2.2.0] - 2026-11-15
+
+A floating folder bar, the tabs' names back in the navigation bar, and a fix for the camera.
+
+### Changed
+- The chat folders sit in a floating bar at the top of the chat list, which stays in place as you scroll.
+- The navigation bar shows the tabs' names again, and New chat is round.
+
+### Fixed
+- Opening the camera from a chat or a new story no longer crashes without the camera permission; Pingogram asks for it
+  first.
+
+## [2.1.0] - 2026-11-13
+
+Post stories, communities, a channel's direct messages and suggested posts, richer polls, passkeys, and smoother motion
+across the app.
+
+### Added
+- Log in with Telegram: a website or app that asks to log in with your account opens a sheet that says who asks, from
+  where and what it gets, asks for the code the website shows where Telegram wants it, and shares your phone number only
+  if you turn it on. Nothing is sent before "Allow"; the website is then listed in Privacy and security → Websites.
+- Birthday suggestions in chats: a card shows the birthday a contact suggested, with "Accept" to put it on your profile
+  and "Decline".
+- GIFs from the panel take the text you typed as their caption, below or above the GIF.
+- Voice messages can be trimmed before sending: pause the recording and drag its ends.
+- A frozen account says so at the top of Settings, with when Telegram deletes it and a button to appeal.
+- A chat someone new started opens with a card to block them, report the chat or add them to your contacts, with what
+  Telegram tells of their account (when they joined, their number's country, recent name and photo changes).
+- A private chat with "Disable sharing" on says on the profile that its messages can't be forwarded, copied or saved.
+- Leaving a group or channel you own: choose which administrator owns it next, with your 2-step verification password,
+  or let Telegram choose, whose choice is named.
+- Search posts in public channels: global search's Posts chip searches them with Telegram's free daily searches, saying
+  how many are left and, once they are used, when the next one comes.
+- Live photos: photos taken as iOS Live Photos or Android Motion Photos say "LIVE" in the chat and play their motion in
+  the media viewer. Videos sent with a start time open there.
+- Message links with a time (`t.me/channel/7?t=83`) open the chat at the video and play it from that time.
+- A channel's direct messages, for its administrators: who wrote, with search, All / Unread / Paid filters and unread
+  counts; a long press marks a conversation read or unread, and a tap opens it.
+- Suggested posts in a channel's direct messages: subscribers suggest a post from the send button's menu, and the
+  channel's administrators approve or decline it, with an optional comment, from a card below it. Offers of Telegram
+  Stars or Toncoin are shown, never paid or taken.
+- Communities in the chat list: a community set to show as one entry gathers its chats in one row of the main list, with
+  their unread messages, which expands to show them; its menu shows the chats separately again.
+- Forums set to show their topics as tabs open with the tabs above the messages, instead of the topic list.
+- Removing reactions: in a group, administrators remove someone's reaction to a message, or all their recent reactions,
+  from the message's Reactions sheet.
+- The welcome messages of a group show to new members at the top of the chat, until "Got it" folds them into a bar.
+- Saved Messages tags: your tags show as chips under the tabs. A tag filters your saved messages, and you can rename its
+  label.
+- Scheduling a message from the send button can repeat it daily, weekly, every 2 weeks, monthly, every 3 or 6 months or
+  yearly, for Telegram Premium subscribers.
+- Edit with AI: once a message runs past three lines, the field's menu offers Telegram's AI to fix it, rewrite it in a
+  style or translate it. The text goes to Telegram's AI only when you tap Fix, Rewrite or Translate; "Use" puts the
+  result in the field, with "Undo". Shared style links open a sheet to add the style.
+- A poll's message actions offer "Statistics" to the chat's administrators where Telegram gives them (once 100 people
+  voted).
+- A channel's new poll can be limited to its subscribers or to people in some countries ("Who can vote").
+- "Summarize" on long channel posts: Telegram's summary shows in the post's bubble, labelled "Summary by Telegram", with
+  "Show full text" to go back (in the reader's language where they don't read the post's).
+- "Message channel" in channels that take direct messages: it opens your private thread with the channel's admins. Where
+  messages cost Telegram Stars, the button shows the price and says Pingogram can't pay yet.
 - Your color: Edit profile → Your color picks the color of your name, with a preview; Telegram Premium colors show as
   information. Profiles show a user's emoji status after their name and their profile color in the header.
-- New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from your photos
-  with an emoji each, moved and removed, then published to share.
-- Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after joining,
-  a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a preview; the rights page
-  gains "Manage welcome messages".
+- New sticker set: Settings → Stickers makes a set of your own: a name and a link checked as you type, stickers from
+  your photos with an emoji each, moved and removed, then published to share.
+- Welcome messages: a supergroup's owner and administrators with the right write what each new member sees once after
+  joining, a text or a photo with a caption, from the group's info page (Administration → Welcome message), with a
+  preview; the rights page gains "Manage welcome messages".
 - Communities: a group's or channel's info page names the community it belongs to, which opens the community's page with
   its chats; join them from there. Owners rename and delete the community; hidden chats show to its administrators.
-- Group members show their tags after their names, administrators' in the accent color. Administrators who may edit
-  tags set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set
-  their own where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given
-  and taken away.
-- Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator
-  allows it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
+  Members add their groups and channels ("Suggest a chat" where admins decide), mute the community and show it as one
+  entry in the chat list; admins answer the requests to add a chat and remove chats.
+- Group members show their tags after their names, administrators' in the accent color. Administrators who may edit tags
+  set, change and remove them from a member's menu ("Set tag"), with a preview of how they show; members set their own
+  where the group lets them ("Set their own tag" in the group's permissions). Recent actions show tags given and taken
+  away.
+- Checklists: a message's checklist shows its tasks; tick them off, untick them and add tasks where its creator allows
+  it, and see who ticked each. Telegram Premium subscribers create one from the attach menu.
 - Post stories: tap "Your story" above the chats, pick up to 10 photos and videos with Android's photo picker or the
   camera, reorder them, write a caption with bold, italic, links and spoilers, and choose who sees them: everyone, your
-  contacts, your close friends or the contacts you pick. Videos longer than a minute are cut into several stories on
-  the phone. While they post, "Your story" shows how far it is; tap it to see the progress or stop posting.
-  They go on posting with Pingogram in the background, under the "Transfers" notification.
-- Live stories: a live story in the stories viewer offers "Watch live", which opens the stream full screen with
-  its comments below.
-- Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day
-  and tap a story to play the album from there.
-- Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open
-  folder keeps its name, and unread counts stay on the icons).
+  contacts, your close friends or the contacts you pick. Videos longer than a minute are cut into several stories on the
+  phone. While they post, "Your story" shows how far it is; tap it to see the progress or stop posting. They go on
+  posting with Pingogram in the background, under the "Transfers" notification.
+- Live stories: a live story in the stories viewer offers "Watch live", which opens the stream full screen with its
+  comments below.
+- Story albums: a profile shows the person's story albums above its shared media; open one to see its stories by day and
+  tap a story to play the album from there.
+- Profile music: a profile with songs shows a player below its header, which plays them one after another while the
+  profile is open; tap the cover for the playlist. On your own profile, add songs from your phone, move them and remove
+  them.
+- Make a sticker: a photo's "More" menu in the media viewer makes it a sticker: crop it to a square, add text and emoji,
+  keep or drop the white outline, then add it to one of your sticker sets with an emoji, or start a new set with it.
+- Appearance → Chat list → "Folder tabs" shows each folder's icon before its name, or the icons alone (the open folder
+  keeps its name, and unread counts stay on the icons).
 - Settings → Stickers (and Emoji) has a search field: your own sets that match first, then Telegram's sets with "Add".
-- An emoji typed alone suggests its stickers above the message field: from your sets (the default), from every set,
-  or none (Settings → Stickers → "Suggest stickers by emoji").
+- An emoji typed alone suggests its stickers above the message field: from your sets (the default), from every set, or
+  none (Settings → Stickers → "Suggest stickers by emoji").
 - Settings → Stickers → "Loop animated stickers": turned off, an animated sticker plays once, then stops.
-- Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite
-  people to it.
+- Recent calls has "Start a call": pick a contact for a voice or video call, or start a new group call and invite people
+  to it.
 - Dates in messages show in your own time zone and date format; tap one to add it to your calendar or copy it.
 - Voice chats and group calls have comments: show them with "Comments" in the header, write one, send a quick reaction
-  that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from
-  the call.
-- Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on
-  all your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
-- A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you
-  know it), and Telegram asks them whether to keep it.
+  that floats up, and, as an admin, delete comments or turn them off. Conference calls share their invite link from the
+  call.
+- Contact notes: a contact's profile ends its Info group with a note only you see, which stays with your contacts on all
+  your devices; tap it to write or change it (up to 140 characters). Edit contact has the same field.
+- Paid posts: a post whose photos and videos unlock for Telegram Stars shows its blurred previews, its price and how
+  many photos and videos it holds, with a note that Pingogram can't pay yet; a post you paid for shows its album and
+  opens in the media viewer.
+- Giveaways: a channel's giveaway shows its prize, the participating channels (tap one to open it), when the winners are
+  picked and who takes part; the winners message shows who won (tap to open a profile); "Learn more" tells whether you
+  take part or won.
+- A message this version of Pingogram can't show says so and offers "Update Pingogram", a link to the latest release
+  (left out when an app store installed Pingogram).
+- A contact without a birthday on their profile offers "Suggest a birthday": pick the day (and the year, if you know
+  it), and Telegram asks them whether to keep it.
 - Settings → Privacy and security → Passkeys lists the passkeys that sign in to your account, removes them, and on
   Android 14 and later adds one through Android's passkey sheet, kept by your password manager.
-- On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you
-  are signed in without a code (or asked for your 2-step verification password).
+- On Android 14 and later, the phone number step offers "Sign in with a passkey": pick a passkey you added, and you are
+  signed in without a code (or asked for your 2-step verification password).
+- Polls: a poll shows its photo or video (tap to open it), its description, links in its answers, how long it stays open
+  ("Ends in 2 h"), whether its results are hidden until the end, and the winning answer once closed. Quizzes may have
+  several correct answers ("You got 1 of 2"). Where the poll allows it, "Add option" adds your own answer.
+- New poll: add a photo and a description, up to 12 options with links, drag options into order, several correct answers
+  in a quiz with an explanation, and settings to hide results, shuffle options, forbid changing votes, let members add
+  options and close the poll after an hour, a day or at a chosen time.
 
 ### Changed
 - About leaves out "Check for updates" when Pingogram came from Google Play, Huawei AppGallery or Galaxy Store, which
@@ -62,6 +347,23 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - TDLib 1.8.70 (`23383ae`), up from 1.8.68: what Telegram added since, among it the functions to add chats to a
   community and to list the communities you joined. Nothing changes on screen yet. Its larger library raises the APK
   size budgets to 51 MB (arm64-v8a) and 125 MB (universal).
+
+### Fixed
+- The chat list shows your chats sooner as the app starts; a community's chats gather into its entry once read.
+- The stories viewer no longer plays on, and closes by itself, while you hold the back gesture.
+- Motion across the app follows Material 3 Expressive's springs: smoother lists and reordering (folders, sticker sets,
+  pinned topics, a story's photos, stickers in a new set), tab changes and folder swipes, the chat list's header and
+  search, the composer (the emoji panel, switching between typing and recording, selecting messages, reactions), the
+  media viewer, stories, calls and voice chats, settings pages, profiles, the passcode screen and the third pane on
+  large screens. New chat, search and profiles grow open more gently.
+- The back gesture previews what it returns to: full-screen pages, the step before in settings flows, Add contact and
+  New story, the chat list behind docked search, and all of Saved Messages behind a tag.
+- Buttons, settings rows, group settings and Add contact no longer move while Telegram answers.
+- A second back swipe during sign-in no longer flickers.
+- Swiping up on a video that has not started no longer gets stuck.
+- Reactions in voice chats no longer replay.
+- The answer slider of an incoming call responds to quick slides and flicks.
+- Pulling to the next channel responds at once after a release.
 
 ## [2.0.0] - 2026-11-08
 
@@ -1196,7 +1498,9 @@ Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts 
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...v2.0.0
 [1.1.3]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.1...v1.1.2

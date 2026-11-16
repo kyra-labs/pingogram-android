@@ -33,7 +33,8 @@ import javax.inject.Inject
  * [io]), as the composer prepares picked files, and the same copies go to every chat. The first chat's upload must not
  * delete them while the next chats are still to send them, so [cleaner] holds them until every chat was sent to; then
  * they go once their last message uploaded them. A text goes as `inputMessageText` with TDLib's default link preview, a
- * comment before it as a message of its own; files with [sendAttachments], the text as their caption.
+ * comment before it as a message of its own; files with [sendAttachments], the text as their caption; a story as
+ * `inputMessageStory`.
  */
 @AccountScoped
 // The client, the files, the content and media seams tests replace, the cleaner, the link previews and the dispatcher.
@@ -75,7 +76,7 @@ class TdlibShareRepository internal constructor(
         val chats = chatIds.distinct()
         if (chats.isEmpty() || (content.isEmpty && comment.text.isBlank())) return ShareResult(sent = 0, failed = 0)
         return when (val prepared = prepare(content)) {
-            is Outcome.Success -> sendHolding(chats, content.text, prepared.value, comment)
+            is Outcome.Success -> sendHolding(chats, content, prepared.value, comment)
             is Outcome.Failure -> ShareResult(sent = 0, failed = chats.size, error = prepared.error)
         }
     }
@@ -83,14 +84,14 @@ class TdlibShareRepository internal constructor(
     /** [sendToEach], holding the copies of [attachments] from [cleaner] meanwhile. */
     private suspend fun sendHolding(
         chats: List<Long>,
-        text: FormattedText,
+        content: SharedContent,
         attachments: List<Attachment>,
         comment: FormattedText,
     ): ShareResult {
         val paths = attachments.flatMap { it.localPaths() }
         cleaner.hold(paths)
         try {
-            return sendToEach(chats, text, attachments, comment)
+            return sendToEach(chats, content, attachments, comment)
         } finally {
             cleaner.release(paths)
         }
@@ -99,14 +100,14 @@ class TdlibShareRepository internal constructor(
     /** Sends to each of [chats] in turn, until a `FLOOD_WAIT`, which the chats left would wait for the same way. */
     private suspend fun sendToEach(
         chats: List<Long>,
-        text: FormattedText,
+        content: SharedContent,
         attachments: List<Attachment>,
         comment: FormattedText,
     ): ShareResult {
         var sent = 0
         var error: DomainError? = null
         for (chatId in chats) {
-            val failure = sendTo(chatId, text, attachments, comment)
+            val failure = sendTo(chatId, content, attachments, comment)
             if (failure == null) sent++ else error = error ?: failure.error
             if (failure?.error is DomainError.FloodWait) break
         }
@@ -140,10 +141,12 @@ class TdlibShareRepository internal constructor(
         if (attachments.isNotEmpty()) withContext(io) { files.delete(attachments) }
     }
 
-    /** Sends the comment, then the text or the files, to [chatId]; the first refusal, or null once all went. */
+    /**
+     * Sends the comment, then the story, the text or the files, to [chatId]; the first refusal, or null once all went.
+     */
     private suspend fun sendTo(
         chatId: Long,
-        text: FormattedText,
+        content: SharedContent,
         attachments: List<Attachment>,
         comment: FormattedText,
     ): Outcome.Failure? {
@@ -157,7 +160,14 @@ class TdlibShareRepository internal constructor(
                 ) as? Outcome.Failure
             )?.let { return it }
         }
+        val text = content.text
+        val story = content.story
         return when {
+            story != null -> {
+                val input = TdApi.InputMessageStory(story.posterChatId, story.storyId)
+                client.sendMessage(chatId, input, SendOptions(), replyTo = null) as? Outcome.Failure
+            }
+
             attachments.isNotEmpty() -> {
                 client.sendAttachments(chatId, attachments, text, SendOptions(), replyTo = null).failure
             }

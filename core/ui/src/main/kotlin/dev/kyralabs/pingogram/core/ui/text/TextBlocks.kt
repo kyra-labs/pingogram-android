@@ -42,6 +42,12 @@ object TextBlock {
      * it covers, behind text in the block's content color.
      */
     const val MENTION = "mention"
+
+    /**
+     * A word of the user's keyword alerts in the message an alert opened (board 30, `docs/DESIGN_SYSTEM.md` §13.13): a
+     * rounded block per line it covers, behind text in the block's content color.
+     */
+    const val KEYWORD = "keyword"
 }
 
 /**
@@ -60,7 +66,8 @@ class TextBlocksLayout {
  * §4), from its [layout]: inline code on [codeColor] in [shape], a rounded background per line it covers; a code block
  * on [codeColor], one shape around all of its lines; hidden spoilers as [spoilerColor] shapes per line; and a search's
  * matches ([TextBlock.MATCH]) as [matchColor] shapes per line, none without one, and mentions of the user
- * ([TextBlock.MENTION]) as [mentionColor] shapes per line, none without one. Each block reaches [horizontalPadding]
+ * ([TextBlock.MENTION]) as [mentionColor] shapes per line, none without one, and keyword alert words
+ * ([TextBlock.KEYWORD]) as [keywordColor] shapes per line, none without one. Each block reaches [horizontalPadding]
  * past its text at both ends, so the glyphs do not touch its round corners.
  *
  * The shapes are computed once per layout, and drawn in the draw phase; text without blocks draws nothing.
@@ -73,6 +80,7 @@ fun Modifier.textBlocks(
     horizontalPadding: Dp,
     matchColor: Color = Color.Unspecified,
     mentionColor: Color = Color.Unspecified,
+    keywordColor: Color = Color.Unspecified,
 ): Modifier =
     drawWithCache {
         val blocks = layout.result?.blocks(horizontalPadding.toPx()).orEmpty()
@@ -84,6 +92,7 @@ fun Modifier.textBlocks(
                         TextBlock.SPOILER -> spoilerColor
                         TextBlock.MATCH -> matchColor
                         TextBlock.MENTION -> mentionColor
+                        TextBlock.KEYWORD -> keywordColor
                         else -> codeColor
                     }
                 if (color.isSpecified) {
@@ -129,6 +138,22 @@ fun AnnotatedString.withMatches(
 fun AnnotatedString.withMentionChips(
     ranges: List<IntRange>,
     contentColor: Color,
+): AnnotatedString = withChips(ranges, TextBlock.MENTION, contentColor)
+
+/**
+ * This text with [ranges], the words of the user's keyword alerts (board 30, `docs/DESIGN_SYSTEM.md` §13.13), as
+ * [TextBlock.KEYWORD] blocks for [textBlocks] to draw, their text in [contentColor] and the style's heaviest weight; a
+ * range within a hidden spoiler stays hidden, and one past the text is left out.
+ */
+fun AnnotatedString.withKeywordMatches(
+    ranges: List<IntRange>,
+    contentColor: Color,
+): AnnotatedString = withChips(ranges, TextBlock.KEYWORD, contentColor)
+
+private fun AnnotatedString.withChips(
+    ranges: List<IntRange>,
+    kind: String,
+    contentColor: Color,
 ): AnnotatedString {
     val spoilers =
         getStringAnnotations(TEXT_BLOCK_TAG, 0, length).filter { it.item == TextBlock.SPOILER }.map {
@@ -144,7 +169,7 @@ fun AnnotatedString.withMentionChips(
     if (chips.isEmpty()) return this
     return AnnotatedString.Builder(this).run {
         chips.forEach { range ->
-            addStringAnnotation(TEXT_BLOCK_TAG, TextBlock.MENTION, range.first, range.last + 1)
+            addStringAnnotation(TEXT_BLOCK_TAG, kind, range.first, range.last + 1)
             addStyle(SpanStyle(color = contentColor, fontWeight = FontWeight.Bold), range.first, range.last + 1)
         }
         toAnnotatedString()

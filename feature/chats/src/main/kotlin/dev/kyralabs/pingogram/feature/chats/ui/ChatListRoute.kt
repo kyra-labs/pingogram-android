@@ -23,6 +23,12 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
+import dev.kyralabs.pingogram.feature.chats.ui.focus.ChatListFocus
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchEffects
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchEvent
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitcherHost
+import dev.kyralabs.pingogram.feature.chats.ui.focus.LocalChatListFocus
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsUiState
@@ -43,7 +49,8 @@ import kotlinx.coroutines.launch
  * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
- * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary].
+ * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary]. A row
+ * of the "Keyword alerts" tab opens its chat at its match through [onOpenMessage], or as any row without it.
  */
 @Composable
 internal fun ChatListRoute(
@@ -56,9 +63,11 @@ internal fun ChatListRoute(
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
+    focusSwitch: FocusSwitchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Read by the header alone: a count changing recomposes nothing else.
@@ -91,18 +100,35 @@ internal fun ChatListRoute(
             onClose = { uploadShown = false },
         )
     }
-    ChatListDestination(
-        state = state,
-        viewModel = viewModel,
-        navigation = ChatListNavigation(onOpenArchive, onOpenChat, onOpenNewChat, onBack = {}),
-        modifier = modifier,
-        openChatId = openChatId,
-        header = { NotificationPromptHost() },
-        stories = stories.takeIf { hasStories },
-        onEditFolder = onEditFolder,
-        summary = { summary.value },
-        headerActions = headerActions,
-    )
+    // Read by the header's pill and the switcher alone.
+    val focusState = focusSwitch.uiState.collectAsStateWithLifecycle()
+    val focus =
+        remember(focusSwitch, focusState) {
+            ChatListFocus(pill = { focusState.value.pill }, onOpen = { focusSwitch.onEvent(FocusSwitchEvent.Open) })
+        }
+    FocusSwitcherHost(focusState, focusSwitch::onEvent, onManage = { headerActions?.openFocus?.invoke() })
+    CompositionLocalProvider(LocalChatListFocus provides focus) {
+        ChatListDestination(
+            state = state,
+            viewModel = viewModel,
+            navigation =
+                ChatListNavigation(
+                    onOpenArchive = onOpenArchive,
+                    onOpenChat = onOpenChat,
+                    onOpenNewChat = onOpenNewChat,
+                    onBack = {},
+                    onOpenMessage = onOpenMessage ?: { chatId, _ -> onOpenChat(chatId) },
+                ),
+            modifier = modifier,
+            openChatId = openChatId,
+            header = { NotificationPromptHost() },
+            stories = stories.takeIf { hasStories },
+            onEditFolder = onEditFolder,
+            summary = { summary.value },
+            headerActions = headerActions,
+            moreEffects = { snackbarHostState -> FocusSwitchEffects(focusSwitch.effects, snackbarHostState) },
+        )
+    }
 }
 
 /**
@@ -134,14 +160,24 @@ internal fun ArchivedChatsRoute(
     )
 }
 
-/** Where a chat list leads: the archive, a chat, the New chat screen, back, and the archive's settings. */
+/**
+ * Where a chat list leads: the archive, a chat (at a message: a keyword alert's match, or the chat where [onOpenMessage]
+ * is not given), the New chat screen, back, and the archive's settings.
+ */
 private class ChatListNavigation(
     val onOpenArchive: () -> Unit,
     val onOpenChat: (chatId: Long) -> Unit,
     val onOpenNewChat: () -> Unit,
     val onBack: () -> Unit,
     val onOpenArchiveSettings: () -> Unit = {},
-)
+    val onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
+) {
+    /** Opens [effect]'s chat, at its message if it names one. */
+    fun open(effect: ChatListEffect.OpenChat) {
+        val messageId = effect.messageId
+        if (messageId == null) onOpenChat(effect.chatId) else onOpenMessage(effect.chatId, messageId)
+    }
+}
 
 @Composable
 private fun ChatListDestination(
@@ -155,9 +191,11 @@ private fun ChatListDestination(
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     summary: () -> ChatListSummary = { ChatListSummary() },
     headerActions: ChatListHeaderActions? = null,
+    moreEffects: @Composable (SnackbarHostState) -> Unit = {},
     swipesViewModel: ChatSwipesViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    moreEffects(snackbarHostState)
     val swipes by swipesViewModel.swipes.collectAsStateWithLifecycle()
     // The folders beside the one shown, which only a swipe of the list shows: mapped only while that swipe is on.
     val neighbourLists =
@@ -235,7 +273,7 @@ private fun ChatListEffects(
 
                 is ChatListEffect.OpenChat -> {
                     message = ""
-                    currentNavigation.onOpenChat(effect.chatId)
+                    currentNavigation.open(effect)
                 }
             }
             if (message.isNotEmpty()) {

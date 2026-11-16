@@ -69,7 +69,7 @@ class ShareLocationSheetTest {
             PingogramTheme(dynamicColor = false) {
                 val inputs =
                     rememberAttachInputs(
-                        launchers = rememberAttachLaunchers {},
+                        launchers = rememberAttachLaunchers(onEvent = {}),
                         onEvent = {},
                         caption = ComposerText(),
                         pollEditor = PollEditor(),

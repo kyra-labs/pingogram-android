@@ -1,6 +1,6 @@
 # 0037 — Passkeys through Android's own Credential Manager, no library
 
-Status: proposed (owner decisions to confirm, 2026-11-10) ·
+Status: accepted (the owner took the recommended choices, 2026-11-11) ·
 Date: 2026-11-10 ·
 Milestone: after `v2.0.0` (`docs/ROADMAP.md`; the owner's boards 17a and 17b, Session C)
 
@@ -51,8 +51,8 @@ the `gms` APK has about 1.6 MB left of its budget (`docs/PERFORMANCE.md` §8).
    `PasskeyRepository` (`TdlibPasskeyRepository`, `core:data`, account-scoped, no cache).
 2. **Adding and signing in from Android 14, both flavors**: the Passkeys page shows on every Android version, as
    listing and removing go through TDLib alone; before Android 14 it leaves "Add passkey" out and its footer says that
-   adding one needs Android 14, and the sign-in leaves its button out, in `foss` and `gms` alike. Owner decisions to
-   confirm (2026-11-10): the page on every version (this ADR first left the row out before Android 14); the button left
+   adding one needs Android 14, and the sign-in leaves its button out, in `foss` and `gms` alike. Owner decisions
+   (2026-11-10, confirmed 2026-11-16): the page on every version (this ADR first left the row out before Android 14); the button left
    out rather than shown disabled; and no passkeys made before Android 14 in `gms`, which the Play services provider
    would have given at the cost above.
 3. **No new dependency**: nothing is added to `gradle/libs.versions.toml`; the approval given for `androidx.credentials`
@@ -61,7 +61,7 @@ the `gms` APK has about 1.6 MB left of its budget (`docs/PERFORMANCE.md` §8).
 4. **Digital Asset Links**: Telegram's relying party (`telegram.org`) has to list Pingogram's signing certificates for
    Android to hand Telegram's passkeys to Pingogram. Until it does, password managers refuse; Pingogram then says
    "Passkeys aren't available to Pingogram yet" in a snackbar rather than hiding a feature the owner can take up with
-   Telegram. Owner decision to confirm (2026-11-10).
+   Telegram. Owner decision (2026-11-11).
 5. **Privacy**: nothing goes anywhere but to Telegram (through TDLib) and to the user's own password manager, on the
    user's tap. No passkey, credential id or response is logged or kept.
 6. **The demo** answers the passkey functions with sample passkeys and never opens Android's sheet; "Add passkey" and

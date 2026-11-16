@@ -13,8 +13,9 @@ import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 
 /**
- * [ChatStatisticsRepository] on TDLib's `getChatStatistics` and `getStatisticalGraph` (the graphs it gives only as a
- * token). Telegram's colors for light and dark (`is_dark`) are not used: the theme colors the charts.
+ * [ChatStatisticsRepository] on TDLib's `getChatStatistics`, `getPollVoteStatistics` (a poll's votes over time) and
+ * `getStatisticalGraph` (the graphs it gives only as a token). Telegram's colors for light and dark (`is_dark`) are not
+ * used: the theme colors the charts.
  */
 @AccountScoped
 class TdlibChatStatisticsRepository
@@ -32,5 +33,13 @@ class TdlibChatStatisticsRepository
             client.request(TdApi.GetStatisticalGraph(chatId, token, 0)).map {
                 it.toStatisticGraph()
                     ?: StatisticGraph.Failed("")
+            }
+
+        override suspend fun pollVotes(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<StatisticGraph> =
+            client.request(TdApi.GetPollVoteStatistics(chatId, messageId, false)).map {
+                it.voteGraph.toStatisticGraph() ?: StatisticGraph.Failed("")
             }
     }

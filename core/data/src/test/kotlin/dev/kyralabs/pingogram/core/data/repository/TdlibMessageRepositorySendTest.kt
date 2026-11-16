@@ -171,6 +171,31 @@ class TdlibMessageRepositorySendTest {
         }
 
     @Test
+    fun `a silent scheduled message is held until its date and then sent without a notification`() =
+        runTest {
+            answerSend()
+
+            repository().sendText(CHAT, text("Later, quietly"), SendOptions(silent = true, scheduledAt = SCHEDULED_AT))
+
+            val options = sentMessage().options
+            val atDate = options.schedulingState as TdApi.MessageSchedulingStateSendAtDate
+            assertTrue(options.disableNotification)
+            assertEquals(SCHEDULED_AT.toInt(), atDate.sendDate)
+        }
+
+    @Test
+    fun `a repeating scheduled message carries its period`() =
+        runTest {
+            answerSend()
+            val weekly = SendOptions.REPEAT_PERIODS[1]
+
+            repository().sendText(CHAT, text("Standup"), SendOptions(scheduledAt = SCHEDULED_AT, repeatPeriod = weekly))
+
+            val atDate = sentMessage().options.schedulingState as TdApi.MessageSchedulingStateSendAtDate
+            assertEquals(listOf(SCHEDULED_AT.toInt(), WEEK), listOf(atDate.sendDate, atDate.repeatPeriod))
+        }
+
+    @Test
     fun `a sent message is in the history as being sent once sendText returns`() =
         runTest {
             val repository = repository()
@@ -320,5 +345,6 @@ class TdlibMessageRepositorySendTest {
         const val SENDING_ID = 1_000_000L
 
         const val SCHEDULED_AT = 1_800_000_000L
+        const val WEEK = 604_800
     }
 }

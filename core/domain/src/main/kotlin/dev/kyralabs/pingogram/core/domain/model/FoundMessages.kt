@@ -29,3 +29,28 @@ enum class MessageSearchFilter {
     /** Messages with a link only; with a blank query, every message with one. */
     Url,
 }
+
+/**
+ * How many public post searches Telegram lets the user make (td_api.tl `publicPostSearchLimits`): [dailyFreeQueries]
+ * a day, [remainingFreeQueries] of them left, the next free one in [nextFreeQueryInSeconds] once none are left, and
+ * whether searching the query asked about costs nothing ([isQueryFree]: one left, or the same query again). Searching
+ * beyond them costs [starCount] Telegram Stars, which Pingogram never pays.
+ */
+data class PublicPostSearchLimits(
+    val dailyFreeQueries: Int,
+    val remainingFreeQueries: Int,
+    val nextFreeQueryInSeconds: Int,
+    val starCount: Long,
+    val isQueryFree: Boolean,
+)
+
+/**
+ * A page of posts of public channels found by `SearchRepository.searchPublicPosts`, with the [limits] after it (null
+ * when they did not change, as for the same query again); [areLimitsExceeded] when Telegram found nothing because no
+ * free search was left.
+ */
+data class FoundPublicPosts(
+    val posts: FoundMessages,
+    val limits: PublicPostSearchLimits?,
+    val areLimitsExceeded: Boolean,
+)

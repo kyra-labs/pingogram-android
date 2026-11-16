@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -41,5 +42,26 @@ class TextBlockMatchesTest {
         val text = AnnotatedString("Grace")
 
         assertSame(text, text.withMatches(MatchHighlight.of("ada"), Color.White))
+    }
+
+    @Test
+    fun `keyword alert words are keyword blocks in the content color and bold`() {
+        val text = AnnotatedString("Our launch moves").withKeywordMatches(listOf(4..9, 40..44), Color.White)
+
+        val blocks = text.getStringAnnotations(TEXT_BLOCK_TAG, 0, text.length)
+        assertEquals(listOf(4 to 10), blocks.map { it.start to it.end })
+        assertTrue(blocks.all { it.item == TextBlock.KEYWORD })
+        assertEquals(
+            Color.White,
+            text.spanStyles
+                .single()
+                .item.color,
+        )
+        assertEquals(
+            FontWeight.Bold,
+            text.spanStyles
+                .single()
+                .item.fontWeight,
+        )
     }
 }

@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 internal fun SplashScreenViewProvider.animateExit(scope: CoroutineScope) {
     scope.launch(AndroidUiDispatcher.Main + AnimatorDurationScale) {
         try {
+            // The theme's own scheme, made here as the splash screen leaves before anything composes, so there is no
+            // MaterialTheme.motionScheme to read: PingogramTheme's is MotionScheme.expressive() too.
+            @Suppress("PingogramMotionDefault")
             val motion = MotionScheme.expressive()
             val icon = iconView
             val growing =

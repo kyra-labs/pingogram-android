@@ -110,7 +110,7 @@ internal fun ArchiveRow(
                         .then(if (dragged) restingContainer.modifier else Modifier)
                         .semantics {
                             contentDescription = description
-                            if (styles != null) customActions = styleActions(entry, resources, styles)
+                            if (styles != null) customActions = styleActions(resources, styles)
                         },
                 enabled = enabled,
                 onLongClick = if (styles != null) ({ menuOpen = true }) else null,
@@ -124,7 +124,6 @@ internal fun ArchiveRow(
             if (styles != null) {
                 ArchiveRowMenu(
                     expanded = menuOpen,
-                    isCompact = entry.isCompact,
                     onDismiss = { menuOpen = false },
                     onStyle = {
                         menuOpen = false

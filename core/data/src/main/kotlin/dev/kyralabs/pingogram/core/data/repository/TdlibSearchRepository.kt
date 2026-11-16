@@ -5,11 +5,14 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.mapper.toLimits
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -42,6 +45,8 @@ import javax.inject.Inject
  * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset,
  *   with `searchMessagesFilterPhotoAndVideo` or `searchMessagesFilterUrl` for photos and videos or links, which TDLib
  *   also searches without a query.
+ * - **Public posts**: `getPublicPostSearchLimits` before searching, then `searchPublicPosts` with no Telegram Stars,
+ *   paged by its offset; the posts come with their chats as messages do.
  * - **Recently found chats**: `searchRecentlyFoundChats` with an empty query, which returns the whole list (TDLib has
  *   no `getRecentlyFoundChats`), and `add`/`remove`/`clearRecentlyFoundChats`.
  * - **Top people**: `getTopChats(topChatCategoryUsers)`.
@@ -165,6 +170,34 @@ class TdlibSearchRepository
             }
         }
 
+        override suspend fun publicPostSearchLimits(query: String): Outcome<PublicPostSearchLimits> =
+            client.request(TdApi.GetPublicPostSearchLimits(query.trim())).map { it.toLimits() }
+
+        override suspend fun searchPublicPosts(
+            query: String,
+            offset: String?,
+        ): Outcome<FoundPublicPosts> {
+            // Never Telegram Stars: a search without a free one left finds nothing (CLAUDE.md rule 3).
+            val request = TdApi.SearchPublicPosts(query.trim(), offset.orEmpty(), POST_PAGE_SIZE, 0L)
+            return when (val found = client.request(request)) {
+                is Outcome.Success -> {
+                    val posts = found.value
+                    val page = TdApi.FoundMessages(-1, posts.messages, posts.nextOffset)
+                    Outcome.Success(
+                        FoundPublicPosts(
+                            posts = chatRepository.foundMessages(page),
+                            limits = posts.searchLimits?.toLimits(),
+                            areLimitsExceeded = posts.areLimitsExceeded,
+                        ),
+                    )
+                }
+
+                is Outcome.Failure -> {
+                    found
+                }
+            }
+        }
+
         override suspend fun recentChats(): Outcome<ImmutableList<Chat>> =
             chatRepository.chatsFound(
                 client.request(TdApi.SearchRecentlyFoundChats("", null, SearchRepository.RECENT_LIMIT)),
@@ -236,6 +269,9 @@ private fun MessageSearchFilter.toTdApi(): TdApi.SearchMessagesFilter? =
 /** Chats per search of chats, on the device and on the server each, and contacts per search. */
 private const val CHAT_LIMIT = 30
 private const val CONTACT_LIMIT = 30
+
+/** Posts per page of [TdlibSearchRepository.searchPublicPosts]. */
+private const val POST_PAGE_SIZE = 20
 
 /** Messages per page of [TdlibSearchRepository.searchMessages]; TDLib allows up to 100, and may return fewer. */
 private const val MESSAGE_PAGE_SIZE = 30

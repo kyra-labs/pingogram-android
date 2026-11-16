@@ -258,6 +258,34 @@ class MediaViewerActionsTest : MediaViewerViewModelHarness() {
     }
 
     @Nested
+    inner class MakeSticker {
+        @Test
+        fun `opens the sticker maker on the current photo`() =
+            runViewModelTest {
+                val viewModel = viewModel(messageId = 50)
+
+                viewModel.effects.test {
+                    send(viewModel, MediaViewerEvent.MakeSticker(fullFileId(50)))
+
+                    assertEquals(MediaViewerEffect.MakeSticker(fullFileId(50)), awaitItem())
+                }
+            }
+
+        @Test
+        fun `a chat that protects its content does not let a sticker be made of it`() =
+            runViewModelTest {
+                chats.chats.value = mapOf(CHAT to chat(CHAT, "Engines").copy(hasProtectedContent = true))
+                val viewModel = viewModel(messageId = 50)
+
+                viewModel.effects.test {
+                    send(viewModel, MediaViewerEvent.MakeSticker(fullFileId(50)))
+
+                    expectNoEvents()
+                }
+            }
+    }
+
+    @Nested
     inner class Copy {
         private val path = "/data/files/tdlib/files/photos/file_50.jpg"
 

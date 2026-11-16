@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.navigation.FloatingWindow
 import androidx.navigation.NavBackStackEntry
@@ -218,10 +219,18 @@ private fun OverlayEntry(
     state.targetState = target
     val transition = rememberTransition(state, label = "overlay")
     val motionScheme = MaterialTheme.motionScheme
+    // In on the default effects spring, out on the fast one, as every fade (docs/DESIGN_SYSTEM.md §5.1, Q-02).
     val alpha =
-        transition.animateFloat({ motionScheme.defaultEffectsSpec() }, label = "overlayAlpha") {
-            if (it == EnterExitState.Visible) 1f else 0f
-        }
+        transition.animateFloat(
+            {
+                if (targetState == EnterExitState.Visible) {
+                    motionScheme.defaultEffectsSpec()
+                } else {
+                    motionScheme.fastEffectsSpec()
+                }
+            },
+            label = "overlayAlpha",
+        ) { if (it == EnterExitState.Visible) 1f else 0f }
     val scope = remember(transition) { OverlayVisibility(transition) }
     val gone = !visible && state.isIdle && state.currentState == EnterExitState.PostExit
     OverlayTransitionTrace(state)
@@ -236,7 +245,7 @@ private fun OverlayEntry(
                 .graphicsLayer {
                     this.alpha = alpha.value
                     compositingStrategy = CompositingStrategy.ModulateAlpha
-                }.then(TouchBlocker),
+                }.overlayTouches(visible),
         ) {
             CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
                 entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
@@ -370,6 +379,24 @@ private val Covered =
         .focusProperties { canFocus = false }
         .focusGroup()
         .focusProperties { onEnter = { cancelFocusChange() } }
+
+/** What an overlay does with touches: takes them all while [visible], none while it goes out. */
+private fun Modifier.overlayTouches(visible: Boolean): Modifier = then(if (visible) TouchBlocker else GoingOut)
+
+/**
+ * An overlay going out: still drawn as it fades and its shared content shrinks back into the screen below, but out of
+ * the way at once, so the screen below takes touches, focus and screen readers from the first frame of the way out
+ * rather than once the transition settled, which with a photo's container transform was most of a second. Its node
+ * reports no size, so no touch finds it; its content keeps its own size and place, so nothing of it moves.
+ */
+private val GoingOut =
+    Modifier
+        .clearAndSetSemantics {}
+        .focusProperties { canFocus = false }
+        .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            layout(0, 0) { placeable.place(0, 0) }
+        }
 
 /** Takes every touch an overlay's content leaves, so none reaches the screen below. */
 private val TouchBlocker =

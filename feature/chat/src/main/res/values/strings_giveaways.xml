@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Giveaways channels run (td_api.tl messageGiveaway, messageGiveawayWinners, giveawayInfo): Pingogram shows them
+     and never enters or buys anything (REQUIREMENTS.md §1.2). -->
+<resources>
+    <!-- The small label over the prize, shown in capitals. -->
+    <string name="giveaway_prize_kicker">Giveaway prize</string>
+    <!-- How many prizes: the big number before the prize's name, e.g. "3 ×" before "Telegram Premium". -->
+    <string name="giveaway_prize_times">%1$d ×</string>
+    <string name="giveaway_prize_premium">Telegram Premium</string>
+    <string name="giveaway_prize_stars">Telegram Stars</string>
+    <!-- Under the prize: for how long each winner gets Telegram Premium. -->
+    <plurals name="giveaway_premium_months">
+        <item quantity="one">for %1$d month</item>
+        <item quantity="other">for %1$d months</item>
+    </plurals>
+    <!-- Under the prize of Telegram Stars: how many winners share them. -->
+    <plurals name="giveaway_stars_among">
+        <item quantity="one">shared among %1$d winner</item>
+        <item quantity="other">shared among %1$d winners</item>
+    </plurals>
+    <!-- The channels whose subscribers take part. -->
+    <string name="giveaway_channels">Participating channels</string>
+    <!-- A channel's name while TDLib has not told it yet. -->
+    <string name="giveaway_channel_unknown">Channel</string>
+    <!-- When the winners are picked, over the date. -->
+    <string name="giveaway_winners_date">Winners are picked on</string>
+    <!-- Who takes part, under the date; the quantity is how many channels take part. -->
+    <plurals name="giveaway_who_all">
+        <item quantity="one">Among all subscribers of this channel</item>
+        <item quantity="other">Among all subscribers of these channels</item>
+    </plurals>
+    <plurals name="giveaway_who_new">
+        <item quantity="one">Among new subscribers of this channel</item>
+        <item quantity="other">Among new subscribers of these channels</item>
+    </plurals>
+    <!-- Which countries' users take part: %1$s is a list of country names. -->
+    <string name="giveaway_countries">From %1$s</string>
+    <!-- What else the channel gives away: %1$s is its own description of the prize. -->
+    <string name="giveaway_also">Also: %1$s</string>
+    <!-- The button under a giveaway that opens its details. -->
+    <string name="giveaway_learn_more">Learn more</string>
+    <!-- The message that names the winners. -->
+    <string name="giveaway_winners_title">Giveaway winners</string>
+    <!-- Under the winners' title: %1$d is how many won, %2$s the prize ("Telegram Premium for 3 months",
+         "500 Telegram Stars"). -->
+    <plurals name="giveaway_winners_won">
+        <item quantity="one">%1$d person won %2$s</item>
+        <item quantity="other">%1$d people won %2$s</item>
+    </plurals>
+    <!-- The prize as a phrase: %1$s is "for 3 months". -->
+    <string name="giveaway_premium_for">Telegram Premium %1$s</string>
+    <!-- Telegram Stars as a phrase: %1$s is the number with the digits of the user's language. -->
+    <plurals name="giveaway_stars_amount">
+        <item quantity="one">%1$s Telegram Star</item>
+        <item quantity="other">%1$s Telegram Stars</item>
+    </plurals>
+    <!-- The channel did not keep its part: nobody won. -->
+    <string name="giveaway_refunded">The giveaway was cancelled and its boosts were refunded.</string>
+    <!-- Prizes nobody took. -->
+    <plurals name="giveaway_unclaimed">
+        <item quantity="one">%1$d prize wasn\'t claimed.</item>
+        <item quantity="other">%1$d prizes weren\'t claimed.</item>
+    </plurals>
+    <!-- The winners are not named in the message. -->
+    <string name="giveaway_winners_private">The winners were told privately.</string>
+    <!-- A winner's name while TDLib has not told it yet. -->
+    <string name="giveaway_winner_unknown">Winner</string>
+    <!-- For screen readers: the actions of a giveaway's bubble. %1$s is a channel's or a person's name. -->
+    <string name="giveaway_open_channel">Open %1$s</string>
+    <string name="giveaway_open_winner">Open the profile of %1$s</string>
+    <!-- The details sheet. -->
+    <string name="giveaway_info_title">About this giveaway</string>
+    <string name="giveaway_info_ended">The draw is over. Telegram is picking the winners.</string>
+    <string name="giveaway_info_eligible">Join the participating channels to take part.</string>
+    <string name="giveaway_info_participating">You\'re taking part.</string>
+    <!-- %1$s is a date and time. -->
+    <string name="giveaway_info_was_member">You joined before the giveaway began, on %1$s, so you don\'t take part.</string>
+    <!-- %1$s is a channel's name. -->
+    <string name="giveaway_info_admin">Administrators of %1$s don\'t take part.</string>
+    <!-- %1$s is a country's name. -->
+    <string name="giveaway_info_country">People from %1$s don\'t take part.</string>
+    <!-- %1$s is a date and time. -->
+    <string name="giveaway_info_completed_date">The winners were picked on %1$s.</string>
+    <!-- %1$s is a gift code Telegram gave the user. -->
+    <string name="giveaway_info_won_premium">You won Telegram Premium. Your gift code is %1$s; activate it in another Telegram app.</string>
+    <!-- %1$s is a number of Telegram Stars. -->
+    <string name="giveaway_info_won_stars">You won %1$s Telegram Stars.</string>
+    <string name="giveaway_info_lost">You didn\'t win this time.</string>
+    <!-- %1$d winners of %2$d took their prize. -->
+    <plurals name="giveaway_info_activated">
+        <item quantity="one">%1$d of %2$d winners took their prize.</item>
+        <item quantity="other">%1$d of %2$d winners took their prize.</item>
+    </plurals>
+    <string name="giveaway_info_note">Pingogram shows giveaways and never enters or buys anything for you.</string>
+    <string name="giveaway_info_error">Telegram couldn\'t tell about this giveaway.</string>
+    <string name="giveaway_info_retry">Try again</string>
+    <string name="giveaway_info_close">Close</string>
+</resources>

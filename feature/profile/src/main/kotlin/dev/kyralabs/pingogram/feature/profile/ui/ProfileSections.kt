@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.component.CallButtonMenu
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
@@ -51,12 +52,13 @@ import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The profile's actions as pills under the header (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"): "Message" (Saved
- * Messages on one's own profile) as a filled `Button`, the primary action, then "Call" (where the user can be called,
- * through [LocalCallStarter]; a menu of a voice and a video call where the user can get a video call,
- * [CallButtonMenu]), the mute toggle and "Secret chat" as `FilledTonalButton`s, each its icon over its label, sharing
- * the row's width, all with `ButtonDefaults.shapes()`' press morph. The mute toggle gives a `ToggleOn` or `ToggleOff`
- * haptic. Pills that do not apply are left out; the row is empty for a deleted account.
+ * The profile's actions as pills under the header (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"; owner decision
+ * 2026-11-15, board 24): "Message" (Saved Messages on one's own profile) as a filled `Button`, the primary action, then
+ * the mute toggle and "Call" (where the user can be called, through [LocalCallStarter]; a menu of a voice and a video
+ * call where the user can get a video call, [CallButtonMenu]) as `FilledTonalButton`s, each its icon over its label,
+ * sharing the row's width, all with `ButtonDefaults.shapes()`' press morph. "Secret chat" is in the top bar's ⋮ menu.
+ * The mute toggle gives a `ToggleOn` or `ToggleOff` haptic. Pills that do not apply are left out; a deleted account's
+ * one pill is "Delete chat", which asks first.
  */
 @Composable
 internal fun ProfileActionsRow(
@@ -68,12 +70,10 @@ internal fun ProfileActionsRow(
     val isMuted = actions.isMuted
     val calls = LocalCallStarter.current
     val callUserId = actions.callUserId.takeIf { calls != null }
-    val hasChatPills = actions.canMessage || isMuted != null || actions.canStartSecretChat
+    val hasChatPills =
+        actions.canMessage || isMuted != null || actions.canDeleteChat || actions.shareUsername != null
     if (!hasChatPills && callUserId == null) return
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-    ) {
+    ActionPillRow(modifier) {
         if (actions.canMessage) {
             ActionPill(
                 icon = UiR.drawable.ic_chat_filled,
@@ -85,17 +85,6 @@ internal fun ProfileActionsRow(
                 primary = true,
                 modifier = Modifier.weight(1f),
             )
-        }
-        if (calls != null && callUserId != null) {
-            // A voice call at once, or the voice and video menu where the user can get a video call.
-            CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
-                ActionPill(
-                    icon = UiR.drawable.ic_call_filled,
-                    label = stringResource(R.string.profile_action_call),
-                    onClick = onClick,
-                    modifier = menu.fillMaxWidth(),
-                )
-            }
         }
         if (isMuted != null) {
             ActionPill(
@@ -110,14 +99,17 @@ internal fun ProfileActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
-        if (actions.canStartSecretChat) {
-            ActionPill(
-                icon = UiR.drawable.ic_lock,
-                label = stringResource(R.string.profile_action_secret_chat),
-                onClick = { onEvent(ProfileEvent.StartSecretChat) },
-                enabled = !actions.isStartingSecretChat,
-                modifier = Modifier.weight(1f),
-            )
+        DeleteOrSharePill(actions, onEvent)
+        if (calls != null && callUserId != null) {
+            // A voice call at once, or the voice and video menu where the user can get a video call.
+            CallButtonMenu(userId = callUserId, calls = calls, modifier = Modifier.weight(1f)) { onClick, menu ->
+                ActionPill(
+                    icon = UiR.drawable.ic_call_filled,
+                    label = stringResource(R.string.profile_action_call),
+                    onClick = onClick,
+                    modifier = menu.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -175,6 +167,8 @@ internal fun ActionPill(
  * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
  * - **ID**, while Privacy and security's "Show IDs" is on: the user's ID, left to right; tapping copies it.
  * - **Birthday suggestion**, for a contact without a birthday: the offer to suggest one ([BirthdaySuggestionRow]).
+ * - **Sharing**, where the private chat has "Disable sharing" on: that its messages cannot be forwarded, copied or
+ *   saved, as information.
  * - **Note**, last, on a contact's profile: the note only the current user sees ([NoteRow]); tapping opens its dialog.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
@@ -191,6 +185,7 @@ internal fun ProfileInfoGroup(
         rows += ProfileRow("username:$username") { UsernameRow(username, it, onEvent) }
     }
     info.phoneNumber?.let { phone -> rows += ProfileRow("phone") { PhoneRow(phone, it, onEvent) } }
+    info.phoneHiddenBy?.let { name -> rows += ProfileRow("phone") { HiddenPhoneRow(name, it) } }
     info.birthday?.let { birthday ->
         rows +=
             ProfileRow("birthday") { shapes ->
@@ -209,6 +204,18 @@ internal fun ProfileInfoGroup(
     info.id?.let { id -> rows += ProfileRow("id") { shapes -> IdRow(id, shapes) { onEvent(ProfileEvent.CopyId) } } }
     info.birthdaySuggestion?.let { offer ->
         rows += ProfileRow("birthdaySuggestion") { shapes -> BirthdaySuggestionRow(offer, shapes, onEvent) }
+    }
+    if (info.isSharingDisabled) {
+        rows +=
+            ProfileRow("sharing") { shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = profileRowColors(),
+                    supportingContent = { Text(stringResource(R.string.profile_sharing)) },
+                ) {
+                    Text(stringResource(R.string.profile_sharing_disabled), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
     }
     info.note?.let { note -> rows += ProfileRow("note") { shapes -> NoteRow(note, shapes, onEvent) } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
@@ -333,7 +340,7 @@ private fun PhoneRow(
 /**
  * What else can be done with the account, segmented rows without icons: "Add to contacts" or "Edit contact" (only with
  * [onEditContact], the app's contact editor), "Export chat" (only with [onExportChat], the app's export page),
- * "Block user" in `error` (after a confirmation) or "Unblock user", and "Report" in `error`, which opens the report
+ * "Block Aisha" in `error` (after a confirmation) or "Unblock Aisha", and "Report" in `error`, which opens the report
  * sheet. Rows that do not apply are left out.
  */
 @Composable
@@ -358,8 +365,15 @@ internal fun ProfileMoreGroup(
     actions.isBlocked?.let { isBlocked ->
         rows +=
             ProfileRow("block") { shapes ->
+                // "Block Aisha": the name isolated, and the label too, as its text keeps the layout's direction (§9).
+                val name = actions.blockName.bidiIsolated()
                 ActionRow(
-                    text = stringResource(if (isBlocked) R.string.profile_unblock else R.string.profile_block),
+                    text =
+                        when {
+                            isBlocked -> stringResource(R.string.profile_unblock_person, name).bidiIsolated()
+                            actions.isBot -> stringResource(R.string.profile_block_bot)
+                            else -> stringResource(R.string.profile_block_person, name).bidiIsolated()
+                        },
                     shapes = shapes,
                     onClick = { onEvent(if (isBlocked) ProfileEvent.Unblock else ProfileEvent.Block) },
                     enabled = !actions.isChangingBlock,

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.link
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibOauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.NewChatKind
@@ -34,7 +35,9 @@ import org.junit.jupiter.api.Test
 class LinkViewModelTest {
     private val client = FakeTdlibClient()
     private val botStarts = BotStartInbox()
-    private val viewModel = LinkViewModel(TdlibLinkRepository(client), botStarts)
+    private val viewModel by lazy {
+        LinkViewModel(TdlibLinkRepository(client), botStarts, TdlibOauthLoginRepository(client))
+    }
 
     @BeforeEach
     fun setUp() {
@@ -300,6 +303,43 @@ class LinkViewModelTest {
         }
 
     @Test
+    fun `a login request tapped in the app offers the browser, answering nothing`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeOauth(OAUTH))
+
+            viewModel.effects.test {
+                viewModel.open(OAUTH)
+
+                assertEquals(LinkEffect.Notice(LinkNotice.Unsupported(OAUTH)), awaitItem())
+            }
+            assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
+        }
+
+    @Test
+    fun `a login request from another app opens its sheet`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeOauth(OAUTH))
+
+            viewModel.effects.test {
+                viewModel.open(OAUTH, fromOutside = true)
+
+                assertEquals(LinkEffect.Open(LinkTarget.OauthLogin(OAUTH), fromOutside = true), awaitItem())
+            }
+        }
+
+    @Test
+    fun `a login request Telegram announces opens its sheet`() =
+        runTest {
+            viewModel.effects.test {
+                runCurrent()
+                client.emit(TdApi.UpdateNewOauthRequest("example.org", "Berlin, Germany", OAUTH))
+
+                assertEquals(LinkEffect.Open(LinkTarget.OauthLogin(OAUTH), fromOutside = true), awaitItem())
+            }
+            assertEquals(emptyList<Any>(), client.sent)
+        }
+
+    @Test
     fun `a target the scanner resolved opens as a resolved link would`() =
         runTest {
             viewModel.effects.test {
@@ -332,5 +372,6 @@ class LinkViewModelTest {
         const val USER = 42L
         const val CHAT = 100L
         const val CHANNEL = -1005L
+        const val OAUTH = "https://oauth.telegram.org/auth?bot_id=1&origin=example.org"
     }
 }

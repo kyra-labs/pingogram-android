@@ -1,11 +1,16 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
@@ -20,6 +25,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -115,7 +121,10 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 pollRepository = FakePollRepository(),
                 checklistRepository = FakeChecklistRepository(),
                 scheduledMessageRepository = FakeScheduledMessageRepository(),
+                giveawayRepository = FakeGiveawayRepository(),
                 targetPreferences = TargetPreferences(),
+                appInfo = AppInfo(versionName = ""),
+                transcriptionRepositories = transcriptionRepositories(),
                 applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
@@ -130,6 +139,9 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
             FakeForumTopicRepository(),
             FakeMessageThreadRepository(),
             FakeSavedMessagesTopicRepository(),
+            FakeDirectMessagesTopicRepository(),
+            FakeUserRepository(),
+            FakeChatRepository(),
         )
 
     private fun inlineBotRepositories() =
@@ -138,6 +150,14 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
             FakeDeviceLocationRepository(),
             InlineLocationConsent(),
             BotStartInbox(),
+        )
+
+    private fun transcriptionRepositories() =
+        TranscriptionRepositories(
+            FakeVoiceTranscriber(),
+            FakeTranscriptRepository(),
+            FakeTranscriptionSettingsRepository(),
+            files,
         )
 
     private fun translationRepositories() =

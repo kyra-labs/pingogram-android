@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
@@ -29,6 +30,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersList
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersPreview
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MoreMembers
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveSheet
+import dev.kyralabs.pingogram.feature.profile.chatinfo.OwnerLeaveStep
 import dev.kyralabs.pingogram.feature.profile.chatinfo.Permission
 import dev.kyralabs.pingogram.feature.profile.chatinfo.RightSwitch
 import dev.kyralabs.pingogram.feature.profile.chatinfo.TransferDialog
@@ -92,6 +95,7 @@ object ChatInfoPreviewData {
                     photo = null,
                     status = UiText.Plain("Public group · 1,024 members"),
                     isVerified = true,
+                    avatarShape = AvatarShape.Group,
                 ),
             kind = GroupKind.Supergroup,
             description =
@@ -105,7 +109,7 @@ object ChatInfoPreviewData {
             administration =
                 ChatAdministration(
                     canEditInfo = true,
-                    canEditPermissions = true,
+                    allowedPermissions = 11,
                     administratorCount = 3,
                     canManageInviteLinks = true,
                     bannedCount = 2,
@@ -122,11 +126,15 @@ object ChatInfoPreviewData {
                     name = UiText.Plain("Compose Weekly"),
                     photo = null,
                     status = UiText.Plain("Private channel · 18,302 subscribers"),
+                    avatarShape = AvatarShape.Channel,
                 ),
             kind = GroupKind.Channel,
             description = FormattedText("What changed in Jetpack Compose this week.", persistentListOf()),
             actions = ChatInfoActions(isMuted = true, canLeave = true),
         )
+
+    /** A channel that chose its profile color (board 24): its header on that hue's tinted fill. */
+    val channelWithColor = channel.copy(header = channel.header.copy(profileColor = CHANNEL_PROFILE_COLOR))
 
     val membersPage =
         ChatMembersUiState(
@@ -192,6 +200,27 @@ object ChatInfoPreviewData {
 
     /** Telegram transfers the ownership. */
     val transferring = transferDialog.copy(isTransferring = true)
+
+    /** The owner leaving a group with two other administrators, letting Telegram choose (which names Ada). */
+    val ownerLeave =
+        OwnerLeaveSheet(
+            kind = GroupKind.Supergroup,
+            heir = UiText.Plain("Ada Lovelace"),
+            candidates =
+                persistentListOf(
+                    member(2, "Ada Lovelace", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                    member(3, "Alan Turing", status = null, role = UiText.resource(R.string.chat_info_role_admin)),
+                ),
+        )
+
+    /** The owner chose Alan, and types the 2-step verification password. */
+    val ownerLeavePassword = ownerLeave.copy(chosen = 3, step = OwnerLeaveStep.Password)
+
+    /** The password was wrong. */
+    val ownerLeaveWrongPassword = ownerLeavePassword.copy(error = DomainError.PasswordInvalid)
+
+    /** A basic group without other administrators, while Telegram has not said who it would choose. */
+    val ownerLeaveNoAdmins = OwnerLeaveSheet(kind = GroupKind.BasicGroup, candidates = persistentListOf())
 
     val restrictions =
         MemberRightsUiState.Content(
@@ -263,3 +292,5 @@ object ChatInfoPreviewData {
 
     val newLink = EditInviteLinkUiState.Content(isNew = true, name = "Meetup flyer")
 }
+
+private const val CHANNEL_PROFILE_COLOR = 2

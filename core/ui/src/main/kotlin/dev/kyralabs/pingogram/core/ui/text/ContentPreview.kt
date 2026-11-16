@@ -54,6 +54,12 @@ internal fun contentPreviewText(content: MessageContent): UiText =
 
         is MessageContent.Story -> UiText.resource(R.string.preview_story)
 
+        is MessageContent.PaidMedia -> labelled(R.string.preview_paid_media, content.caption.text)
+
+        is MessageContent.Giveaway -> UiText.resource(R.string.preview_giveaway)
+
+        is MessageContent.GiveawayWinners -> UiText.resource(R.string.preview_giveaway_winners)
+
         is MessageContent.Expired -> expiredText(content.media)
 
         // Without the message there is nobody to name; messagePreviewText handles service messages.

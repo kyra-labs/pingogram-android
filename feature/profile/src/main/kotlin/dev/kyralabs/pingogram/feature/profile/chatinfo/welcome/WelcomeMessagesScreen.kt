@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
@@ -50,7 +51,10 @@ import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.plusBottom
+import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
@@ -146,6 +150,8 @@ private fun WelcomeContent(
     val rowModifier =
         Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxWidth().padding(horizontal = windowMargin())
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
+    // Every item moves on the scheme's springs, so the switch, the footer and the preview move with the cards.
+    val itemMotion = rememberItemMotion()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = remember(contentPadding, spacing) { contentPadding.plusBottom(spacing.extraLarge) },
@@ -153,11 +159,19 @@ private fun WelcomeContent(
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         item(key = SWITCH, contentType = SWITCH) {
-            WelcomeSwitchCard(state, onEvent, rowModifier.padding(bottom = spacing.medium))
+            WelcomeSwitchCard(
+                state,
+                onEvent,
+                rowModifier.animateItem(this, itemMotion).padding(bottom = spacing.medium),
+            )
         }
         if (state.isOn) {
             item(key = TITLE, contentType = TITLE) {
-                MessagesHeader(numbers.format(state.messages.size), numbers.format(state.countMax), rowModifier)
+                MessagesHeader(
+                    numbers.format(state.messages.size),
+                    numbers.format(state.countMax),
+                    rowModifier.animateItem(this, itemMotion),
+                )
             }
             itemsIndexed(state.messages, key = { _, item -> item.id }, contentType = { _, _ -> CARD }) { index, item ->
                 WelcomeMessageCard(
@@ -166,36 +180,51 @@ private fun WelcomeContent(
                     shape = ListItemDefaults.segmentedShapes(index, state.messages.size).shape,
                     isDeleting = item.id in state.deleting,
                     onEvent = onEvent,
-                    modifier = rowModifier.animateItem(),
+                    modifier = rowModifier.animateItem(this, itemMotion),
                 )
             }
             item(key = ADD, contentType = ADD) {
                 AddMessageButton(
                     enabled = state.canAdd && !state.isBusy,
                     onClick = { onEvent(WelcomeMessagesEvent.Add) },
-                    modifier = rowModifier.padding(top = spacing.small),
+                    modifier = rowModifier.animateItem(this, itemMotion).padding(top = spacing.small),
                 )
             }
         }
-        item(key = FOOTER, contentType = FOOTER) {
-            val footer =
-                if (state.isOn && !state.canAdd) {
-                    stringResource(R.string.welcome_limit, numbers.format(state.countMax))
-                } else {
-                    stringResource(R.string.welcome_footer)
-                }
-            Text(
-                text = footer,
-                modifier = rowModifier.padding(horizontal = spacing.medium, vertical = spacing.small),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        footerItem(state, numbers, rowModifier, itemMotion)
         if (state.isOn) {
             item(key = PREVIEW, contentType = PREVIEW) {
-                WelcomePreview(state.messages, rowModifier.padding(top = spacing.medium))
+                WelcomePreview(state.messages, rowModifier.animateItem(this, itemMotion).padding(top = spacing.medium))
             }
         }
+    }
+}
+
+/** Who sees the messages, or the limit once it is reached. */
+private fun LazyListScope.footerItem(
+    state: WelcomeMessagesUiState.Content,
+    numbers: NumberFormat,
+    rowModifier: Modifier,
+    itemMotion: ItemMotion,
+) {
+    item(key = FOOTER, contentType = FOOTER) {
+        val footer =
+            if (state.isOn && !state.canAdd) {
+                stringResource(R.string.welcome_limit, numbers.format(state.countMax))
+            } else {
+                stringResource(R.string.welcome_footer)
+            }
+        Text(
+            text = footer,
+            modifier =
+                rowModifier
+                    .animateItem(
+                        this,
+                        itemMotion,
+                    ).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 

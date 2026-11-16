@@ -36,6 +36,22 @@ internal fun LazyListScope.leadingRows(
     }
 }
 
+/** The key of the list's first row, which [KeepTopShown] keeps in view while the list shows its top. */
+internal fun firstRowKey(
+    hasStories: Boolean,
+    hasArchive: Boolean,
+    pinnedCount: Int,
+    items: List<ChatListItemModel>,
+    communities: List<CommunityEntry>,
+): Any? =
+    when {
+        hasStories -> STORIES_ROW
+        hasArchive -> ARCHIVE_ROW
+        pinnedCount > 0 -> PINNED_HEADER
+        communities.firstOrNull()?.before == 0 -> communityKey(communities.first().id)
+        else -> items.firstOrNull()?.id
+    }
+
 internal const val ARCHIVE_ROW = "archive"
 
 internal const val STORIES_ROW = "stories"

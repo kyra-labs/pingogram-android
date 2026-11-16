@@ -9,6 +9,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,9 +21,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -228,6 +232,62 @@ class SharedMediaTest {
     }
 
     @Test
+    fun `a viewer page that comes while its overlay is on its way in shares its media only once it is in`() {
+        var showViewer by mutableStateOf(false)
+        var pageArrived by mutableStateOf(false)
+        lateinit var shapes: SharedMediaShapes
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        shapes = LocalSharedMediaShapes.current!!
+                        Box {
+                            Box(
+                                Modifier
+                                    .size(48.dp)
+                                    .sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                                    .testTag("bubble"),
+                            )
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    // The first page comes late, as when TDLib answers after the overlay's hold.
+                                    if (pageArrived) {
+                                        Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE).testTag("viewer"))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.mainClock.autoAdvance = false
+        showViewer = true
+        repeat(4) { composeRule.mainClock.advanceTimeByFrame() }
+        pageArrived = true
+        // With the clock held, the page's state reaches the composition only once announced.
+        Snapshot.sendApplyNotifications()
+        repeat(2) { composeRule.mainClock.advanceTimeByFrame() }
+
+        assertFalse("shared mid-way in", shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+
+        assertTrue("not shared once in", shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("viewer").assertIsDisplayed()
+
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertFalse(shapes.isInViewer(MESSAGE))
+        composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+    }
+
+    @Test
     fun `a bubble publishes its media's corners for the viewer while it is laid out`() {
         var shown by mutableStateOf(true)
         lateinit var shapes: SharedMediaShapes
@@ -308,6 +368,90 @@ class SharedMediaTest {
         fraction = 0f
         // With no bubble to go back to, nothing to morph from: square throughout.
         assertTrue(cornerCovered())
+    }
+
+    @Test
+    fun `the clip toward the conversation's viewport is none at the viewer and the viewport at the bubble`() {
+        val viewport = Rect(0f, 100f, 400f, 700f)
+        val full = Rect(0f, 0f, 400f, 800f)
+
+        assertNull(viewportClip(null, full, 1f))
+        assertNull(viewportClip(viewport, full, 0f))
+        assertEquals(viewport, viewportClip(viewport, full, 1f))
+        // Halfway, between the whole screen the media fills and the viewport.
+        assertEquals(Rect(0f, 50f, 400f, 750f), viewportClip(viewport, full, 0.5f))
+        // A spring's overshoot stays within the two.
+        assertEquals(viewport, viewportClip(viewport, full, 1.2f))
+    }
+
+    @Test
+    fun `media near its bubble is cut where the bars cover the messages`() {
+        val viewports = SharedMediaViewports()
+        val node = SharedMediaViewportNode(PaddingValues())
+        lateinit var state: SharedTransitionScope.SharedContentState
+        composeRule.setContent {
+            SharedTransitionLayout { state = rememberSharedContentState(MESSAGE) }
+        }
+        composeRule.waitForIdle()
+        val viewport = Rect(0f, 20f, SIZE_PX, SIZE_PX - 20f)
+        node.setBoundsForTest(viewport)
+        viewports.placed(node)
+        var fraction = 1f
+        val bubbleSide =
+            MorphingClip({ FullBleedShape }, FullBleedShape, ViewportClipping(viewports, atBubbleWhenShown = true)) {
+                fraction
+            }
+        val bounds = Rect(0f, 0f, SIZE_PX, SIZE_PX)
+
+        fun covered(y: Int): Boolean {
+            val path = bubbleSide.getClipPath(state, bounds, LayoutDirection.Ltr, Density(1f)).asAndroidPath()
+            val region = Region().apply { setPath(path, Region(0, 0, SIZE_PX.toInt(), SIZE_PX.toInt())) }
+            return region.contains(SIZE_PX.toInt() / 2, y)
+        }
+
+        // At its bubble: only within the messages, not under the top bar or the composer.
+        assertFalse(covered(10))
+        assertTrue(covered(50))
+        assertFalse(covered(90))
+        // At the viewer: the whole of it.
+        fraction = 0f
+        assertTrue(covered(10))
+        assertTrue(covered(90))
+        // Without a conversation on screen nothing is cut.
+        viewports.removed(node)
+        fraction = 1f
+        assertTrue(covered(10))
+    }
+
+    @Test
+    fun `the message list publishes where it shows its messages, and withdraws it as it leaves`() {
+        var shown by mutableStateOf(true)
+        var shapes: SharedMediaShapes? = null
+        var density = 1f
+        composeRule.setContent {
+            density = LocalDensity.current.density
+            InScopes {
+                shapes = LocalSharedMediaShapes.current
+                if (shown) {
+                    Box(
+                        Modifier
+                            .padding(top = 100.dp)
+                            .size(200.dp, 300.dp)
+                            .sharedMediaViewport(PaddingValues(top = 10.dp, bottom = 20.dp)),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(
+            Rect(0f, 110f * density, 200f * density, 380f * density),
+            checkNotNull(shapes).viewports.current,
+        )
+
+        shown = false
+        composeRule.waitForIdle()
+        assertNull(checkNotNull(shapes).viewports.current)
     }
 
     /**

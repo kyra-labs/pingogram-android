@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.story
 
+import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.CompositionLocalProvider
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.testing.assertAccessible
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.VoiceChats
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -101,7 +103,7 @@ class StoryViewerScreenTest {
 
     /** The story, by its description: where it is among the chat's stories, and whose it is. */
     private fun story(): SemanticsNodeInteraction =
-        composeRule.onNode(hasContentDescription("Story 2 of 4 by", substring = true))
+        composeRule.onNode(hasContentDescription("Story 2 of 4", substring = true))
 
     private val taps get() = events.filter { it is StoryViewerEvent.Next || it is StoryViewerEvent.Previous }
 
@@ -162,7 +164,7 @@ class StoryViewerScreenTest {
         state = StoryViewerPreviewData.photo.copy(current = 1)
         composeRule.waitForIdle()
 
-        composeRule.onNode(hasContentDescription("Story 2 of 4 by", substring = true)).assertIsDisplayed()
+        composeRule.onNode(hasContentDescription("Story 2 of 4", substring = true)).assertIsDisplayed()
         assertTrue(events.filterIsInstance<StoryViewerEvent.PosterSettled>().any { it.index == 1 })
     }
 
@@ -175,6 +177,42 @@ class StoryViewerScreenTest {
 
         assertEquals(1, closes)
     }
+
+    @Test
+    fun `a predictive back gesture pauses the story while it lasts, and a cancelled one plays on`() {
+        setScreen()
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, HALF_GESTURE, BackEventCompat.EDGE_LEFT))
+        }
+        composeRule.waitForIdle()
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true)), backGestures)
+
+        composeRule.runOnUiThread { dispatcher.dispatchOnBackCancelled() }
+        composeRule.waitForIdle()
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true), StoryViewerEvent.BackGesture(false)), backGestures)
+        assertEquals(0, closes)
+    }
+
+    @Test
+    fun `a completed predictive back gesture closes the viewer without playing the story on`() {
+        setScreen()
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, HALF_GESTURE, BackEventCompat.EDGE_LEFT))
+            dispatcher.onBackPressed()
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(1, closes)
+        assertEquals(listOf(StoryViewerEvent.BackGesture(true)), backGestures)
+    }
+
+    private val backGestures get() = events.filterIsInstance<StoryViewerEvent.BackGesture>()
 
     @Test
     fun `a swipe down closes the viewer, pausing the story while dragged`() {
@@ -195,6 +233,46 @@ class StoryViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(1, closes)
+    }
+
+    @Test
+    fun `others' stories have no menu`() {
+        setScreen()
+
+        composeRule.onNode(hasContentDescription(string(R.string.story_more))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the user's own story's menu offers Delete, which asks first`() {
+        setScreen(StoryViewerPreviewData.ownMenu.copy(own = OwnStoryUi()))
+
+        composeRule.onNode(hasContentDescription(string(R.string.story_more))).performClick()
+        assertEquals(StoryViewerEvent.Own.MenuOpen(true), events.last())
+        state = StoryViewerPreviewData.ownMenu
+        composeRule.waitForIdle()
+        composeRule.onNode(hasText(string(R.string.story_delete))).performClick()
+        assertEquals(StoryViewerEvent.Own.Delete, events.last())
+
+        state = StoryViewerPreviewData.ownDeleteAsked
+        composeRule.waitForIdle()
+        composeRule.onNode(hasText(string(R.string.story_delete_title))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.story_delete_confirm))).performClick()
+        assertEquals(StoryViewerEvent.Own.DeleteConfirmed, events.last())
+        composeRule.onNode(hasText(string(R.string.story_delete_cancel))).performClick()
+        assertEquals(StoryViewerEvent.Own.DeleteDismissed, events.last())
+    }
+
+    @Test
+    fun `the user's own story shows its views pill, which opens the viewers`() {
+        setScreen(StoryViewerPreviewData.ownViews)
+
+        composeRule
+            .onNode(hasContentDescription("Viewed by 24, 6 reactions. Opens the list of viewers"))
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(StoryViewerEvent.ViewersOpen(true), events.last())
+        composeRule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
     @Test
@@ -237,16 +315,29 @@ class StoryViewerScreenTest {
         setScreen()
 
         val node = story().fetchSemanticsNode()
-        assertEquals(
-            "Story 2 of 4 by ⁨Ada Lovelace⁩",
-            node.config[SemanticsProperties.ContentDescription].single(),
-        )
+        val description = node.config[SemanticsProperties.ContentDescription].single()
+        assertTrue(description, description.startsWith("Photo story from ⁨Ada Lovelace⁩, "))
+        assertTrue(description, ". Story 2 of 4" in description)
         assertTrue(SemanticsProperties.LiveRegion in node.config)
         val actions = node.config[SemanticsActions.CustomActions].map { it.label }
-        assertEquals(listOf(string(R.string.story_previous), string(R.string.story_pause)), actions)
+        assertEquals(
+            listOf(string(R.string.story_previous), string(R.string.story_pause), string(R.string.story_react)),
+            actions,
+        )
         story().performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf(StoryViewerEvent.Next), taps)
         composeRule.assertAccessible()
+    }
+
+    @Test
+    fun `a story still downloading says so after a moment, with the reply field already there`() {
+        composeRule.mainClock.autoAdvance = false
+        setScreen(StoryViewerPreviewData.loadingStory)
+
+        composeRule.onNode(hasText(string(R.string.story_loading))).assertDoesNotExist()
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds + FRAME_MILLIS)
+        composeRule.onNode(hasText(string(R.string.story_loading))).assertExists()
+        composeRule.onNode(hasSetTextAction()).assertExists()
     }
 
     @Test
@@ -258,3 +349,9 @@ class StoryViewerScreenTest {
         assertTrue(StoryViewerEvent.Retry in events)
     }
 }
+
+/** Half way through a back gesture: far enough to shrink the story, not yet released. */
+private const val HALF_GESTURE = 0.5f
+
+/** One frame at 60 Hz, past which the delayed text has composed. */
+private const val FRAME_MILLIS = 16L

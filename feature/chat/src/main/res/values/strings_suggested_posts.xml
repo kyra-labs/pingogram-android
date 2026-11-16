@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A post a subscriber suggested to a channel through its direct messages. -->
+    <string name="suggested_post_title">Suggested post</string>
+    <!-- %1$s is when the post is to go out, e.g. "October 5, 2026, 9:41 AM". -->
+    <string name="suggested_post_publishes_at">Publishes %1$s.</string>
+    <string name="suggested_post_any_time">Publishes when the channel\'s admins choose.</string>
+    <string name="suggested_post_approved">Approved.</string>
+    <string name="suggested_post_declined">Declined.</string>
+    <plurals name="suggested_post_offers_stars">
+        <item quantity="one">Offers %1$d Telegram Star.</item>
+        <item quantity="other">Offers %1$d Telegram Stars.</item>
+    </plurals>
+    <!-- %1$s is an amount of Toncoin, e.g. "1.50". -->
+    <string name="suggested_post_offers_toncoin">Offers %1$s TON.</string>
+    <string name="suggested_post_answer_elsewhere">Pingogram can\'t take payments: answer it in another Telegram app.</string>
+    <string name="suggested_post_approve">Approve</string>
+    <string name="suggested_post_decline">Decline</string>
+    <string name="suggested_post_approve_action">Approve suggested post</string>
+    <string name="suggested_post_decline_action">Decline suggested post</string>
+    <string name="suggested_post_approve_title">Publish this post?</string>
+    <string name="suggested_post_approve_text">It goes out in the channel at the time its author asked for, or now.</string>
+    <string name="suggested_post_decline_title">Decline this post?</string>
+    <string name="suggested_post_decline_text">Its author is told. You can say why.</string>
+    <string name="suggested_post_comment">Comment (optional)</string>
+    <string name="suggested_post_publish">Publish</string>
+    <string name="suggested_post_cancel">Cancel</string>
+    <!-- The send button's menu, in a channel's direct messages. -->
+    <string name="composer_suggest_post">Suggest as a post</string>
+</resources>

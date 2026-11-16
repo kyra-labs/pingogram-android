@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatActionBar
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
@@ -262,6 +263,8 @@ class ProfileViewModel internal constructor(
             ProfileEvent.Block -> showDialog(ProfileDialog.Block(nameOf(uiState.value)))
             ProfileEvent.ConfirmBlock -> setBlocked(true)
             ProfileEvent.Unblock -> setBlocked(false)
+            ProfileEvent.DeleteChat -> showDialog(ProfileDialog.DeleteChat)
+            ProfileEvent.ConfirmDeleteChat -> deleteChat()
             ProfileEvent.DismissDialog -> overlay.update { it.copy(dialog = null) }
             ProfileEvent.LoadMorePhotos -> loadPhotos()
             is ProfileEvent.OpenMention -> openMention(event.target)
@@ -481,6 +484,18 @@ class ProfileViewModel internal constructor(
         }
     }
 
+    /** Deletes the private chat with a deleted account for the user, then leaves the profile; a snackbar if not. */
+    private fun deleteChat() {
+        overlay.update { it.copy(dialog = null) }
+        val id = chatId.value ?: return
+        viewModelScope.launch {
+            when (val deleted = chatRepository.deleteChat(id, forEveryone = false)) {
+                is Outcome.Success -> effectChannel.trySend(ProfileEffect.ChatDeleted)
+                is Outcome.Failure -> showError(deleted.error)
+            }
+        }
+    }
+
     /** Mutes the chat forever or unmutes it; the chat's update shows the change. */
     private fun toggleMute() {
         val id = chatId.value
@@ -560,6 +575,7 @@ class ProfileViewModel internal constructor(
         overlay: Overlay,
     ): ProfileUiState.Content {
         val isBot = user.type == UserType.Bot
+        val phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" }
         return ProfileUiState.Content(
             header = header(user),
             info =
@@ -567,16 +583,36 @@ class ProfileViewModel internal constructor(
                     bio = bio(info, isBot),
                     isBot = isBot,
                     usernames = user.usernames,
-                    phoneNumber = user.phoneNumber.takeIf { it.isNotBlank() }?.let { "+$it" },
+                    phoneNumber = phoneNumber,
+                    // Once the full info is known, so the row does not show before Telegram sent the number.
+                    phoneHiddenBy =
+                        user.firstName.takeIf {
+                            phoneNumber == null && info != null &&
+                                isPersonOtherThanMe(user)
+                        },
                     birthday = info?.birthdate?.let(::birthday),
                     personalChannel = personalChannel?.let { PersonalChannel(it.id, it.title) },
                     birthdaySuggestion = info?.let { birthdaySuggestionOf(user, it, overlay) },
                     note = info?.let { contactNoteOf(user, it) },
+                    // The chat's "Disable sharing" (Telegram Premium), as it is: forwarding, copying and saving off.
+                    isSharingDisabled = chat?.hasProtectedContent == true && user.id != myUserId,
                 ),
             actions = actions(user, overlay),
             dialog = overlay.dialog,
+            isDeletedAccount = user.isDeleted,
+            stranger = strangerOf(user),
         )
     }
+
+    /** The card about someone not in the contacts who wrote first (the owner's board 24c); null for anyone else. */
+    private fun Sources.strangerOf(user: User): ProfileStranger? =
+        ProfileStranger(user.firstName, info?.groupsInCommon ?: 0).takeIf {
+            chat?.actionBar is ChatActionBar.ReportAddBlock && !user.isContact && isPersonOtherThanMe(user)
+        }
+
+    /** [user] is a person (not a bot or a deleted account) other than the current user. */
+    private fun Sources.isPersonOtherThanMe(user: User): Boolean =
+        user.type == UserType.Regular && !user.isDeleted && user.id != myUserId
 
     /** What can be done on the profile of [user]: nothing to block, report or start a secret chat with oneself. */
     private fun Sources.actions(
@@ -589,8 +625,9 @@ class ProfileViewModel internal constructor(
         val blockedNow = overlay.blocked?.takeIf { info == null || info.isBlocked != it } ?: info?.isBlocked
         return ProfileActions(
             isSelf = isSelf,
-            canMessage = user.haveAccess && (!isDeleted || chat != null),
-            isMuted = chat?.isMuted?.takeIf { !isSelf },
+            // A deleted account's one action is deleting the chat (board 24): its messages stay readable there.
+            canMessage = user.haveAccess && !isDeleted,
+            isMuted = mutedOf(user),
             canStartSecretChat = isRegular && !isSelf && user.haveAccess,
             isStartingSecretChat = overlay.isStartingSecretChat,
             contact = contactAction(user).takeIf { isRegular && !isSelf },
@@ -598,9 +635,24 @@ class ProfileViewModel internal constructor(
             isChangingBlock = overlay.isChangingBlock,
             canReport = !isSelf && !isDeleted && chat != null,
             callUserId = user.id.takeIf { isRegular && !isSelf && info?.canBeCalled == true },
-            exportChatId = chat?.takeIf { !it.hasProtectedContent }?.id,
+            exportChatId = exportChatIdOf(user),
+            canDeleteChat = isDeleted && chat != null,
+            shareUsername = botLinkOf(user),
+            isBot = user.type == UserType.Bot,
+            blockName = user.firstName.ifBlank { user.lastName }.trim(),
         )
     }
+
+    /** Whether the private chat is muted; null where it cannot be changed: Saved Messages, a deleted account's chat. */
+    private fun Sources.mutedOf(user: User): Boolean? = chat?.isMuted?.takeIf { user.id != myUserId && !user.isDeleted }
+
+    /** The private chat "Export chat" exports: none where its content may not be saved, or with a deleted account. */
+    private fun Sources.exportChatIdOf(user: User): Long? =
+        chat?.takeIf { !it.hasProtectedContent && !user.isDeleted }?.id
+
+    /** The username a bot's "Share" pill shares; null for anyone but a bot (board 24d). */
+    private fun botLinkOf(user: User): String? =
+        user.usernames.firstOrNull()?.takeIf { user.type == UserType.Bot && !user.isDeleted }
 
     private fun Sources.header(user: User): ProfileHeader {
         val isDeleted = user.isDeleted
@@ -608,7 +660,7 @@ class ProfileViewModel internal constructor(
             userId = user.id,
             name = if (isDeleted) UiText.resource(UiR.string.user_deleted_account) else user.fullName(),
             photo = user.profilePhoto,
-            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_filled else null,
+            placeholderIcon = if (isDeleted) UiR.drawable.ic_person_off_filled else null,
             status =
                 when {
                     isDeleted -> null
@@ -641,8 +693,7 @@ class ProfileViewModel internal constructor(
         }
 
     /** [user] is a contact the current user keeps notes about and may suggest a birthday to: a person, not oneself. */
-    private fun Sources.isContactOf(user: User): Boolean =
-        user.isContact && user.type == UserType.Regular && !user.isDeleted && user.id != myUserId
+    private fun Sources.isContactOf(user: User): Boolean = user.isContact && isPersonOtherThanMe(user)
 
     /** The note row of a contact (a regular user, not oneself); null for anyone else. */
     private fun Sources.contactNoteOf(

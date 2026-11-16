@@ -81,6 +81,13 @@ interface GroupAdministrationRepository {
     /** Deletes the history of chat [chatId] for the current user only, keeping the chat in the lists. */
     suspend fun clearHistory(chatId: Long): Outcome<Unit>
 
+    /**
+     * The user who becomes the owner of chat [chatId] if its owner leaves without choosing one
+     * (`getChatOwnerAfterLeaving`): in a supergroup or channel after 7 days unless the owner comes back, in a basic
+     * group at once. Only its owner may ask.
+     */
+    suspend fun ownerAfterLeaving(chatId: Long): Outcome<Long>
+
     /** Whether the user may transfer the ownership of a chat now, and why not (`canTransferOwnership`). */
     suspend fun ownershipTransferCheck(): Outcome<OwnershipTransferCheck>
 

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
  *   silent loop. Another item stops it; nothing replaces it for a photo or a file still downloading. Without autoplay
  *   ([setAutoplay], power saving) it waits for [playPause] instead ([VideoPlayback.waitsForTap]).
  * - **Play and pause** ([playPause]) toggle the video; after its end it plays again from the start. [seek] moves it.
+ * - **Speed** ([setSpeed]) holds for every video shown after it, until the viewer closes; GIFs keep their pace.
  * - **The screen stopping** ([setStarted]) pauses what plays; starting again plays a GIF on, and a video that has
  *   not played yet, but leaves a paused video paused.
  * - **Progress**: while a video plays, its position goes into snapshot state every other frame ([ProgressTicker]),
@@ -44,6 +45,13 @@ internal class MediaPlayback(
     private val ticker = ProgressTicker(player, scope)
     private var isStarted = false
     private var autoplay = true
+    private val mutableSpeed = MutableStateFlow(1f)
+
+    /** Whether videos play without sound ([setMuted]), until the viewer closes. */
+    private var muted = false
+
+    /** How fast videos play ([setSpeed]), also while none is in the player. */
+    val speed: StateFlow<Float> = mutableSpeed.asStateFlow()
 
     /** Where a message's video is to start ([startAt]), until it does. */
     private var startPosition: Pair<Long, Long>? = null
@@ -105,7 +113,7 @@ internal class MediaPlayback(
         if (on == autoplay) return
         autoplay = on
         val current = session ?: return
-        if (on && isStarted && !current.hasStarted) start(current) else publish()
+        if (on && isStarted && current.mayAutoplay) start(current) else publish()
     }
 
     /** The screen was started or stopped. */
@@ -115,9 +123,24 @@ internal class MediaPlayback(
         val current = session ?: return
         when {
             !started -> pause(current)
-            !current.hasStarted -> if (autoplay) start(current)
+            !current.hasStarted -> if (autoplay && current.mayAutoplay) start(current)
             current.target.kind == VideoKind.Gif -> resume(current)
         }
+    }
+
+    /**
+     * Stops a video still streaming before its first frame (board 25's Cancel): it leaves the player, whose reader
+     * stops the stream's download (what came stays), and waits for a tap to play, as without autoplay.
+     */
+    fun cancelStream() {
+        val current = session ?: return
+        if (!current.hasStarted || current.showsFrame) return
+        ticker.stop(session = null)
+        player.stop()
+        current.hasStarted = false
+        current.isPlaying = false
+        current.stoppedByUser = true
+        publish()
     }
 
     /** Plays or pauses the video in the player, or plays the item waiting for a tap. */
@@ -128,6 +151,30 @@ internal class MediaPlayback(
             current.isPlaying -> pause(current)
             else -> resume(current)
         }
+    }
+
+    /** Plays videos at [speed] times their pace from now on, the one in the player too. */
+    fun setSpeed(speed: Float) {
+        if (speed == mutableSpeed.value) return
+        mutableSpeed.value = speed
+        player.setSpeed(speed)
+        publish()
+    }
+
+    /** Plays videos without sound, or with it again; GIFs never have any. */
+    fun setMuted(muted: Boolean) {
+        if (muted == this.muted) return
+        this.muted = muted
+        player.setMuted(muted)
+        publish()
+    }
+
+    /** Moves the video in the player [seconds] on (back where negative), within its length, shown at once. */
+    fun seekBy(seconds: Int) {
+        val current = session?.takeIf { it.hasStarted } ?: return
+        val length = player.durationMillis ?: current.target.durationMillis
+        if (length <= 0) return
+        seek(current.progress.floatValue + seconds * MILLIS_PER_SECOND / length)
     }
 
     /** Moves the video in the player to [fraction] (0–1) of its length, shown at once. */
@@ -213,7 +260,10 @@ internal class MediaPlayback(
                     showsFrame = it.showsFrame,
                     progress = it.readProgress,
                     buffered = it.readBuffered,
-                    waitsForTap = !it.hasStarted && !autoplay,
+                    waitsForTap = !it.hasStarted && (!autoplay || it.stoppedByUser),
+                    canHandOff = it.hasStarted && it.target.kind == VideoKind.Video,
+                    speed = mutableSpeed.value,
+                    isMuted = muted,
                 )
             }
     }
@@ -250,6 +300,12 @@ private class Session(
     var hasStarted = false
     var isPlaying = false
     var showsFrame = false
+
+    /** The user stopped it streaming ([MediaPlayback.cancelStream]): it waits for a tap even with autoplay. */
+    var stoppedByUser = false
+
+    /** Not given to the player yet, nor stopped by the user: autoplay may start it. */
+    val mayAutoplay: Boolean get() = !hasStarted && !stoppedByUser
 }
 
 /**
@@ -301,3 +357,5 @@ private fun VideoPlayer.fractionOf(
     val length = durationMillis ?: session.target.durationMillis
     return if (length > 0) (millis.toFloat() / length).coerceIn(0f, 1f) else 0f
 }
+
+private const val MILLIS_PER_SECOND = 1_000f

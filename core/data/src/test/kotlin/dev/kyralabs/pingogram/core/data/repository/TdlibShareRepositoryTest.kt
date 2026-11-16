@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ShareResult
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
+import dev.kyralabs.pingogram.core.domain.model.SharedStory
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
@@ -114,6 +115,29 @@ class TdlibShareRepositoryTest {
                 texts.map { it.text.text },
             )
             assertTrue(texts.all { it.linkPreviewOptions == null && !it.clearDraft })
+        }
+
+    @Test
+    fun `a shared story goes to every chat as a story message, the comment first`() =
+        runTest {
+            answerSends()
+
+            val result =
+                repository().share(
+                    chatIds = listOf(1, 2),
+                    content = SharedContent(story = SharedStory(posterChatId = 7, storyId = 42)),
+                    comment = text("Look"),
+                )
+
+            assertEquals(ShareResult(sent = 2, failed = 0), result)
+            assertEquals(listOf("1:Text", "1:Story", "2:Text", "2:Story"), sent())
+            val story =
+                client.sent
+                    .filterIsInstance<TdApi.SendMessage>()
+                    .mapNotNull { it.inputMessageContent as? TdApi.InputMessageStory }
+                    .first()
+            assertEquals(7L, story.storyPosterChatId)
+            assertEquals(42, story.storyId)
         }
 
     @Test

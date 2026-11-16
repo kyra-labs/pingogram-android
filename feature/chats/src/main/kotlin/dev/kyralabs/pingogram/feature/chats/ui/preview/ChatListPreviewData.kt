@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui.preview
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -15,12 +16,15 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListSummary
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListUiState
 import dev.kyralabs.pingogram.feature.chats.ui.ChatPreview
 import dev.kyralabs.pingogram.feature.chats.ui.ChatSelection
+import dev.kyralabs.pingogram.feature.chats.ui.CommunityEntry
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteDialog
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteForEveryone
 import dev.kyralabs.pingogram.feature.chats.ui.DeleteKind
 import dev.kyralabs.pingogram.feature.chats.ui.FolderTab
 import dev.kyralabs.pingogram.feature.chats.ui.HeaderAccount
+import dev.kyralabs.pingogram.feature.chats.ui.KEYWORD_ALERTS_FOLDER_ID
 import dev.kyralabs.pingogram.feature.chats.ui.OutgoingStatus
+import dev.kyralabs.pingogram.feature.chats.ui.RowTopic
 import dev.kyralabs.pingogram.feature.chats.ui.TitleBadge
 import dev.kyralabs.pingogram.feature.chats.ui.rowActions
 import dev.kyralabs.pingogram.feature.chats.ui.selectionActions
@@ -158,8 +162,15 @@ internal object ChatListPreviewData {
                 preview = message("Next up: Hidden Figures", UiText.Plain("Mary")),
                 time = "Mar 2",
                 isMarkedAsUnread = true,
-                // A forum: its avatar is a rounded square.
+                // A forum: its avatar is a rounded square, and it names its newest topics above the preview.
                 avatarShape = AvatarShape.RoundedSquare,
+            ).copy(
+                topics =
+                    persistentListOf(
+                        RowTopic(id = 3, name = "Reading list", color = TopicColor.Green, isUnread = false),
+                        RowTopic(id = 1, name = "General", color = null, isUnread = false),
+                        RowTopic(id = 4, name = "Meetups", color = TopicColor.Violet, isUnread = false),
+                    ),
             ),
             row(
                 id = 10,
@@ -222,6 +233,88 @@ internal object ChatListPreviewData {
                     ),
                 ),
         )
+
+    /**
+     * Two communities whose chats show as one entry each (the owner's board 19b): one expanded, with a forum among its
+     * chats, one muted.
+     */
+    val withCommunities: ChatListUiState =
+        run {
+            val pinned = items.count { it.isPinned }
+            val kyraLabs =
+                persistentListOf(
+                    row(
+                        id = 41,
+                        title = "Kyra Labs Updates",
+                        preview = message("Pingogram 1.2 beta is out"),
+                        time = "9:30 AM",
+                        unreadCount = 1,
+                        avatarShape = AvatarShape.Channel,
+                    ),
+                    // A forum: its badge counts its topics with unread messages, not the messages.
+                    row(
+                        id = 42,
+                        title = "Pingogram Beta",
+                        preview = message("Pager swipe feels great", UiText.Plain("Riya")),
+                        time = "9:02 AM",
+                        unreadCount = 57,
+                        avatarShape = AvatarShape.RoundedSquare,
+                    ).copy(
+                        unreadTopicCount = 3,
+                        topics =
+                            persistentListOf(
+                                RowTopic(id = 5, name = "Bug reports", color = TopicColor.Red, isUnread = true),
+                                RowTopic(id = 1, name = "General", color = null, isUnread = true),
+                                RowTopic(id = 7, name = "Feature ideas", color = TopicColor.Blue, isUnread = false),
+                                RowTopic(id = 8, name = "Translations", color = TopicColor.Yellow, isUnread = true),
+                            ),
+                    ),
+                    row(
+                        id = 43,
+                        title = "Moderators",
+                        preview = message("Approved 3 join requests", UiText.Plain("Sahil")),
+                        time = "Yesterday",
+                        avatarShape = AvatarShape.Group,
+                    ),
+                )
+            val androidDevs =
+                (ANDROID_DEVS_FIRST_CHAT until ANDROID_DEVS_FIRST_CHAT + ANDROID_DEVS_CHATS)
+                    .map { id ->
+                        row(
+                            id = id,
+                            title = "Android Devs $id",
+                            preview = message("Compose 1.12 is stable"),
+                            time = "Mon",
+                            unreadCount = 3,
+                            isMuted = true,
+                            avatarShape = AvatarShape.Group,
+                        )
+                    }.toImmutableList()
+            val communities =
+                persistentListOf(
+                    CommunityEntry(
+                        id = 40,
+                        name = "Kyra Labs Community",
+                        photo = null,
+                        chats = kyraLabs,
+                        unreadChatCount = kyraLabs.count { it.isUnread },
+                        isMuted = false,
+                        isExpanded = true,
+                        before = pinned,
+                    ),
+                    CommunityEntry(
+                        id = 50,
+                        name = "Android Devs",
+                        photo = null,
+                        chats = androidDevs,
+                        unreadChatCount = androidDevs.count { it.isUnread },
+                        isMuted = true,
+                        isExpanded = false,
+                        before = pinned + 2,
+                    ),
+                )
+            content.copy(content = mainList.copy(communities = communities))
+        }
 
     val connecting = content.copy(connection = ConnectionStatus.Connecting)
 
@@ -292,6 +385,47 @@ internal object ChatListPreviewData {
 
     val leaveGroupDialog = content.copy(deleteDialog = leaveGroup)
 
+    /**
+     * The "Keyword alerts" tab selected (board 30): the three chats with a match of the last week, the newest first,
+     * each with the word it matched as a chip.
+     */
+    val keywordAlerts: ChatListUiState =
+        ChatListUiState(
+            content =
+                ChatListContent.Content(
+                    persistentListOf(
+                        row(
+                            id = 41,
+                            title = "Kyra Labs Updates",
+                            preview = message("Spenzia's public launch is moving to 1 December"),
+                            time = "2:32 PM",
+                            isMuted = true,
+                            avatarShape = AvatarShape.Channel,
+                        ).copy(keyword = "launch"),
+                        row(
+                            id = 42,
+                            title = "Pingogram Beta",
+                            preview = message("0.9.4 rollout is at 50%", UiText.Plain("Arjun")),
+                            time = "1:05 PM",
+                            unreadCount = 3,
+                            avatarShape = AvatarShape.Group,
+                        ).copy(keyword = "0.9.4"),
+                        row(
+                            id = 43,
+                            title = "Hash Hackers Deals",
+                            preview = message("Pingogram Pro lifetime deal is back"),
+                            time = "11:40 AM",
+                            isMuted = true,
+                            avatarShape = AvatarShape.Channel,
+                        ).copy(keyword = "Pingogram"),
+                    ),
+                ),
+            folderTabs = (folders + FolderTab.KeywordAlerts(chatCount = 3)).toImmutableList(),
+            selectedFolderId = KEYWORD_ALERTS_FOLDER_ID,
+        )
+
     /** The archive shows the rows from Orbital Mechanics Weekly on. */
     private const val ARCHIVED_FROM = 4
+    private const val ANDROID_DEVS_FIRST_CHAT = 51L
+    private const val ANDROID_DEVS_CHATS = 4
 }

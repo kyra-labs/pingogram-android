@@ -11,7 +11,9 @@ import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.birthday.birthdayRecipientOf
 import dev.kyralabs.pingogram.feature.chat.ui.dates.hasRelativeDates
+import dev.kyralabs.pingogram.feature.chat.ui.giveaway.chatIdsOf
 
 /**
  * Everything one item is made from: the message and its place, what it refers to (its sender, the members a service
@@ -41,6 +43,8 @@ internal data class ItemInputs(
     val senderRole: UiText? = null,
     /** The user's own usernames, lowercase and without `@`, which `@username` mentions of the user name. */
     val myUsernames: Set<String> = emptySet(),
+    /** The chats the content names ([chatIdsOf]: a giveaway's participating channels), as looked up, in that order. */
+    val chats: List<ChatRef?> = emptyList(),
     /**
      * The current minute (Unix time) for a text with dates worded relative to now ("in 3 days"), so the item is mapped
      * again each minute; null for every other text, whose item stays reused.
@@ -79,7 +83,8 @@ internal fun ItemSources.inputsOf(
         date = date,
         kind = chatKind,
         sender = refOf(message.sender),
-        members = memberIdsOf(message.content).map(users::get),
+        members = (memberIdsOf(message.content) + birthdayRecipientOf(message)).map(users::get),
+        chats = chatIdsOf(message.content).map(::chatRefOf),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
         isRead = newest.isOutgoing && newest.id <= chat.lastReadOutboxMessageId,
@@ -95,7 +100,7 @@ internal fun ItemSources.inputsOf(
                 .orEmpty()
                 .mapTo(HashSet()) { it.lowercase() },
         relativeNow =
-            now?.takeIf { message.content.textOrCaption.hasRelativeDates }?.let {
+            now?.takeIf { message.content.textOrCaption.hasRelativeDates || message.closingPoll != null }?.let {
                 it.epochSecond / SECONDS_PER_MINUTE * SECONDS_PER_MINUTE
             },
     )
@@ -158,7 +163,11 @@ private fun ItemSources.refOf(origin: MessageOrigin): Any? =
 private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
     if (chatId == chat.id) ChatRef(chat.id, chat.title, chat.photo) else people.chats[chatId]
 
-/** The users a service message names besides its sender, whose names its text may show. */
+/**
+ * The users the content names besides its sender, whose names it shows: a service message's member, who ticked a
+ * checklist's tasks, a giveaway's winners.
+ */
+
 internal fun memberIdsOf(content: MessageContent): List<Long> =
     when (content) {
         is MessageContent.Service -> {
@@ -174,6 +183,10 @@ internal fun memberIdsOf(content: MessageContent): List<Long> =
             content.list.tasks
                 .mapNotNull { (it.completedBy as? MessageSender.User)?.userId }
                 .distinct()
+        }
+
+        is MessageContent.GiveawayWinners -> {
+            content.winnerUserIds
         }
 
         else -> {
@@ -195,8 +208,8 @@ internal fun ItemInputs.showsLargeEmoji(
 
 /**
  * Whether the message shouts (`docs/DESIGN_SYSTEM.md` §13.6): an incoming group text of one word of at most
- * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least one of them, without formatting, link preview,
- * reply or forward ("LOL", "OK!"), shown large and italic.
+ * [SHOUT_MAX_LENGTH] characters, all its letters capitals and at least [SHOUT_MIN_LETTERS] of them, without formatting,
+ * link preview, reply or forward ("LOL", "YES!"), shown large and italic; "OK" and "NO" keep their bubble.
  */
 internal fun ItemInputs.isShout(
     content: MessageContent,
@@ -206,7 +219,7 @@ internal fun ItemInputs.isShout(
     return kind == ChatKind.Group && !message.isOutgoing && content is MessageContent.Text &&
         content.linkPreview == null && reply == null && message.forwardInfo == null && text.entities.isEmpty() &&
         value.length in 1..SHOUT_MAX_LENGTH && value.none { it.isWhitespace() } &&
-        value.any { it.isLetter() } && value == value.uppercase() && value != value.lowercase()
+        value.count { it.isLetter() } >= SHOUT_MIN_LETTERS && value == value.uppercase() && value != value.lowercase()
 }
 
 /**
@@ -222,6 +235,7 @@ internal fun ItemInputs.headlineLength(text: FormattedText): Int {
 }
 
 private const val SHOUT_MAX_LENGTH = 6
+private const val SHOUT_MIN_LETTERS = 3
 private const val HEADLINE_MAX_LENGTH = 32
 
 /**
@@ -247,3 +261,7 @@ internal fun ItemInputs.canWave(action: ServiceAction): Boolean {
 }
 
 private const val SECONDS_PER_MINUTE = 60L
+
+/** When this message's open poll closes by itself (Unix time); null for other messages and polls that stay open. */
+internal val Message.closingPoll: Long?
+    get() = (content as? MessageContent.Poll)?.poll?.closesAt(date)

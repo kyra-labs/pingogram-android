@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
@@ -14,7 +15,11 @@ import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
@@ -22,10 +27,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
 import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedJumps
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.CompletableDeferred
@@ -82,7 +89,23 @@ abstract class ChatViewModelHarness {
     protected val forumTopics = FakeForumTopicRepository()
     protected val threads = FakeMessageThreadRepository()
     protected val savedTopics = FakeSavedMessagesTopicRepository()
+    protected val directTopics = FakeDirectMessagesTopicRepository()
+
+    private fun threadRepositories() =
+        ThreadRepositories(
+            pinnedMessages,
+            hiddenPins,
+            forumTopics,
+            threads,
+            savedTopics,
+            directTopics,
+            users,
+            chats,
+            pinnedJumps,
+        )
+
     protected val shareInbox = ShareInbox()
+    internal val pinnedJumps = PinnedJumps()
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
     protected val botStarts = BotStartInbox()
@@ -90,6 +113,10 @@ abstract class ChatViewModelHarness {
     internal val deviceLocation = FakeDeviceLocationRepository()
     protected val locationConsent = InlineLocationConsent()
     protected val translations = FakeTranslationRepository()
+    protected val transcriber = FakeVoiceTranscriber()
+    protected val transcripts = FakeTranscriptRepository()
+    protected val transcriptionSettings = FakeTranscriptionSettingsRepository()
+    private val transcription get() = TranscriptionRepositories(transcriber, transcripts, transcriptionSettings, files)
 
     /** Texts are in English, the user's language, unless a test says otherwise. */
     protected val languageDetector = FakeDeviceLanguageDetector(default = LanguageDetection.Detected("en"))
@@ -101,6 +128,7 @@ abstract class ChatViewModelHarness {
     protected val polls = FakePollRepository()
     protected val checklists = FakeChecklistRepository()
     protected val scheduledMessages = FakeScheduledMessageRepository()
+    protected val giveaways = FakeGiveawayRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -128,6 +156,7 @@ abstract class ChatViewModelHarness {
         messageId: Long? = null,
         topic: MessageTopic? = null,
         originalQuality: Boolean = false,
+        appInfo: AppInfo = AppInfo(versionName = ""),
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
@@ -156,7 +185,7 @@ abstract class ChatViewModelHarness {
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
                 chatJoinRepository = joins,
-                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads, savedTopics),
+                threadRepositories = threadRepositories(),
                 shareInbox = shareInbox,
                 botButtonRepository = botButtons,
                 botInfoRepository = bots,
@@ -169,11 +198,14 @@ abstract class ChatViewModelHarness {
                 pollRepository = polls,
                 checklistRepository = checklists,
                 scheduledMessageRepository = scheduledMessages,
+                giveawayRepository = giveaways,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },
                 topic = topic,
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
+                appInfo = appInfo,
+                transcriptionRepositories = transcription,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

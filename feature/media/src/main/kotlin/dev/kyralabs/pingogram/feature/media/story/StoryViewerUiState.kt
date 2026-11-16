@@ -18,7 +18,8 @@ sealed interface StoryViewerUiState {
      * The [posters] to swipe between, [current] among them, and the [story] of the current one; [isPaused] while a
      * finger holds the story, a sheet or the keyboard is up or the screen is stopped; [isMuted] for videos. [reply] is
      * the reply field, null where the story cannot be replied to (channels, the user's own); [reactions] the reactions
-     * the user may put on the story, null while not known.
+     * the user may put on the story, null while not known; [own] the ⋮ menu of a story the user may delete, null for
+     * others; [views] the views pill of the user's own story, in the reply field's place, null for others.
      */
     data class Content(
         val posters: ImmutableList<StoryPosterUi>,
@@ -28,6 +29,12 @@ sealed interface StoryViewerUiState {
         val isMuted: Boolean,
         val reply: StoryReplyUi?,
         val reactions: StoryReactionsUi?,
+        val own: OwnStoryUi? = null,
+        val views: StoryViewsUi? = null,
+        /** A finger holds the story (board 26): the chrome hides and a pause badge says to let go. */
+        val isHeld: Boolean = false,
+        /** The share button beside the reaction (board 26): someone else's story the user may send to chats. */
+        val canShare: Boolean = false,
     ) : StoryViewerUiState
 }
 
@@ -94,10 +101,15 @@ sealed interface StoryMedia {
         val hasSound: Boolean,
     ) : StoryMedia
 
-    /** A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen. */
+    /**
+     * A live story: chat [chatId]'s group call [groupCallId], watched on the voice chat screen; the call's [title]
+     * (empty without one) and how many are [watching] (0 until the call is known).
+     */
     data class Live(
         val chatId: Long,
         val groupCallId: Int,
+        val title: String = "",
+        val watching: Int = 0,
     ) : StoryMedia
 
     /** Content Pingogram can't show yet. */
@@ -111,6 +123,38 @@ sealed interface StoryMedia {
         val error: DomainError,
     ) : StoryMedia
 }
+
+/**
+ * The ⋮ menu of the user's own story (board 26, owner decision 2026-11-15: Delete is there): whether it is open
+ * ([menuOpen]), whether "Delete this story?" asks ([deleteAsked]), and [isDeleting] while TDLib deletes it.
+ */
+@Immutable
+data class OwnStoryUi(
+    val menuOpen: Boolean = false,
+    val deleteAsked: Boolean = false,
+    val isDeleting: Boolean = false,
+)
+
+/**
+ * The views pill of the user's own story (board 26, owner decision 2026-11-15: it takes the bar's full width): how
+ * many saw it ([viewCount]) and reacted ([reactionCount]), the faces of who saw it last ([recent], at most three),
+ * and whether the list of viewers is open ([isOpen]).
+ */
+@Immutable
+data class StoryViewsUi(
+    val viewCount: Int,
+    val reactionCount: Int,
+    val recent: ImmutableList<StoryViewerFace>,
+    val isOpen: Boolean = false,
+)
+
+/** A viewer's face in the views pill: user [userId], [name] and [photo]. */
+@Immutable
+data class StoryViewerFace(
+    val userId: Long,
+    val name: String,
+    val photo: ProfilePhoto?,
+)
 
 /** The reply field: [isSending] while a reply goes out. */
 @Immutable
@@ -143,9 +187,22 @@ sealed interface StoryViewerEvent {
     /** A tap on the start side. */
     data object Previous : StoryViewerEvent
 
+    /** A screen reader explores by touch ([on]), or stopped: stories then wait for "Next story". */
+    data class ScreenReader(
+        val on: Boolean,
+    ) : StoryViewerEvent
+
     /** A finger holds the story ([held]), or let go. */
     data class Hold(
         val held: Boolean,
+    ) : StoryViewerEvent
+
+    /**
+     * A system back gesture is under way ([active]), or ended without leaving: the story pauses for the whole gesture,
+     * and nothing moves the viewer on or closes it meanwhile.
+     */
+    data class BackGesture(
+        val active: Boolean,
     ) : StoryViewerEvent
 
     /** The pager is dragged or settling ([moving]), which pauses the story. */
@@ -182,6 +239,39 @@ sealed interface StoryViewerEvent {
     ) : StoryViewerEvent
 
     data object Retry : StoryViewerEvent
+
+    /** Sharing the story (board 26): the share button, and the screen coming back from the share sheet. */
+    sealed interface Share : StoryViewerEvent {
+        /** The share button: the story pauses while the share sheet shows, and [StoryViewerEffect.Share] opens it. */
+        data object Open : Share
+
+        /** The screen was resumed ([resumed] true) or paused: back from the share sheet, the story plays on. */
+        data class Resumed(
+            val resumed: Boolean,
+        ) : Share
+    }
+
+    /** Opens or closes the list of who saw the user's own story ([open]), which pauses it while it shows. */
+    data class ViewersOpen(
+        val open: Boolean,
+    ) : StoryViewerEvent
+
+    /** What the user does with their own story's ⋮ menu; each pauses the story while it shows. */
+    sealed interface Own : StoryViewerEvent {
+        /** Opens or closes the menu ([open]). */
+        data class MenuOpen(
+            val open: Boolean,
+        ) : Own
+
+        /** "Delete" in the menu: the question asks first. */
+        data object Delete : Own
+
+        /** "Cancel", or the question dismissed. */
+        data object DeleteDismissed : Own
+
+        /** "Delete" in the question: the story goes for everyone, and the viewer moves on. */
+        data object DeleteConfirmed : Own
+    }
 }
 
 /** One-off side effects of [StoryViewerViewModel], handled once by the route. */
@@ -192,10 +282,19 @@ sealed interface StoryViewerEffect {
     /** A reply was sent: a snackbar says so. */
     data object ReplySent : StoryViewerEffect
 
+    /** The user's own story was deleted: a snackbar says so. */
+    data object StoryDeleted : StoryViewerEffect
+
     /** The player could not play the video: its picture shows for a photo's time, and a snackbar says why. */
     data object PlaybackFailed : StoryViewerEffect
 
     data class ShowError(
         val error: DomainError,
+    ) : StoryViewerEffect
+
+    /** Opens the share sheet for story [storyId] of chat [posterChatId]. */
+    data class Share(
+        val posterChatId: Long,
+        val storyId: Int,
     ) : StoryViewerEffect
 }

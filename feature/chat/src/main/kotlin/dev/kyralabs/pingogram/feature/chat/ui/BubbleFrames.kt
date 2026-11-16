@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,6 +31,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
@@ -43,6 +45,9 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardButtons
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostCard
+import dev.kyralabs.pingogram.feature.chat.ui.suggested.SuggestedPostUi
+import dev.kyralabs.pingogram.feature.chat.ui.transcription.VideoNoteTranscript
 import kotlin.math.max
 
 // The frames of a message without a bubble (emoji only, bare content), and the reaction badges on a bubble's corner and
@@ -106,6 +111,8 @@ internal fun BubbleStack(
     modifier: Modifier,
     frame: @Composable (Modifier) -> Unit,
 ) {
+    // The reactions the bubble had when it showed: only those added since pop in (ReactionBadges).
+    val shownReactions = remember(bubble.reactionsMessageId) { bubble.reactions.mapTo(HashSet()) { it.label } }
     val withBadges: @Composable (Modifier) -> Unit = { modifier ->
         if (bubble.reactions.isEmpty()) {
             frame(modifier)
@@ -121,6 +128,7 @@ internal fun BubbleStack(
                         toggles = reactions,
                         onToggle = rememberReactionToggle(bubble, reactions, onEvent),
                         onMore = { onEvent(ChatEvent.ShowAllReactions(bubble.id)) },
+                        added = { it !in shownReactions },
                     )
                 },
             )
@@ -143,12 +151,12 @@ internal fun BubbleStack(
             )
         }
 
-        thread != null || keyboard != null -> {
+        thread != null || keyboard != null || bubble.suggestedPost != null -> {
             WithFooter(
                 isOutgoing = bubble.isOutgoing,
                 modifier = stackModifier,
                 bubble = { withBadges(Modifier) },
-                footer = { KeyboardAndThread(bubble.isOutgoing, keyboard, thread, onEvent) },
+                footer = { KeyboardAndThread(bubble.isOutgoing, keyboard, thread, onEvent, bubble.suggestedPost) },
             )
         }
 
@@ -159,8 +167,9 @@ internal fun BubbleStack(
 }
 
 /**
- * Below a bubble: the bot's [keyboard], as wide as a bubble can be, then the link to the [thread], on the bubble's
- * side, `spacing.small` apart, so their touch targets do not overlap; either may be missing.
+ * Below a bubble: the card of the post it suggests to a channel ([suggestedPost]), the bot's [keyboard], as wide as a
+ * bubble can be, then the link to the [thread], on the bubble's side, `spacing.small` apart, so their touch targets do
+ * not overlap; any may be missing.
  */
 @Composable
 private fun KeyboardAndThread(
@@ -168,11 +177,13 @@ private fun KeyboardAndThread(
     keyboard: BotKeyboard?,
     thread: ThreadLink?,
     onEvent: (ChatEvent) -> Unit,
+    suggestedPost: SuggestedPostUi? = null,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start,
     ) {
+        if (suggestedPost != null) SuggestedPostCard(suggestedPost, onEvent)
         if (keyboard != null) {
             BotKeyboardButtons(keyboard, onPress = { onEvent(BotButtonEvent.Press(keyboard.messageId, it)) })
         }
@@ -262,6 +273,7 @@ internal fun BareBubble(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    canTranscribe: Boolean = false,
 ) {
     Column(
         modifier = modifier,
@@ -270,8 +282,21 @@ internal fun BareBubble(
     ) {
         BubbleHeader(bubble, colors, onEvent)
         Box {
-            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
+            MessageContentBody(
+                bubble,
+                fileState = null,
+                Playback.Stopped,
+                colors,
+                onEvent,
+                canTranscribe = canTranscribe,
+            )
             if (bubble.showsTime) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
+        }
+        // A round video message's transcript, in a bubble of its own under the circle (§6).
+        if (bubble.content is MessageContent.VideoNote) {
+            bubble.transcript?.let { transcript ->
+                VideoNoteTranscript(bubble.id, transcript, colors, onEvent)
+            }
         }
     }
 }
@@ -305,36 +330,6 @@ internal fun RowScope.SenderAvatarColumn(
         Spacer(Modifier.width(size))
     }
     Spacer(Modifier.width(MaterialTheme.spacing.small))
-}
-
-/**
- * Opens the profile of user [userId] ([ChatEvent.OpenProfile]) when this sender's name or avatar is clicked, where
- * there is a user (`docs/audit/accessibility.md` A4): a button ("Open profile") on a 48 dp touch target that moves
- * nothing ([touchTarget]), focusable by the keyboard, with Material's pressed, hover and focus states clipped to
- * [shape]. The label is read from the resources in the semantics block, only when something reads it.
- */
-@Composable
-internal fun Modifier.openProfileTarget(
-    userId: Long?,
-    shape: Shape,
-    onEvent: (ChatEvent) -> Unit,
-): Modifier {
-    if (userId == null) return this
-    val interactions = remember { MutableInteractionSource() }
-    val resources = LocalResources.current
-    val open = remember(userId, onEvent) { { onEvent(ChatEvent.OpenProfile(userId)) } }
-    return touchTarget(
-        Modifier
-            .clickable(interactions, indication = null, onClick = open)
-            .semantics {
-                role = Role.Button
-                onClick(label = resources.getString(R.string.chat_open_profile)) {
-                    open()
-                    true
-                }
-            },
-    ).clip(shape)
-        .indication(interactions, ripple(focusRingShape = shape))
 }
 
 /**

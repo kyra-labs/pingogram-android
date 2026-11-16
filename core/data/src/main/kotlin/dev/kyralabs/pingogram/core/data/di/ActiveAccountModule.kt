@@ -5,16 +5,20 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
+import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
+import dev.kyralabs.pingogram.core.domain.repository.AiTextRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
+import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -40,10 +44,12 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
+import dev.kyralabs.pingogram.core.domain.repository.DirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -51,6 +57,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
+import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -60,18 +67,22 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasskeyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileMusicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -81,6 +92,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
@@ -88,6 +100,8 @@ import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryPostRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
+import dev.kyralabs.pingogram.core.domain.repository.SuggestedPostRepository
+import dev.kyralabs.pingogram.core.domain.repository.TranscriptRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -156,6 +170,10 @@ object ActiveAccountModule {
     @Provides
     fun savedMessagesTopicRepository(accounts: Accounts): SavedMessagesTopicRepository =
         accounts.active.savedMessagesTopicRepository()
+
+    @Provides
+    fun directMessagesTopicRepository(accounts: Accounts): DirectMessagesTopicRepository =
+        accounts.active.directMessagesTopicRepository()
 
     @Provides
     fun messageThreadRepository(accounts: Accounts): MessageThreadRepository = accounts.active.messageThreadRepository()
@@ -233,6 +251,9 @@ object ActiveAccountModule {
     fun storyAlbumRepository(accounts: Accounts): StoryAlbumRepository = accounts.active.storyAlbumRepository()
 
     @Provides
+    fun profileMusicRepository(accounts: Accounts): ProfileMusicRepository = accounts.active.profileMusicRepository()
+
+    @Provides
     fun sharedMediaRepository(accounts: Accounts): SharedMediaRepository = accounts.active.sharedMediaRepository()
 
     @Provides
@@ -267,6 +288,12 @@ object ActiveAccountModule {
     @Provides
     fun reactionNotificationRepository(accounts: Accounts): ReactionNotificationRepository =
         accounts.active.reactionNotificationRepository()
+
+    @Provides
+    fun accountFreezeRepository(accounts: Accounts): AccountFreezeRepository = accounts.active.accountFreezeRepository()
+
+    @Provides
+    fun oauthLoginRepository(accounts: Accounts): OauthLoginRepository = accounts.active.oauthLoginRepository()
 
     @Provides
     fun quickReactionRepository(accounts: Accounts): QuickReactionRepository = accounts.active.quickReactionRepository()
@@ -318,6 +345,15 @@ object ActiveAccountModule {
     fun checklistRepository(accounts: Accounts): ChecklistRepository = accounts.active.checklistRepository()
 
     @Provides
+    fun chatActionBarRepository(accounts: Accounts): ChatActionBarRepository = accounts.active.chatActionBarRepository()
+
+    @Provides
+    fun suggestedPostRepository(accounts: Accounts): SuggestedPostRepository = accounts.active.suggestedPostRepository()
+
+    @Provides
+    fun giveawayRepository(accounts: Accounts): GiveawayRepository = accounts.active.giveawayRepository()
+
+    @Provides
     fun botInfoRepository(accounts: Accounts): BotInfoRepository = accounts.active.botInfoRepository()
 
     @Provides
@@ -333,8 +369,14 @@ object ActiveAccountModule {
     fun accentColorRepository(accounts: Accounts): AccentColorRepository = accounts.active.accentColorRepository()
 
     @Provides
+    fun aiTextRepository(accounts: Accounts): AiTextRepository = accounts.active.aiTextRepository()
+
+    @Provides
     fun stickerSetCreationRepository(accounts: Accounts): StickerSetCreationRepository =
         accounts.active.stickerSetCreationRepository()
+
+    @Provides
+    fun stickerMakerRepository(accounts: Accounts): StickerMakerRepository = accounts.active.stickerMakerRepository()
 
     @Provides
     fun welcomeMessageRepository(accounts: Accounts): WelcomeMessageRepository =
@@ -373,6 +415,10 @@ object ActiveAccountModule {
     fun savedGifRepository(accounts: Accounts): SavedGifRepository = accounts.active.savedGifRepository()
 
     @Provides
+    fun savedMessagesTagRepository(accounts: Accounts): SavedMessagesTagRepository =
+        accounts.active.savedMessagesTagRepository()
+
+    @Provides
     fun stickerSetRepository(accounts: Accounts): StickerSetRepository = accounts.active.stickerSetRepository()
 
     @Provides
@@ -383,6 +429,18 @@ object ActiveAccountModule {
 
     @Provides
     fun translationRepository(accounts: Accounts): TranslationRepository = accounts.active.translationRepository()
+
+    @Provides
+    fun transcriptRepository(accounts: Accounts): TranscriptRepository = accounts.active.transcriptRepository()
+
+    @Provides
+    fun reminderRepository(accounts: Accounts): ReminderRepository = accounts.active.reminderRepository()
+
+    @Provides
+    fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()
+
+    @Provides
+    fun keywordHitRepository(accounts: Accounts): KeywordHitRepository = accounts.active.keywordHitRepository()
 
     @Provides
     fun customEmojiRepository(accounts: Accounts): CustomEmojiRepository = accounts.active.customEmojiRepository()
