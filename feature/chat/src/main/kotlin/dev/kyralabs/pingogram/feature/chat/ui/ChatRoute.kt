@@ -57,6 +57,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordMatchViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.LocalKeywordMatchBar
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.rememberKeywordMatchSlot
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
@@ -181,6 +184,10 @@ internal fun ConversationRoute(
         hiltViewModel<ReminderSheetViewModel, ReminderSheetViewModel.Factory>(key = "reminder-$chatId") {
             it.create(chatId)
         },
+    keywordMatchViewModel: KeywordMatchViewModel =
+        hiltViewModel<KeywordMatchViewModel, KeywordMatchViewModel.Factory>(key = "keyword-$chatId-$messageId") {
+            it.create(chatId, messageId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
@@ -266,7 +273,12 @@ internal fun ConversationRoute(
         remember(reminderViewModel, reminderLabels) {
             ReminderChips(reminderLabels) { reminderViewModel.onEvent(ReminderEvent.Open(it)) }
         }
+    // Where a keyword alert opened the chat: its matches, each step shown as a tapped reply quote's message.
+    val keywordMatch =
+        rememberKeywordMatchSlot(keywordMatchViewModel) { viewModel.onEvent(ChatEvent.OpenReply(it)) }
+            .takeIf { topic == null }
     CompositionLocalProvider(
+        LocalKeywordMatchBar provides keywordMatch,
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalDoubleTapReaction provides doubleTap,

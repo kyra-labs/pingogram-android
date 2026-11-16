@@ -58,7 +58,6 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewport
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.actionbar.LocalChatActionBar
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
@@ -83,6 +82,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
+import dev.kyralabs.pingogram.feature.chat.ui.keyword.ConversationCards
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
@@ -347,8 +347,8 @@ private fun ChatScaffold(
             // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
             val wallpaper = MaterialTheme.chatStyle.wallpaper
             Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
-                // What TDLib suggests about a chat someone new started: block, report, add.
-                LocalChatActionBar.current?.invoke(contentPadding)
+                // What TDLib suggests about a chat someone new started, then a keyword alert's matches (board 30).
+                ConversationCards(contentPadding)
                 // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
                 state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
