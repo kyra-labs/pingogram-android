@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.KeywordHit
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
 import dev.kyralabs.pingogram.core.testing.FakeKeywordAlertsRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -51,8 +52,10 @@ class KeywordAlertsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val hits = MutableStateFlow<List<KeywordHit>>(emptyList())
+
     private fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): KeywordAlertsViewModel {
-        val viewModel = KeywordAlertsViewModel(repository, folders, { me }, handle)
+        val viewModel = KeywordAlertsViewModel(repository, folders, { me }, handle, hits)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
@@ -90,6 +93,22 @@ class KeywordAlertsViewModelTest {
                 viewModel.uiState.value.folders
                     .map { it.title },
             )
+        }
+
+    @Test
+    fun `counts each word's matches this week, in any letter case, and none for a word without`() =
+        runTest {
+            val viewModel = viewModel()
+            send(viewModel, KeywordAlertsEvent.Add("Launch"))
+            send(viewModel, KeywordAlertsEvent.Add("release"))
+            hits.value =
+                listOf(
+                    KeywordHit(chatId = 1, messageId = 10, word = "launch", date = 1),
+                    KeywordHit(chatId = 2, messageId = 20, word = "LAUNCH", date = 2),
+                )
+            runCurrent()
+
+            assertEquals(mapOf("Launch" to 2, "release" to 0), viewModel.uiState.value.matchCounts)
         }
 
     @Test
