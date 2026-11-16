@@ -95,6 +95,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Calls: the encryption emojis' explanation shows under them, and a tap makes the emojis larger to compare; with a
   headset or Bluetooth the audio button names the route in use; screen readers hear "Connected" once rather than the
   timer every second, and the rating's stars as "Rating, 4 of 5".
+- Group and channel info pages draw their photo in the group's or channel's shape, say how many permissions members
+  have ("11 of 15 allowed"), call a public link "Public link", and say under "Delete group" that it deletes it for
+  everyone. A bot's profile says "Stop and block bot". From 150% font, the action pills of profiles and info pages
+  stack one under the other.
 - Sign-in follows the owner's board 23 more closely: the steps' texts are the board's, the email step says why it asks
   for an address, how long its code is and offers "Open email app", the QR code step says what to scan it with and reads
   its steps as a list, and the password step shows "Checking…" while Telegram checks the password.
