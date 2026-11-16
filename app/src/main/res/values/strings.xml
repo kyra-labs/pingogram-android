@@ -39,6 +39,14 @@
     <string name="widget_unread_all_read">All read</string>
     <string name="widget_unread_signed_out">Sign in to Pingogram</string>
     <string name="widget_unread_locked">Pingogram is locked</string>
+    <!-- The Quick compose widget (board 33). -->
+    <string name="widget_compose_label">Quick compose</string>
+    <string name="widget_compose_description">Start a message or a voice message</string>
+    <string name="widget_compose_new">New</string>
+    <string name="widget_compose_message">Message</string>
+    <string name="widget_compose_voice">Voice</string>
+    <string name="widget_compose_new_description">New message</string>
+    <string name="widget_compose_voice_description">New voice message</string>
     <string name="widget_recent_chats_label">Recent chats</string>
     <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
     <string name="widget_title">Chats</string>

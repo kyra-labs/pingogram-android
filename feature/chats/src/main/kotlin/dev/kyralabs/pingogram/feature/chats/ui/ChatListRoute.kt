@@ -49,7 +49,8 @@ import kotlinx.coroutines.launch
  * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
- * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary].
+ * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary]. A row
+ * of the "Keyword alerts" tab opens its chat at its match through [onOpenMessage], or as any row without it.
  */
 @Composable
 internal fun ChatListRoute(
@@ -62,6 +63,7 @@ internal fun ChatListRoute(
     openChatId: Long? = null,
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
+    onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
@@ -109,7 +111,14 @@ internal fun ChatListRoute(
         ChatListDestination(
             state = state,
             viewModel = viewModel,
-            navigation = ChatListNavigation(onOpenArchive, onOpenChat, onOpenNewChat, onBack = {}),
+            navigation =
+                ChatListNavigation(
+                    onOpenArchive = onOpenArchive,
+                    onOpenChat = onOpenChat,
+                    onOpenNewChat = onOpenNewChat,
+                    onBack = {},
+                    onOpenMessage = onOpenMessage ?: { chatId, _ -> onOpenChat(chatId) },
+                ),
             modifier = modifier,
             openChatId = openChatId,
             header = { NotificationPromptHost() },
@@ -151,14 +160,24 @@ internal fun ArchivedChatsRoute(
     )
 }
 
-/** Where a chat list leads: the archive, a chat, the New chat screen, back, and the archive's settings. */
+/**
+ * Where a chat list leads: the archive, a chat (at a message: a keyword alert's match, or the chat where [onOpenMessage]
+ * is not given), the New chat screen, back, and the archive's settings.
+ */
 private class ChatListNavigation(
     val onOpenArchive: () -> Unit,
     val onOpenChat: (chatId: Long) -> Unit,
     val onOpenNewChat: () -> Unit,
     val onBack: () -> Unit,
     val onOpenArchiveSettings: () -> Unit = {},
-)
+    val onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
+) {
+    /** Opens [effect]'s chat, at its message if it names one. */
+    fun open(effect: ChatListEffect.OpenChat) {
+        val messageId = effect.messageId
+        if (messageId == null) onOpenChat(effect.chatId) else onOpenMessage(effect.chatId, messageId)
+    }
+}
 
 @Composable
 private fun ChatListDestination(
@@ -254,7 +273,7 @@ private fun ChatListEffects(
 
                 is ChatListEffect.OpenChat -> {
                     message = ""
-                    currentNavigation.onOpenChat(effect.chatId)
+                    currentNavigation.open(effect)
                 }
             }
             if (message.isNotEmpty()) {

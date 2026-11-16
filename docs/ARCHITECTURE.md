@@ -693,7 +693,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (deleted at logout; the demo's in memory) and announces each with its text (`alerts`, never written or logged).
   `core:notifications`' `KeywordAlertNotifier` (started by `PingogramApplication`) posts those of muted chats in the
   `KeywordAlerts` channel while "Alert even when the chat is muted" is on, never for a locked chat or the chat on screen,
-  and cancels each once its message is read.
+  and cancels each once its message is read. The chat list's "Keyword alerts" tab (while "Show Keyword alerts in the
+  chat list" is on and there are matches) is `feature:chats`' `KeywordAlertChats` (each chat's newest match, the
+  newest first, without locked chats), a part of `ChatListViewModel` behind a folder id no TDLib folder has
+  (`KEYWORD_ALERTS_FOLDER_ID`), so the tabs, swipes and slides take it as a folder; its rows carry the word
+  (`ChatListItemModel.keyword`) and open at the match (`ChatListEffect.OpenChat.messageId`, `ChatListPane`'s
+  `onOpenMessage`).
 - **Welcome pack** (the owner's board 6): `Chat.hasWelcomeMessages` (td_api.tl `chat.has_welcome_messages`, kept by
   `TdlibChatRepository` from `updateChatHasWelcomeMessages`). `feature:chat`'s `WelcomePackViewModel` (`welcome/`, keyed
   by the chat, hoisted by `ConversationRoute` beside `ChatViewModel` and handed to `ChatScreen` as `welcome`) loads a
@@ -1839,10 +1844,13 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   chat list (`ChatTargets`: Saved Messages first, the chat list, search; chats where the user can write) and parts. One
   chat picked opens it with the share delivered to it; several get it at once after "Send" with an optional comment,
   through `core:domain`'s `ShareRepository` (`TdlibShareRepository`) in the `@ApplicationScope`, its result
-  (`ShareResults`) a snackbar of the app shell (`ShareNotices`).
+  (`ShareResults`) a snackbar of the app shell (`ShareNotices`). A voice message to record (`SharedContent.voiceNote`, the
+  Quick compose widget's "Voice") opens the chat tapped at once.
 - **Composer**: `ChatShares` (part of `ChatViewModel`) takes a share delivered to its chat once the conversation is on
   screen: a text into the field after the chat's draft (`ChatComposer.addShared`), files into the attach preview with
-  the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
+  the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are; a voice message
+  to record as `ChatEffect.RecordVoiceNow`, which the route turns into a locked voice recording
+  (`VoiceEvent.Start(voiceOnly)`) or the microphone's snackbar (`voiceStartOrAsk`).
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
 - **Drag and drop** (the owner's board 35a): `feature:chat`'s `drop/` makes the conversation's message area
@@ -2024,6 +2032,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `UnreadCounterContent` from the same `RecentChatsWidgetUpdater` content, which also carries the main list's unread
   messages (`ChatRepository.unreadMessageCount`, TDLib's `updateUnreadMessageCount`) and the loaded chats' mentions;
   `GlanceRecentChatsWidgets` counts, moves and redraws both widgets' ids.
+- **Quick compose** (board 33): `QuickComposeWidget` (its receiver `QuickComposeWidgetReceiver`) draws
+  `QuickComposeContent` at its exact size from the Appearance settings alone. "Voice" sends `MainActivity` the action
+  `ACTION_NEW_VOICE_MESSAGE`, which `shareOf` turns into a share of `SharedContent.voiceNote` (Direct share, above).
 
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): each widget keeps the account it was placed in, as Telegram's
   widgets do: the shown account's slot goes into its Glance state (`"account"`) the first time it asks for its content.

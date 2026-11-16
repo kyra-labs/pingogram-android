@@ -136,6 +136,7 @@ class ShareViewModel internal constructor(
                     fileCount = content.files.size,
                     fileKind = content.kind,
                     isStory = isStory,
+                    isVoiceNote = content.voiceNote,
                     targets = found.targets,
                     selectedIds = selected,
                     isSearching = found.isSearching,
@@ -158,7 +159,13 @@ class ShareViewModel internal constructor(
         }
     }
 
+    /** Picks or unpicks [chatId]; for a voice message to record, opens that chat at once. */
     private fun toggle(chatId: Long) {
+        if (content?.voiceNote == true) {
+            selected.value = persistentSetOf(chatId)
+            send()
+            return
+        }
         selected.update { if (chatId in it) it.removing(chatId) else it.adding(chatId) }
     }
 

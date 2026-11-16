@@ -92,6 +92,13 @@ sealed interface ChatEffect {
     /** The user started a reply or an edit: the composer's text field takes the focus, which opens the keyboard. */
     data object FocusComposer : ChatEffect
 
+    /**
+     * The Quick compose widget's "Voice" (board 33) opened the chat: a locked voice recording starts where the
+     * microphone permission is granted ([VoiceEvent.Start]), else the snackbar that asks for it
+     * ([VoiceEvent.PermissionNeeded]).
+     */
+    data object RecordVoiceNow : ChatEffect
+
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
 

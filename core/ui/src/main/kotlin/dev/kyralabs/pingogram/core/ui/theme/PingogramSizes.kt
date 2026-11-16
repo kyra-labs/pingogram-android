@@ -117,6 +117,8 @@ import androidx.compose.ui.unit.dp
  * @property experimentalBottomFade the experimental look's fade at the end of a tab's list, under the bar.
  * @property headerAction the experimental look's tonal circular action buttons in a tab's large header.
  * @property experimentalAccountAvatar the account's avatar on the experimental look's account card in Settings.
+ * @property rowChipMaxWidth the widest a chip at the end of a chat list row gets (a keyword alert's word), so the
+ *   title keeps its line.
  */
 @Immutable
 data class PingogramSizes(
@@ -190,6 +192,7 @@ data class PingogramSizes(
     val experimentalBottomFade: Dp = 132.dp,
     val experimentalAccountAvatar: Dp = 76.dp,
     val headerAction: Dp = 48.dp,
+    val rowChipMaxWidth: Dp = 96.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

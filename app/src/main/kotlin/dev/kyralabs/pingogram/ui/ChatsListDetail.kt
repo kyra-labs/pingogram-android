@@ -201,6 +201,9 @@ internal fun ChatsListDetail(
                                 openChatId = shownChatId,
                                 onEditFolder = onEditFolder,
                                 headerActions = headerActions,
+                                onOpenMessage = { chatId, messageId ->
+                                    keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                                },
                             )
                         }
                     }

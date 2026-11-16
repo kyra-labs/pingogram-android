@@ -627,7 +627,10 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
-    private val shares = ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope)
+    private val shares =
+        ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope) {
+            effectChannel.trySend(ChatEffect.RecordVoiceNow)
+        }
 
     /** Replying to a message in another chat, both ways ([ChatReplyElsewhere]). */
     private val replyElsewhere =

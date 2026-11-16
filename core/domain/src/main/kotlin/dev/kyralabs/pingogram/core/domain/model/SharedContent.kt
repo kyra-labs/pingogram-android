@@ -16,6 +16,8 @@ import kotlinx.collections.immutable.persistentListOf
  *   app said every one is an image or a video ([kindOf]), otherwise [AttachmentKind.Document], as they are.
  * @property story a story the stories viewer shares (td_api.tl `inputMessageStory`), sent to each chat picked; such
  *   a share has no text or files.
+ * @property voiceNote nothing is shared, but a voice message is to be recorded in the chat picked: the Quick compose
+ *   widget's "Voice" (board 33). The chat opens with a locked recording under way, which the user sends or deletes.
  *
  * `toString()` leaves the text and the URIs out (`REQUIREMENTS.md` §6.2).
  */
@@ -24,12 +26,14 @@ data class SharedContent(
     val files: ImmutableList<String> = persistentListOf(),
     val kind: AttachmentKind = AttachmentKind.Document,
     val story: SharedStory? = null,
+    val voiceNote: Boolean = false,
 ) {
-    /** Nothing to share: no text, no file, no story. */
-    val isEmpty: Boolean get() = text.text.isBlank() && files.isEmpty() && story == null
+    /** Nothing to share: no text, no file, no story, and no voice message to record. */
+    val isEmpty: Boolean get() = text.text.isBlank() && files.isEmpty() && story == null && !voiceNote
 
     override fun toString() =
-        "SharedContent(textLength=${text.text.length}, files=${files.size}, kind=$kind, story=${story != null})"
+        "SharedContent(textLength=${text.text.length}, files=${files.size}, kind=$kind, story=${story != null}, " +
+            "voiceNote=$voiceNote)"
 
     companion object {
         /** The most files one share takes; more are left out. */

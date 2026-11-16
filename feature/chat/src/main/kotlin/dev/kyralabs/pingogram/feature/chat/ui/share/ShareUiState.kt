@@ -17,6 +17,8 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property fileCount how many files are shared, [fileKind] saying whether they go as photos and videos or as files.
  * @property isStory a story from the stories viewer is shared: it goes to every chat picked, one or several, after the
  *   comment, as it cannot wait in a composer.
+ * @property isVoiceNote a voice message is to be recorded (the Quick compose widget's "Voice", board 33): a tap on a
+ *   chat opens it at once with the recording under way, so only one chat is ever picked.
  * @property targets the chats shown: without a query Saved Messages first, then the main chat list in its order, as far
  *   as TDLib loaded it; with one, the chats search found. Only chats where the user can send messages.
  * @property selectedIds the chats picked, in the order they were picked; they stay picked while a search hides them.
@@ -32,6 +34,7 @@ data class ShareSheet(
     val fileCount: Int = 0,
     val fileKind: AttachmentKind = AttachmentKind.Document,
     val isStory: Boolean = false,
+    val isVoiceNote: Boolean = false,
     val targets: ImmutableList<ForwardTarget> = persistentListOf(),
     val selectedIds: ImmutableSet<Long> = persistentSetOf(),
     val isSearching: Boolean = false,
@@ -39,7 +42,8 @@ data class ShareSheet(
     val searchError: DomainError? = null,
 ) {
     override fun toString() =
-        "ShareSheet(textLength=${text.length}, files=$fileCount, story=$isStory, targets=${targets.size}, …)"
+        "ShareSheet(textLength=${text.length}, files=$fileCount, story=$isStory, voiceNote=$isVoiceNote, " +
+            "targets=${targets.size}, …)"
 
     /** The comment and "Send" show rather than "Open chat": several chats picked, or a story. */
     val sendsAtOnce: Boolean get() = selectedIds.size > 1 || (isStory && selectedIds.isNotEmpty())

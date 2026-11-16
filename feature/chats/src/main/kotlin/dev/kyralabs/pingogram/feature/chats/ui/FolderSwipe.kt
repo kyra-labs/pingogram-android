@@ -46,9 +46,6 @@ internal data class FolderNeighbours(
                 next = tabs.getOrNull(index + 1)?.let { FolderTarget(it.folderId) },
             )
         }
-
-        private val FolderTab.folderId: Int?
-            get() = (this as? FolderTab.Folder)?.id
     }
 }
 
