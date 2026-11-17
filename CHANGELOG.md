@@ -18,6 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   page blank above Photos.
 - A conversation opened again opens where you left it, until the app closes, not at the newest message. With new
   messages unread since, it still opens at the unread divider.
+- In a conversation, a touch that stops the messages from scrolling only stops them: holding it no longer opens a
+  message's menu, and in selection mode it no longer selects a message.
 
 ## [2.3.0] - 2026-11-17
 

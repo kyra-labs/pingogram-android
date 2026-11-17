@@ -28,9 +28,11 @@ import androidx.compose.ui.unit.toSize
  * timeout, with where this element is in the window (unclipped, so a row half under the top bar keeps its full
  * height), and then consumes the rest of the gesture. It watches the pointer before the content does (the initial
  * pass), so it works over buttons, media and links, which then see the release consumed and take no tap; a scroll or a
- * swipe that starts first cancels it. A mouse's secondary button (a right click) calls [onSecondaryClick] at once, the
- * same way, and the content sees none of it (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so
- * the element's place is read only when a long press or a right click needs it, never while the list scrolls.
+ * swipe that starts first cancels it. A press that stops the list's fling only stops it, as in Telegram's apps: the
+ * list's scrolling consumes such a press before its items see it, and it starts nothing here. A mouse's secondary
+ * button (a right click) calls [onSecondaryClick] at once, the same way, and the content sees none of it
+ * (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so the element's place is read only when a long
+ * press or a right click needs it, never while the list scrolls.
  *
  * Where there is [onDragOut], a finger that moves beyond the touch slop after the long press calls it once, to drag
  * the element's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop").
@@ -74,6 +76,8 @@ private class LongPressNode(
             SuspendingPointerInputModifierNode {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    // The list consumed it: it stops the list's fling, and does nothing else.
+                    if (down.isConsumed) return@awaitEachGesture
                     if (currentEvent.buttons.isSecondaryPressed) {
                         down.consume()
                         onSecondaryClick(windowBounds())
@@ -158,12 +162,14 @@ internal fun rememberActionsOpener(
  * Selection mode's taps: calls [onToggle] when the pointer is released within the touch slop, or once it has stayed
  * down for the long-press timeout (then consuming the rest of the gesture), so a tap and a long press both select or
  * deselect. It takes the press before the content does (the initial pass): buttons, media and links inside see it
- * consumed and do nothing. A scroll that starts first is left to the list.
+ * consumed and do nothing. A scroll that starts first is left to the list, and so is a press that stops its fling
+ * (consumed by the list before it gets here).
  */
 internal fun Modifier.onSelectionTap(onToggle: () -> Unit): Modifier =
     pointerInput(onToggle) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            if (down.isConsumed) return@awaitEachGesture
             // Consumed, so the content's buttons and links do not start a press; the list still scrolls.
             down.consume()
             val released =
