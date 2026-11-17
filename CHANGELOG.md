@@ -18,6 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   page blank above Photos.
 - A conversation opened again opens where you left it, until the app closes, not at the newest message. With new
   messages unread since, it still opens at the unread divider.
+- In the chat list, a touch that stops the folder tabs from sliding only stops them: holding it no longer opens a
+  tab's menu.
 
 ## [2.3.0] - 2026-11-17
 
