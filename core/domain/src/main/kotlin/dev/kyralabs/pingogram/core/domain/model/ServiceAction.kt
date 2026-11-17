@@ -175,6 +175,30 @@ sealed interface ServiceAction {
         override fun toString() = "SuggestedPostAnswered($postMessageId, $answer, …)"
     }
 
+    /** The sender created forum topic [name] (td_api.tl `messageForumTopicCreated`). */
+    data class ForumTopicCreated(
+        val name: String,
+    ) : ServiceAction
+
+    /**
+     * The sender renamed the forum topic to [name] (empty if the name stayed) and changed its icon if [iconChanged]
+     * (td_api.tl `messageForumTopicEdited`).
+     */
+    data class ForumTopicEdited(
+        val name: String,
+        val iconChanged: Boolean,
+    ) : ServiceAction
+
+    /** The sender closed the forum topic, or reopened it unless [isClosed] (`messageForumTopicIsClosedToggled`). */
+    data class ForumTopicClosedToggled(
+        val isClosed: Boolean,
+    ) : ServiceAction
+
+    /** The sender hid the General forum topic, or unhid it unless [isHidden] (`messageForumTopicIsHiddenToggled`). */
+    data class ForumTopicHiddenToggled(
+        val isHidden: Boolean,
+    ) : ServiceAction
+
     /** An event Telegram describes in [text] itself. `toString()` leaves the text out. */
     data class Custom(
         val text: String,
@@ -182,7 +206,7 @@ sealed interface ServiceAction {
         override fun toString() = "Custom(…)"
     }
 
-    /** Any other event: gifts, payments, boosts, forum topics, chat themes, …. */
+    /** Any other event: gifts, payments, boosts, chat themes, …. */
     data object Other : ServiceAction
 }
 

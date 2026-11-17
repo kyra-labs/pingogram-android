@@ -76,6 +76,33 @@ class ServiceActionMappersTest {
     }
 
     @Test
+    fun `forum topic events map to their action, not to another event`() {
+        val actions =
+            listOf(
+                TdApi.MessageForumTopicCreated("Releases", false, TdApi.ForumTopicIcon(0x6FB9F0, 0)),
+                TdApi.MessageForumTopicEdited("Module releases", false, 0),
+                TdApi.MessageForumTopicEdited("", true, 5),
+                TdApi.MessageForumTopicIsClosedToggled(true),
+                TdApi.MessageForumTopicIsClosedToggled(false),
+                TdApi.MessageForumTopicIsHiddenToggled(true),
+                TdApi.MessageForumTopicIsHiddenToggled(false),
+            ).map { it.action() }
+
+        assertEquals(
+            listOf(
+                ServiceAction.ForumTopicCreated("Releases"),
+                ServiceAction.ForumTopicEdited("Module releases", iconChanged = false),
+                ServiceAction.ForumTopicEdited("", iconChanged = true),
+                ServiceAction.ForumTopicClosedToggled(isClosed = true),
+                ServiceAction.ForumTopicClosedToggled(isClosed = false),
+                ServiceAction.ForumTopicHiddenToggled(isHidden = true),
+                ServiceAction.ForumTopicHiddenToggled(isHidden = false),
+            ),
+            actions,
+        )
+    }
+
+    @Test
     fun `a new supergroup in a channel is a new channel`() {
         val create = TdApi.MessageSupergroupChatCreate("News")
 
@@ -270,6 +297,10 @@ class ServiceActionMappersTest {
                 "MessageChecklistTasksAdded",
                 "MessagePollOptionAdded",
                 "MessagePollOptionDeleted",
+                "MessageForumTopicCreated",
+                "MessageForumTopicEdited",
+                "MessageForumTopicIsClosedToggled",
+                "MessageForumTopicIsHiddenToggled",
                 "MessageSuggestedPostApproved",
                 "MessageSuggestedPostDeclined",
                 "MessageSuggestedPostApprovalFailed",

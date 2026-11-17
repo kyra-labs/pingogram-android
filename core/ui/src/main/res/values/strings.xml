@@ -201,6 +201,23 @@
     <string name="preview_you_added_poll_option">You added “%1$s” to the poll</string>
     <string name="preview_removed_poll_option">%1$s removed “%2$s” from the poll</string>
     <string name="preview_you_removed_poll_option">You removed “%1$s” from the poll</string>
+    <!-- Forum topics: %2$s (%1$s in "you" strings) is the topic's name. -->
+    <string name="preview_created_topic">%1$s created the topic “%2$s”</string>
+    <string name="preview_you_created_topic">You created the topic “%1$s”</string>
+    <string name="preview_renamed_topic">%1$s changed the topic name to “%2$s”</string>
+    <string name="preview_you_renamed_topic">You changed the topic name to “%1$s”</string>
+    <string name="preview_changed_topic_icon">%1$s changed the topic icon</string>
+    <string name="preview_you_changed_topic_icon">You changed the topic icon</string>
+    <string name="preview_edited_topic">%1$s edited the topic</string>
+    <string name="preview_you_edited_topic">You edited the topic</string>
+    <string name="preview_closed_topic">%1$s closed the topic</string>
+    <string name="preview_you_closed_topic">You closed the topic</string>
+    <string name="preview_reopened_topic">%1$s reopened the topic</string>
+    <string name="preview_you_reopened_topic">You reopened the topic</string>
+    <string name="preview_hid_topic">%1$s hid the topic</string>
+    <string name="preview_you_hid_topic">You hid the topic</string>
+    <string name="preview_unhid_topic">%1$s unhid the topic</string>
+    <string name="preview_you_unhid_topic">You unhid the topic</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>

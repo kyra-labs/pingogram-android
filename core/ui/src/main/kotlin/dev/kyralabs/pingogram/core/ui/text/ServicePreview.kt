@@ -40,6 +40,14 @@ internal fun serviceText(
             groupCallText(action)
         }
 
+        is ServiceAction.ForumTopicCreated,
+        is ServiceAction.ForumTopicEdited,
+        is ServiceAction.ForumTopicClosedToggled,
+        is ServiceAction.ForumTopicHiddenToggled,
+        -> {
+            actor.topicChanged(action)
+        }
+
         else -> {
             eventText(action) ?: actor.did(action)
         }
@@ -182,6 +190,54 @@ private class Actor(
         }
 
     fun joined(): UiText = did(R.string.preview_you_joined, R.string.preview_joined)
+
+    /** A forum topic created, edited, closed or reopened, hidden or unhidden. */
+    fun topicChanged(action: ServiceAction): UiText =
+        when (action) {
+            is ServiceAction.ForumTopicCreated -> {
+                did(R.string.preview_you_created_topic, R.string.preview_created_topic, action.name.bidiIsolated())
+            }
+
+            is ServiceAction.ForumTopicEdited -> {
+                topicEdited(action)
+            }
+
+            is ServiceAction.ForumTopicClosedToggled -> {
+                if (action.isClosed) {
+                    did(R.string.preview_you_closed_topic, R.string.preview_closed_topic)
+                } else {
+                    did(R.string.preview_you_reopened_topic, R.string.preview_reopened_topic)
+                }
+            }
+
+            is ServiceAction.ForumTopicHiddenToggled -> {
+                if (action.isHidden) {
+                    did(R.string.preview_you_hid_topic, R.string.preview_hid_topic)
+                } else {
+                    did(R.string.preview_you_unhid_topic, R.string.preview_unhid_topic)
+                }
+            }
+
+            else -> {
+                UiText.resource(R.string.preview_service_other)
+            }
+        }
+
+    /** A topic renamed (its new name isolated), else its icon changed, else edited without saying how. */
+    private fun topicEdited(action: ServiceAction.ForumTopicEdited): UiText =
+        when {
+            action.name.isNotEmpty() -> {
+                did(R.string.preview_you_renamed_topic, R.string.preview_renamed_topic, action.name.bidiIsolated())
+            }
+
+            action.iconChanged -> {
+                did(R.string.preview_you_changed_topic_icon, R.string.preview_changed_topic_icon)
+            }
+
+            else -> {
+                did(R.string.preview_you_edited_topic, R.string.preview_edited_topic)
+            }
+        }
 
     /** An answer added to or removed from a poll, its [text] isolated from the words around it. */
     private fun pollOption(
