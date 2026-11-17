@@ -22,6 +22,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's menu, and in selection mode it no longer selects a message.
 - In the chat list, a touch that stops the folder tabs from sliding only stops them: holding it no longer opens a
   tab's menu.
+- A channel's post in its discussion group shows the channel's name with "Channel" after it, without "Forwarded from",
+  and the pinned messages page names the channel instead of "Someone".
 
 ## [2.3.0] - 2026-11-17
 
