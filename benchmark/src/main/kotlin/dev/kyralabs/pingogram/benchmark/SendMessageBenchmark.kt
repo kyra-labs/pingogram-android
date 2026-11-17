@@ -47,7 +47,8 @@ class SendMessageBenchmark {
                 typeMessage(text)
             },
         ) {
-            deleteMessage(sendTyped(text))
+            sendTyped(text)
+            deleteMessage(text)
         }
     }
 }

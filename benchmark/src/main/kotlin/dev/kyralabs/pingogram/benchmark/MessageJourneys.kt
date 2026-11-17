@@ -20,22 +20,28 @@ internal fun MacrobenchmarkScope.typeMessage(text: String) {
 }
 
 /** Taps send and waits for the bubble of [text] to show. */
-internal fun MacrobenchmarkScope.sendTyped(text: String): UiObject2 {
+internal fun MacrobenchmarkScope.sendTyped(text: String) {
     device.findObject(By.res(SEND_BUTTON))?.click() ?: error("No send button: type a message first.")
-    return device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
-        ?: error("The bubble of the message sent did not show within $TIMEOUT_MS ms.")
+    if (!device.wait(Until.hasObject(By.descContains(text)), TIMEOUT_MS)) {
+        error("The bubble of the message sent did not show within $TIMEOUT_MS ms.")
+    }
 }
 
 /**
- * Deletes the message of [bubble] through its actions: a long press, "Delete", then the dialog's "Delete". The
- * journeys leave nothing behind in Saved Messages.
+ * Deletes the message whose bubble shows [text] through its actions: a long press, "Delete", then the dialog's
+ * "Delete". The journeys leave nothing behind in Saved Messages.
  *
  * The keyboard goes down first: the composer keeps the focus after a send, and with the keyboard up the window is too
  * short for the floating menu to show "Delete" (it moves the message into view and scrolls the rest). Where "Delete"
- * is still out of sight, the menu is scrolled to it.
+ * is still out of sight, the menu is scrolled to it. The bubble is found after that: the window resizing, and the
+ * message going from sending to sent, replace its node, and a long press on the old one throws
+ * `StaleObjectException`.
  */
-internal fun MacrobenchmarkScope.deleteMessage(bubble: UiObject2) {
+internal fun MacrobenchmarkScope.deleteMessage(text: String) {
     hideKeyboard()
+    val bubble =
+        device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
+            ?: error("The bubble of the message to delete is gone.")
     bubble.longClick()
     deleteAction().click()
     device.wait(Until.findObject(By.res(DELETE_CONFIRM)), TIMEOUT_MS)?.click()
