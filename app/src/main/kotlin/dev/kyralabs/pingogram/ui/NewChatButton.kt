@@ -23,7 +23,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.painterResource
@@ -62,7 +61,8 @@ internal fun BarNewChatButton(
             onClick = onClick,
             modifier = transform.size(size),
             shape = shape,
-            containerColor = barButtonContainerColor(),
+            // The bar's own color (`docs/DESIGN_SYSTEM.md` §6.1).
+            containerColor = FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             Icon(
@@ -172,7 +172,8 @@ internal fun BarAddContactButton(
             onClick = onClick,
             modifier = Modifier.size(size),
             shape = shape,
-            containerColor = barButtonContainerColor(),
+            // The bar's own color (`docs/DESIGN_SYSTEM.md` §6.1).
+            containerColor = FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             Icon(
@@ -211,11 +212,6 @@ internal fun RailAddContactButton(
         }
     }
 }
-
-/** The color of the buttons beside the floating navigation bar: the bar's own (`docs/DESIGN_SYSTEM.md` §6.1). */
-@Composable
-private fun barButtonContainerColor(): Color =
-    FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor
 
 /** [button] while [shown], fading in and out on the effects springs. */
 @Composable
