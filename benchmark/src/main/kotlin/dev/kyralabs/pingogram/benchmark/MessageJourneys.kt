@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.benchmark
 
+import android.graphics.Rect
+import android.os.SystemClock
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
@@ -33,20 +35,36 @@ internal fun MacrobenchmarkScope.sendTyped(text: String) {
  *
  * The keyboard goes down first: the composer keeps the focus after a send, and with the keyboard up the window is too
  * short for the floating menu to show "Delete" (it moves the message into view and scrolls the rest). Where "Delete"
- * is still out of sight, the menu is scrolled to it. The bubble is found after that: the window resizing, and the
- * message going from sending to sent, replace its node, and a long press on the old one throws
- * `StaleObjectException`.
+ * is still out of sight, the menu is scrolled to it. The bubble is found after that, once it has stopped moving
+ * ([settledBubble]).
  */
 internal fun MacrobenchmarkScope.deleteMessage(text: String) {
     hideKeyboard()
-    val bubble =
-        device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
-            ?: error("The bubble of the message to delete is gone.")
-    bubble.longClick()
+    settledBubble(text).longClick()
     deleteAction().click()
     device.wait(Until.findObject(By.res(DELETE_CONFIRM)), TIMEOUT_MS)?.click()
         ?: error("No confirmation to delete the message.")
     device.waitForIdle()
+}
+
+/**
+ * The bubble of [text], found again until it shows at the same place twice [SETTLE_STEP_MS] apart. After a send the
+ * list scrolls the message into view and the keyboard's insets animate it down: a long press on a row that moves
+ * under the finger reads as a scroll, which cancels it (`LongPress.kt`), and the row's node is replaced on the way, so
+ * an object found earlier is stale.
+ */
+private fun MacrobenchmarkScope.settledBubble(text: String): UiObject2 {
+    var lastBounds: Rect? = null
+    repeat(SETTLE_TRIES) {
+        val bubble =
+            device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
+                ?: error("The bubble of the message to delete is gone.")
+        val bounds = bubble.visibleBounds
+        if (bounds == lastBounds) return bubble
+        lastBounds = bounds
+        SystemClock.sleep(SETTLE_STEP_MS)
+    }
+    error("The bubble of the message to delete kept moving for ${SETTLE_TRIES * SETTLE_STEP_MS} ms.")
 }
 
 /** "Delete" in the open message actions, scrolled into view where the menu has no room for it. */
@@ -81,6 +99,10 @@ private const val TIMEOUT_MS = 10_000L
 
 /** How long to wait for what usually shows at once, before trying another way. */
 private const val SHORT_TIMEOUT_MS = 2_000L
+
+/** How often, and how many times, [settledBubble] looks at where the bubble is. */
+private const val SETTLE_STEP_MS = 150L
+private const val SETTLE_TRIES = 20
 
 /** What `dumpsys input_method` says while the keyboard shows (its wording differs between Android versions). */
 private val KEYBOARD_SHOWN = listOf("mInputShown=true", "mIsInputViewShown=true")
