@@ -79,6 +79,9 @@ abstract class ChatViewModelHarness {
     protected val sharedStorage = FakeSharedStorageRepository()
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
+
+    /** Where the user left each conversation, shared by the view models of a test as by those of a process. */
+    protected val chatPlaces = ChatPlaces()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     internal val camera = FakeVideoNoteRecorder()
@@ -206,6 +209,7 @@ abstract class ChatViewModelHarness {
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
                 appInfo = appInfo,
                 transcriptionRepositories = transcription,
+                places = chatPlaces,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

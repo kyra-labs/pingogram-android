@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
   page blank above Photos.
+- A conversation opened again opens where you left it, until the app closes, not at the newest message. With new
+  messages unread since, it still opens at the unread divider.
 
 ## [2.3.0] - 2026-11-17
 

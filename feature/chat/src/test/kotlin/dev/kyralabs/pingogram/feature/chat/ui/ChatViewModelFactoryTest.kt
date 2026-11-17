@@ -125,6 +125,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 targetPreferences = TargetPreferences(),
                 appInfo = AppInfo(versionName = ""),
                 transcriptionRepositories = transcriptionRepositories(),
+                places = ChatPlaces(),
                 applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

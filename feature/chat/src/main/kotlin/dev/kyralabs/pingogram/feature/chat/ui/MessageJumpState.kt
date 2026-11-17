@@ -147,7 +147,7 @@ internal fun ChatItem.showsMessage(messageId: Long): Boolean =
  *   list measures these items, so they are laid out there in their first frame.
  * - **Unread divider**: near the top, so the unread messages follow it downwards ([AnchorPosition.NearTop]).
  * - **Message**: centred ([AnchorPosition.Centre]), and highlighted if the anchor says so; gliding there on the default
- *   spatial spring when it is on screen already.
+ *   spatial spring when it is on screen already. Where the user left the list: at the bottom ([AnchorPosition.Bottom]).
  *
  * The last two are placed as the list measures ([anchorPlacement]), so it composes and measures the entries around
  * the anchor only, not the newest ones first and then those; then, the entry measured, it moves by what its height
@@ -207,9 +207,14 @@ private fun ChatContent.Content.anchorEntryIndex(): Int =
         AnchorTarget.Newest -> -1
     }
 
-/** Where the target's entry goes: a message in the middle, the unread divider near the top. */
+/** Where the target's entry goes: a message in the middle or at the bottom, the unread divider near the top. */
 private val AnchorTarget.position: AnchorPosition
-    get() = if (this is AnchorTarget.Message) AnchorPosition.Centre else AnchorPosition.NearTop
+    get() =
+        when {
+            this is AnchorTarget.Message && atBottom -> AnchorPosition.Bottom
+            this is AnchorTarget.Message -> AnchorPosition.Centre
+            else -> AnchorPosition.NearTop
+        }
 
 /** Where an anchor's entry goes in the list's viewport. */
 internal enum class AnchorPosition {
@@ -218,6 +223,9 @@ internal enum class AnchorPosition {
 
     /** In the middle, or its top at the top when it is taller than the viewport: a message jumped to. */
     Centre,
+
+    /** Its bottom at the bottom: the newest message the list showed when the user left the conversation. */
+    Bottom,
     ;
 
     /**
@@ -232,6 +240,7 @@ internal enum class AnchorPosition {
         when (this) {
             NearTop -> (viewport - margin - size).coerceAtLeast(0)
             Centre -> if (size <= viewport) (viewport - size) / 2 else viewport - size
+            Bottom -> 0
         }
 }
 

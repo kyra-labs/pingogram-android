@@ -25,11 +25,12 @@ import kotlinx.coroutines.launch
  *
  * - **Opening** ([open]): once the chat is known ([chat]), the messages it opens at load: around the message search
  *   found ([initialMessageId]), else around the first unread message (`lastReadInboxMessageId`, when anything is
- *   unread), else the newest page ([MessageRepository.loadAround], [MessageRepository.loadNewest]); nothing loads when
- *   the history in memory holds them. Until then [WindowState.shown] is null, so the conversation never shows the
- *   newest messages first and then jumps. After process death ([KEY_ANCHOR] saved) it opens around the newest message
- *   the list last showed ([KEY_SHOWN_MESSAGE]), without highlight. The unread divider is fixed first
- *   ([ChatViewModel.KEY_UNREAD_AFTER]), where it stays while the screen lives.
+ *   unread), else where the user left the conversation in this process ([place]), else the newest page
+ *   ([MessageRepository.loadAround], [MessageRepository.loadNewest]); nothing loads when the history in memory holds
+ *   them. Until then [WindowState.shown] is null, so the conversation never shows the newest messages first and then
+ *   jumps. After process death ([KEY_ANCHOR] saved) it opens around the newest message the list last showed
+ *   ([KEY_SHOWN_MESSAGE]), without highlight. Where the user left it, that message is at the bottom, as they left it.
+ *   The unread divider is fixed first ([ChatViewModel.KEY_UNREAD_AFTER]), where it stays while the screen lives.
  * - **Paging**: older pages load for as long as the screen reports that the oldest message is near
  *   ([onNearOldestChanged]), one at a time, until the start; newer ones while the newest loaded message is near
  *   ([onNearNewestChanged]) and the history does not reach the chat's newest message. A failure shows; nothing is
@@ -40,7 +41,8 @@ import kotlinx.coroutines.launch
  *   jump loads, the old messages stay; the new ones and the anchor show in one state ([ShownWindow]), so the list never
  *   draws them where the old ones were.
  *
- * [history] is the view model's history, [content] what the screen shows now.
+ * [history] is the view model's history, [content] what the screen shows now; [place] where the list is, which the
+ * view model keeps up to date.
  */
 @Suppress("LongParameterList") // What it reads and changes, from the view model.
 internal class ChatWindow(
@@ -52,6 +54,7 @@ internal class ChatWindow(
     private val history: Flow<ChatHistory>,
     private val content: () -> ChatContent,
     private val initialMessageId: Long?,
+    val place: ChatPlaces.Place,
     private val onEffect: (ChatEffect) -> Unit,
 ) {
     private val mutableState = MutableStateFlow(WindowState())
@@ -81,7 +84,9 @@ internal class ChatWindow(
                     savedState.get<Long>(ChatViewModel.KEY_UNREAD_AFTER)
                         ?: chat.unreadAfterId().also { savedState[ChatViewModel.KEY_UNREAD_AFTER] = it }
                 val restored = savedState.get<Long>(KEY_SHOWN_MESSAGE)?.takeIf { KEY_ANCHOR in savedState }
-                val target = openTarget(restored, initialMessageId, unreadAfter)
+                // Left at the newest message, it opens at the newest message, whatever came since.
+                val left = place.left?.takeIf { it < (chat.lastMessage?.id ?: Long.MAX_VALUE) }
+                val target = openTarget(restored, initialMessageId, unreadAfter, left)
                 val result = repository.loadFor(chatId, target, unreadAfter)
                 // A found message that is gone says so; one the list showed before process death does not.
                 val foundMessage = target is AnchorTarget.Message && target.highlight
@@ -274,17 +279,20 @@ private fun Chat.unreadAfterId(): Long = if (unreadCount > 0) lastReadInboxMessa
 
 /**
  * Where the conversation opens: around the newest message the list showed before process death ([restored]), the
- * message search found ([initialMessageId]), the unread divider, or the newest message.
+ * message search found ([initialMessageId]), the unread divider, the newest message the list showed when the user left
+ * the conversation ([left]), or the newest message.
  */
 private fun openTarget(
     restored: Long?,
     initialMessageId: Long?,
     unreadAfter: Long,
+    left: Long?,
 ): AnchorTarget =
     when {
-        restored != null -> AnchorTarget.Message(restored, highlight = false)
+        restored != null -> AnchorTarget.Message(restored, highlight = false, atBottom = true)
         initialMessageId != null -> AnchorTarget.Message(initialMessageId)
         unreadAfter != NO_UNREAD_DIVIDER && unreadAfter > 0 -> AnchorTarget.Unread
+        left != null -> AnchorTarget.Message(left, highlight = false, atBottom = true)
         else -> AnchorTarget.Newest
     }
 

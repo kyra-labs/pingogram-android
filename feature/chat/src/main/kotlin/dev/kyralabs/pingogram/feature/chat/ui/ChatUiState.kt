@@ -241,9 +241,9 @@ sealed interface ChatContent {
 
 /**
  * Where the message list goes, once, when the conversation asks for it: when it opens (at the unread divider, a found
- * message or the newest message), at a jump to a message (a tapped quote), and at the jump to the newest message. The
- * list moves to [target] the first time it shows an anchor with a new [id]; it keeps the last id it took across
- * rotations and process death, as the view model keeps its anchor, so neither moves the list again.
+ * message, where the user left it or the newest message), at a jump to a message (a tapped quote), and at the jump to
+ * the newest message. The list moves to [target] the first time it shows an anchor with a new [id]; it keeps the last
+ * id it took across rotations and process death, as the view model keeps its anchor, so neither moves the list again.
  */
 @Immutable
 data class ListAnchor(
@@ -262,11 +262,13 @@ sealed interface AnchorTarget {
 
     /**
      * Message [messageId] in the middle, highlighted for a while if [highlight]; where it would be (the next older
-     * message) when it is not among the items.
+     * message) when it is not among the items. At the bottom instead if [atBottom]: the newest message the list showed
+     * when the user left, so it opens as they left it.
      */
     data class Message(
         val messageId: Long,
         val highlight: Boolean = true,
+        val atBottom: Boolean = false,
     ) : AnchorTarget
 }
 
