@@ -1,6 +1,6 @@
 # 0039 — Backup and restore of what Pingogram keeps on the phone, in a file the user chooses
 
-Status: proposed (owner's request, 2026-11-17; the choices marked **Owner decision** wait for the owner) ·
+Status: accepted (owner's request; the owner took both recommended choices, 2026-11-17) ·
 Date: 2026-11-17 ·
 Milestone: after `v2.3.0` (`docs/ROADMAP.md`)
 
@@ -46,9 +46,9 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
 
 - **Settings → On this phone → Backup & restore**: "Backup folder" (picked once, shown by name; "Change"), "Back up
   now", and the last backup's date and size.
-- **Owner decision 1, automatic backups.** Recommended: "Back up automatically" with Off · Daily · Weekly (default
+- **Automatic backups** (owner decision, 2026-11-17): "Back up automatically" with Off · Daily · Weekly (default
   Weekly once a folder is picked), run by WorkManager while charging or with battery not low, keeping the newest 3
-  files. The alternative is manual backups only.
+  files.
 
 ### Restoring
 
@@ -57,7 +57,7 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
   This covers logging out and in again, and adding an account, on the same install.
 - **After a reinstall or on a new phone**, where no folder is kept yet: the card says "Restore settings from a backup?"
   and Choose file opens the file picker (`ACTION_OPEN_DOCUMENT`), which also finds backups in Drive or a USB stick.
-- **Restore** asks for the password (decision 2), shows what the backup holds ("Settings, 42 bookmarks, 5 reminders
+- **Restore** asks for the backup's password (below), shows what the backup holds ("Settings, 42 bookmarks, 5 reminders
   for @name") and then:
   - `settings` replace the current ones, except the passcode, which stays as it is on this phone;
   - `account` sections are restored only into the logged-in account with the same Telegram user id; bookmarks and
@@ -67,11 +67,11 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
 
 ### Protecting the file
 
-- **Owner decision 2, a password.** Recommended: always encrypted with a password the user sets at the first backup
+- **A password** (owner decision, 2026-11-17): always encrypted with a password the user sets at the first backup
   (AES-256-GCM, its key from the password with PBKDF2-HMAC-SHA512, 210,000 rounds and a random salt, as the passcode,
   ADR 0005), because the file can end up in Drive or on another device and holds bookmark notes and reminder notes. The
   password is never kept: automatic backups encrypt with a key derived once, kept in Android's Keystore for that
-  purpose. The alternative is an unencrypted file, simpler to restore.
+  purpose.
 
 ### Privacy and permissions
 
@@ -91,5 +91,5 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
   message to update.
 - Work, in PRs of their own: (1) `core:domain` / `core:data` backup format, writer and reader with their tests;
   (2) the Backup & restore page and the restore card in `feature:settings` and `feature:chats`; (3) automatic backups
-  with WorkManager, if decision 1 keeps them. `REQUIREMENTS.md` gains the requirement, `docs/ARCHITECTURE.md` a
+  with WorkManager. `REQUIREMENTS.md` gains the requirement, `docs/ARCHITECTURE.md` a
   "Backup and restore" section, and `CHANGELOG.md` an entry with the page.
