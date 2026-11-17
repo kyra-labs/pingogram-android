@@ -32,6 +32,18 @@ internal class SelectedChats(
         savedStateHandle[KEY] = ids.toLongArray()
     }
 
+    /**
+     * A tap on chat [chatId]'s row (or a topic it names): in selection mode, selects or deselects it ([toggle]);
+     * otherwise calls [open].
+     */
+    fun tap(
+        chatId: Long,
+        shown: Set<Long>,
+        open: () -> Unit,
+    ) {
+        if (isActive(shown)) toggle(chatId, shown) else open()
+    }
+
     /** Ends selection mode. */
     fun clear() {
         savedStateHandle[KEY] = LongArray(0)

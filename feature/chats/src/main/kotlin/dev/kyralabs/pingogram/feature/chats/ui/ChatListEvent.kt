@@ -29,9 +29,13 @@ sealed interface ChatListEvent {
     /** "Try again" after loading the chats failed. */
     data object Retry : ChatListEvent
 
-    /** A row was tapped: selects or deselects the chat in selection mode; otherwise opens its conversation. */
+    /**
+     * A row was tapped, or with [topicId] a topic a forum's row names: selects or deselects the chat in selection mode;
+     * otherwise opens its conversation, or that topic's, as Telegram's apps do.
+     */
     data class ChatClicked(
         val chatId: Long,
+        val topicId: Int? = null,
     ) : ChatListEvent
 
     /** A row was long-pressed: starts selection mode with the chat, or selects or deselects it in selection mode. */

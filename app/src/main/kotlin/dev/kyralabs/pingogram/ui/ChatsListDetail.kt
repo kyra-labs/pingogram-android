@@ -85,6 +85,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   navigator's history never holds more than the list, one chat and one page beside it), and its row looks selected.
  *   With one pane, [onOpenChat] pushes the conversation full screen, as without this layout. A chat another screen asks
  *   for ([chatToShow]: a deep link, full-screen search, a profile's "Message") opens the same way, then [onChatShown].
+ *   A topic a forum's row names opens that topic's conversation the same way, in the detail pane in place of the chat
+ *   shown, or pushed with one pane ([onOpenTopic]).
  * - **Profiles and info pages**: with three panes, the conversation's title, a sender or a mention opens the profile
  *   ([onOpenProfile]'s user) or the info page ([onOpenChatInfo]'s chat) in the extra pane beside it, in place of the
  *   one shown; with fewer, they are pushed above the whole layout through those callbacks. A page in the extra pane
@@ -144,6 +146,7 @@ internal fun ChatsListDetail(
     onChatShown: () -> Unit = {},
     onOpenScheduledMessages: (chatId: Long) -> Unit = {},
     headerActions: ChatListHeaderActions? = null,
+    onOpenTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, _ -> onOpenChat(chatId, null) },
 ) {
     val navigator = rememberChatsPaneNavigator(chatsPaneScaffoldDirective(currentWindowAdaptiveInfoV2()))
     FollowScaffoldDirective(navigator)
@@ -162,7 +165,7 @@ internal fun ChatsListDetail(
     HideNavigationBar(hidden = !listVisible || (search.isDocked && !twoPanes))
     val opener =
         rememberPaneOpener(navigator, scope, twoPanes, threePanes = partitions > 2) {
-            PaneCallbacks(onOpenChat, onOpenProfile, onOpenChatInfo)
+            PaneCallbacks(onOpenChat, onOpenProfile, onOpenChatInfo, onOpenTopic)
         }
     ShowChatEffect(chatToShow, opener, onChatShown)
     // What was last shown keeps its pane while the pane leaves, so it does not turn empty as it slides out.
@@ -204,6 +207,9 @@ internal fun ChatsListDetail(
                                 onOpenMessage = { chatId, messageId ->
                                     keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
                                 },
+                                onOpenTopic = { chatId, topicId ->
+                                    keyboard.opening(chatId, twoPanes) { opener.open(chatId, topicId = topicId) }
+                                },
                             )
                         }
                     }
@@ -217,7 +223,8 @@ internal fun ChatsListDetail(
                     if (chatId != null) {
                         ChatPane(
                             chatId = chatId,
-                            messageId = opener.messageIn(chatId),
+                            messageId = opener.place.messageIn(chatId),
+                            topicId = opener.place.topicIn(chatId),
                             onOpenMedia = onOpenMedia,
                             // The chat messages were forwarded to replaces this one, or is pushed with one pane.
                             onOpenChat = opener::openChat,
@@ -371,6 +378,7 @@ private class PaneCallbacks(
     val onOpenChat: (chatId: Long, messageId: Long?) -> Unit,
     val onOpenProfile: (userId: Long) -> Unit,
     val onOpenChatInfo: (chatId: Long) -> Unit,
+    val onOpenTopic: (chatId: Long, topicId: Int) -> Unit,
 )
 
 /** A [PaneOpener] for [navigator], following the window's panes and the latest [callbacks]. */
@@ -383,20 +391,21 @@ private fun rememberPaneOpener(
     threePanes: Boolean,
     callbacks: () -> PaneCallbacks,
 ): PaneOpener {
-    // A message found by search, as [chat id, message id]; saved, so its chat still opens at it after process death.
-    val message = rememberSaveable { mutableStateOf<LongArray?>(null) }
+    // Saved, so a chat opened at a message or in a topic still opens there after process death.
+    val place = rememberSaveable { mutableStateOf<LongArray?>(null) }
     val currentTwoPanes = rememberUpdatedState(twoPanes)
     val currentThreePanes = rememberUpdatedState(threePanes)
     val currentCallbacks = rememberUpdatedState(callbacks())
     return remember(navigator, scope) {
-        PaneOpener(navigator, scope, message, currentTwoPanes, currentThreePanes, currentCallbacks)
+        PaneOpener(navigator, scope, PanePlace(place), currentTwoPanes, currentThreePanes, currentCallbacks)
     }
 }
 
 /**
  * Opens what the panes ask for in the panes the window has ([twoPanes], [threePanes]):
  * - a chat in the detail pane in place of the one shown, closing the extra pane, and a message found by search there
- *   too, at that message ([messageIn]); with one pane, pushed full screen;
+ *   too, at that message, and a forum's topic there too, its conversation ([place]); with one pane, pushed full
+ *   screen;
  * - with three panes, a profile or an info page in the extra pane beside the conversation, in place of the one shown;
  *   with fewer, pushed above the layout.
  *
@@ -407,7 +416,7 @@ private fun rememberPaneOpener(
 private class PaneOpener(
     private val navigator: ThreePaneScaffoldNavigator<String>,
     private val scope: CoroutineScope,
-    private val message: MutableState<LongArray?>,
+    val place: PanePlace,
     private val twoPanes: State<Boolean>,
     private val threePanes: State<Boolean>,
     private val callbacks: State<PaneCallbacks>,
@@ -419,21 +428,24 @@ private class PaneOpener(
         messageId: Long,
     ) = open(chatId, messageId)
 
-    private fun open(
+    /** Opens chat [chatId], at [messageId] or in its forum topic [topicId] if either is given. */
+    fun open(
         chatId: Long,
-        messageId: Long?,
+        messageId: Long? = null,
+        topicId: Int? = null,
     ) {
         OpenChatTrace.begin(chatId)
         if (!twoPanes.value) {
-            message.value = null
-            callbacks.value.onOpenChat(chatId, messageId)
+            place.clear()
+            val opened = callbacks.value
+            if (topicId == null) opened.onOpenChat(chatId, messageId) else opened.onOpenTopic(chatId, topicId)
             return
         }
-        message.value = messageId?.let { longArrayOf(chatId, it) }
+        place.set(chatId, messageId, topicId)
         val current = navigator.currentDestination
         val shownChatId = ChatsPaneContent.of(current?.contentKey)?.chatId
         when {
-            // The conversation shows already: at the message, if any, as its pane is keyed by it.
+            // The conversation shows already: at the message or in the topic, if any, as its pane is keyed by them.
             shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Detail -> {}
 
             shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Extra -> {
@@ -459,9 +471,6 @@ private class PaneOpener(
     fun closeExtra() {
         if (navigator.currentDestination?.pane == ListDetailPaneScaffoldRole.Extra) show(pane = null)
     }
-
-    /** The message chat [chatId]'s conversation opens at; null for its usual place. */
-    fun messageIn(chatId: Long): Long? = message.value?.takeIf { it[0] == chatId }?.get(1)
 
     /**
      * Shows the page [content] makes for the chat in the detail pane, in place of the page shown; [orElse] where
@@ -510,6 +519,48 @@ private class PaneOpener(
     private companion object {
         /** The history above the list: a chat and a page beside it. */
         const val MAX_DEPTH = 2
+    }
+}
+
+/**
+ * Where in its chat the detail pane's conversation opens: at a message found by search, or in a topic a forum's row
+ * names; [saved] holds it as [chat id, message id, topic id], 0 for neither.
+ */
+private class PanePlace(
+    private val saved: MutableState<LongArray?>,
+) {
+    fun set(
+        chatId: Long,
+        messageId: Long?,
+        topicId: Int?,
+    ) {
+        val none = messageId == null && topicId == null
+        saved.value = if (none) null else longArrayOf(chatId, messageId ?: NONE, topicId?.toLong() ?: NONE)
+    }
+
+    fun clear() {
+        saved.value = null
+    }
+
+    /** The message chat [chatId]'s conversation opens at; null for its usual place. */
+    fun messageIn(chatId: Long): Long? = partIn(chatId, MESSAGE)
+
+    /** The forum topic chat [chatId]'s conversation shows; null for the whole chat. */
+    fun topicIn(chatId: Long): Int? = partIn(chatId, TOPIC)?.toInt()
+
+    private fun partIn(
+        chatId: Long,
+        part: Int,
+    ): Long? =
+        saved.value
+            ?.takeIf { it[0] == chatId }
+            ?.get(part)
+            ?.takeIf { it != NONE }
+
+    private companion object {
+        const val MESSAGE = 1
+        const val TOPIC = 2
+        const val NONE = 0L
     }
 }
 

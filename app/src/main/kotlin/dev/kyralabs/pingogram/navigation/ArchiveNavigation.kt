@@ -11,7 +11,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
 
 /**
  * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them, and
- * Catch-up; a chat opens with [openChat].
+ * Catch-up; a chat opens with [openChat], a topic a forum's row names pushed as its chat would be.
  */
 internal fun NavGraphBuilder.archive(
     navController: NavHostController,
@@ -21,6 +21,7 @@ internal fun NavGraphBuilder.archive(
         onBack = { navController.popBackStack() },
         onOpenChat = openChat,
         onOpenSettings = { navController.navigate(ArchiveSettingsRoute) { launchSingleTop = true } },
+        onOpenTopic = navController::navigateToTopic,
     )
     archiveSettingsScreen(onBack = { navController.popBackStack() })
     // Catch-up, pushed above the Chats tab from its header's chip: a chat it opens is pushed above it.

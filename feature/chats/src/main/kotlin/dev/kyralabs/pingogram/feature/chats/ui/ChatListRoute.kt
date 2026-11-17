@@ -8,6 +8,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +51,8 @@ import kotlinx.coroutines.launch
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
  * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary]. A row
- * of the "Keyword alerts" tab opens its chat at its match through [onOpenMessage], or as any row without it.
+ * of the "Keyword alerts" tab opens its chat at its match through [onOpenMessage], or as any row without it. A topic a
+ * forum's row names opens through [onOpenTopic], or the forum without it.
  */
 @Composable
 internal fun ChatListRoute(
@@ -64,6 +66,7 @@ internal fun ChatListRoute(
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
     onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
+    onOpenTopic: ((chatId: Long, topicId: Int) -> Unit)? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
     storyRings: StoryRingsViewModel = hiltViewModel(),
@@ -76,22 +79,8 @@ internal fun ChatListRoute(
     val rings = storyRings.uiState.collectAsStateWithLifecycle()
     val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
     val currentOnOpenStory by rememberUpdatedState(onOpenStory)
-    val currentOnNewStory by rememberUpdatedState(onNewStory)
     var uploadShown by rememberSaveable { mutableStateOf(false) }
-    // Reads the rings in the row's own composition, not here.
-    val stories: @Composable (Modifier) -> Unit =
-        remember(storyRings, rings) {
-            { rowModifier ->
-                StoryRingsRow(
-                    rings = rings.value.rings,
-                    onOpen = { currentOnOpenStory(it) },
-                    onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
-                    modifier = rowModifier,
-                    onAddStory = { currentOnNewStory() },
-                    onShowUpload = { uploadShown = true },
-                )
-            }
-        }
+    val stories = rememberStoriesRow(storyRings, rings, onOpenStory, onNewStory) { uploadShown = true }
     if (uploadShown) {
         StoryUploadHost(
             state = rings.value,
@@ -118,6 +107,7 @@ internal fun ChatListRoute(
                     onOpenNewChat = onOpenNewChat,
                     onBack = {},
                     onOpenMessage = onOpenMessage ?: { chatId, _ -> onOpenChat(chatId) },
+                    onOpenTopic = onOpenTopic ?: { chatId, _ -> onOpenChat(chatId) },
                 ),
             modifier = modifier,
             openChatId = openChatId,
@@ -132,8 +122,37 @@ internal fun ChatListRoute(
 }
 
 /**
+ * The story rings' row of [storyRings], above the chats: a ring calls [onOpenStory], the user's own [onNewStory], and
+ * the upload's ring [onShowUpload]. It reads [rings] in its own composition, not in the caller's.
+ */
+@Composable
+private fun rememberStoriesRow(
+    storyRings: StoryRingsViewModel,
+    rings: State<StoryRingsUiState>,
+    onOpenStory: (chatId: Long) -> Unit,
+    onNewStory: () -> Unit,
+    onShowUpload: () -> Unit,
+): @Composable (Modifier) -> Unit {
+    val currentOnOpenStory by rememberUpdatedState(onOpenStory)
+    val currentOnNewStory by rememberUpdatedState(onNewStory)
+    val currentOnShowUpload by rememberUpdatedState(onShowUpload)
+    return remember(storyRings, rings) {
+        { rowModifier ->
+            StoryRingsRow(
+                rings = rings.value.rings,
+                onOpen = { currentOnOpenStory(it) },
+                onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
+                modifier = rowModifier,
+                onAddStory = { currentOnNewStory() },
+                onShowUpload = { currentOnShowUpload() },
+            )
+        }
+    }
+}
+
+/**
  * The archived chats (`REQUIREMENTS.md` FR-L9), pushed above the Chats tab; [onBack] returns to it, tapping a row
- * calls [onOpenChat], and the top bar's settings button [onOpenSettings].
+ * calls [onOpenChat], a topic a forum's row names [onOpenTopic], and the top bar's settings button [onOpenSettings].
  */
 @Composable
 internal fun ArchivedChatsRoute(
@@ -141,6 +160,7 @@ internal fun ArchivedChatsRoute(
     onOpenChat: (chatId: Long) -> Unit,
     modifier: Modifier = Modifier,
     onOpenSettings: () -> Unit = {},
+    onOpenTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, _ -> onOpenChat(chatId) },
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Archive) },
 ) {
@@ -155,6 +175,7 @@ internal fun ArchivedChatsRoute(
                 onOpenNewChat = {},
                 onBack = onBack,
                 onOpenArchiveSettings = onOpenSettings,
+                onOpenTopic = onOpenTopic,
             ),
         modifier = modifier,
     )
@@ -162,7 +183,8 @@ internal fun ArchivedChatsRoute(
 
 /**
  * Where a chat list leads: the archive, a chat (at a message: a keyword alert's match, or the chat where [onOpenMessage]
- * is not given), the New chat screen, back, and the archive's settings.
+ * is not given; a forum's topic, or the forum where [onOpenTopic] is not given), the New chat screen, back, and the
+ * archive's settings.
  */
 private class ChatListNavigation(
     val onOpenArchive: () -> Unit,
@@ -171,11 +193,17 @@ private class ChatListNavigation(
     val onBack: () -> Unit,
     val onOpenArchiveSettings: () -> Unit = {},
     val onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
+    val onOpenTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, _ -> onOpenChat(chatId) },
 ) {
-    /** Opens [effect]'s chat, at its message if it names one. */
+    /** Opens [effect]'s chat, at its message or in its topic if it names one. */
     fun open(effect: ChatListEffect.OpenChat) {
         val messageId = effect.messageId
-        if (messageId == null) onOpenChat(effect.chatId) else onOpenMessage(effect.chatId, messageId)
+        val topicId = effect.topicId
+        when {
+            messageId != null -> onOpenMessage(effect.chatId, messageId)
+            topicId != null -> onOpenTopic(effect.chatId, topicId)
+            else -> onOpenChat(effect.chatId)
+        }
     }
 }
 

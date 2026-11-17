@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- On a forum's row in the chat list, a tap on a topic it names (the newest topic's tab, or a name after it) opens that
+  topic, as Telegram's apps do; a tap elsewhere on the row still opens the forum.
+
 ### Fixed
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
   page blank above Photos.
