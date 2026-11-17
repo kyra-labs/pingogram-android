@@ -66,8 +66,18 @@ internal fun TdApi.MessageContent.toServiceAction(
         }
 
         else -> {
-            toActivityAction()
+            toForumTopicAction() ?: toActivityAction()
         }
+    }
+
+/** A forum topic created, renamed, closed or reopened, hidden or unhidden; null for other contents. */
+private fun TdApi.MessageContent.toForumTopicAction(): ServiceAction? =
+    when (this) {
+        is TdApi.MessageForumTopicCreated -> ServiceAction.ForumTopicCreated(name)
+        is TdApi.MessageForumTopicEdited -> ServiceAction.ForumTopicEdited(name, iconChanged = editIconCustomEmojiId)
+        is TdApi.MessageForumTopicIsClosedToggled -> ServiceAction.ForumTopicClosedToggled(isClosed)
+        is TdApi.MessageForumTopicIsHiddenToggled -> ServiceAction.ForumTopicHiddenToggled(isHidden)
+        else -> null
     }
 
 /** Pins, screenshots, calls, video chats, settings and custom events; [toServiceAction] covers the chat and members. */
@@ -184,10 +194,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageChatSetTheme::class.java,
         TdApi.MessageChatShared::class.java,
         TdApi.MessageDirectMessagePriceChanged::class.java,
-        TdApi.MessageForumTopicCreated::class.java,
-        TdApi.MessageForumTopicEdited::class.java,
-        TdApi.MessageForumTopicIsClosedToggled::class.java,
-        TdApi.MessageForumTopicIsHiddenToggled::class.java,
         TdApi.MessageGameScore::class.java,
         TdApi.MessageGift::class.java,
         TdApi.MessageGiftedGrams::class.java,
