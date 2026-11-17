@@ -611,7 +611,7 @@ internal fun BubbleHeader(
  * ([ChatItem.Bubble.myMentions]) are chips on `primary` in `onPrimary` and the emphasized weight. Its custom emoji show
  * their pictures over their fallback emoji ([customEmoji], from [LocalCustomEmoji]), drawn in the draw phase too, in
  * the text's color where they take it. Its layout is kept in [textLayout], for the bubble's layout to put the meta
- * after its last line.
+ * after its last line, and for the row's long press to find the link under it ([linkTarget]).
  */
 @Composable
 private fun BubbleText(
@@ -657,7 +657,7 @@ private fun BubbleText(
         Text(
             text = text,
             // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
-            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint),
+            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint).linkTarget(textLayout),
             color = content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
@@ -665,6 +665,7 @@ private fun BubbleText(
     } else {
         Text(
             text = text,
+            modifier = Modifier.linkTarget(textLayout),
             color = style.colors.content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },
