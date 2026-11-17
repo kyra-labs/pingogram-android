@@ -72,7 +72,7 @@ class ConversationScrollBenchmark {
                 openSavedMessages()
             },
         ) {
-            scrollConversation(messageList())
+            scrollConversation()
         }
     }
 }
@@ -104,7 +104,7 @@ class BookmarksScrollBenchmark {
                 openBookmarks() ?: error("Saved Messages shows no Bookmarks card. Bookmark a few messages first.")
             },
         ) {
-            scrollBookmarks(bookmarksList())
+            scrollBookmarks()
         }
     }
 }

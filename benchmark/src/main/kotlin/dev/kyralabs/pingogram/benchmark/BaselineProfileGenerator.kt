@@ -36,7 +36,8 @@ class BaselineProfileGenerator {
             pressHome()
             startActivityAndWait()
             scrollChatList()
-            scrollConversation(openSavedMessages())
+            openSavedMessages()
+            scrollConversation()
             returnToChatList()
             openSavedMessages()
             returnToChatList()
@@ -52,7 +53,7 @@ class BaselineProfileGenerator {
                 skipCatchUpCards()
                 returnToChatList()
             }
-            openBookmarks()?.let { scrollBookmarks(it) }
+            if (openBookmarks() != null) scrollBookmarks()
             returnToChatList()
         }
     }

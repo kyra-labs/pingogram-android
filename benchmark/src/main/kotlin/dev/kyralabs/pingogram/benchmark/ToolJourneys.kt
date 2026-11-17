@@ -51,10 +51,10 @@ internal fun MacrobenchmarkScope.bookmarksList(): UiObject2 =
     device.wait(Until.findObject(By.res(BOOKMARKS_LIST)), TIMEOUT_MS)
         ?: error("No Bookmarks page open after $TIMEOUT_MS ms.")
 
-/** Flings the Bookmarks page's cards [list] down and back up. */
-internal fun MacrobenchmarkScope.scrollBookmarks(list: UiObject2) {
-    fling(list, Direction.DOWN)
-    fling(list, Direction.UP)
+/** Flings the open Bookmarks page's cards down and back up. */
+internal fun MacrobenchmarkScope.scrollBookmarks() {
+    fling(Direction.DOWN) { bookmarksList() }
+    fling(Direction.UP) { bookmarksList() }
 }
 
 // The tags in feature:chats (CatchUpChip.kt, CatchUpCard.kt) and feature:chat (SavedBookmarksCard.kt,
