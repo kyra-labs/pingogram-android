@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+
+*.png binary
+*.ttf binary
+*.jar binary
+*.keystore binary
+
+# Generated on the owner's phone by the Baseline Profile plugin; kept byte for byte as generated.
+app/src/main/generated/baselineProfiles/*.txt -text

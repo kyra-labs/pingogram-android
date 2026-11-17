@@ -24,7 +24,9 @@ rules apply to humans and AI assistants.
 ## Workflow
 
 1. Open or pick an issue; comment that you are working on it.
-2. Branch from `main`: `feat/<area>-<short-name>`, `fix/<area>-<short-name>`.
+2. Branch from `main`: `<type>/<scope>-<short-kebab-description>` (lowercase, hyphens, at most 50
+   characters), where `<type>` is one of `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`,
+   `ci` or `chore`; e.g. `fix/chat-drop-zone-font-scale`.
 3. Follow Conventional Commits and sign off every commit (`git commit -s`), which certifies
    the [Developer Certificate of Origin](https://developercertificate.org/). Contributions are licensed under
    GPL-3.0-or-later with the additional permission in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md).
