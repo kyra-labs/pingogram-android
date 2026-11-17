@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.benchmark
 
+import android.graphics.Rect
+import android.os.SystemClock
+import android.view.accessibility.AccessibilityWindowInfo
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
@@ -20,27 +23,50 @@ internal fun MacrobenchmarkScope.typeMessage(text: String) {
 }
 
 /** Taps send and waits for the bubble of [text] to show. */
-internal fun MacrobenchmarkScope.sendTyped(text: String): UiObject2 {
+internal fun MacrobenchmarkScope.sendTyped(text: String) {
     device.findObject(By.res(SEND_BUTTON))?.click() ?: error("No send button: type a message first.")
-    return device.wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
-        ?: error("The bubble of the message sent did not show within $TIMEOUT_MS ms.")
+    if (!device.wait(Until.hasObject(By.descContains(text)), TIMEOUT_MS)) {
+        error("The bubble of the message sent did not show within $TIMEOUT_MS ms.")
+    }
 }
 
 /**
- * Deletes the message of [bubble] through its actions: a long press, "Delete", then the dialog's "Delete". The
- * journeys leave nothing behind in Saved Messages.
+ * Deletes the message whose bubble shows [text] through its actions: a long press, "Delete", then the dialog's
+ * "Delete". The journeys leave nothing behind in Saved Messages.
  *
  * The keyboard goes down first: the composer keeps the focus after a send, and with the keyboard up the window is too
  * short for the floating menu to show "Delete" (it moves the message into view and scrolls the rest). Where "Delete"
- * is still out of sight, the menu is scrolled to it.
+ * is still out of sight, the menu is scrolled to it. The bubble is found after that, once it has stopped moving
+ * ([settledBubble]).
  */
-internal fun MacrobenchmarkScope.deleteMessage(bubble: UiObject2) {
+internal fun MacrobenchmarkScope.deleteMessage(text: String) {
     hideKeyboard()
-    bubble.longClick()
+    settledBubble(text).longClick()
     deleteAction().click()
     device.wait(Until.findObject(By.res(DELETE_CONFIRM)), TIMEOUT_MS)?.click()
         ?: error("No confirmation to delete the message.")
     device.waitForIdle()
+}
+
+/**
+ * The bubble of [text] in the open conversation's messages, found again until it shows at the same place twice
+ * [SETTLE_STEP_MS] apart. After a send the list scrolls the message into view and the keyboard's insets animate it
+ * down: a long press on a row that moves under the finger reads as a scroll, which cancels it (`LongPress.kt`), and
+ * the row's node is replaced on the way, so an object found earlier is stale. Only the message list is searched: the
+ * chat list's Saved Messages row shows the same text as its last message.
+ */
+private fun MacrobenchmarkScope.settledBubble(text: String): UiObject2 {
+    var lastBounds: Rect? = null
+    repeat(SETTLE_TRIES) {
+        val bubble =
+            messageList().wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
+                ?: error("The bubble of the message to delete is gone.")
+        val bounds = bubble.visibleBounds
+        if (bounds == lastBounds) return bubble
+        lastBounds = bounds
+        SystemClock.sleep(SETTLE_STEP_MS)
+    }
+    error("The bubble of the message to delete kept moving for ${SETTLE_TRIES * SETTLE_STEP_MS} ms.")
 }
 
 /** "Delete" in the open message actions, scrolled into view where the menu has no room for it. */
@@ -53,13 +79,28 @@ private fun MacrobenchmarkScope.deleteAction(): UiObject2 {
         ?: error("No \"Delete\" in the message's actions.")
 }
 
-/** Presses back once if the keyboard shows, which only hides it. */
+/**
+ * Presses back once if the keyboard's window shows, which only hides it. Back with no keyboard would leave the
+ * conversation, so the keyboard counts as shown only once two looks [SETTLE_STEP_MS] apart agree: one closing as the
+ * message goes out may still have its window.
+ */
 private fun MacrobenchmarkScope.hideKeyboard() {
-    val inputMethod = device.executeShellCommand("dumpsys input_method")
-    if (KEYBOARD_SHOWN.any { it in inputMethod }) {
+    if (keyboardShown()) {
         device.pressBack()
         device.waitForIdle()
     }
+}
+
+/** Whether the keyboard's window shows, once two looks [SETTLE_STEP_MS] apart agree. */
+private fun MacrobenchmarkScope.keyboardShown(): Boolean {
+    var shown = device.hasWindow(KEYBOARD)
+    repeat(SETTLE_TRIES) {
+        SystemClock.sleep(SETTLE_STEP_MS)
+        val now = device.hasWindow(KEYBOARD)
+        if (now == shown) return now
+        shown = now
+    }
+    return shown
 }
 
 // The tags in feature:chat (ComposerField.kt, ComposerButtons.kt, MessageActionsMenu.kt,
@@ -76,5 +117,9 @@ private const val TIMEOUT_MS = 10_000L
 /** How long to wait for what usually shows at once, before trying another way. */
 private const val SHORT_TIMEOUT_MS = 2_000L
 
-/** What `dumpsys input_method` says while the keyboard shows (its wording differs between Android versions). */
-private val KEYBOARD_SHOWN = listOf("mInputShown=true", "mIsInputViewShown=true")
+/** How often, and how many times, [settledBubble] and [hideKeyboard] look before they act. */
+private const val SETTLE_STEP_MS = 150L
+private const val SETTLE_TRIES = 20
+
+/** The keyboard's window, which UiAutomator lists while it shows. */
+private val KEYBOARD = By.Window.type(AccessibilityWindowInfo.TYPE_INPUT_METHOD)
