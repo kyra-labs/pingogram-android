@@ -1386,7 +1386,7 @@ class ChatViewModel internal constructor(
     /** The events of the message actions, the reactions and the forward sheet, which [onEvent] hands on. */
     private fun onMessageEvent(event: ChatEvent) {
         when (event) {
-            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
+            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId, link = event.link)
             is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
             is ChatEvent.ShowInteractions -> messageActions.showInteractions(event.messageId, event.reactions)
             ChatEvent.ExpandReactions -> messageActions.showPicker(true)

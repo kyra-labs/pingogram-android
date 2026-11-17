@@ -42,12 +42,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -137,8 +139,18 @@ private fun ActionsContent(
                 .padding(bottom = MaterialTheme.spacing.large),
     ) {
         if (sheet.reactions.isNotEmpty() || sheet.picker != null) QuickReactions(sheet, choose, onExpand)
+        sheet.link?.let { link ->
+            Text(
+                text = link,
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.MiddleEllipsis,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
         sheet.actions.forEach { action ->
-            ActionItem(action, onClick = { choose(action.eventFor(sheet.messageId)) })
+            ActionItem(action, action.labelWith(sheet.link), onClick = { choose(action.eventFor(sheet)) })
         }
     }
 }
@@ -207,9 +219,10 @@ internal fun MoreReactionsButton(onClick: () -> Unit) {
 @Composable
 private fun ActionItem(
     action: MessageAction,
+    @StringRes labelRes: Int,
     onClick: () -> Unit,
 ) {
-    val label = stringResource(action.label)
+    val label = stringResource(labelRes)
     val destructive = action.isDestructive
     val scheme = MaterialTheme.colorScheme
     ListItem(
@@ -233,6 +246,8 @@ internal val MessageAction.isDestructive: Boolean
 internal val MessageAction.label: Int
     @StringRes get() =
         when (this) {
+            MessageAction.OpenLink -> R.string.message_action_open_link
+            MessageAction.CopyPressedLink -> R.string.message_action_copy_link
             MessageAction.SeenBy -> R.string.message_action_seen_by
             MessageAction.Reactions -> R.string.message_action_reactions
             MessageAction.Resend -> R.string.message_action_resend
@@ -264,6 +279,8 @@ internal val MessageAction.label: Int
 internal val MessageAction.icon: Int
     @DrawableRes get() =
         when (this) {
+            MessageAction.OpenLink -> R.drawable.ic_open_in_new
+            MessageAction.CopyPressedLink -> UiR.drawable.ic_content_copy
             MessageAction.SeenBy -> UiR.drawable.ic_done_all
             MessageAction.Reactions -> UiR.drawable.ic_favorite
             MessageAction.Resend -> UiR.drawable.ic_refresh
@@ -288,34 +305,36 @@ internal val MessageAction.icon: Int
             MessageAction.Delete -> UiR.drawable.ic_delete
         }
 
-/** The event of choosing [this] for message [messageId]. */
-internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
+/** The event of choosing [this] in [sheet], for its message or the link pressed. */
+internal fun MessageAction.eventFor(sheet: MessageActionsSheet): ChatEvent =
     when (this) {
-        MessageAction.SeenBy -> ChatEvent.ShowInteractions(messageId, reactions = false)
-        MessageAction.Reactions -> ChatEvent.ShowInteractions(messageId, reactions = true)
-        MessageAction.Resend -> ChatEvent.Resend(messageId)
-        MessageAction.Reply -> ChatEvent.Reply(messageId)
-        MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(messageId)
-        MessageAction.RemindMe -> ReminderEvent.Open(messageId)
-        MessageAction.Copy -> ChatEvent.Copy(messageId)
-        MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(messageId)
-        MessageAction.Translate -> TranslationEvent.Translate(messageId)
-        MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(messageId)
-        MessageAction.Summarize -> SummaryEvent.Summarize(messageId)
-        MessageAction.ShowFullText -> SummaryEvent.ShowFullText(messageId)
-        MessageAction.Forward -> ChatEvent.Forward(messageId)
-        MessageAction.Bookmark -> BookmarkEvent.Open(messageId)
-        MessageAction.Edit -> ChatEvent.Edit(messageId)
-        MessageAction.Pin -> ChatEvent.Pin(messageId)
-        MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)
-        MessageAction.Unpin -> ChatEvent.Unpin(messageId)
-        MessageAction.RetractVote -> PollEvent.RetractVote(messageId)
-        MessageAction.StopPoll -> PollEvent.StopPoll(messageId)
-        MessageAction.PollStatistics -> PollEvent.OpenStatistics(messageId)
-        MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(messageId)
-        MessageAction.Select -> SelectionEvent.Select(messageId)
-        MessageAction.Report -> SelectionEvent.Report(messageId)
-        MessageAction.Delete -> ChatEvent.Delete(messageId)
+        MessageAction.OpenLink -> ReplyEvent.OpenUrl(sheet.link.orEmpty())
+        MessageAction.CopyPressedLink -> ReplyEvent.CopyUrl(sheet.link.orEmpty())
+        MessageAction.SeenBy -> ChatEvent.ShowInteractions(sheet.messageId, reactions = false)
+        MessageAction.Reactions -> ChatEvent.ShowInteractions(sheet.messageId, reactions = true)
+        MessageAction.Resend -> ChatEvent.Resend(sheet.messageId)
+        MessageAction.Reply -> ChatEvent.Reply(sheet.messageId)
+        MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(sheet.messageId)
+        MessageAction.RemindMe -> ReminderEvent.Open(sheet.messageId)
+        MessageAction.Copy -> ChatEvent.Copy(sheet.messageId)
+        MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(sheet.messageId)
+        MessageAction.Translate -> TranslationEvent.Translate(sheet.messageId)
+        MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(sheet.messageId)
+        MessageAction.Summarize -> SummaryEvent.Summarize(sheet.messageId)
+        MessageAction.ShowFullText -> SummaryEvent.ShowFullText(sheet.messageId)
+        MessageAction.Forward -> ChatEvent.Forward(sheet.messageId)
+        MessageAction.Bookmark -> BookmarkEvent.Open(sheet.messageId)
+        MessageAction.Edit -> ChatEvent.Edit(sheet.messageId)
+        MessageAction.Pin -> ChatEvent.Pin(sheet.messageId)
+        MessageAction.PinForSelf -> ChatEvent.Pin(sheet.messageId, onlyForSelf = true)
+        MessageAction.Unpin -> ChatEvent.Unpin(sheet.messageId)
+        MessageAction.RetractVote -> PollEvent.RetractVote(sheet.messageId)
+        MessageAction.StopPoll -> PollEvent.StopPoll(sheet.messageId)
+        MessageAction.PollStatistics -> PollEvent.OpenStatistics(sheet.messageId)
+        MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(sheet.messageId)
+        MessageAction.Select -> SelectionEvent.Select(sheet.messageId)
+        MessageAction.Report -> SelectionEvent.Report(sheet.messageId)
+        MessageAction.Delete -> ChatEvent.Delete(sheet.messageId)
     }
 
 @PingogramPreviews
@@ -331,5 +350,18 @@ private fun MessageActionsOwnPreview() {
 private fun MessageActionsIncomingPreview() {
     PingogramPreview {
         MessageActionsBottomSheet(ChatPreviewData.incomingMessageActions, onEvent = {})
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun MessageActionsLinkPreview() {
+    val sheet = ChatPreviewData.incomingMessageActions
+    val actions = listOf(MessageAction.OpenLink, MessageAction.CopyPressedLink) + sheet.actions
+    PingogramPreview {
+        MessageActionsBottomSheet(
+            sheet.copy(link = "https://developer.android.com/jetpack/compose", actions = actions.toImmutableList()),
+            onEvent = {},
+        )
     }
 }

@@ -249,12 +249,12 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
         @Test
         fun `remind me opens the reminder sheet's event`() {
-            assertEquals(ReminderEvent.Open(7), MessageAction.RemindMe.eventFor(7))
+            assertEquals(ReminderEvent.Open(7), MessageAction.RemindMe.eventFor(actionsSheet(7)))
         }
 
         @Test
         fun `bookmark opens the bookmark sheet's event`() {
-            assertEquals(BookmarkEvent.Open(7), MessageAction.Bookmark.eventFor(7))
+            assertEquals(BookmarkEvent.Open(7), MessageAction.Bookmark.eventFor(actionsSheet(7)))
         }
 
         @Test
