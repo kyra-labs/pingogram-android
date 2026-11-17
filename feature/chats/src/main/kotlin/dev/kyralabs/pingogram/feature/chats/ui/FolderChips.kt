@@ -11,8 +11,9 @@ import androidx.compose.ui.graphics.Color
 // The folder tabs' colors and chip shapes (FolderTabs, docs/DESIGN_SYSTEM.md §13.3).
 
 /**
- * The tabs' colors in the floating bar (owner decision 2026-11-13): the chips at rest without a container, their
- * labels in `onSurface` on the bar's `surfaceContainer`, the selected chip on `primary` / `onPrimary`.
+ * The tabs' colors in the floating bar, as the floating navigation bar's tabs (`docs/DESIGN_SYSTEM.md` §13.3): the
+ * chips at rest without a container, their labels in `onSurface` on the bar's `surfaceContainer`, the selected chip a
+ * neutral tonal pill, `surfaceContainerHighest` / `onSurface`.
  */
 @Composable
 internal fun folderButtonColors(): ToggleButtonColors {
@@ -20,8 +21,8 @@ internal fun folderButtonColors(): ToggleButtonColors {
     return ToggleButtonDefaults.colors(
         containerColor = Color.Transparent,
         contentColor = scheme.onSurface,
-        checkedContainerColor = scheme.primary,
-        checkedContentColor = scheme.onPrimary,
+        checkedContainerColor = scheme.surfaceContainerHighest,
+        checkedContentColor = scheme.onSurface,
     )
 }
 

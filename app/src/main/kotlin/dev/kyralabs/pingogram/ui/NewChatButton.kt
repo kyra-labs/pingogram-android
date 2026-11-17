@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.painterResource
@@ -44,8 +45,8 @@ import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
  * `docs/DESIGN_SYSTEM.md` §6.1, §13.2; owner decision 2026-11-13): a round [FloatingActionButton], a full circle as
- * tall as the pill (`sizes.floatingNavigationBar`), with the filled edit symbol, on `tertiaryContainer` /
- * `onTertiaryContainer`, named "New chat" for screen readers. It shows while [shown] (on the Chats tab, until New chat
+ * tall as the pill (`sizes.floatingNavigationBar`), with the filled edit symbol, in the bar's color with an
+ * `onSurface` icon, named "New chat" for screen readers. It shows while [shown] (on the Chats tab, until New chat
  * opens) and grows into New chat from the circle ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
@@ -55,15 +56,14 @@ internal fun BarNewChatButton(
     modifier: Modifier = Modifier,
 ) {
     val shape = CircleShape
-    val colors = MaterialTheme.colorScheme
     val size = MaterialTheme.sizes.floatingNavigationBar
     NewChatButtonSlot(shown = shown, shape = shape, modifier = modifier.size(size)) { transform ->
         FloatingToolbarDefaults.StandardFloatingActionButton(
             onClick = onClick,
             modifier = transform.size(size),
             shape = shape,
-            containerColor = colors.tertiaryContainer,
-            contentColor = colors.onTertiaryContainer,
+            containerColor = barButtonContainerColor(),
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_edit),
@@ -155,9 +155,9 @@ internal fun RailPrimaryActions(
 
 /**
  * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision 2026-11-13), where "New chat" sits on
- * the Chats tab: beside the floating navigation bar, the same round button as tall as the pill on `tertiaryContainer`
- * with the add-person symbol. It shows while [shown] (on the Contacts tab) and fades in and out; [onClick] opens Add
- * contact.
+ * the Chats tab: beside the floating navigation bar, the same round button as tall as the pill, in the bar's color,
+ * with the add-person symbol in `onSurface`. It shows while [shown] (on the Contacts tab) and fades in and out;
+ * [onClick] opens Add contact.
  */
 @Composable
 internal fun BarAddContactButton(
@@ -165,7 +165,6 @@ internal fun BarAddContactButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = MaterialTheme.colorScheme
     val size = MaterialTheme.sizes.floatingNavigationBar
     val shape = CircleShape
     FadingButton(shown, modifier.size(size)) {
@@ -173,8 +172,8 @@ internal fun BarAddContactButton(
             onClick = onClick,
             modifier = Modifier.size(size),
             shape = shape,
-            containerColor = colors.tertiaryContainer,
-            contentColor = colors.onTertiaryContainer,
+            containerColor = barButtonContainerColor(),
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_person_add),
@@ -212,6 +211,11 @@ internal fun RailAddContactButton(
         }
     }
 }
+
+/** The color of the buttons beside the floating navigation bar: the bar's own (`docs/DESIGN_SYSTEM.md` §6.1). */
+@Composable
+private fun barButtonContainerColor(): Color =
+    FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor
 
 /** [button] while [shown], fading in and out on the effects springs. */
 @Composable

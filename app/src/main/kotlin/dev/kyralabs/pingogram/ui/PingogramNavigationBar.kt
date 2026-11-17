@@ -132,9 +132,10 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
  * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
  * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens: the selected tab shows its filled icon and
- * label on a `primary` pill (§13.2), the others their label. Where the labels do not fit (narrow phones, large font
- * scales: measured, never cut, [labelsFit]), the other tabs show their outlined icon instead, named for screen readers
- * by the label. With an [accountMenu], a long press on the Settings tab opens it ([AccountMenuAnchor]).
+ * label on a neutral tonal pill (`surfaceContainerHighest`, §6.1), the others their label, all in `onSurface`. Where
+ * the labels do not fit (narrow phones, large font scales: measured, never cut, [labelsFit]), the other tabs show their
+ * outlined icon instead, named for screen readers by the label. With an [accountMenu], a long press on the Settings tab
+ * opens it ([AccountMenuAnchor]).
  *
  * [newChat] (the Chats tab's round "New chat", [BarNewChatButton], or the Contacts tab's "Add contact") sits
  * `spacing.small` beside the pill, at its end. The pill stays centred in the window; only where it and the button's
@@ -159,7 +160,7 @@ internal fun PingogramNavigationBar(
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
                 color = colors.toolbarContainerColor,
-                contentColor = colors.toolbarContentColor,
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
                 NavigationTabs(selected, onSelect, showLabels, accountMenu)
@@ -213,9 +214,9 @@ private fun NavigationTabs(
             .padding(horizontal = MaterialTheme.spacing.small)
             .selectableGroup(),
     ) {
-        // The selected tab's pill and its content: `primary` (§13.2).
+        // The selected tab's pill and its content: a neutral tonal pill (§6.1).
         val colors = MaterialTheme.colorScheme
-        val selectedColors = colors.primary to colors.onPrimary
+        val selectedColors = colors.surfaceContainerHighest to colors.onSurface
         TopLevelDestination.entries.forEach { destination ->
             val isSelected = destination == selected
             AccountMenuAnchor(
