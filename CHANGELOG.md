@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-17
+
 ### Added
 - The Bookmarks page says how many messages are saved on this phone, and its tag filters show their counts apart.
 - The pinned messages bar shows a small picture of a pinned photo, video, GIF or round video, or a file's tile, and the
@@ -1498,7 +1500,8 @@ Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts 
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/kyra-labs/pingogram-android/compare/v1.1.3...v2.0.0
