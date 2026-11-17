@@ -20,6 +20,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   messages unread since, it still opens at the unread divider.
 - In a conversation, a touch that stops the messages from scrolling only stops them: holding it no longer opens a
   message's menu, and in selection mode it no longer selects a message.
+- In the chat list, a touch that stops the folder tabs from sliding only stops them: holding it no longer opens a
+  tab's menu.
 
 ## [2.3.0] - 2026-11-17
 
