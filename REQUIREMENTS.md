@@ -206,6 +206,29 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - Stories (view), translation, saved messages tabs, message search in chat, chat export,
   widgets (Glance), App Shortcuts, Wear/auto notifications pass-through, tablet list-detail.
 
+### 5.10 Beyond the official app [after v2.3.0]
+
+Owner decision of 2026-11-17. Each works on the phone with what TDLib already gives; nothing is sent anywhere but
+Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2).
+
+- FR-X1 Should: **Mentions & replies.** One page, opened from the Chats tab's header, listing the messages that mention
+  the user and the replies to the user's messages, across all chats, newest first, unread first; each opens its chat
+  at the message, and reading it there marks it read. Built from TDLib's mention and reply searches (check `TdApi`
+  for what searches across chats and what only per chat); no new storage.
+- FR-X2 Should: **Snippets.** Texts the user saves (a name and a text, up to 100), kept on the phone with the
+  account's other local data, managed in Settings; in the composer, typing `/` followed by a snippet's name, or the
+  composer's menu, inserts its text into the field. Inserting never sends: the user taps send. Bots' commands keep
+  `/` in chats with bots, where snippets come second in the suggestions.
+- FR-X3 Should: **Add to calendar, open in maps.** A message's actions offer "Add to calendar" when Android's on-device
+  `TextClassifier` finds a date or time in its text, and "Open in maps" for an address; the calendar opens with the
+  event filled in (`CalendarContract` insert intent) and the user saves it there. No permission, no network.
+- FR-X4 Should: **Skip silence.** Voice messages and round video messages can skip their silences (the player's own
+  skip-silence), a switch beside the playback speed, remembered for the app (Settings → Chats).
+- FR-X5 Should: **Channel feed.** The user's channels as one timeline, newest posts first, opened from the chat list
+  (where: the owner's design board), each post with its channel and "Open in channel"; reading posts in the feed marks
+  them read in their channels. Sponsored messages show in the feed as in a channel. Needs the owner's design board
+  before it is built.
+
 ## 6. Non-functional requirements
 
 ### 6.1 Performance ("optimized Telegram")
