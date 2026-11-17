@@ -21,9 +21,8 @@ internal fun MacrobenchmarkScope.waitForChatList(): UiObject2 =
 
 /** Flings the chat list down [FLINGS] times, loading more chats on the way, and back up. */
 internal fun MacrobenchmarkScope.scrollChatList() {
-    val list = waitForChatList()
-    fling(list, Direction.DOWN)
-    fling(list, Direction.UP)
+    fling(Direction.DOWN) { waitForChatList() }
+    fling(Direction.UP) { waitForChatList() }
 }
 
 /**
@@ -60,20 +59,25 @@ internal fun MacrobenchmarkScope.messageList(): UiObject2 =
     device.wait(Until.findObject(By.res(MESSAGE_LIST)), TIMEOUT_MS)
         ?: error("No conversation open after $TIMEOUT_MS ms.")
 
-/** Flings the conversation [list] up to older messages, loading them on the way, and back down. */
-internal fun MacrobenchmarkScope.scrollConversation(list: UiObject2) {
-    fling(list, Direction.UP)
-    fling(list, Direction.DOWN)
+/** Flings the open conversation up to older messages, loading them on the way, and back down. */
+internal fun MacrobenchmarkScope.scrollConversation() {
+    fling(Direction.UP) { messageList() }
+    fling(Direction.DOWN) { messageList() }
 }
 
-/** [FLINGS] flings of [list] in [direction], each followed by a wait until the app is idle. */
+/**
+ * [FLINGS] flings in [direction] of the list [find] returns, each followed by a wait until the app is idle. The list is
+ * found again before each fling: scrolling can replace its node, and a fling on the old one throws
+ * `StaleObjectException`.
+ */
 internal fun MacrobenchmarkScope.fling(
-    list: UiObject2,
     direction: Direction,
+    find: () -> UiObject2,
 ) {
-    // Clear of the system's back gesture along the sides.
-    list.setGestureMargin(device.displayWidth / GESTURE_MARGIN_FRACTION)
     repeat(FLINGS) {
+        val list = find()
+        // Clear of the system's back gesture along the sides.
+        list.setGestureMargin(device.displayWidth / GESTURE_MARGIN_FRACTION)
         list.fling(direction)
         device.waitForIdle()
     }
