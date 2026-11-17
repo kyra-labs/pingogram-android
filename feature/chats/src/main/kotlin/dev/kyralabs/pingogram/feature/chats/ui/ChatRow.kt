@@ -82,6 +82,8 @@ import kotlin.math.abs
  *   ([swipeThresholdFeedback]). Everything moving is read in the draw phase, so a swipe never recomposes.
  * - **Selection**: in selection mode ([selectionMode]) swipes are off and a tap selects; a long press starts selection
  *   (the list item's long click gives the `LongPress` haptic). Screen readers hear the row as a check box then.
+ * - **Topics**: a tap on a topic a forum's row names opens that topic ([ChatListEvent.ChatClicked]), or selects the
+ *   forum in selection mode; screen readers get each topic as a custom action outside selection mode.
  * - **Open** ([open]): the chat's conversation shows beside the list; the list item looks and reads as selected.
  * - **Screen readers** get every action of the row as a custom action outside selection mode
  *   ([ChatListItemModel.actions]), so nothing depends on swiping.
@@ -134,6 +136,14 @@ internal fun ChatRow(
                                     onEvent(ChatListEvent.RowAction(item.id, action))
                                     true
                                 }
+                            } +
+                            item.topics.orEmpty().map { topic ->
+                                CustomAccessibilityAction(
+                                    resources.getString(R.string.chat_list_open_topic, topic.name),
+                                ) {
+                                    onEvent(ChatListEvent.ChatClicked(item.id, topic.id))
+                                    true
+                                }
                             }
                     }
                 },
@@ -143,6 +153,7 @@ internal fun ChatRow(
             open = open,
             dragged = dragged,
             segment = segment,
+            onTopicClick = { onEvent(ChatListEvent.ChatClicked(item.id, topicId = it)) },
         )
     }
 }

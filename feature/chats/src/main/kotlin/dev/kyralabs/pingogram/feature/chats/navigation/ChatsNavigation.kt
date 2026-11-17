@@ -56,7 +56,8 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  * The header (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar") holds global search's button and the signed-in user's
  * avatar, which do what [headerActions] says: open search and grow into it, open the Settings tab and its account
  * menu. A row of the "Keyword alerts" tab (board 30) opens its chat at its match through [onOpenMessage], as a found
- * message opens; without it, as any row.
+ * message opens; without it, as any row. A topic a forum's row names (its newest topic's tab, the names after it) opens
+ * that topic's conversation through [onOpenTopic], as Telegram's apps do; without it, the forum.
  */
 @Composable
 fun ChatListPane(
@@ -70,6 +71,7 @@ fun ChatListPane(
     onEditFolder: ((folderId: Int?) -> Unit)? = null,
     headerActions: ChatListHeaderActions? = null,
     onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
+    onOpenTopic: ((chatId: Long, topicId: Int) -> Unit)? = null,
 ) {
     ChatListRoute(
         onOpenArchive = onOpenArchive,
@@ -82,20 +84,27 @@ fun ChatListPane(
         onEditFolder = onEditFolder,
         headerActions = headerActions,
         onOpenMessage = onOpenMessage,
+        onOpenTopic = onOpenTopic,
     )
 }
 
 /**
- * Adds the archived chats, [ArchiveRoute], to the graph; [onBack] leaves them, a row calls [onOpenChat], and the top
- * bar's settings button [onOpenSettings] (for [archiveSettingsScreen]).
+ * Adds the archived chats, [ArchiveRoute], to the graph; [onBack] leaves them, a row calls [onOpenChat], a topic a
+ * forum's row names [onOpenTopic], and the top bar's settings button [onOpenSettings] (for [archiveSettingsScreen]).
  */
 fun NavGraphBuilder.archiveScreen(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
     onOpenSettings: () -> Unit = {},
+    onOpenTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, _ -> onOpenChat(chatId) },
 ) {
     composable<ArchiveRoute> {
-        ArchivedChatsRoute(onBack = onBack, onOpenChat = onOpenChat, onOpenSettings = onOpenSettings)
+        ArchivedChatsRoute(
+            onBack = onBack,
+            onOpenChat = onOpenChat,
+            onOpenSettings = onOpenSettings,
+            onOpenTopic = onOpenTopic,
+        )
     }
 }
 
