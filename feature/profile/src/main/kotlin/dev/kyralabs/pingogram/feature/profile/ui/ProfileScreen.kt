@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.profile.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -266,16 +267,16 @@ private fun LazyGridScope.profileItems(
     inset: Dp,
     motion: ItemMotion,
 ) {
-    val music = page.profileMusic
-    if (music != null) {
-        // Nothing shows for another user without songs, so the section adds its own space above it.
-        fullWidth(key = MUSIC, inset = inset, motion = motion) {
-            music(state.header.userId, state.actions.isSelf, Modifier)
-        }
-    }
-    strangerItem(state, page, inset, motion)
+    // The music draws nothing for another user without songs, so it leads the first item rather than being one: a
+    // zero-height first item leaves the grid scrolling backward at its top, taking the scroll that expands the bar.
+    val music: (@Composable () -> Unit)? =
+        page.profileMusic?.let { slot -> { slot(state.header.userId, state.actions.isSelf, Modifier) } }
+    strangerItem(state, page, inset, motion, leading = music)
     fullWidth(key = ACTIONS, inset = inset, motion = motion) {
-        ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
+        Column {
+            if (state.stranger == null) music?.invoke()
+            ProfileActionsRow(state.actions, page.onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
+        }
     }
     if (state.isDeletedAccount) {
         fullWidth(key = DELETED, inset = inset, motion = motion) {
@@ -324,22 +325,29 @@ private fun LazyGridScope.profileItems(
     }
 }
 
-/** The card about someone not in the contacts who wrote first, read before the actions as it says why they matter. */
+/**
+ * The card about someone not in the contacts who wrote first, read before the actions as it says why they matter, after
+ * [leading] (the music).
+ */
 private fun LazyGridScope.strangerItem(
     state: ProfileUiState.Content,
     page: ProfilePageParts,
     inset: Dp,
     motion: ItemMotion,
+    leading: (@Composable () -> Unit)?,
 ) {
     val stranger = state.stranger ?: return
     fullWidth(key = STRANGER, inset = inset, motion = motion) {
-        ProfileStrangerCard(
-            stranger = stranger,
-            actions = state.actions,
-            onEvent = page.onEvent,
-            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
-            onAddContact = page.onEditContact,
-        )
+        Column {
+            leading?.invoke()
+            ProfileStrangerCard(
+                stranger = stranger,
+                actions = state.actions,
+                onEvent = page.onEvent,
+                modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+                onAddContact = page.onEditContact,
+            )
+        }
     }
 }
 
@@ -393,5 +401,4 @@ private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
 private const val STORY_ALBUMS = "story-albums"
-private const val MUSIC = "music"
 private const val MEDIA_HEADER = "media-header"
