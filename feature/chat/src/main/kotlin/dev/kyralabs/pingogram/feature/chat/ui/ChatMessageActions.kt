@@ -111,11 +111,13 @@ internal class ChatMessageActions(
 
     /**
      * Opens the actions sheet of message [messageId] once TDLib told what it allows, at its reactions picker if
-     * [showsPicker] and the sheet has one; then asks for the pictures of the custom emoji it shows.
+     * [showsPicker] and the sheet has one, with "Open link" and "Copy link" first for the [link] of its text the long
+     * press landed on; then asks for the pictures of the custom emoji it shows.
      */
     fun show(
         messageId: Long,
         showsPicker: Boolean = false,
+        link: String? = null,
     ) {
         opening?.cancel()
         opening =
@@ -142,12 +144,15 @@ internal class ChatMessageActions(
                                 reactionsMessageId = reactionsMessage.id,
                                 reactions = quick,
                                 actions =
-                                    context
-                                        .actionsOf(message, properties.value, inThread)
-                                        .withTranslation(translate.await())
-                                        .toImmutableList(),
+                                    (
+                                        (if (link == null) emptyList() else LINK_ACTIONS) +
+                                            context
+                                                .actionsOf(message, properties.value, inThread)
+                                                .withTranslation(translate.await())
+                                    ).toImmutableList(),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
+                                link = link,
                             )
                         mutableSheet.value = sheet
                         loadCustomEmojiPictures(sheet)
@@ -200,6 +205,18 @@ internal class ChatMessageActions(
     /** Opens the chat picker that replies to message [messageId] in another chat, through [onReplyElsewhere]. */
     fun replyElsewhere(messageId: Long) =
         act(messageId, MessageAction.ReplyElsewhere) { _, _, _ -> onReplyElsewhere(messageId) }
+
+    /** Opens [url], the link of a message's text a long press landed on, as a tap on it would. */
+    fun openUrl(url: String) {
+        dismiss()
+        onEffect(ChatEffect.OpenUrl(url))
+    }
+
+    /** Copies [url], the link of a message's text a long press landed on. */
+    fun copyUrl(url: String) {
+        dismiss()
+        onEffect(ReplyEffect.CopyLink(url))
+    }
 
     /**
      * Copies the link of message [messageId]: to the whole album for an album's item, and to it in the conversation's
@@ -441,6 +458,9 @@ internal class ChatMessageActions(
         const val MAX_QUICK_REACTIONS = 16
 
         val NO_REACTIONS = AvailableReactions(persistentListOf())
+
+        /** What a long press on a link offers for it, before the message's actions. */
+        val LINK_ACTIONS = listOf(MessageAction.OpenLink, MessageAction.CopyPressedLink)
     }
 }
 

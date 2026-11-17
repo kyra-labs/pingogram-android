@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -22,6 +24,8 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property customEmojiPictures the TDLib file of a picture of each custom emoji the sheet shows, by custom emoji id:
  *   the sticker itself if it is a still, else its thumbnail if that is a picture. Comes after the sheet opens; a custom
  *   emoji without one shows a placeholder.
+ * @property link the address of the link of the message's text the long press landed on, which [MessageAction.OpenLink]
+ *   and [MessageAction.CopyPressedLink] act on; null for none.
  */
 @Immutable
 data class MessageActionsSheet(
@@ -32,7 +36,11 @@ data class MessageActionsSheet(
     val picker: ReactionPicker? = null,
     val showsPicker: Boolean = false,
     val customEmojiPictures: ImmutableMap<Long, Int> = persistentMapOf(),
-)
+    val link: String? = null,
+) {
+    /** Leaves the link out, as the logs must. */
+    override fun toString() = "MessageActionsSheet(messageId=$messageId, actions=$actions, showsPicker=$showsPicker, …)"
+}
 
 /**
  * A reaction the sheet offers, in its quick row or its picker; [isChosen] if the user added it already, which choosing
@@ -98,6 +106,12 @@ data class MessageShortcuts(
 
 /** What the actions sheet offers for a message, each only where TDLib allows it. */
 enum class MessageAction {
+    /** Open the link of its text the long press landed on ([MessageActionsSheet.link]). */
+    OpenLink,
+
+    /** Copy the address of that link. */
+    CopyPressedLink,
+
     /** List the group's members who saw it, with when ("Seen by", `MessageInteractionsViewModel`). */
     SeenBy,
 
@@ -175,6 +189,23 @@ enum class MessageAction {
     /** Delete it, after a confirmation ([DeleteMessagesDialog]). */
     Delete,
 }
+
+/** Opening and copying the link a long press landed on, which menus group under its address. */
+internal val MessageAction.isLinkAction: Boolean
+    get() = this == MessageAction.OpenLink || this == MessageAction.CopyPressedLink
+
+/** The menu's groups: the pressed link's actions, the everyday ones, then reporting and deleting; none empty. */
+internal fun actionGroups(actions: List<MessageAction>): List<List<MessageAction>> =
+    listOf(
+        actions.filter { it.isLinkAction },
+        actions.filter { !it.isLinkAction && !it.isDestructive },
+        actions.filter { it.isDestructive },
+    ).filter { it.isNotEmpty() }
+
+/** The label of this action, "Copy message link" for the message's link where a pressed [link] has "Copy link". */
+@StringRes
+internal fun MessageAction.labelWith(link: String?): Int =
+    if (this == MessageAction.CopyLink && link != null) R.string.message_action_copy_message_link else label
 
 /**
  * Selection mode (`REQUIREMENTS.md` FR-C6 "select"; `docs/DESIGN_SYSTEM.md` §6 "Selection mode"): the selected

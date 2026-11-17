@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animate
@@ -49,7 +50,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutModifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -57,6 +64,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
@@ -157,7 +165,8 @@ internal fun MessageActionsMenu(
             LiftedText(sheet, onQuote = { close(it) }, content = message)
             MenuGroups(
                 actions = sheet.actions,
-                onAction = { close(it.eventFor(sheet.messageId)) },
+                link = sheet.link,
+                onAction = { close(it.eventFor(sheet)) },
                 modifier = Modifier.popIn(motion, lift, TransformOrigin(originX, 0f)),
             )
         }
@@ -339,16 +348,17 @@ private fun ReactionsBar(
 }
 
 /**
- * The actions as expressive menu groups: the everyday ones, then reporting and deleting in `error`; scrolls where the
- * window has no room for all of them.
+ * The actions as expressive menu groups: the pressed [link]'s, under its address, then the everyday ones, then
+ * reporting and deleting in `error`; scrolls where the window has no room for all of them.
  */
 @Composable
 private fun MenuGroups(
     actions: ImmutableList<MessageAction>,
+    link: String?,
     onAction: (MessageAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val groups = remember(actions) { actions.partition { !it.isDestructive }.toList().filter { it.isNotEmpty() } }
+    val groups = remember(actions) { actionGroups(actions) }
     Column(
         // Room below the last group for its shadow, which the scroll would clip.
         modifier =
@@ -361,25 +371,54 @@ private fun MenuGroups(
     ) {
         groups.forEachIndexed { groupIndex, group ->
             DropdownMenuGroup(shapes = MenuDefaults.groupShape(groupIndex, groups.size)) {
+                if (link != null && group.first().isLinkAction) {
+                    // The pressed link's address over its actions, as wide as the actions make the menu.
+                    MenuDefaults.DropdownMenuGroupLabel(modifier = Modifier.then(AddsNoWidth)) {
+                        Text(link, maxLines = 1, overflow = TextOverflow.MiddleEllipsis)
+                    }
+                }
                 group.forEachIndexed { index, action ->
-                    MenuAction(action, MenuDefaults.itemShape(index, group.size).shape) { onAction(action) }
+                    val label = action.labelWith(link)
+                    MenuAction(action, label, MenuDefaults.itemShape(index, group.size).shape) { onAction(action) }
                 }
             }
         }
     }
 }
 
-/** One action of the menu: its icon and label, in `error` for reporting and deleting. */
+/** Takes the width the rest of the menu gives it, adding none: a long address does not widen the menu. */
+private object AddsNoWidth : LayoutModifier {
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints,
+    ): MeasureResult {
+        val placeable = measurable.measure(constraints)
+        return layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int,
+    ): Int = 0
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurable: IntrinsicMeasurable,
+        height: Int,
+    ): Int = 0
+}
+
+/** One action of the menu: its icon and [label], in `error` for reporting and deleting. */
 @Composable
 private fun MenuAction(
     action: MessageAction,
+    @StringRes label: Int,
     shape: Shape,
     onClick: () -> Unit,
 ) {
     val error = MaterialTheme.colorScheme.error
     DropdownMenuItem(
         onClick = onClick,
-        text = { Text(stringResource(action.label)) },
+        text = { Text(stringResource(label)) },
         shape = shape,
         // "message_action_Delete": `benchmark/`'s journeys find the actions by it.
         modifier = Modifier.fillMaxWidth().testTag("message_action_${action.name}"),
