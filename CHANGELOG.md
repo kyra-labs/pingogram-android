@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- A conversation opened again opens where you left it, until the app closes, not at the newest message. With new
+  messages unread since, it still opens at the unread divider.
+
 ## [2.3.0] - 2026-11-17
 
 ### Added
