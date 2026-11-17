@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -15,6 +16,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeUp
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -117,6 +121,25 @@ class ProfileScreenTest {
         val content = ProfilePreviewData.content
         composeRule.onNodeWithText("Music of ${content.header.userId}").assertIsDisplayed()
         assertEquals(content.header.userId to content.actions.isSelf, asked.distinct().single())
+    }
+
+    @Test
+    fun `scrolling down, up and down again brings the header and the actions back each time`() {
+        // Another user without songs: the music slot draws nothing.
+        setScreen(profileMusic = { _, _, _ -> })
+        val grid = composeRule.onNodeWithTag(PROFILE_GRID_TEST_TAG)
+        val avatar =
+            hasContentDescription(composeRule.activity.getString(R.string.profile_photo_description, "Ada Lovelace"))
+        val message = hasText(string(R.string.profile_action_message))
+
+        repeat(2) {
+            grid.performTouchInput { swipeUp() }
+            composeRule.onNode(avatar).assertIsNotDisplayed()
+
+            grid.performTouchInput { swipeDown() }
+            composeRule.onNode(avatar).assertIsDisplayed()
+            composeRule.onNode(message).assertIsDisplayed()
+        }
     }
 
     @Test

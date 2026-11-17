@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
+  page blank above Photos.
+
 ## [2.3.0] - 2026-11-17
 
 ### Added
