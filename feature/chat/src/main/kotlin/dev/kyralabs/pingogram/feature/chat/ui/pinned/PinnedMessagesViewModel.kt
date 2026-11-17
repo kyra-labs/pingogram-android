@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -21,7 +22,9 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.ChatPeople
+import dev.kyralabs.pingogram.feature.chat.ui.ChatRef
 import dev.kyralabs.pingogram.feature.chat.ui.ChatTimeFormatter
+import dev.kyralabs.pingogram.feature.chat.ui.chatRef
 import dev.kyralabs.pingogram.feature.chat.ui.textOrCaption
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -144,11 +148,28 @@ class PinnedMessagesViewModel internal constructor(
             .mapLatest { id -> id != null && actions.properties(chatId, id).getOrNull()?.canBePinned == true }
             .onStart { emit(false) }
 
+    /**
+     * The chats that sent pins other than this one, by id: a linked channel, whose posts its discussion group shows as
+     * the channel's, named by its title.
+     */
+    private val senderChats: Flow<Map<Long, ChatRef>> =
+        pins
+            .map { pins -> pins?.getOrNull().orEmpty().senderChatIds(except = chatId) }
+            .distinctUntilChanged()
+            .flatMapLatest { ids ->
+                if (ids.isEmpty()) {
+                    flowOf(emptyMap())
+                } else {
+                    combine(ids.map(chatRepository::chatRef)) { refs -> refs.filterNotNull().associateBy { it.id } }
+                }
+            }
+
     private val people: Flow<ChatPeople> =
         combine(
             userRepository.users,
             userRepository.myUserId,
-        ) { users, myUserId -> ChatPeople(users, myUserId, emptyMap()) }
+            senderChats,
+        ) { users, myUserId, chats -> ChatPeople(users, myUserId, chats) }
 
     private val filters: Flow<Filters> =
         combine(
@@ -374,3 +395,7 @@ sealed interface PinnedPageEffect {
         val error: DomainError,
     ) : PinnedPageEffect
 }
+
+/** The ids of the chats that sent these messages, other than chat [except]. */
+private fun List<Message>.senderChatIds(except: Long): Set<Long> =
+    mapNotNullTo(mutableSetOf()) { message -> (message.sender as? MessageSender.Chat)?.chatId?.takeIf { it != except } }

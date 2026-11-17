@@ -56,7 +56,8 @@ internal fun ItemInputs.toItem(): ChatItem {
  * incoming messages; the time and the outgoing state on the last of a group, or where its time was tapped to show;
  * whether a failed message can be sent again; the forward's origin, the reply quote, the text or caption, the kind of
  * media, the link preview and the reactions; the share button of a channel post or a post forwarded from a channel.
- * An album's bubble takes its time, state and reactions from its newest item.
+ * An album's bubble takes its time, state and reactions from its newest item. A post the linked channel forwarded to
+ * its discussion group by itself shows the channel's name with "Channel" after it, without "Forwarded from".
  */
 private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
@@ -78,7 +79,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         showsTime = !position.joinsNext || timeShown,
         canResend = (album.ifEmpty { listOf(message) }).any { it.canResend },
         senderUserId = (message.sender as? MessageSender.User)?.userId?.takeIf { showsSender },
-        forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
+        forwardedFrom = message.forwardInfo?.takeUnless { message.isFromItsChannel }?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
         contentLabel = contentLabel(content),
@@ -104,7 +105,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         suggestedPost = message.suggestedPost?.let { suggestedPostUi(message.id, it) },
         hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
         senderHue = senderHue(showsSender),
-        senderRole = senderRole.takeIf { showsSender },
+        senderRole = shownRole(showsSender),
         mentionsMe = mentionsMe(text),
         myMentions = myMentions(text, mentionsMe(text)).toImmutableList(),
         isChannelPost = kind == ChatKind.Channel,

@@ -6,15 +6,18 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.navigation.PinnedMessagesRoute
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.channelChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
@@ -124,6 +127,24 @@ class PinnedMessagesViewModelTest {
             text(1, "Welcome to the beta", NOW.minus(Duration.ofDays(40))),
         )
     }
+
+    @Test
+    fun `a pin another chat sent, as a linked channel's post, is named by that chat's title`() =
+        runTest {
+            chats.setChats(chat(PRIVATE_CHAT, title = "Pingogram Beta"), channelChat)
+            pinned.setPinned(PRIVATE_CHAT, message(1, sender = MessageSender.Chat(CHANNEL_CHAT)))
+
+            val viewModel = viewModel()
+
+            assertEquals(
+                UiText.Plain("Channel"),
+                viewModel.months
+                    .single()
+                    .cards
+                    .single()
+                    .name,
+            )
+        }
 
     @Test
     fun `shows the pins newest first under their months, numbered from the oldest, with the chat's title`() =
