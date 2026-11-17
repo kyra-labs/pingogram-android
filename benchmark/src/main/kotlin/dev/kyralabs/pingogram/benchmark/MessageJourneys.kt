@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.benchmark
 
-import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.benchmark.macro.MacrobenchmarkScope
@@ -49,25 +48,13 @@ internal fun MacrobenchmarkScope.deleteMessage(text: String) {
 }
 
 /**
- * The bubble of [text] in the open conversation's messages, found again until it shows at the same place twice
- * [SETTLE_STEP_MS] apart. After a send the list scrolls the message into view and the keyboard's insets animate it
- * down: a long press on a row that moves under the finger reads as a scroll, which cancels it (`LongPress.kt`), and
- * the row's node is replaced on the way, so an object found earlier is stale. Only the message list is searched: the
- * chat list's Saved Messages row shows the same text as its last message.
+ * The bubble of [text] in the open conversation's messages, once it has stopped moving ([settledObject]): after a send
+ * the list scrolls the message into view. Only the message list is searched: the chat list's Saved Messages row shows
+ * the same text as its last message.
  */
-private fun MacrobenchmarkScope.settledBubble(text: String): UiObject2 {
-    var lastBounds: Rect? = null
-    repeat(SETTLE_TRIES) {
-        val bubble =
-            messageList().wait(Until.findObject(By.descContains(text)), TIMEOUT_MS)
-                ?: error("The bubble of the message to delete is gone.")
-        val bounds = bubble.visibleBounds
-        if (bounds == lastBounds) return bubble
-        lastBounds = bounds
-        SystemClock.sleep(SETTLE_STEP_MS)
-    }
-    error("The bubble of the message to delete kept moving for ${SETTLE_TRIES * SETTLE_STEP_MS} ms.")
-}
+private fun MacrobenchmarkScope.settledBubble(text: String): UiObject2 =
+    settledObject { messageList().wait(Until.findObject(By.descContains(text)), TIMEOUT_MS) }
+        ?: error("The bubble of the message to delete is gone.")
 
 /** "Delete" in the open message actions, scrolled into view where the menu has no room for it. */
 private fun MacrobenchmarkScope.deleteAction(): UiObject2 {
@@ -116,10 +103,6 @@ private const val TIMEOUT_MS = 10_000L
 
 /** How long to wait for what usually shows at once, before trying another way. */
 private const val SHORT_TIMEOUT_MS = 2_000L
-
-/** How often, and how many times, [settledBubble] and [hideKeyboard] look before they act. */
-private const val SETTLE_STEP_MS = 150L
-private const val SETTLE_TRIES = 20
 
 /** The keyboard's window, which UiAutomator lists while it shows. */
 private val KEYBOARD = By.Window.type(AccessibilityWindowInfo.TYPE_INPUT_METHOD)

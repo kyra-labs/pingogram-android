@@ -36,14 +36,20 @@ internal fun MacrobenchmarkScope.skipCatchUpCards() {
 
 /**
  * Opens the Bookmarks page through Saved Messages' card and returns its list, or null where Saved Messages shows no
- * card: it shows once a message is bookmarked.
+ * card: it shows once a message is bookmarked. The card is tapped once it has stopped moving ([settledObject]), as
+ * Saved Messages' messages load around it, and once more if the page does not open.
  */
 internal fun MacrobenchmarkScope.openBookmarks(): UiObject2? {
     openSavedMessages()
-    val card = device.wait(Until.findObject(By.res(SAVED_BOOKMARKS)), CHIP_TIMEOUT_MS) ?: return null
-    card.click()
-    return device.wait(Until.findObject(By.res(BOOKMARKS_LIST)), TIMEOUT_MS)
-        ?: error("The Bookmarks page did not open within $TIMEOUT_MS ms.")
+    if (!device.wait(Until.hasObject(By.res(SAVED_BOOKMARKS)), CHIP_TIMEOUT_MS)) return null
+    var page: UiObject2? = null
+    var taps = 0
+    while (page == null && taps < CARD_TAPS) {
+        settledObject { device.findObject(By.res(SAVED_BOOKMARKS)) }?.click()
+        page = device.wait(Until.findObject(By.res(BOOKMARKS_LIST)), TIMEOUT_MS)
+        taps++
+    }
+    return page ?: screenMissing("The Bookmarks page did not open within $TIMEOUT_MS ms.")
 }
 
 /** The open Bookmarks page's cards, found afresh: a list found in an earlier block may be stale. */
@@ -72,3 +78,6 @@ private const val TIMEOUT_MS = 10_000L
 private const val CHIP_TIMEOUT_MS = 3_000L
 
 private const val CARDS = 3
+
+/** How many times [openBookmarks] taps Saved Messages' card before it gives up. */
+private const val CARD_TAPS = 2
