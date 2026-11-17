@@ -20,6 +20,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   messages unread since, it still opens at the unread divider.
 - In a conversation, a touch that stops the messages from scrolling only stops them: holding it no longer opens a
   message's menu, and in selection mode it no longer selects a message.
+- A forum topic created, renamed, closed, reopened, hidden or unhidden says so in the conversation and the chat list
+  ("Ada reopened the topic", "Ada changed the topic name to “Releases”"), not "Chat event".
 
 ## [2.3.0] - 2026-11-17
 

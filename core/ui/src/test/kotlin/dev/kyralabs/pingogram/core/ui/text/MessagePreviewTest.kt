@@ -228,6 +228,26 @@ class MessagePreviewTest {
     }
 
     @Test
+    fun forumTopicEventsNameTheirSenderOrYou() {
+        val me = MessageSender.User(ME)
+        assertEquals(
+            "\u2068Alice\u2069 created the topic “\u2068Releases\u2069”",
+            service(ServiceAction.ForumTopicCreated("Releases")),
+        )
+        assertEquals(
+            "\u2068Alice\u2069 changed the topic name to “\u2068Module releases\u2069”",
+            service(ServiceAction.ForumTopicEdited("Module releases", iconChanged = true)),
+        )
+        assertEquals("You changed the topic icon", service(ServiceAction.ForumTopicEdited("", true), me, true))
+        assertEquals("\u2068Alice\u2069 edited the topic", service(ServiceAction.ForumTopicEdited("", false)))
+        assertEquals("\u2068Alice\u2069 closed the topic", service(ServiceAction.ForumTopicClosedToggled(true)))
+        assertEquals("\u2068Alice\u2069 reopened the topic", service(ServiceAction.ForumTopicClosedToggled(false)))
+        assertEquals("You reopened the topic", service(ServiceAction.ForumTopicClosedToggled(false), me, true))
+        assertEquals("\u2068Alice\u2069 hid the topic", service(ServiceAction.ForumTopicHiddenToggled(true)))
+        assertEquals("You unhid the topic", service(ServiceAction.ForumTopicHiddenToggled(false), me, true))
+    }
+
+    @Test
     fun anUnknownSenderIsSomeone() {
         assertEquals("Someone joined the group", service(ServiceAction.MemberJoined, MessageSender.User(UNKNOWN)))
     }
