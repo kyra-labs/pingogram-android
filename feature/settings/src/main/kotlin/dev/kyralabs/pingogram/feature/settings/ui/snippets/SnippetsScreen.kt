@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
@@ -55,11 +58,14 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
+import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsBody
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageFrame
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.settingsListRow
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import kotlinx.collections.immutable.persistentListOf
@@ -92,8 +98,9 @@ internal fun SnippetsRoute(
 /**
  * Snippets (`REQUIREMENTS.md` FR-X2, `docs/DESIGN_SYSTEM.md` §6 "Snippets"): the saved texts in the order the composer
  * offers them, each "/" and its name over the start of its text, moved by dragging its handle or after a long press
- * (screen readers: "Move up", "Move down"), opened by a tap ([onOpen]); without any, an [EmptyState] says what they
- * are for.
+ * (screen readers: "Move up", "Move down"), opened in the editor ([SnippetEditorSheet]) by a tap; "New snippet"
+ * first, while there are fewer than the most; without any, an [EmptyState] says what they are for, with "New
+ * snippet". Deleting from the editor asks first ([DestructiveDialog]).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -102,7 +109,6 @@ internal fun SnippetsScreen(
     onEvent: (SnippetsEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpen: (id: Long) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -128,14 +134,34 @@ internal fun SnippetsScreen(
                         title = stringResource(R.string.settings_snippets_empty_title),
                         body = stringResource(R.string.settings_snippets_empty_body),
                         modifier = Modifier.padding(contentPadding),
+                        action = {
+                            Button(onClick = { onEvent(SnippetsEvent.StartNew) }, shapes = ButtonDefaults.shapes()) {
+                                Text(stringResource(R.string.settings_snippets_new))
+                            }
+                        },
                     )
                 }
 
                 state is SnippetsUiState.Content -> {
-                    SnippetsList(state, onEvent, onOpen, listState, contentPadding)
+                    SnippetsList(state, onEvent, listState, contentPadding)
                 }
             }
         }
+    }
+    val content = state as? SnippetsUiState.Content ?: return
+    content.draft?.let { SnippetEditorSheet(it, onEvent) }
+    content.deleting?.let { snippet ->
+        DestructiveDialog(
+            icon = UiR.drawable.ic_delete,
+            texts =
+                DestructiveDialogTexts(
+                    title = stringResource(R.string.settings_snippets_delete_title, snippet.name),
+                    text = stringResource(R.string.settings_snippets_delete_text),
+                    confirm = stringResource(R.string.settings_snippets_delete),
+                ),
+            onConfirm = { onEvent(SnippetsEvent.ConfirmDelete) },
+            onDismiss = { onEvent(SnippetsEvent.CancelDelete) },
+        )
     }
 }
 
@@ -147,7 +173,6 @@ internal fun SnippetsScreen(
 internal fun SnippetsList(
     state: SnippetsUiState.Content,
     onEvent: (SnippetsEvent) -> Unit,
-    onOpen: (id: Long) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
@@ -172,6 +197,7 @@ internal fun SnippetsList(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
+        if (state.canAdd) newSnippetItem(style, onEvent)
         val order = reorder.order
         itemsIndexed(order, key = { _, id -> snippetRowKey(id) }, contentType = { _, _ -> ROW }) { index, id ->
             val snippet = byId[id] ?: return@itemsIndexed
@@ -180,7 +206,7 @@ internal fun SnippetsList(
                 snippet = snippet,
                 shapes = ListItemDefaults.segmentedShapes(index, order.size),
                 dragged = dragged,
-                onClick = { onOpen(id) },
+                onClick = { onEvent(SnippetsEvent.StartEdit(id)) },
                 moves =
                     SnippetMoves(canMoveUp = index > 0, canMoveDown = index < order.lastIndex) { up ->
                         onEvent(SnippetsEvent.Move(id, up))
@@ -200,6 +226,26 @@ internal fun SnippetsList(
                 Modifier.settingsListRow(this, style),
             )
         }
+    }
+}
+
+/** "New snippet", a row of its own a group's distance above the snippets. */
+private fun LazyListScope.newSnippetItem(
+    style: SettingsListRowStyle,
+    onEvent: (SnippetsEvent) -> Unit,
+) {
+    item(key = NEW, contentType = NEW) {
+        SettingsRow(
+            title = stringResource(R.string.settings_snippets_new),
+            shapes = ListItemDefaults.segmentedShapes(0, 1),
+            icon = UiR.drawable.ic_add,
+            onClick = { onEvent(SnippetsEvent.StartNew) },
+            // A group's distance from the snippets below it, less the gap every item keeps.
+            modifier =
+                Modifier
+                    .settingsListRow(this, style)
+                    .padding(bottom = MaterialTheme.spacing.extraLarge - ListItemDefaults.SegmentedGap),
+        )
     }
 }
 
@@ -265,6 +311,7 @@ private fun SnippetRow(
 
 private fun snippetRowKey(id: Long): Any = "snippet-$id"
 
+private const val NEW = "new"
 private const val ROW = "row"
 private const val FOOTER = "footer"
 
@@ -280,6 +327,13 @@ internal object SnippetsPreviewStates {
         )
 
     val empty = SnippetsUiState.Content(persistentListOf())
+
+    val newDraft = SnippetDraft(id = null, name = "", text = "")
+
+    val editing =
+        SnippetDraft(id = 2, name = "Address", text = "Thank you so much!", nameError = SnippetNameError.Taken)
+
+    val deleting = content.copy(deleting = content.snippets.last())
 }
 
 @Composable

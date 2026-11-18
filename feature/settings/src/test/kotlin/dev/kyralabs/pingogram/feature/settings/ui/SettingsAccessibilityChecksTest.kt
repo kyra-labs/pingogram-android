@@ -68,6 +68,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstScreen
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ShownFirstPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.snippets.SnippetEditorContent
 import dev.kyralabs.pingogram.feature.settings.ui.snippets.SnippetsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.snippets.SnippetsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
@@ -258,6 +259,9 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun snippets() = check { SnippetsScreen(SnippetsPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun snippetEditor() = check { SnippetEditorContent(SnippetsPreviewStates.editing, onEvent = {}) }
 
     @Test
     fun focus() =

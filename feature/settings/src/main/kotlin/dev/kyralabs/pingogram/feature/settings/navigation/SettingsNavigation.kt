@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
 import dev.kyralabs.pingogram.core.navigation.RemindersRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
+import dev.kyralabs.pingogram.core.navigation.SnippetsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
@@ -90,6 +91,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScre
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reminders.RemindersRoute as RemindersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.snippets.SnippetsRoute as SnippetsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetRoute as NewStickerSetScreenRoute
@@ -123,7 +125,7 @@ fun NavGraphBuilder.settingsScreen(
 
 /**
  * Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance, Double-tap to react, Swipe
- * actions, Chats shown first and voice message transcription.
+ * actions, Chats shown first, voice message transcription and Snippets.
  */
 private fun NavGraphBuilder.appearancePages(
     onOpen: (route: Any) -> Unit,
@@ -138,6 +140,7 @@ private fun NavGraphBuilder.appearancePages(
             onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
             onBack = onBack,
             onOpenTranscription = { onOpen(TranscriptionSettingsRoute) },
+            onOpenSnippets = { onOpen(SnippetsRoute) },
         )
     }
     settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
@@ -146,6 +149,7 @@ private fun NavGraphBuilder.appearancePages(
     settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
     settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
     settingsPage<TranscriptionSettingsRoute> { TranscriptionSettingsScreenRoute(onBack = onBack) }
+    settingsPage<SnippetsRoute> { SnippetsScreenRoute(onBack = onBack) }
 }
 
 /** Chat folders and the folder editor above it. */

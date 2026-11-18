@@ -343,6 +343,10 @@ data object TranscriptionSettingsRoute
 @Serializable
 data object ChatsShownFirstRoute
 
+/** The texts the composer inserts by "/" and their name (`REQUIREMENTS.md` FR-X2), pushed above [AppearanceRoute]. */
+@Serializable
+data object SnippetsRoute
+
 /** What swiping a chat row does toward each side, pushed above [AppearanceRoute]. */
 @Serializable
 data object SwipeActionsRoute

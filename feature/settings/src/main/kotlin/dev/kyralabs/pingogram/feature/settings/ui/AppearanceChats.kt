@@ -50,9 +50,9 @@ import java.text.NumberFormat
 
 /**
  * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
- * rows of the Chat appearance page, of Double-tap to react, of Chats shown first and of voice message transcription
- * ([pages]), which Enter sends on a
- * hardware and on the on-screen keyboard, raise to listen, and skipping voice messages' silences.
+ * rows of the Chat appearance page, of Double-tap to react, of Chats shown first, of voice message transcription and
+ * of Snippets ([pages]), which Enter sends on a hardware and on the on-screen keyboard, raise to listen, and skipping
+ * voice messages' silences.
  */
 @Composable
 internal fun ChatsGroup(
@@ -82,6 +82,7 @@ internal fun ChatsGroup(
             )
         }
         item { shapes -> TranscriptionItem(shapes, pages.onOpenTranscription) }
+        item { shapes -> SnippetsItem(shapes, pages.onOpenSnippets) }
         item { shapes -> HardwareEnterItem(chats.sendKeys, shapes, onEvent) }
         item { shapes ->
             SwitchItem(
@@ -133,6 +134,20 @@ private fun SkipSilenceItem(
         checked = checked,
         shapes = shapes,
         onCheckedChange = { onEvent(AppearanceEvent.SetSkipSilence(it)) },
+    )
+}
+
+/** "Snippets", which opens their page. */
+@Composable
+private fun SnippetsItem(
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+) {
+    SettingsRow(
+        title = stringResource(R.string.settings_snippets),
+        shapes = shapes,
+        supportingContent = { Text(stringResource(R.string.settings_snippets_summary)) },
+        onClick = onClick,
     )
 }
 
