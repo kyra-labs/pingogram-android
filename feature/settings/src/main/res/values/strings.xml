@@ -1456,6 +1456,19 @@
     <string name="settings_swipe_short_mute">Mute</string>
     <string name="settings_swipe_short_delete">Delete</string>
     <string name="settings_swipe_short_none">Nothing</string>
+    <!-- Snippets (FR-X2, Appearance → Chats): texts the user saves to insert in the message field with "/" and a name. -->
+    <string name="settings_snippets">Snippets</string>
+    <string name="settings_snippets_loading">Loading snippets</string>
+    <string name="settings_snippets_empty_title">No snippets yet</string>
+    <string name="settings_snippets_empty_body">Save a text you often write, then type / and its name in a chat to insert it.</string>
+    <!-- A snippet's name as the message field takes it; %1$s is the name, e.g. "/address". -->
+    <string name="settings_snippets_name">/%1$s</string>
+    <string name="settings_snippets_move_up">Move up</string>
+    <string name="settings_snippets_move_down">Move down</string>
+    <plurals name="settings_snippets_footer">
+        <item quantity="one">Type / and a name in the message field to insert its text; nothing is sent until you tap Send. Up to %1$d snippet stays on this device.</item>
+        <item quantity="other">Type / and a name in the message field to insert its text; nothing is sent until you tap Send. Up to %1$d snippets stay on this device.</item>
+    </plurals>
     <!-- Chats shown first (Appearance → Chats): the chats the forward and share sheets offer first. -->
     <string name="shown_first_title">Chats shown first</string>
     <string name="shown_first_summary">First when you forward or share, after Saved Messages</string>
