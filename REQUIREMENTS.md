@@ -224,10 +224,15 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   event filled in (`CalendarContract` insert intent) and the user saves it there. No permission, no network.
 - FR-X4 Should: **Skip silence.** Voice messages and round video messages can skip their silences (the player's own
   skip-silence), a switch beside the playback speed, remembered for the app (Settings → Chats).
-- FR-X5 Should: **Channel feed.** The user's channels as one timeline, newest posts first, opened from the chat list
-  (where: the owner's design board), each post with its channel and "Open in channel"; reading posts in the feed marks
-  them read in their channels. Sponsored messages show in the feed as in a channel. Needs the owner's design board
-  before it is built.
+- FR-X5 Should: **Channel feed.** The user's channels as one timeline, newest posts first, each post with its channel
+  and "Open in channel", laid out as the owner's design board shows. Owner decisions of 2026-11-18:
+  - A "Feed" folder tab shows once the user follows 2 or more channels; Appearance → Chat list → "Show Feed tab" (on
+    by default) hides it.
+  - A post counts as read once 60% of it is on screen for 1 second, as in the channel, and is marked read there.
+  - Each channel's sponsored message shows once per feed session, where the channel would show it (after that
+    channel's newest post), looking and acting as in the channel: its label and buttons, its view reported when shown
+    and its click when tapped, never dimmed, shrunk or left out.
+  - "Mark all as read" asks first when it would mark 20 or more posts.
 
 ## 6. Non-functional requirements
 
