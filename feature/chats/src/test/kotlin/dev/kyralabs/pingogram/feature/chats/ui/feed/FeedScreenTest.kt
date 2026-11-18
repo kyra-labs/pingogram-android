@@ -1,12 +1,17 @@
 package dev.kyralabs.pingogram.feature.chats.ui.feed
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -140,6 +145,32 @@ class FeedScreenTest {
 
         composeRule.onNodeWithContentDescription("Loading posts…").assertExists()
         assertEquals(1, composeRule.onAllNodesWithText("Loading posts…").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `a long press opens the post's menu, whose items act on the post`() {
+        setFeed(posts(unread = listOf(FeedPreviewData.text)))
+
+        composeRule.onNodeWithText("Kotlin Weekly", useUnmergedTree = true).performTouchInput { longClick() }
+        composeRule.onNodeWithText("Copy link").assertIsDisplayed()
+        composeRule.onNodeWithText("Mark as read").performClick()
+
+        assertEquals(FeedEvent.Act(FeedPreviewData.text.key, FeedPostAction.MarkAsRead), events.last())
+        assertEquals(0, composeRule.onAllNodesWithText("Copy link").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `screen readers get the menu as the card's custom actions`() {
+        setFeed(posts(unread = emptyList(), read = listOf(FeedPreviewData.video)))
+
+        val card = composeRule.onNode(hasText("Cooking Club", substring = true) and hasClickAction())
+        val actions = card.fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        assertEquals(
+            listOf("Open in channel", "Forward", "Copy link", "Bookmark", "Mark channel as unread"),
+            actions.map { it.label },
+        )
+        actions.last().action()
+        assertEquals(FeedEvent.Act(FeedPreviewData.video.key, FeedPostAction.MarkChannelUnread), events.last())
     }
 
     private companion object {
