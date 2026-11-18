@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
+import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,14 +20,17 @@ import javax.inject.Inject
 
 /**
  * The Backup & restore page (`docs/adr/0039-local-backup-and-restore.md`): the kept folder and its newest backup from
- * [folders], the folder Android's picker answers kept in its place, and "Back up now" through the password dialog. The
- * password goes to the backup and nowhere else; it is not kept, not even in the saved state.
+ * [folders], the folder Android's picker answers kept in its place, "Back up now" through the password dialog, and
+ * restoring a backup ([BackupRestoreFlow]). Passwords go to the backup and nowhere else; they are not kept, not even
+ * in the saved state.
  */
 @HiltViewModel
 class BackupViewModel
     @Inject
     constructor(
         private val folders: BackupFolderRepository,
+        backups: BackupRepository,
+        accounts: DeviceAccountsRepository,
     ) : ViewModel() {
         private val password = MutableStateFlow<PasswordDialog?>(null)
         private val backingUp = MutableStateFlow(false)
@@ -33,13 +38,16 @@ class BackupViewModel
 
         val effects: Flow<BackupEffect> = effectChannel.receiveAsFlow()
 
+        private val restore = BackupRestoreFlow(folders, backups, accounts, viewModelScope, effectChannel::send)
+
         val uiState: StateFlow<BackupUiState> =
-            combine(folders.folder, password, backingUp) { folder, password, backingUp ->
+            combine(folders.folder, password, backingUp, restore.step) { folder, password, backingUp, restore ->
                 BackupUiState.Content(
                     folderName = folder?.name,
                     lastBackup = folder?.backups?.firstOrNull(),
                     backingUp = backingUp,
                     password = password,
+                    restore = restore,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BackupUiState.Loading)
 
@@ -49,6 +57,10 @@ class BackupViewModel
                 BackupEvent.BackUp -> askPassword()
                 is BackupEvent.ConfirmPassword -> backUp(event.password)
                 BackupEvent.DismissPassword -> password.value = null
+                is BackupEvent.RestoreFile -> restore.start(event.document)
+                is BackupEvent.OpenBackup -> restore.open(event.password)
+                BackupEvent.ConfirmRestore -> restore.restore()
+                BackupEvent.DismissRestore -> restore.dismiss()
             }
         }
 
