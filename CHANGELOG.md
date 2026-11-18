@@ -27,8 +27,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
-- The floating navigation bar, its New chat and Add contact button and the folder tabs take neutral colors: the
-  selected tab on a neutral pill and the button in the bar's own color, in place of the accent colors.
+- The floating navigation bar, its New chat and Add contact button and the folder tabs look like Google Photos' bar:
+  the selected tab on a softly tinted pill, the others in a softer color, and the bar and its button a step above
+  what they float over, in place of the accent colors.
 
 ### Fixed
 - Round video messages play: a tap plays one with sound in its circle, which grows to the bubble's width with a
