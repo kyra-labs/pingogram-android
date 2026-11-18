@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -320,6 +321,17 @@ class ChatListViewModel internal constructor(
                 }
         }
 
+    /** The Feed tab, while the main list holds 2 or more channels; never in the archive. */
+    private val feedTab: Flow<FeedTab?> =
+        if (kind == ChatListKind.Archive) {
+            flowOf(null)
+        } else {
+            chatRepository
+                .chatList(ChatListType.Main)
+                .map { chats -> feedTabOf(chats) }
+                .distinctUntilChanged()
+        }
+
     private val archive: Flow<ArchivePlace> =
         if (kind == ChatListKind.Archive) {
             flowOf(ArchivePlace(entry = null, style = ArchiveRowStyle.Full))
@@ -345,10 +357,16 @@ class ChatListViewModel internal constructor(
         }
 
     val uiState: StateFlow<ChatListUiState> =
-        combine(listState, connectionRepository.connectionStatus, folderTabs, archive, overlays) {
+        combine(
+            listState,
+            connectionRepository.connectionStatus,
+            combine(folderTabs, feedTab, ::Pair),
+            archive,
+            overlays,
+        ) {
             list,
             connection,
-            tabs,
+            (tabs, feed),
             archive,
             overlays,
             ->
@@ -357,6 +375,7 @@ class ChatListViewModel internal constructor(
                 content = list.content,
                 connection = connection,
                 folderTabs = tabs,
+                feedTab = feed,
                 selectedFolderId = (list.list as? ChatListType.Folder)?.id,
                 archive = archive.row.takeIf { list.list == ChatListType.Main },
                 hasLockedChats = overlays.hasLockedChats && list.list == ChatListType.Main,
@@ -832,6 +851,21 @@ private fun folderTabs(
     if (keywordChatCount > 0) tabs.add(FolderTab.KeywordAlerts(keywordChatCount))
     return tabs.toImmutableList()
 }
+
+/** The Feed tab for the main list's [chats]: their channels' unread posts, once there are 2 channels or more. */
+private fun feedTabOf(chats: List<Chat>): FeedTab? {
+    val channels = chats.filter { (it.type as? ChatType.Supergroup)?.isChannel == true }
+    return if (channels.size <
+        FEED_TAB_MIN_CHANNELS
+    ) {
+        null
+    } else {
+        FeedTab(channels.sumOf(Chat::unreadCount), channels.size)
+    }
+}
+
+/** The Feed tab shows from this many channels (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"). */
+private const val FEED_TAB_MIN_CHANNELS = 2
 
 /** [list]'s chats: TDLib's, or for the "Keyword alerts" tab those with a match ([KeywordAlertChats]). */
 private fun chatsOf(

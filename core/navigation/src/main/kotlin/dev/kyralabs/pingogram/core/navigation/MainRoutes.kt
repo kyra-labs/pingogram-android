@@ -370,6 +370,13 @@ data object ArchiveRoute
 data object MentionsRoute
 
 /**
+ * The Channel feed (`REQUIREMENTS.md` FR-X5), `:feature:chats`: the newest posts of the channels the user follows as
+ * one list, pushed above the Chats tab from the Feed tab that starts its folder row.
+ */
+@Serializable
+data object FeedRoute
+
+/**
  * The archive's settings (`REQUIREMENTS.md` FR-L9): which chats Telegram archives and keeps archived, and how the
  * "Archived chats" row shows in the chat list, `:feature:chats`, pushed above the archive from its top bar, and
  * reachable from any screen that navigates to it (e.g. a settings page).

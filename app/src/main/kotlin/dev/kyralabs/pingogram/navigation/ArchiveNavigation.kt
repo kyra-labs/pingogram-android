@@ -9,12 +9,13 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveSettingsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.feedScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.mentionsScreen
 
 /**
  * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them, and
- * Catch-up and Mentions & replies; a chat opens with [openChat], a topic a forum's row names pushed as its chat would
- * be, and a mention or reply pushes its chat at the message.
+ * Catch-up, Mentions & replies and the Channel feed; a chat opens with [openChat], a topic a forum's row names pushed
+ * as its chat would be, and a mention, reply or feed post pushes its chat at the message.
  */
 internal fun NavGraphBuilder.archive(
     navController: NavHostController,
@@ -33,6 +34,13 @@ internal fun NavGraphBuilder.archive(
     mentionsScreen(
         onBack = { navController.popBackStack() },
         onOpenMessage = { chatId, messageId ->
+            navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
+        },
+    )
+    // The Channel feed, pushed above the Chats tab from its Feed tab: a post it opens pushes its channel at the post.
+    feedScreen(
+        onBack = { navController.popBackStack() },
+        onOpenPost = { chatId, messageId ->
             navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
         },
     )

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
  * - **Mentions & replies**: its button opens the page of messages that mention the user or reply to them
  *   ([openMentions], `REQUIREMENTS.md` FR-X1).
  * - **Focus**: the Focus switcher's "Manage" opens Settings → Focus ([openFocus], board 31).
+ * - **Feed**: the Feed tab, first in the folder row, opens the Channel feed ([openFeed], `REQUIREMENTS.md` FR-X5).
  */
 @Stable
 class ChatListHeaderActions(
@@ -29,6 +30,7 @@ class ChatListHeaderActions(
     val openCatchUp: () -> Unit = {},
     val openMentions: () -> Unit = {},
     val openFocus: () -> Unit = {},
+    val openFeed: () -> Unit = {},
 ) {
     /** Search shows, docked or as its own destination: the search button is away. */
     val isSearchOpen: Boolean get() = searchOpen.value
