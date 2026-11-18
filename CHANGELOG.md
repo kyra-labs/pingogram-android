@@ -32,6 +32,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   what they float over, in place of the accent colors.
 
 ### Fixed
+- With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer
+  carries one account's place over to the other.
 - Round video messages play: a tap plays one with sound in its circle, which grows to the bubble's width with a
   progress ring; another tap pauses, and it shrinks back when it ends.
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
