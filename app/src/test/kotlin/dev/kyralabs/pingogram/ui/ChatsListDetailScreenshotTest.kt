@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
@@ -31,6 +33,7 @@ import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.di.TimeModule
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA_TITLE
+import kotlinx.coroutines.Job
 import org.drinkless.tdlib.TdApi
 import org.junit.Rule
 import org.junit.Test
@@ -65,11 +68,14 @@ class ChatsListDetailScreenshotTest {
     @get:Rule(order = 2)
     val composeRule = createAndroidComposeRule<HiltTestActivity>()
 
+    /** Holds the conversation's older pages until the capture waits for them ([settleOlderPages]). */
+    private val olderPages = Job()
+
     @BindValue
     @JvmField
     val tdlibClient: TdlibClient =
         FakeTdlibClient(authState = AuthState.Ready, connectionState = ConnectionState.Ready)
-            .also(ChatsScript::install)
+            .also { ChatsScript.install(it, olderPages) }
             .also {
                 it.on(TdApi.GetUserFullInfo::class, TdResult.Success(ProfileFixtures.userFullInfo(bio = ADA_BIO)))
                 it.on(TdApi.SearchChatMessages::class, TdResult.Success(TdApi.FoundChatMessages(0, emptyArray(), 0)))
@@ -135,6 +141,7 @@ class ChatsListDetailScreenshotTest {
         if (openChat) {
             composeRule.onNode(row).performClick()
             await(hasContentDescription(ChatsScript.olderMessage.getValue(ADA), substring = true))
+            settleOlderPages()
         }
         if (openProfile) {
             val openProfileLabel = RuntimeEnvironment.getApplication().getString(ChatR.string.chat_open_profile)
@@ -150,6 +157,17 @@ class ChatsListDetailScreenshotTest {
         composeRule.onRoot().captureRoboImage()
     }
 
+    /**
+     * Ada's messages all fit on the screen, so the conversation asks for older ones as it opens, on a background
+     * dispatcher, and shows a loading indicator until the answer says there are none. Held until that indicator shows,
+     * the answer comes, and the capture waits for the indicator to go: it never races the answer.
+     */
+    private fun settleOlderPages() {
+        await(loading)
+        olderPages.complete()
+        composeRule.waitUntil(TIMEOUT_MILLIS) { composeRule.onAllNodes(loading).fetchSemanticsNodes().isEmpty() }
+    }
+
     /** The screens get their state from a background dispatcher. */
     private fun await(matcher: SemanticsMatcher) {
         composeRule.waitUntil(TIMEOUT_MILLIS) { composeRule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
@@ -157,6 +175,11 @@ class ChatsListDetailScreenshotTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
+        val loading =
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ProgressBarRangeInfo,
+                ProgressBarRangeInfo.Indeterminate,
+            )
         const val ADA_BIO = "Poet of the Analytical Engine"
     }
 }
