@@ -1,0 +1,235 @@
+package dev.kyralabs.pingogram.feature.chats.ui.feed
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutBoundsHolder
+import androidx.compose.ui.layout.layoutBounds
+import androidx.compose.ui.layout.onVisibilityChanged
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.ContentSheet
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.ui.isLargeFontScale
+import dev.kyralabs.pingogram.feature.chats.ui.preview.FeedPreviewStates
+import kotlinx.collections.immutable.ImmutableList
+import dev.kyralabs.pingogram.core.ui.R as UiR
+
+/**
+ * The Channel feed (`REQUIREMENTS.md` FR-X5, `docs/DESIGN_SYSTEM.md` §6 "Channel feed"), pushed above the Chats tab: a
+ * small [TopAppBar] with back ([onBack]), "Feed" and how many posts are unread, and below it on a rounded `surface`
+ * sheet ([ContentSheet]) the new posts as cards ([FeedPostCard]), then the read ones. An unread card 60% on screen for
+ * a second is reported seen ([FeedEvent.Seen]).
+ */
+@Composable
+internal fun FeedScreen(
+    state: FeedUiState,
+    onEvent: (FeedEvent) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Scaffold(
+        modifier = modifier,
+        // The top bar's container; the list sits on a sheet below it (ContentSheet).
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = { FeedTopBar(state, onBack) },
+    ) { innerPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+            val body = Modifier.fillMaxSize().padding(contentPadding)
+            when (val content = state.content) {
+                FeedContent.Loading -> FeedLoading(body)
+                FeedContent.NoNewPosts -> NoNewPosts(body)
+                is FeedContent.Posts -> FeedList(content, onEvent, contentPadding)
+            }
+        }
+    }
+}
+
+/** Back, then "Feed" in `titleLargeEmphasized` over "8 unread · 14 channels" ("8 unread" at large font scales). */
+@Composable
+private fun FeedTopBar(
+    state: FeedUiState,
+    onBack: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(
+                    text = stringResource(R.string.feed_title),
+                    modifier = Modifier.semantics { heading() },
+                    maxLines = 1,
+                    style = MaterialTheme.typography.titleLargeEmphasized,
+                )
+                Text(
+                    text = feedSummary(state),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
+                Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.feed_back))
+            }
+        },
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            ),
+    )
+}
+
+/** "Loading posts…", or "8 unread · 14 channels", without the channels at large font scales. */
+@Composable
+private fun feedSummary(state: FeedUiState): String {
+    if (state.content == FeedContent.Loading) return stringResource(R.string.feed_loading)
+    val unread = pluralStringResource(R.plurals.feed_unread, state.unreadCount, state.unreadCount)
+    val channels = pluralStringResource(R.plurals.feed_channels, state.channelCount, state.channelCount)
+    return if (isLargeFontScale()) unread else stringResource(R.string.feed_summary, unread, channels)
+}
+
+/** The new posts, then the read ones, keyed by post. */
+@Composable
+private fun FeedList(
+    content: FeedContent.Posts,
+    onEvent: (FeedEvent) -> Unit,
+    contentPadding: PaddingValues,
+) {
+    val viewport = remember { LayoutBoundsHolder() }
+    val style = CardStyle(MaterialTheme.sizes.contentMaxWidth, MaterialTheme.spacing.medium, MaterialTheme.motionScheme)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().layoutBounds(viewport),
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        posts(content.unread, onEvent, style, viewport)
+        posts(content.read, onEvent, style, viewport)
+    }
+}
+
+/** [posts] as cards; an unread one 60% inside [viewport] for a second is reported seen. */
+private fun LazyListScope.posts(
+    posts: ImmutableList<FeedPost>,
+    onEvent: (FeedEvent) -> Unit,
+    style: CardStyle,
+    viewport: LayoutBoundsHolder,
+) {
+    items(posts, key = FeedPost::key, contentType = { POST }) { post ->
+        val seen =
+            if (post.isUnread) {
+                Modifier.onVisibilityChanged(SEEN_MILLIS, SEEN_FRACTION, viewport) { visible ->
+                    if (visible) onEvent(FeedEvent.Seen(post.chatId, post.messageIds))
+                }
+            } else {
+                Modifier
+            }
+        FeedPostCard(
+            post = post,
+            onOpen = { onEvent(FeedEvent.Open(post.chatId, post.messageIds.first())) },
+            modifier = Modifier.card(this, style).then(seen),
+        )
+    }
+}
+
+/** How the list's entries sit: at most [maxWidth] wide, [margin] in from the sheet's sides, on [motionScheme]. */
+private class CardStyle(
+    val maxWidth: Dp,
+    val margin: Dp,
+    val motionScheme: MotionScheme,
+)
+
+/** An entry of [scope], new posts sliding in on the spatial spring, at most [CardStyle.maxWidth] wide. */
+private fun Modifier.card(
+    scope: LazyItemScope,
+    style: CardStyle,
+): Modifier =
+    with(scope) {
+        this@card
+            .animateItem(
+                fadeInSpec = style.motionScheme.defaultEffectsSpec(),
+                placementSpec = style.motionScheme.defaultSpatialSpec(),
+                fadeOutSpec = style.motionScheme.fastEffectsSpec(),
+            ).widthIn(max = style.maxWidth)
+            .fillMaxWidth()
+            .padding(horizontal = style.margin)
+    }
+
+/** The delayed loading indicator in the middle of the sheet, named for screen readers. */
+@Composable
+private fun FeedLoading(modifier: Modifier) {
+    val description = stringResource(R.string.feed_loading)
+    Box(modifier, contentAlignment = Alignment.Center) {
+        DelayedLoadingIndicator(Modifier.semantics { contentDescription = description })
+    }
+}
+
+/** Nothing new: an empty state on `Cookie12Sided` with the feed's symbol. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun NoNewPosts(modifier: Modifier) {
+    EmptyState(
+        illustration = MaterialShapes.Cookie12Sided,
+        icon = UiR.drawable.ic_dynamic_feed,
+        title = stringResource(R.string.feed_empty_title),
+        body = stringResource(R.string.feed_empty_body),
+        modifier = modifier,
+    )
+}
+
+@PingogramPreviews
+@Composable
+private fun FeedScreenPreview(
+    @PreviewParameter(FeedPreviewStates::class) state: FeedUiState,
+) {
+    PingogramPreview { FeedScreen(state = state, onEvent = {}, onBack = {}) }
+}
+
+// Keys and content types of the list's entries; a post's key is its chat's and its first message's id.
+private const val POST = "post"
+
+/** A post counts as seen once this share of it has been on screen for [SEEN_MILLIS] (FR-X5). */
+private const val SEEN_FRACTION = 0.6f
+private const val SEEN_MILLIS = 1_000L

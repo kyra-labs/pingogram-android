@@ -324,6 +324,22 @@
         <item quantity="other">%1$s votes</item>
     </plurals>
     <string name="feed_poll_anonymous">Anonymous poll · %1$s</string>
+    <string name="feed_title">Feed</string>
+    <string name="feed_back">Back</string>
+    <string name="feed_loading">Loading posts…</string>
+    <!-- How many of the feed's posts are unread, under its title. -->
+    <plurals name="feed_unread">
+        <item quantity="one">%1$d unread</item>
+        <item quantity="other">%1$d unread</item>
+    </plurals>
+    <plurals name="feed_channels">
+        <item quantity="one">%1$d channel</item>
+        <item quantity="other">%1$d channels</item>
+    </plurals>
+    <!-- The feed's subtitle: "8 unread" (feed_unread), then "14 channels" (feed_channels). -->
+    <string name="feed_summary">%1$s · %2$s</string>
+    <string name="feed_empty_title">No new posts</string>
+    <string name="feed_empty_body">New posts from the channels you follow show here as they come in.</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
