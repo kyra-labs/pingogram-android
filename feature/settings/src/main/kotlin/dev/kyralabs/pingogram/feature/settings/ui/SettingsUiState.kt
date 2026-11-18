@@ -93,6 +93,9 @@ enum class SettingsPage {
 
     /** The message reminders kept on this phone (the owner's board 29), in "On this phone". */
     Reminders,
+
+    /** Backup & restore (`docs/adr/0039-local-backup-and-restore.md`), in "On this phone". */
+    Backup,
 }
 
 /**

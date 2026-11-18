@@ -252,6 +252,10 @@ data object LockedChatsRoute
 @Serializable
 data object RemindersRoute
 
+/** Backup & restore (`docs/adr/0039-local-backup-and-restore.md`), from Settings home's "On this phone" group. */
+@Serializable
+data object BackupRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute

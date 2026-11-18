@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Back up what Pingogram keeps only on this phone: Settings → On this phone → Backup & restore writes your settings,
+  bookmarks, reminders, keyword alerts and snippets into one file, encrypted with a password you set, in a folder you
+  choose.
 - Snippets: save texts you often write in Settings → Appearance → Chats → Snippets, each with a one-word name, and
   reorder, edit or delete them there. They stay on this phone.
 - In a chat, type / and the start of a snippet's name to insert its text, or pick one with "Insert snippet" in the

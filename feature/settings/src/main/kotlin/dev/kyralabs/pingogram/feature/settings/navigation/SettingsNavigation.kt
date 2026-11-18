@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.navigation.AboutRoute
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
+import dev.kyralabs.pingogram.core.navigation.BackupRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
@@ -79,6 +80,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as N
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingRoute as PowerSavingScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.backup.BackupRoute as BackupScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
@@ -271,6 +273,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<KeywordAlertsRoute> { KeywordAlertsScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     settingsPage<RemindersRoute> { RemindersScreenRoute(onBack = onBack) }
+    settingsPage<BackupRoute> { BackupScreenRoute(onBack = onBack) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
@@ -393,6 +396,7 @@ internal val SettingsPage.route: Any
             SettingsPage.Focus -> FocusRoute
             SettingsPage.KeywordAlerts -> KeywordAlertsRoute
             SettingsPage.Reminders -> RemindersRoute
+            SettingsPage.Backup -> BackupRoute
         }
 
 private val NotificationSettingsPage.route: Any

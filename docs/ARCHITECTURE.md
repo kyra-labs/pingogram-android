@@ -2124,6 +2124,33 @@ folder.
   through `DocumentTree` (`AndroidDocumentTree` on `DocumentsContract`, an in-memory folder in tests). Cancelled or
   failed, it deletes its folder and its temporary files.
 
+## Backup and restore
+
+`REQUIREMENTS.md` FR-X6, `docs/adr/0039-local-backup-and-restore.md`. What Pingogram keeps on the phone only goes into
+one file the user puts where they want; nothing is uploaded, no permission is asked, and logs hold nothing of a backup,
+its folder or its password.
+
+- **The file** (`core:data` `backup/`): `BackupFile` writes "PGBACKUP", a header that reads without the password
+  (format version, app version, date, sections, the key's salt and rounds, the nonce) and the body, the sections' JSON
+  compressed with GZIP and encrypted with AES-256-GCM (`BackupCipher`: PBKDF2-HMAC-SHA512, 210,000 rounds, as the
+  passcode's), the header authenticated with it. A newer format is refused before the password is tried.
+- **The sections**: `settings` holds the keys of `BackedUpSettings` (`core:datastore`'s
+  `DataStoreSettingsBackupRepository`; `LeftOutSettings` names the others and why, and `SettingsBackupKeysTest` fails
+  while a key of the settings file is in neither); `account`, per signed-in account of `AccountGraphs` (never the
+  demo) by Telegram user id, holds its bookmarks with their tags, reminders, keyword hits and snippets, without those
+  of locked or secret chats (`AccountJson.kt`).
+- **Writing and restoring** (`BackupRepository`, `LocalBackupRepository`): restoring replaces the backed-up settings
+  (the passcode stays) and merges each account section into the account with the same user id only, through its own
+  repositories (`AccountRestore`: the newer bookmark wins, missing reminders come back, done once past, tags and
+  snippets match by name). Nothing is deleted and nothing reaches Telegram.
+- **The folder** (`BackupFolderRepository`, `DocumentBackupFolderRepository` on `BackupDocuments`, the Storage Access
+  Framework's `DocumentsContract`): the folder picked with `ACTION_OPEN_DOCUMENT_TREE`, its grant kept for good
+  (`takePersistableUriPermission`) and its tree URI in `BackupSettingsRepository` (keys under `backup.`, never in a
+  backup); backups are its files ending in ".pgbackup", written as "Pingogram backup YYYY-MM-DD.pgbackup".
+- **The page** (`feature:settings` `backup/`, `BackupViewModel`, `BackupRoute` from Settings home's "On this phone"):
+  the folder and "Back up now", which asks for the password in a dialog (set at the folder's first backup); the
+  password goes to the backup and is never kept or saved in the state.
+
 ## Feedback
 
 `docs/TESTING_GUIDE.md`, `CLAUDE.md` rule 10: nothing leaves the device unless the user shares it.
