@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -45,6 +46,14 @@ class DataStoreBackupSettingsRepository
 
         override suspend fun dismissRestorePrompt(): Outcome<Unit> = save { it[PROMPT_DISMISSED] = true }
 
+        override val frequency: Flow<BackupFrequency?> =
+            data
+                .map { preferences -> BackupFrequency.entries.firstOrNull { it.name == preferences[FREQUENCY] } }
+                .distinctUntilChanged()
+
+        override suspend fun setFrequency(frequency: BackupFrequency): Outcome<Unit> =
+            save { it[FREQUENCY] = frequency.name }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -58,3 +67,6 @@ class DataStoreBackupSettingsRepository
 private val FOLDER = stringPreferencesKey("backup.folder")
 private val DISMISSED_FOR = stringPreferencesKey("backup.restore_dismissed_for")
 private val PROMPT_DISMISSED = booleanPreferencesKey("backup.restore_prompt_dismissed")
+
+/** By its name, so one this version does not know reads as none chosen. */
+private val FREQUENCY = stringPreferencesKey("backup.frequency")

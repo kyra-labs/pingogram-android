@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.testing
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -10,6 +11,7 @@ class FakeBackupSettingsRepository : BackupSettingsRepository {
     override val folderUri = MutableStateFlow<String?>(null)
     override val restoreDismissedFor = MutableStateFlow<String?>(null)
     override val restorePromptDismissed = MutableStateFlow(false)
+    override val frequency = MutableStateFlow<BackupFrequency?>(null)
 
     /** What the setters fail with; null saves. */
     var failure: DomainError? = null
@@ -19,6 +21,12 @@ class FakeBackupSettingsRepository : BackupSettingsRepository {
     override suspend fun dismissRestore(document: String): Outcome<Unit> = save { restoreDismissedFor.value = document }
 
     override suspend fun dismissRestorePrompt(): Outcome<Unit> = save { restorePromptDismissed.value = true }
+
+    override suspend fun setFrequency(frequency: BackupFrequency): Outcome<Unit> =
+        save {
+            this.frequency.value =
+                frequency
+        }
 
     private fun save(change: () -> Unit): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
