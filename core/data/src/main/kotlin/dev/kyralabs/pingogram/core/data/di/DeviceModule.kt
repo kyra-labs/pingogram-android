@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
 import dev.kyralabs.pingogram.core.data.account.SignedInUsers
 import dev.kyralabs.pingogram.core.data.backup.AndroidBackupDocuments
 import dev.kyralabs.pingogram.core.data.backup.BackupDocuments
+import dev.kyralabs.pingogram.core.data.backup.DocumentBackupFolderRepository
 import dev.kyralabs.pingogram.core.data.backup.LocalBackupRepository
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
@@ -30,6 +31,7 @@ import dev.kyralabs.pingogram.core.data.transcription.AndroidVoiceTranscriber
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
 import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
@@ -72,6 +74,9 @@ interface DeviceModule {
 
     @Binds
     fun backupDocuments(documents: AndroidBackupDocuments): BackupDocuments
+
+    @Binds
+    fun backupFolderRepository(repository: DocumentBackupFolderRepository): BackupFolderRepository
 
     /** The demo is the device's: it shows instead of the accounts while it is on (docs/adr/0034). */
     @Binds
