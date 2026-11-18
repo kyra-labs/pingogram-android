@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAccountNotificationsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreBackupSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
@@ -32,6 +33,7 @@ import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
@@ -78,6 +80,9 @@ interface DataStoreModule {
 
     @Binds
     fun settingsBackupRepository(repository: DataStoreSettingsBackupRepository): SettingsBackupRepository
+
+    @Binds
+    fun backupSettingsRepository(repository: DataStoreBackupSettingsRepository): BackupSettingsRepository
 
     @Binds
     fun keywordAlertsRepository(repository: DataStoreKeywordAlertsRepository): KeywordAlertsRepository
