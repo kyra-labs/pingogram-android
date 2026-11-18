@@ -36,6 +36,7 @@ data class ChatListUiState(
     val content: ChatListContent = ChatListContent.Loading,
     val connection: ConnectionStatus = ConnectionStatus.Ready,
     val folderTabs: ImmutableList<FolderTab> = persistentListOf(),
+    val feedTab: FeedTab? = null,
     val selectedFolderId: Int? = null,
     val archive: ArchiveEntry? = null,
     val hasLockedChats: Boolean = false,
@@ -147,6 +148,16 @@ data class CommunityEntry(
 ) {
     override fun toString() = "CommunityEntry(id=$id, chats=${chats.size}, isExpanded=$isExpanded, …)"
 }
+
+/**
+ * The Channel feed's tab (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"), first in the folder row while the user follows
+ * [channelCount] channels, 2 or more: their [unreadCount] unread posts. It opens the feed rather than a list.
+ */
+@Immutable
+data class FeedTab(
+    val unreadCount: Int,
+    val channelCount: Int,
+)
 
 /** The folder id of the "Keyword alerts" tab ([FolderTab.KeywordAlerts]), which no TDLib folder has. */
 internal const val KEYWORD_ALERTS_FOLDER_ID = Int.MIN_VALUE

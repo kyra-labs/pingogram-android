@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.navigation.NavController
 import dev.kyralabs.pingogram.core.navigation.CatchUpRoute
+import dev.kyralabs.pingogram.core.navigation.FeedRoute
 import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.MentionsRoute
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
@@ -48,6 +49,7 @@ internal fun rememberChatListHeaderActions(
             openCatchUp = { navController.navigate(CatchUpRoute) { launchSingleTop = true } },
             openMentions = { navController.navigate(MentionsRoute) { launchSingleTop = true } },
             openFocus = { navController.navigate(FocusRoute) { launchSingleTop = true } },
+            openFeed = { navController.navigate(FeedRoute) { launchSingleTop = true } },
         )
     }
 }

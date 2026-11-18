@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -363,6 +364,23 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
                 ),
                 viewModel().state.folderTabs,
             )
+        }
+
+    @Test
+    fun `the Feed tab counts the channels' unread posts once there are two channels`() =
+        runTest {
+            fun channel(
+                id: Long,
+                unread: Int,
+            ) = chat(id, ChatType.Supergroup(id, isChannel = true), unreadCount = unread)
+            chats.setChats(ChatListType.Main, channel(1, unread = 5), chat(2, unreadCount = 9))
+            val viewModel = viewModel()
+            assertNull(viewModel.state.feedTab)
+
+            chats.setChats(ChatListType.Main, channel(1, unread = 5), chat(2, unreadCount = 9), channel(3, unread = 3))
+            runCurrent()
+
+            assertEquals(FeedTab(unreadCount = 8, channelCount = 2), viewModel.state.feedTab)
         }
 
     @Test
