@@ -7,9 +7,12 @@ import dev.kyralabs.pingogram.core.domain.model.ChannelFeed
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
+import dev.kyralabs.pingogram.core.testing.FakeBookmarkRepository
+import dev.kyralabs.pingogram.feature.chats.ui.ChatCall
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
+import dev.kyralabs.pingogram.feature.chats.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeTimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.FakeWallClock
 import kotlinx.collections.immutable.persistentListOf
@@ -42,6 +45,9 @@ import java.util.Locale
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelTest {
     private val repository = FakeChannelFeedRepository()
+    private val links = FakeMessageLinks()
+    private val bookmarks = FakeBookmarkRepository()
+    private val chats = FakeChatRepository()
 
     @BeforeEach
     fun setUp() {
@@ -61,6 +67,7 @@ class FeedViewModelTest {
                 savedStateHandle = SavedStateHandle(),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
+                actions = FeedPostActions(links, bookmarks, chats, FakeWallClock(NOW)),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
             )
@@ -186,6 +193,48 @@ class FeedViewModelTest {
             send(viewModel, FeedEvent.Open(chatId = 1, messageId = 12))
 
             assertEquals(listOf(FeedEffect.OpenPost(1, 12)), effects)
+        }
+
+    @Test
+    fun `a post's menu forwards it, copies its link, bookmarks it and marks its channel unread`() =
+        runTest {
+            feed(post(1, 12), post(2, 25, lastRead = 25))
+            val viewModel = viewModel()
+            val effects = mutableListOf<FeedEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
+
+            send(viewModel, FeedEvent.Act("1:12", FeedPostAction.Forward))
+            send(viewModel, FeedEvent.Act("1:12", FeedPostAction.CopyLink))
+            send(viewModel, FeedEvent.Act("1:12", FeedPostAction.Bookmark))
+            send(viewModel, FeedEvent.Act("2:25", FeedPostAction.MarkChannelUnread))
+
+            assertEquals(
+                listOf(
+                    FeedEffect.Forward(1, persistentListOf(12L)),
+                    FeedEffect.CopyLink("https://t.me/c/1/12"),
+                    FeedEffect.Bookmarked,
+                ),
+                effects,
+            )
+            assertEquals(listOf(1L to 12L), bookmarks.saved.value.map { it.chatId to it.messageId })
+            assertEquals(listOf<ChatCall>(ChatCall.MarkAsUnread(2)), chats.calls)
+        }
+
+    @Test
+    fun `Mark as read from the menu marks the post read once, and a failed link says so`() =
+        runTest {
+            feed(post(1, 12))
+            links.linkFailure = DomainError.Network
+            val viewModel = viewModel()
+            val effects = mutableListOf<FeedEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
+
+            send(viewModel, FeedEvent.Act("1:12", FeedPostAction.MarkAsRead))
+            send(viewModel, FeedEvent.Seen(1, persistentListOf(12)))
+            send(viewModel, FeedEvent.Act("1:12", FeedPostAction.CopyLink))
+
+            assertEquals(listOf(1L to listOf(12L)), repository.viewed)
+            assertEquals(listOf<FeedEffect>(FeedEffect.ShowError(DomainError.Network)), effects)
         }
 
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */

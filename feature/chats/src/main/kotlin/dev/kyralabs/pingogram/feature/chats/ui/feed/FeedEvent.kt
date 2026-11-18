@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui.feed
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import kotlinx.collections.immutable.ImmutableList
 
 /** What the user does in the Channel feed, sent to [FeedViewModel.onEvent]. */
@@ -22,14 +23,52 @@ sealed interface FeedEvent {
         val messageId: Long,
     ) : FeedEvent
 
+    /** An item of post [key]'s menu, or the same custom action of a screen reader: [action]. */
+    data class Act(
+        val key: String,
+        val action: FeedPostAction,
+    ) : FeedEvent
+
     /** The filter sheet's "Show N posts": the feed shows what [filter] lets through. */
     data class SetFilter(
         val filter: FeedFilter,
     ) : FeedEvent
 }
 
+/**
+ * What a post's menu offers (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 6): [MarkAsRead] for an unread post,
+ * [MarkChannelUnread] for a read one, whose channel then shows as unread in the chat list.
+ */
+enum class FeedPostAction {
+    Open,
+    Forward,
+    CopyLink,
+    Bookmark,
+    MarkAsRead,
+    MarkChannelUnread,
+}
+
 /** One-off effects of [FeedViewModel], handled by the screen once each. */
 sealed interface FeedEffect {
+    /** Opens the forward sheet for messages [messageIds] of channel [chatId]. */
+    data class Forward(
+        val chatId: Long,
+        val messageIds: ImmutableList<Long>,
+    ) : FeedEffect
+
+    /** Puts [link] on the clipboard. */
+    data class CopyLink(
+        val link: String,
+    ) : FeedEffect
+
+    /** Says the post was bookmarked. */
+    data object Bookmarked : FeedEffect
+
+    /** Says an action failed with [error]. */
+    data class ShowError(
+        val error: DomainError,
+    ) : FeedEffect
+
     /** Opens channel [chatId] at message [messageId]. */
     data class OpenPost(
         val chatId: Long,

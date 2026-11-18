@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.core.navigation.ForwardRoute
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveSettingsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
@@ -37,11 +38,15 @@ internal fun NavGraphBuilder.archive(
             navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
         },
     )
-    // The Channel feed, pushed above the Chats tab from its Feed tab: a post it opens pushes its channel at the post.
+    // The Channel feed, pushed above the Chats tab from its Feed tab: a post it opens pushes its channel at the post,
+    // and a post's "Forward" opens the forward sheet above it.
     feedScreen(
         onBack = { navController.popBackStack() },
         onOpenPost = { chatId, messageId ->
             navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
+        },
+        onForward = { chatId, messageIds ->
+            navController.navigate(ForwardRoute(chatId, messageIds)) { launchSingleTop = true }
         },
     )
 }
