@@ -236,6 +236,13 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
     channel's newest post), looking and acting as in the channel: its label and buttons, its view reported when shown
     and its click when tapped, never dimmed, shrunk or left out.
   - "Mark all as read" asks first when it would mark 20 or more posts.
+- FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
+  owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
+  Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,
+  and the last backup's date and size; the settings (never the passcode, locked chats or one-time hints) and each
+  account's bookmarks, reminders, keyword hits and snippets (never of secret or locked chats, never the demo).
+  Restoring asks for the password, shows what the backup holds, replaces the settings and merges each account's data
+  into the same Telegram account only; the chat list offers a restore after signing in. Nothing is sent anywhere.
 
 ## 6. Non-functional requirements
 

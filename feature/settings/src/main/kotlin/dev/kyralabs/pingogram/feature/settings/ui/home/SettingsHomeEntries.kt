@@ -57,8 +57,8 @@ internal fun page(
 
 /**
  * "On this phone": the tools that keep what they hold on the device, never on Telegram's servers (Reminders,
- * Bookmarks, Focus, Keyword alerts). Each adds its row here as it lands; until then the group has none and is not
- * shown. Owner decision 2026-11-15 (board 29g).
+ * Bookmarks, Focus, Keyword alerts), and Backup & restore, which puts them in a file the user keeps. Each adds its
+ * row here as it lands; until then the group has none and is not shown. Owner decision 2026-11-15 (board 29g).
  */
 internal val OnThisPhoneGroup: HomeGroup =
     HomeGroup(
@@ -88,6 +88,12 @@ internal val OnThisPhoneGroup: HomeGroup =
                     R.string.settings_keyword_alerts,
                     R.string.settings_keyword_alerts_summary,
                     UiR.drawable.ic_notifications,
+                ),
+                page(
+                    SettingsPage.Backup,
+                    R.string.settings_backup,
+                    R.string.settings_backup_summary,
+                    UiR.drawable.ic_history,
                 ),
             ),
         footer = R.string.settings_home_on_this_phone_footer,
