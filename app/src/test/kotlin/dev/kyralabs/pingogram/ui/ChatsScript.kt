@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.drinkless.tdlib.TdApi
 import java.time.Instant
@@ -41,7 +42,14 @@ internal object ChatsScript {
     private const val HOURS_APART = 12L
     private val NEWEST_MESSAGE: Instant = Instant.parse("2023-11-15T09:41:00Z")
 
-    fun install(tdlib: FakeTdlibClient) {
+    /**
+     * Scripts [tdlib]. With [olderPages], a conversation's pages older than the messages it opened with are answered
+     * only once that job has completed, so a test can tell when they have loaded.
+     */
+    fun install(
+        tdlib: FakeTdlibClient,
+        olderPages: Job? = null,
+    ) {
         val loaded = AtomicBoolean(false)
         tdlib.on(TdApi.LoadChats::class) { request ->
             if (request.chatList is TdApi.ChatListMain && loaded.compareAndSet(false, true)) {
@@ -54,6 +62,8 @@ internal object ChatsScript {
             }
         }
         tdlib.on(TdApi.GetChatHistory::class) { request ->
+            // Older pages ask from the oldest loaded message on; a first page from 0 (the newest) or around a message.
+            if (request.fromMessageId != 0L && request.offset == 0) olderPages?.join()
             val messages =
                 histories[request.chatId].orEmpty().page(
                     request.fromMessageId,
