@@ -16,7 +16,7 @@ private val LastBackup =
 
 @Composable
 private fun Sample(state: BackupUiState) {
-    PingogramPreview { BackupScreen(state = state, onEvent = {}, onPickFolder = {}, onBack = {}) }
+    PingogramPreview { BackupScreen(state = state, onEvent = {}, onPickFolder = {}, onPickFile = {}, onBack = {}) }
 }
 
 @PingogramPreviews

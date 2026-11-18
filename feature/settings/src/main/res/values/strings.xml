@@ -1803,6 +1803,37 @@
     <string name="backup_password_repeat">Repeat password</string>
     <string name="backup_password_mismatch">Passwords don\'t match</string>
     <string name="backup_password_confirm">Back up</string>
+    <string name="backup_section_restore">Restore</string>
+    <string name="backup_restore_file">Restore from file</string>
+    <string name="backup_restore_file_summary">A backup on this phone, in Drive or on a USB stick</string>
+    <string name="backup_restore_password_title">Backup password</string>
+    <string name="backup_restore_password_body">The password set when this backup was made.</string>
+    <string name="backup_restore_wrong_password">Wrong password, or the file was changed</string>
+    <string name="backup_restore_open">Open</string>
+    <!-- The title of what a backup holds: %1$s is its date ("12 Nov 2026"). -->
+    <string name="backup_restore_summary_title">Restore your backup of %1$s?</string>
+    <string name="backup_restore_settings">Settings, in place of the ones on this phone (the passcode stays)</string>
+    <!-- An account on this phone in a backup: %1$s is its name, %2$s what the backup holds of it ("42 bookmarks, 5 reminders"). -->
+    <string name="backup_restore_account">%1$s: %2$s</string>
+    <!-- An account the backup holds that is not on this phone: %1$s what it holds of it. -->
+    <string name="backup_restore_other_account">Another account (stays in the backup): %1$s</string>
+    <string name="backup_restore_confirm">Restore</string>
+    <plurals name="backup_restore_bookmarks">
+        <item quantity="one">%d bookmark</item>
+        <item quantity="other">%d bookmarks</item>
+    </plurals>
+    <plurals name="backup_restore_reminders">
+        <item quantity="one">%d reminder</item>
+        <item quantity="other">%d reminders</item>
+    </plurals>
+    <plurals name="backup_restore_keyword_hits">
+        <item quantity="one">%d keyword alert</item>
+        <item quantity="other">%d keyword alerts</item>
+    </plurals>
+    <plurals name="backup_restore_snippets">
+        <item quantity="one">%d snippet</item>
+        <item quantity="other">%d snippets</item>
+    </plurals>
     <string name="backup_restored">Restored</string>
     <string name="backup_restored_other_account">Restored. Another account\'s data stays in the backup.</string>
     <string name="backup_restore_newer">This backup is from a newer Pingogram. Update the app to restore it.</string>
