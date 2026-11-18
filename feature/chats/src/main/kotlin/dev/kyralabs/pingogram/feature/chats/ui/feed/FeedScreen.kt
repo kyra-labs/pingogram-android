@@ -196,11 +196,7 @@ private fun LazyListScope.posts(
             } else {
                 Modifier
             }
-        FeedPostCard(
-            post = post,
-            onOpen = { onEvent(FeedEvent.Open(post.chatId, post.messageIds.first())) },
-            modifier = Modifier.card(this, style).then(seen),
-        )
+        FeedPostWithMenu(post = post, onEvent = onEvent, modifier = Modifier.card(this, style).then(seen))
     }
 }
 

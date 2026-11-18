@@ -217,7 +217,7 @@ private fun Modifier.opensMenuOnLongPress(
  * Whether the pointer that went [down] stays down, alone and within the touch slop, for the long-press timeout.
  * Watches the initial pass and consumes nothing.
  */
-private suspend fun AwaitPointerEventScope.awaitLongPress(down: PointerInputChange): Boolean {
+internal suspend fun AwaitPointerEventScope.awaitLongPress(down: PointerInputChange): Boolean {
     val ended =
         withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
             do {
@@ -236,7 +236,7 @@ private suspend fun AwaitPointerEventScope.awaitLongPress(down: PointerInputChan
 }
 
 /** Consumes every change in the initial pass until all pointers are up, so the tab takes no tap. */
-private suspend fun AwaitPointerEventScope.consumeUntilUp() {
+internal suspend fun AwaitPointerEventScope.consumeUntilUp() {
     do {
         val event = awaitPointerEvent(PointerEventPass.Initial)
         event.changes.forEach { it.consume() }
