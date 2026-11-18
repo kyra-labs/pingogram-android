@@ -265,6 +265,18 @@ class AppearanceViewModelTest {
         }
 
     @Test
+    fun `voice messages keep their silences at first, and skip silence saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(false, (viewModel.state as AppearanceUiState.Content).skipSilence)
+
+            send(viewModel, AppearanceEvent.SetSkipSilence(true))
+
+            assertEquals(true, (viewModel.state as AppearanceUiState.Content).skipSilence)
+        }
+
+    @Test
     fun `raise to listen that cannot be saved stays as it was, with a snackbar`() =
         runTest {
             repository.save(AppearanceSettings())

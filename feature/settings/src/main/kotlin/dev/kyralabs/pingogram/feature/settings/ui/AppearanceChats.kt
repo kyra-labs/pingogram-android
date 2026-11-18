@@ -52,7 +52,7 @@ import java.text.NumberFormat
  * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
  * rows of the Chat appearance page, of Double-tap to react, of Chats shown first and of voice message transcription
  * ([pages]), which Enter sends on a
- * hardware and on the on-screen keyboard, and raise to listen.
+ * hardware and on the on-screen keyboard, raise to listen, and skipping voice messages' silences.
  */
 @Composable
 internal fun ChatsGroup(
@@ -116,7 +116,24 @@ internal fun ChatsGroup(
                 )
             }
         }
+        item { shapes -> SkipSilenceItem(chats.skipSilence, shapes, onEvent) }
     }
+}
+
+/** "Skip silence": voice messages play on past their pauses. */
+@Composable
+private fun SkipSilenceItem(
+    checked: Boolean,
+    shapes: ListItemShapes,
+    onEvent: (AppearanceEvent) -> Unit,
+) {
+    SwitchItem(
+        title = stringResource(R.string.settings_skip_silence),
+        summary = stringResource(R.string.settings_skip_silence_summary),
+        checked = checked,
+        shapes = shapes,
+        onCheckedChange = { onEvent(AppearanceEvent.SetSkipSilence(it)) },
+    )
 }
 
 /** "Voice message transcription", which opens its page. */
@@ -159,12 +176,13 @@ private fun HardwareEnterItem(
 
 /**
  * The settings of the "Chat list" and "Chats" groups beside the appearance: which Enter sends a message, raise to
- * listen, and the chat list's own.
+ * listen, whether voice messages skip their silences, and the chat list's own.
  */
 internal class ChatsSettings(
     val sendKeys: SendKeys,
     val raiseToListen: RaiseToListenSettings,
     val chatList: ChatListSettings = ChatListSettings(),
+    val skipSilence: Boolean = false,
 )
 
 /**

@@ -222,8 +222,9 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
 - FR-X3 Should: **Add to calendar, open in maps.** A message's actions offer "Add to calendar" when Android's on-device
   `TextClassifier` finds a date or time in its text, and "Open in maps" for an address; the calendar opens with the
   event filled in (`CalendarContract` insert intent) and the user saves it there. No permission, no network.
-- FR-X4 Should: **Skip silence.** Voice messages and round video messages can skip their silences (the player's own
-  skip-silence), a switch beside the playback speed, remembered for the app (Settings → Chats).
+- FR-X4 Should: **Skip silence.** Voice messages can skip their silences (the player's own skip-silence), a switch in
+  Settings → Appearance → Chats beside raise to listen, for voice messages, remembered for the app; round video messages
+  follow once they play.
 - FR-X5 Should: **Channel feed.** The user's channels as one timeline, newest posts first, each post with its channel
   and "Open in channel", laid out as the owner's design board shows. Owner decisions of 2026-11-18:
   - A "Feed" folder tab shows once the user follows 2 or more channels; Appearance → Chat list → "Show Feed tab" (on

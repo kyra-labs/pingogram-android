@@ -36,13 +36,15 @@ sealed interface AppearanceUiState {
 
     /**
      * The [settings], which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear
-     * ([raiseToListen]) and whether the chat list shows story rings ([chatList]).
+     * ([raiseToListen]) and whether they skip their silences ([skipSilence]), and whether the chat list shows story
+     * rings ([chatList]).
      */
     data class Content(
         val settings: AppearanceSettings,
         val sendKeys: SendKeys = SendKeys(),
         val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
         val chatList: ChatListSettings = ChatListSettings(),
+        val skipSilence: Boolean = false,
     ) : AppearanceUiState
 }
 
@@ -72,6 +74,11 @@ sealed interface AppearanceEvent {
 
     /** "Pause when lowered" turned on or off. */
     data class SetPauseWhenLowered(
+        val enabled: Boolean,
+    ) : AppearanceEvent
+
+    /** "Skip silence" turned on or off. */
+    data class SetSkipSilence(
         val enabled: Boolean,
     ) : AppearanceEvent
 
@@ -134,7 +141,7 @@ sealed interface AppearanceEffect {
  * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chat list"
  * group holds whether story rings show and whether the folder tabs end in "Edit folders"
  * ([ChatListSettingsRepository]), and its "Chats" group the composer's send key ([ComposerSettingsRepository]) and
- * raise to listen ([PlaybackSettingsRepository]).
+ * raise to listen and skipping silences ([PlaybackSettingsRepository]).
  */
 @HiltViewModel
 class AppearanceViewModel
@@ -146,13 +153,15 @@ class AppearanceViewModel
         private val chatListSettingsRepository: ChatListSettingsRepository,
     ) : ViewModel() {
         val uiState: StateFlow<AppearanceUiState> =
-            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, ChatListSettings, AppearanceUiState>(
+            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, ChatListSettings, Boolean, AppearanceUiState>(
                 appearanceRepository.appearance,
                 composerSettingsRepository.sendKeys,
                 playbackSettingsRepository.raiseToListen,
                 chatListSettingsRepository.settings,
-            ) { settings, keys, raise, chatList -> AppearanceUiState.Content(settings, keys, raise, chatList) }
-                .stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
+                playbackSettingsRepository.skipSilence,
+            ) { settings, keys, raise, chatList, skipSilence ->
+                AppearanceUiState.Content(settings, keys, raise, chatList, skipSilence)
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
 
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
         val effects: Flow<AppearanceEffect> = effectChannel.receiveAsFlow()
@@ -200,6 +209,10 @@ class AppearanceViewModel
 
                 is AppearanceEvent.SetPauseWhenLowered -> {
                     playbackSettingsRepository.setPauseWhenLowered(event.enabled)
+                }
+
+                is AppearanceEvent.SetSkipSilence -> {
+                    playbackSettingsRepository.setSkipSilence(event.enabled)
                 }
 
                 is AppearanceEvent.SetShowStories -> {

@@ -4,8 +4,8 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import kotlinx.coroutines.flow.Flow
 
 /**
- * How voice messages play (Settings → Appearance → Chats): raise to listen, kept on this device across logouts, like
- * the Appearance settings.
+ * How voice messages play (Settings → Appearance → Chats): raise to listen and skipping silences, kept on this device
+ * across logouts, like the Appearance settings.
  */
 interface PlaybackSettingsRepository {
     /** Raise to listen's settings, then every change. Never fails: settings that cannot be read are the defaults. */
@@ -16,6 +16,15 @@ interface PlaybackSettingsRepository {
 
     /** Saves whether lowering the phone pauses; fails as [setRaiseToListen]. */
     suspend fun setPauseWhenLowered(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether voice messages skip their silences (`REQUIREMENTS.md` FR-X4), off by default, then every change. Never
+     * fails, as [raiseToListen].
+     */
+    val skipSilence: Flow<Boolean>
+
+    /** Saves whether voice messages skip their silences; fails as [setRaiseToListen]. */
+    suspend fun setSkipSilence(enabled: Boolean): Outcome<Unit>
 }
 
 /**
