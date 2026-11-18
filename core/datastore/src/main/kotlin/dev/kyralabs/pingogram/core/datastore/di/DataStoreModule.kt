@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreKeywordAlertsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreSettingsBackupRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreViewerHintsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
@@ -38,6 +39,7 @@ import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.SettingsBackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ViewerHintsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -73,6 +75,9 @@ interface DataStoreModule {
 
     @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
+
+    @Binds
+    fun settingsBackupRepository(repository: DataStoreSettingsBackupRepository): SettingsBackupRepository
 
     @Binds
     fun keywordAlertsRepository(repository: DataStoreKeywordAlertsRepository): KeywordAlertsRepository
