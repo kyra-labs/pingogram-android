@@ -40,8 +40,8 @@ import javax.inject.Inject
  *
  * - **Reading**: the newest posts are read once the screen collects [uiState] (skeleton cards meanwhile), and again on
  *   [FeedEvent.Retry]; a failure shows above the posts already on the phone. TDLib keeps the rest current.
- * - **Read state**: a post seen for long enough ([FeedEvent.Seen]) is marked read in its channel, once; the posts read
- *   since the feed opened are counted for "You're all caught up". Nothing new and none read here shows "No new
+ * - **Read state**: a post seen for long enough ([FeedEvent.Seen]) is marked read in its channel, once, and keeps its
+ *   place among the new posts; those read here are counted for "You're all caught up". Nothing new shows "No new
  *   posts", until [FeedEvent.ShowReadPosts].
  * - **Filter**: the chosen channels and "Only unread", kept in the [SavedStateHandle].
  */
@@ -70,6 +70,12 @@ class FeedViewModel internal constructor(
     private val seen = mutableSetOf<String>()
 
     private val readHere = MutableStateFlow(0)
+
+    /**
+     * The posts unread at some point while the feed is open, by card key: they keep their place above "Earlier ·
+     * read" once read, so reading never moves a card. Touched only by [toUiState], one state at a time.
+     */
+    private val fresh = mutableSetOf<String>()
 
     private var timeFormatter: ChatListTimeFormatter? = null
 
@@ -135,14 +141,15 @@ class FeedViewModel internal constructor(
         val chosen = choices.filter.chosen
         val posts =
             feedPosts(feed.posts.filter { chosen == null || it.chat.id in chosen }) { formatter.format(it, now) }
-        val (unread, older) = posts.partition(FeedPost::isUnread)
+        posts.forEach { if (it.isUnread) fresh += it.key }
+        val (unread, older) = posts.partition { it.key in fresh }
         val content =
             when {
                 read == Read.Running -> {
                     FeedContent.Loading
                 }
 
-                unread.isEmpty() && choices.readHere == 0 && !choices.showRead -> {
+                unread.isEmpty() && !choices.showRead -> {
                     FeedContent.NoNewPosts
                 }
 
@@ -154,7 +161,8 @@ class FeedViewModel internal constructor(
                     )
                 }
             }
-        return FeedUiState(content, unread.size, feed.channelCount, (read as? Read.Done)?.error, choices.filter)
+        val unreadCount = unread.count(FeedPost::isUnread)
+        return FeedUiState(content, unreadCount, feed.channelCount, (read as? Read.Done)?.error, choices.filter)
     }
 
     /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */

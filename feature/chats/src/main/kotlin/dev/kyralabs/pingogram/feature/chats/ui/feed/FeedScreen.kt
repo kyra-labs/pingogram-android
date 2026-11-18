@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -41,11 +44,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -57,8 +62,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5, `docs/DESIGN_SYSTEM.md` §6 "Channel feed"), pushed above the Chats tab: a
  * small [TopAppBar] with back ([onBack]), "Feed" and how many posts are unread, and below it on a rounded `surface`
- * sheet ([ContentSheet]) the new posts as cards ([FeedPostCard]), then the read ones. An unread card 60% on screen for
- * a second is reported seen ([FeedEvent.Seen]).
+ * sheet ([ContentSheet]) the new posts as cards ([FeedPostCard]), then "Earlier · read" (or, once all are read, "You're
+ * all caught up") and the read ones. An unread card 60% on screen for a second is reported seen ([FeedEvent.Seen]).
  */
 @Composable
 internal fun FeedScreen(
@@ -76,9 +81,18 @@ internal fun FeedScreen(
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             val body = Modifier.fillMaxSize().padding(contentPadding)
             when (val content = state.content) {
-                FeedContent.Loading -> FeedLoading(body)
-                FeedContent.NoNewPosts -> NoNewPosts(body)
-                is FeedContent.Posts -> FeedList(content, onEvent, contentPadding)
+                FeedContent.Loading -> {
+                    FeedLoading(body)
+                }
+
+                FeedContent.NoNewPosts -> {
+                    val error = state.error
+                    if (error == null) NoNewPosts(onEvent, onBack, body) else FeedFailed(error, onEvent, body)
+                }
+
+                is FeedContent.Posts -> {
+                    FeedList(content, state.error, onEvent, contentPadding)
+                }
             }
         }
     }
@@ -130,10 +144,11 @@ private fun feedSummary(state: FeedUiState): String {
     return if (isLargeFontScale()) unread else stringResource(R.string.feed_summary, unread, channels)
 }
 
-/** The new posts, then the read ones, keyed by post. */
+/** The new posts, then the divider or "You're all caught up", then the read posts, keyed by post. */
 @Composable
 private fun FeedList(
     content: FeedContent.Posts,
+    error: DomainError?,
     onEvent: (FeedEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -145,7 +160,19 @@ private fun FeedList(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (error != null) {
+            item(key = ERROR, contentType = ERROR) {
+                FeedErrorCard(error, onRetry = { onEvent(FeedEvent.Retry) }, Modifier.card(this, style))
+            }
+        }
         posts(content.unread, onEvent, style, viewport)
+        if (content.unread.isNotEmpty() && content.unread.none(FeedPost::isUnread)) {
+            item(key = CAUGHT_UP, contentType = CAUGHT_UP) {
+                FeedCaughtUp(content.readHere, hasOlder = content.read.isNotEmpty(), Modifier.card(this, style))
+            }
+        } else if (content.read.isNotEmpty()) {
+            item(key = EARLIER, contentType = EARLIER) { FeedDivider(Modifier.card(this, style)) }
+        }
         posts(content.read, onEvent, style, viewport)
     }
 }
@@ -206,16 +233,57 @@ private fun FeedLoading(modifier: Modifier) {
     }
 }
 
-/** Nothing new: an empty state on `Cookie12Sided` with the feed's symbol. */
+/** Nothing new: an empty state with "Back to chats" ([onBack]) and "Show read posts". */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun NoNewPosts(modifier: Modifier) {
+private fun NoNewPosts(
+    onEvent: (FeedEvent) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
     EmptyState(
         illustration = MaterialShapes.Cookie12Sided,
         icon = UiR.drawable.ic_dynamic_feed,
         title = stringResource(R.string.feed_empty_title),
         body = stringResource(R.string.feed_empty_body),
         modifier = modifier,
+        action = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Button(onClick = onBack, shapes = ButtonDefaults.shapes()) {
+                    Text(
+                        stringResource(R.string.feed_back_to_chats),
+                        style = MaterialTheme.typography.labelLargeEmphasized,
+                    )
+                }
+                TextButton(onClick = { onEvent(FeedEvent.ShowReadPosts) }) {
+                    Text(stringResource(R.string.feed_show_read))
+                }
+            }
+        },
+    )
+}
+
+/** Reading failed with nothing to show: the error on `Cookie4Sided`, with "Try again". */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun FeedFailed(
+    error: DomainError,
+    onEvent: (FeedEvent) -> Unit,
+    modifier: Modifier,
+) {
+    EmptyState(
+        illustration = MaterialShapes.Cookie4Sided,
+        icon = UiR.drawable.ic_error,
+        title = stringResource(R.string.feed_error_title),
+        body = errorText(error),
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        iconColor = MaterialTheme.colorScheme.onErrorContainer,
+        action = {
+            Button(onClick = { onEvent(FeedEvent.Retry) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.feed_retry), style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        },
     )
 }
 
@@ -229,6 +297,9 @@ private fun FeedScreenPreview(
 
 // Keys and content types of the list's entries; a post's key is its chat's and its first message's id.
 private const val POST = "post"
+private const val ERROR = "error"
+private const val EARLIER = "earlier"
+private const val CAUGHT_UP = "caughtUp"
 
 /** A post counts as seen once this share of it has been on screen for [SEEN_MILLIS] (FR-X5). */
 private const val SEEN_FRACTION = 0.6f

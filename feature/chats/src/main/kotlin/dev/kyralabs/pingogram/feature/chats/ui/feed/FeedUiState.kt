@@ -32,8 +32,9 @@ sealed interface FeedContent {
     data object NoNewPosts : FeedContent
 
     /**
-     * The [unread] posts, newest first, then the [read] ones. [readHere] counts the posts read since the feed opened:
-     * once none is unread, the "You're all caught up" card says how many, in place of the "Earlier · read" divider.
+     * The [unread] posts, newest first (those read since the feed opened keep their place, styled read), then the
+     * [read] ones. [readHere] counts the posts read here: once none is unread, the "You're all caught up" card says how
+     * many, in place of the "Earlier · read" divider.
      */
     data class Posts(
         val unread: ImmutableList<FeedPost>,

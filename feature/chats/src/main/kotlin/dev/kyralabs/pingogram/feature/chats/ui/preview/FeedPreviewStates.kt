@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedContent
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedUiState
 import kotlinx.collections.immutable.persistentListOf
@@ -21,6 +22,28 @@ internal class FeedPreviewStates : PreviewParameterProvider<FeedUiState> {
                     unreadCount = 3,
                     channelCount = 14,
                 ),
+            "All caught up" to
+                FeedUiState(
+                    content =
+                        FeedContent.Posts(
+                            unread = persistentListOf(data.text.copy(isUnread = false)),
+                            read = persistentListOf(data.video, data.file),
+                            readHere = 1,
+                        ),
+                    channelCount = 14,
+                ),
+            "Error above saved posts" to
+                FeedUiState(
+                    content =
+                        FeedContent.Posts(
+                            unread = persistentListOf(data.text),
+                            read = persistentListOf(data.video),
+                        ),
+                    unreadCount = 1,
+                    channelCount = 14,
+                    error = DomainError.Network,
+                ),
+            "Error" to FeedUiState(content = FeedContent.NoNewPosts, channelCount = 14, error = DomainError.Network),
             "Loading" to FeedUiState(content = FeedContent.Loading, channelCount = 14),
             "No new posts" to FeedUiState(content = FeedContent.NoNewPosts, channelCount = 14),
         )

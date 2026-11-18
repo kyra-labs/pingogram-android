@@ -338,8 +338,20 @@
     </plurals>
     <!-- The feed's subtitle: "8 unread" (feed_unread), then "14 channels" (feed_channels). -->
     <string name="feed_summary">%1$s · %2$s</string>
+    <string name="feed_earlier">Earlier · read</string>
+    <string name="feed_caught_up">You\'re all caught up</string>
+    <plurals name="feed_read_here">
+        <item quantity="one">%1$d new post read</item>
+        <item quantity="other">%1$d new posts read</item>
+    </plurals>
+    <!-- After feed_read_here ("8 new posts read") when read posts follow. -->
+    <string name="feed_read_here_older">%1$s · older posts below</string>
     <string name="feed_empty_title">No new posts</string>
     <string name="feed_empty_body">New posts from the channels you follow show here as they come in.</string>
+    <string name="feed_back_to_chats">Back to chats</string>
+    <string name="feed_show_read">Show read posts</string>
+    <string name="feed_error_title">Couldn\'t load new posts</string>
+    <string name="feed_retry">Try again</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
