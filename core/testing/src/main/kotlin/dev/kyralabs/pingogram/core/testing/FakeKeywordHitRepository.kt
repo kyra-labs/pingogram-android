@@ -32,4 +32,10 @@ class FakeKeywordHitRepository(
     override suspend fun clearChat(chatId: Long) {
         hits.value = hits.value.filterNot { it.chatId == chatId }
     }
+
+    override suspend fun restore(hits: List<KeywordHit>) {
+        val kept = this.hits.value
+        this.hits.value =
+            kept + hits.filter { hit -> kept.none { it.chatId == hit.chatId && it.messageId == hit.messageId } }
+    }
 }

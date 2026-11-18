@@ -19,4 +19,10 @@ interface KeywordHitRepository {
 
     /** Forgets the matches of chat [chatId], as once it is read. */
     suspend fun clearChat(chatId: Long)
+
+    /**
+     * Adds the matches of a backup (`docs/adr/0039-local-backup-and-restore.md`) that the account lacks; those older
+     * than a week are dropped, as any are.
+     */
+    suspend fun restore(hits: List<KeywordHit>)
 }
