@@ -6,6 +6,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
 import dev.kyralabs.pingogram.core.data.account.SignedInUsers
+import dev.kyralabs.pingogram.core.data.backup.AndroidBackupDocuments
+import dev.kyralabs.pingogram.core.data.backup.BackupDocuments
 import dev.kyralabs.pingogram.core.data.backup.LocalBackupRepository
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
@@ -67,6 +69,9 @@ interface DeviceModule {
     /** Backups hold the settings and every account (docs/adr/0039): one for the device. */
     @Binds
     fun backupRepository(repository: LocalBackupRepository): BackupRepository
+
+    @Binds
+    fun backupDocuments(documents: AndroidBackupDocuments): BackupDocuments
 
     /** The demo is the device's: it shows instead of the accounts while it is on (docs/adr/0034). */
     @Binds
