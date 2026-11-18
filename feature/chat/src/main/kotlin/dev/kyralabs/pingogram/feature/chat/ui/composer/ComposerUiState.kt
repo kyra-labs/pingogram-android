@@ -78,6 +78,7 @@ sealed interface ComposerUiState {
         val bot: ComposerBotButton? = null,
         val canRepeat: Boolean = false,
         val canSuggestPost: Boolean = false,
+        val hasSnippets: Boolean = false,
     ) : ComposerUiState
 }
 

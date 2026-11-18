@@ -107,6 +107,7 @@ internal class ChatBotCommands(
     private val startParameter = savedState.getStateFlow<String?>(KEY_START_PARAMETER, null)
     private val starting = MutableStateFlow(false)
     private val sheetOpen = MutableStateFlow(false)
+    private val snippetSheetOpen = MutableStateFlow(false)
 
     /**
      * What the composer and the empty chat show of the bots: none at first, so the conversation never waits for a bot's
@@ -118,7 +119,10 @@ internal class ChatBotCommands(
             chats.chat(chatId).map { it != null && it.lastMessage == null }.distinctUntilChanged(),
             startParameter,
             starting,
-        ) { bots, hasNoMessages, parameter, isStarting ->
+            sources.snippets.snippets
+                .map { it.isNotEmpty() }
+                .distinctUntilChanged(),
+        ) { bots, hasNoMessages, parameter, isStarting, hasSnippets ->
             val bot = bots.bot
             val menu = bot?.menuButton
             ChatBotState(
@@ -136,13 +140,24 @@ internal class ChatBotCommands(
                 hasNoMessages = hasNoMessages,
                 startParameter = parameter,
                 isStarting = isStarting,
+                hasSnippets = hasSnippets,
             )
         }.distinctUntilChanged()
 
-    /** The commands sheet while it is open; null while it is not. */
+    /** The commands sheet, or the snippets sheet of the field's menu, while it is open; null while neither is. */
     val sheet: StateFlow<BotCommandsSheet?> =
-        combine(sheetOpen, commands) { open, commands -> if (open) BotCommandsSheet(commands) else null }
-            .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+        combine(
+            sheetOpen,
+            snippetSheetOpen,
+            commands,
+            sources.snippets.snippets,
+        ) { open, snippetsOpen, commands, snippets ->
+            when {
+                open -> BotCommandsSheet(commands)
+                snippetsOpen -> BotCommandsSheet(persistentListOf(), snippets)
+                else -> null
+            }
+        }.stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
     /**
      * The commands suggested for the command being typed, then the snippets for the "/" word before the cursor; null
@@ -192,7 +207,9 @@ internal class ChatBotCommands(
     fun onEvent(event: BotEvent) {
         when (event) {
             BotEvent.OpenMenu -> openMenu()
-            BotEvent.DismissCommands -> sheetOpen.value = false
+            BotEvent.DismissCommands -> closeSheets()
+            BotEvent.OpenSnippets -> snippetSheetOpen.value = true
+            is BotEvent.PickSnippet -> pickSnippet(event.id)
             is BotEvent.SendCommand -> send(event.text)
             is BotEvent.InsertCommand -> insert(event.text)
             is BotEvent.InsertSnippet -> insertSnippet(event.id)
@@ -233,6 +250,22 @@ internal class ChatBotCommands(
         } else {
             field.prepend(command)
         }
+        onEffect(ChatEffect.FocusComposer)
+    }
+
+    private fun closeSheets() {
+        sheetOpen.value = false
+        snippetSheetOpen.value = false
+    }
+
+    private fun pickSnippet(id: Long) {
+        val text =
+            sheet.value
+                ?.snippets
+                ?.firstOrNull { it.id == id }
+                ?.text ?: return
+        closeSheets()
+        composer.text.insert(text)
         onEffect(ChatEffect.FocusComposer)
     }
 
@@ -284,6 +317,7 @@ internal data class ChatBotState(
     val hasNoMessages: Boolean = false,
     val startParameter: String? = null,
     val isStarting: Boolean = false,
+    val hasSnippets: Boolean = false,
 )
 
 /**
@@ -296,9 +330,18 @@ internal fun ChatUiState.withBots(bots: ChatBotState): ChatUiState {
     val isEmpty = content == ChatContent.Empty || (content == ChatContent.Loading && bots.hasNoMessages)
     val composer =
         when {
-            available == null -> composer
-            bots.isBotChat && (bots.startParameter != null || isEmpty) -> ComposerUiState.BotStart(bots.isStarting)
-            else -> available.copy(bot = bots.button.takeIf { available.bar !is ComposerBar.Edit })
+            available == null -> {
+                composer
+            }
+
+            bots.isBotChat && (bots.startParameter != null || isEmpty) -> {
+                ComposerUiState.BotStart(bots.isStarting)
+            }
+
+            else -> {
+                val editing = available.bar is ComposerBar.Edit
+                available.copy(bot = bots.button.takeIf { !editing }, hasSnippets = bots.hasSnippets && !editing)
+            }
         }
     return copy(composer = composer, botIntro = bots.intro)
 }

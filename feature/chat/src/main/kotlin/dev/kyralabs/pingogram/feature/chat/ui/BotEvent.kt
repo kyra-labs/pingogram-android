@@ -27,6 +27,14 @@ sealed interface BotEvent : ChatEvent {
         val text: String,
     ) : BotEvent
 
+    /** "Insert snippet" in the field's menu: the sheet of the account's snippets. */
+    data object OpenSnippets : BotEvent
+
+    /** A snippet picked in that sheet: its text at the cursor, in place of the selection, never sent. */
+    data class PickSnippet(
+        val id: Long,
+    ) : BotEvent
+
     /** A suggested snippet chosen: its text in place of the "/name" typed for it, never sent. */
     data class InsertSnippet(
         val id: Long,

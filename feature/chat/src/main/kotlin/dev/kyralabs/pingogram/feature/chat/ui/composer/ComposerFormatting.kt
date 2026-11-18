@@ -97,6 +97,7 @@ internal class FormattingLabels(
     val formats: Map<TextFormat, String>,
     val link: String,
     val ai: String,
+    val snippets: String,
 )
 
 @Composable
@@ -107,6 +108,7 @@ internal fun rememberFormattingLabels(): FormattingLabels {
             formats = TextFormat.entries.associateWith { resources.getString(it.label) },
             link = resources.getString(R.string.composer_format_link),
             ai = resources.getString(R.string.ai_editor_menu),
+            snippets = resources.getString(R.string.composer_insert_snippet),
         )
     }
 }
@@ -181,17 +183,21 @@ internal fun formattingShortcut(
     return handled
 }
 
-/** What the field's menu and screen readers' actions offer: the formatting, a link, and the AI editor. */
+/**
+ * What the field's menu and screen readers' actions offer: the formatting, a link, the AI editor, and the account's
+ * snippets ([onSnippets], `REQUIREMENTS.md` FR-X2) where there are some.
+ */
 internal class FieldMenus(
     val text: ComposerText,
     val labels: FormattingLabels,
     val onLink: (TextRange) -> Unit,
     val onAiEdit: (() -> Unit)?,
+    val onSnippets: (() -> Unit)? = null,
 )
 
 /**
- * The formatting in the selection menu and, once the text runs past three lines, "Edit with AI" ([aiItem]); the same as
- * screen readers' actions, the formatting while text [hasSelection].
+ * The formatting in the selection menu, "Insert snippet" where there are snippets, and, once the text runs past three
+ * lines, "Edit with AI" ([aiItem]); the same as screen readers' actions, the formatting while text [hasSelection].
  */
 internal fun Modifier.fieldMenus(
     menus: FieldMenus,
@@ -200,11 +206,23 @@ internal fun Modifier.fieldMenus(
 ): Modifier =
     appendTextContextMenuComponents {
         formattingItems(menus.text, menus.labels, menus.onLink)
+        menus.onSnippets?.let { open ->
+            separator()
+            item(key = SNIPPETS_ITEM, label = menus.labels.snippets, leadingIcon = UiR.drawable.ic_description) {
+                open()
+                close()
+            }
+        }
         aiItem(lineCount(), menus.labels, menus.onAiEdit)
     }.semantics {
         val ai = aiAction(lineCount(), menus.labels, menus.onAiEdit)
+        val snippets =
+            menus.onSnippets?.let { open ->
+                CustomAccessibilityAction(menus.labels.snippets) { true.also { open() } }
+            }
         val formats = if (hasSelection) formattingActions(menus.text, menus.labels, menus.onLink) else emptyList()
-        if (ai != null || formats.isNotEmpty()) customActions = formats + listOfNotNull(ai)
+        val actions = formats + listOfNotNull(snippets, ai)
+        if (actions.isNotEmpty()) customActions = actions
     }
 
 /**
@@ -244,3 +262,4 @@ internal const val AI_MIN_LINES = 3
 
 private const val LINK_ITEM = "link"
 private const val AI_ITEM = "ai"
+private const val SNIPPETS_ITEM = "snippets"

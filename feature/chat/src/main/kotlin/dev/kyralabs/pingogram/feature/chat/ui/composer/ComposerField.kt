@@ -102,8 +102,10 @@ internal fun ComposerField(
     onKeyEvent: (KeyEvent) -> Boolean = { false },
     hint: String? = null,
     onAiEdit: (() -> Unit)? = null,
+    onSnippets: (() -> Unit)? = null,
 ) {
     val labels = rememberFormattingLabels()
+    val menus = FieldMenus(text, labels, onLink, onAiEdit, onSnippets)
     val focusManager = LocalFocusManager.current
     val sendKeys = LocalSendKeys.current
     val textLayout = remember { TextLayoutHolder() }
@@ -134,7 +136,7 @@ internal fun ComposerField(
                     }.onPreviewKeyEvent { event ->
                         onKeyEvent(event) || fieldKey(event, text, onSend, onLink, sendKeys) ||
                             tabKey(event, focusManager)
-                    }.fieldMenus(FieldMenus(text, labels, onLink, onAiEdit), { textLayout.lineCount }, hasSelection),
+                    }.fieldMenus(menus, { textLayout.lineCount }, hasSelection),
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
             outputTransformation = outputTransformation,

@@ -56,6 +56,7 @@ data class CommandBot(
 @Immutable
 data class BotCommandsSheet(
     val commands: ImmutableList<BotCommandItem>,
+    val snippets: ImmutableList<Snippet> = persistentListOf(),
 )
 
 /**

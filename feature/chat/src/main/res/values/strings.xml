@@ -217,6 +217,8 @@
         <item quantity="one">%d command</item>
         <item quantity="other">%d commands</item>
     </plurals>
+    <string name="composer_insert_snippet">Insert snippet</string>
+    <string name="snippets_sheet_title">Snippets</string>
     <plurals name="snippet_suggestions">
         <item quantity="one">%d snippet</item>
         <item quantity="other">%d snippets</item>

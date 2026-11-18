@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -42,6 +44,7 @@ class ChatSnippetSuggestionsTest : ChatViewModelHarness() {
         bots.setBots(chatId, chatBots)
         val viewModel = viewModel(chatId)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.commandSuggestions.collect {} }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.botCommandsSheet.collect {} }
         runCurrent()
         return viewModel
     }
@@ -121,6 +124,34 @@ class ChatSnippetSuggestionsTest : ChatViewModelHarness() {
                 assertEquals(ChatEffect.FocusComposer, awaitItem())
             }
             assertEquals("Send it to 12 Crescent Road", viewModel.composerText.content.text)
+            assertTrue(messages.sent.isEmpty())
+        }
+
+    @Test
+    fun `the field's menu offers snippets only while there are some`() =
+        runViewModelTest {
+            val viewModel = opened()
+            assertTrue((viewModel.state.composer as ComposerUiState.Available).hasSnippets)
+
+            snippets.saved.value = emptyList()
+            runCurrent()
+
+            assertFalse((viewModel.state.composer as ComposerUiState.Available).hasSnippets)
+        }
+
+    @Test
+    fun `Insert snippet lists them, and the one picked goes in at the cursor, never sent`() =
+        runViewModelTest {
+            val viewModel = opened()
+            type(viewModel, "Hi  there", cursor = 3)
+
+            send(viewModel, BotEvent.OpenSnippets)
+            assertEquals(listOf(ADDRESS, STICKERS_NOTE, THANKS), viewModel.botCommandsSheet.value?.snippets)
+
+            send(viewModel, BotEvent.PickSnippet(THANKS.id))
+
+            assertEquals("Hi Thank you! there", viewModel.composerText.content.text)
+            assertNull(viewModel.botCommandsSheet.value)
             assertTrue(messages.sent.isEmpty())
         }
 

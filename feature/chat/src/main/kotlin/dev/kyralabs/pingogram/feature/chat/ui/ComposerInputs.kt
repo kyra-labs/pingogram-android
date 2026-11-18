@@ -35,6 +35,7 @@ internal fun rememberBotInput(
             },
             onInsertCommand = { onEvent(BotEvent.InsertCommand(it)) },
             onInsertSnippet = { onEvent(BotEvent.InsertSnippet(it)) },
+            onOpenSnippets = { onEvent(BotEvent.OpenSnippets) },
             onMenu = { onEvent(BotEvent.OpenMenu) },
             onStart = { onEvent(BotEvent.Start) },
         )

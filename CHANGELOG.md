@@ -12,8 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Snippets: save texts you often write in Settings → Appearance → Chats → Snippets, each with a one-word name, and
   reorder, edit or delete them there. They stay on this phone.
-- In a chat, type / and the start of a snippet's name to insert its text; it is never sent until you tap Send. In
-  chats with bots, their commands are suggested first.
+- In a chat, type / and the start of a snippet's name to insert its text, or pick one with "Insert snippet" in the
+  message field's menu; it is never sent until you tap Send. In chats with bots, their commands are suggested first.
 - Mentions & replies: a page, opened from the Chats tab's header, of the messages that mention you or reply to
   you, unread ones first; each opens its chat at the message.
 - Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
