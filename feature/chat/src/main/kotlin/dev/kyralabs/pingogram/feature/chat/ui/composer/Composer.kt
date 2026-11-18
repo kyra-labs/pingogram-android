@@ -464,8 +464,9 @@ private fun ComposerPill(
 }
 
 /**
- * What the composer does with the chat's bots: the commands [suggestions] for the command being typed (null while
- * none), sending one ([onSendCommand]) or putting it into the field ([onInsertCommand]), the bot button ([onMenu]) and
+ * What the composer does with the chat's bots: the commands and snippets [suggestions] for the "/" being typed (null
+ * while none), sending a command ([onSendCommand]) or putting it into the field ([onInsertCommand]), putting a snippet
+ * in place of its "/" word ([onInsertSnippet]), the bot button ([onMenu]) and
  * "Start" ([onStart]); the bot's keyboard in effect and the field's hint ([reply]), whose buttons go to
  * [onKeyboardPress].
  */
@@ -474,6 +475,7 @@ internal class BotInput(
     val suggestions: CommandSuggestions? = null,
     val onSendCommand: (String) -> Unit = {},
     val onInsertCommand: (String) -> Unit = {},
+    val onInsertSnippet: (id: Long) -> Unit = {},
     val onMenu: () -> Unit = {},
     val onStart: () -> Unit = {},
     val reply: BotReplyUiState = BotReplyUiState(),

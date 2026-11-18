@@ -60,6 +60,7 @@ class BotCommandsUiTest {
 
     private val sent = mutableListOf<String>()
     private val inserted = mutableListOf<String>()
+    private val insertedSnippets = mutableListOf<Long>()
     private var menus = 0
     private var starts = 0
 
@@ -87,6 +88,7 @@ class BotCommandsUiTest {
                             suggestions = suggestions,
                             onSendCommand = { sent += it },
                             onInsertCommand = { inserted += it },
+                            onInsertSnippet = { insertedSnippets += it },
                             onMenu = { menus++ },
                             onStart = { starts++ },
                         ),
@@ -118,6 +120,31 @@ class BotCommandsUiTest {
         composeRule.onNode(hasContentDescription("Open app", substring = true)).performClick()
 
         assertEquals(1, menus)
+    }
+
+    @Test
+    fun `a tapped snippet is inserted, never sent`() {
+        suggestions = BotPreviewData.snippetSuggestions
+        setComposer(typed = "/ad")
+
+        composeRule.onNodeWithText("/address").performClick()
+
+        assertEquals(listOf(1L), insertedSnippets)
+        assertEquals(emptyList<String>(), sent)
+    }
+
+    @Test
+    fun `after the commands, Enter on a picked snippet inserts it`() {
+        suggestions = BotPreviewData.commandsAndSnippets
+        setComposer(typed = "/st")
+
+        field().performKeyInput {
+            repeat(BotPreviewData.commandsAndSnippets.commands.size + 1) { pressKey(Key.DirectionDown) }
+            pressKey(Key.Enter)
+        }
+
+        assertEquals(listOf(3L), insertedSnippets)
+        assertEquals(emptyList<String>(), sent)
     }
 
     @Test

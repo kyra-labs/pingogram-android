@@ -217,6 +217,10 @@
         <item quantity="one">%d command</item>
         <item quantity="other">%d commands</item>
     </plurals>
+    <plurals name="snippet_suggestions">
+        <item quantity="one">%d snippet</item>
+        <item quantity="other">%d snippets</item>
+    </plurals>
     <string name="bot_start">Start</string>
     <!-- Inline bots ("@gif cats"): results above the composer. -->
     <string name="inline_result_send">Send</string>
