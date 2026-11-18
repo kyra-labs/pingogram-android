@@ -61,6 +61,23 @@ internal fun harmonize(
     return Color(solveToArgb(hue, from.chroma, lstarFromArgb(design)))
 }
 
+/**
+ * The color of CAM16 [hue] and [chroma] (as much of it as sRGB holds) at the HCT tone of [toneOf], its hue shifted
+ * toward [sourceColor] as [harmonize] shifts a design color's.
+ */
+internal fun harmonizedHueAtTone(
+    hue: Double,
+    chroma: Double,
+    toneOf: Color,
+    sourceColor: Color,
+): Color {
+    val to = cam16FromArgb(sourceColor.toArgb())
+    val difference = 180.0 - abs(abs(hue - to.hue) - 180.0)
+    val rotation = min(difference * 0.5, 15.0)
+    val direction = if (sanitizeDegrees(to.hue - hue) <= 180.0) 1.0 else -1.0
+    return Color(solveToArgb(sanitizeDegrees(hue + rotation * direction), chroma, lstarFromArgb(toneOf.toArgb())))
+}
+
 private class Cam16(
     val hue: Double,
     val chroma: Double,

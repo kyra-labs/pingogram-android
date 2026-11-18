@@ -55,12 +55,14 @@ fun PingogramTheme(
 ) {
     val dark = themeMode.isDark()
     val effectiveContrast = systemContrastOrNull() ?: contrast
+    val targetScheme = rememberPingogramColorScheme(dark, dynamicColor, palette, effectiveContrast, amoled)
     val colorScheme =
         animateColorScheme(
-            target = rememberPingogramColorScheme(dark, dynamicColor, palette, effectiveContrast, amoled),
+            target = targetScheme,
             animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
         )
-    val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
+    val categories = remember(targetScheme) { categoryPalette(targetScheme) }
+    val pingogramColors = remember(colorScheme, dark, categories) { pingogramColors(colorScheme, dark, categories) }
     val settings =
         remember(dynamicColor, palette, contrast, amoled, dark, chat) {
             ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled, chat)
