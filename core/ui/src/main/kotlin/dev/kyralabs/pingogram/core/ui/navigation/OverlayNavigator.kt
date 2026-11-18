@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.navigation.FloatingWindow
 import androidx.navigation.NavBackStackEntry
@@ -150,6 +151,9 @@ fun rememberOverlayNavigator(navController: NavHostController): OverlayNavigator
  * its content shares elements with (`ProvideNavAnimatedVisibilityScope`), and keeps its saved state while it is on the
  * back stack. While one shows, what is below takes no touches, no keyboard focus and is hidden from screen readers, as
  * below a dialog; it stays composed and drawn.
+ *
+ * While an overlay is drawn, until its way out ended, the host carries [OVERLAY_TEST_TAG]: an overlay's own content
+ * leaves the semantics in the first frame of its way out, so the benchmarks wait for this tag to know it is gone.
  */
 @Composable
 fun OverlayHost(
@@ -173,7 +177,7 @@ fun OverlayHost(
     val saveableStateHolder = rememberSaveableStateHolder()
     // The overlays still to draw: those on the back stack, and above them those going out.
     val shown = remember(backStack, transitions) { backStack + transitions.filter { it !in backStack } }
-    Box(modifier) {
+    Box(if (shown.isEmpty()) modifier else modifier.testTag(OVERLAY_TEST_TAG)) {
         Box(Modifier.fillMaxSize().then(if (backStack.isEmpty()) Modifier else Covered)) { below() }
         shown.forEach { entry ->
             key(entry.id) {
@@ -368,6 +372,9 @@ private class OverlayEnterGate {
 }
 
 private val LocalOverlayEnterGate = staticCompositionLocalOf<OverlayEnterGate?> { null }
+
+/** [OverlayHost]'s tag while an overlay is drawn, until its way out ended. */
+const val OVERLAY_TEST_TAG = "overlay"
 
 /** The longest an overlay's content may hold its way in ([PostponeOverlayEnter]): it then comes in as it is. */
 const val OVERLAY_ENTER_TIMEOUT_MILLIS = 500L

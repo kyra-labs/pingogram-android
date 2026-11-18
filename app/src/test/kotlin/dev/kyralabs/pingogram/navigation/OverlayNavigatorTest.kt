@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
@@ -23,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.ui.navigation.OVERLAY_ENTER_TIMEOUT_MILLIS
+import dev.kyralabs.pingogram.core.ui.navigation.OVERLAY_TEST_TAG
 import dev.kyralabs.pingogram.core.ui.navigation.OverlayHost
 import dev.kyralabs.pingogram.core.ui.navigation.PostponeOverlayEnter
 import dev.kyralabs.pingogram.core.ui.navigation.overlay
@@ -129,6 +131,27 @@ class OverlayNavigatorTest {
         composeRule.mainClock.advanceTimeByFrame()
 
         assertEquals(1, taps)
+    }
+
+    @Test
+    fun `the host is tagged while an overlay is drawn, until its way out ended`() {
+        setContent()
+        composeRule.onNodeWithTag(OVERLAY_TEST_TAG).assertDoesNotExist()
+        composeRule.runOnUiThread { navController.navigate(Picture(chatId = 1, messageId = 7)) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(OVERLAY_TEST_TAG).assertExists()
+        composeRule.mainClock.autoAdvance = false
+
+        composeRule.runOnUiThread { navController.popBackStack() }
+        composeRule.mainClock.advanceTimeByFrame()
+        // Its content left the semantics with the way out's first frame; the way out goes on.
+        composeRule.onNodeWithText("$PICTURE 7").assertDoesNotExist()
+        composeRule.onNodeWithTag(OVERLAY_TEST_TAG).assertExists()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(OVERLAY_TEST_TAG).assertDoesNotExist()
     }
 
     @Test

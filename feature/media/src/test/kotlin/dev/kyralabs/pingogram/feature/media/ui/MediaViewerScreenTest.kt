@@ -33,6 +33,7 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeUp
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaPreviewData
 import kotlinx.collections.immutable.toPersistentList
@@ -44,6 +45,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowTrace
 
 /**
  * The media viewer's screen on Robolectric: turning pages, the chrome, leaving with back or a swipe down, zooming, and
@@ -234,6 +236,23 @@ class MediaViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun `back closes the viewer through its dismiss, which begins the close section and leaves once`() {
+        setScreen()
+        ShadowTrace.reset()
+
+        composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        // Dismissed: the back button, on its way out, closes nothing a second time.
+        backButton().performClick()
+
+        assertEquals(1, backs)
+        assertEquals(
+            listOf(MediaViewerTrace.CLOSE_SECTION),
+            ShadowTrace.getCurrentAsyncSections().map { it.sectionName },
+        )
     }
 
     @Test
