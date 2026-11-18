@@ -9,7 +9,6 @@ import dev.kyralabs.pingogram.core.domain.model.ChatBots
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.User
-import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -71,7 +70,7 @@ import kotlinx.coroutines.launch
 @Suppress("LongParameterList") // The chat, where its bots, messages and composer come from, and what it tells.
 internal class ChatBotCommands(
     private val chatId: Long,
-    private val repository: BotInfoRepository,
+    private val sources: SlashSources,
     users: UserRepository,
     chats: ChatRepository,
     private val messages: MessageRepository,
@@ -83,7 +82,7 @@ internal class ChatBotCommands(
     private val log: ChatLog,
 ) {
     private val chatBots: SharedFlow<ChatBots> =
-        repository
+        sources.bots
             .chatBots(chatId)
             .map { found ->
                 when (found) {
@@ -145,17 +144,41 @@ internal class ChatBotCommands(
         combine(sheetOpen, commands) { open, commands -> if (open) BotCommandsSheet(commands) else null }
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
-    /** The commands suggested for the command being typed; null while none is, or none matches. */
+    /**
+     * The commands suggested for the command being typed, then the snippets for the "/" word before the cursor; null
+     * while neither is typed or nothing matches, and while a message is edited.
+     */
     val suggestions: StateFlow<CommandSuggestions?> =
         combine(
-            snapshotFlow { commandQuery(composer.text.state.text) }.distinctUntilChanged(),
+            snapshotFlow { typedQueries() }.distinctUntilChanged(),
             composer.mode,
             commands,
-        ) { query, mode, commands ->
-            val matching = if (query == null || mode is ComposerMode.Editing) null else commands.startingWith(query)
-            matching?.takeIf { it.isNotEmpty() }?.let { CommandSuggestions(query.orEmpty(), it) }
+            sources.snippets.snippets,
+        ) { (command, snippet), mode, commands, snippets ->
+            if (mode is ComposerMode.Editing) return@combine null
+            val matching = command?.let(commands::startingWith).orEmpty().toImmutableList()
+            val named =
+                snippet
+                    ?.query
+                    ?.let(snippets::namedFrom)
+                    .orEmpty()
+                    .toImmutableList()
+            if (matching.isEmpty() &&
+                named.isEmpty()
+            ) {
+                null
+            } else {
+                CommandSuggestions(command ?: snippet?.query.orEmpty(), matching, named)
+            }
         }.distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+    /** The command and the snippet name being typed in the field, each null when there is none. */
+    private fun typedQueries(): Pair<String?, SlashWord?> {
+        val state = composer.text.state
+        val cursor = state.selection.takeIf { it.collapsed }?.end ?: -1
+        return commandQuery(state.text) to snippetQuery(state.text, cursor)
+    }
 
     /** Takes the start parameter of a link to this bot as it comes, also while the conversation is open. */
     fun start() {
@@ -172,6 +195,7 @@ internal class ChatBotCommands(
             BotEvent.DismissCommands -> sheetOpen.value = false
             is BotEvent.SendCommand -> send(event.text)
             is BotEvent.InsertCommand -> insert(event.text)
+            is BotEvent.InsertSnippet -> insertSnippet(event.id)
             BotEvent.Start -> startBot()
         }
     }
@@ -212,6 +236,17 @@ internal class ChatBotCommands(
         onEffect(ChatEffect.FocusComposer)
     }
 
+    private fun insertSnippet(id: Long) {
+        val word = snippetQuery(composer.text.state.text, composer.text.state.selection.end) ?: return
+        val text =
+            suggestions.value
+                ?.snippets
+                ?.firstOrNull { it.id == id }
+                ?.text ?: return
+        composer.text.replaceRange(word.start, word.end, text)
+        onEffect(ChatEffect.FocusComposer)
+    }
+
     private fun startBot() {
         if (starting.value) return
         starting.value = true
@@ -221,7 +256,7 @@ internal class ChatBotCommands(
                 starting.value = false
                 return@launch
             }
-            when (val started = repository.sendStartMessage(bot.botUserId, chatId, startParameter.value.orEmpty())) {
+            when (val started = sources.bots.sendStartMessage(bot.botUserId, chatId, startParameter.value.orEmpty())) {
                 is Outcome.Success -> savedState[KEY_START_PARAMETER] = null
                 is Outcome.Failure -> onEffect(ChatEffect.ShowError(started.error))
             }

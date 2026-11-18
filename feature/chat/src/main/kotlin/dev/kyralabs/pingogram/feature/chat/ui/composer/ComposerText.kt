@@ -87,6 +87,16 @@ class ComposerText(
     fun prepend(text: String) = replace(0, 0, text)
 
     /**
+     * Puts [text] in place of [start] until [end], the cursor after it: a snippet in place of the "/name" typed for it.
+     * Formatting around it moves along.
+     */
+    fun replaceRange(
+        start: Int,
+        end: Int,
+        text: String,
+    ) = replace(start, end, text)
+
+    /**
      * Deletes the selection, or else the character before the cursor, as the keyboard's backspace does: a whole emoji
      * sequence (a family, a flag, a skin tone) at once, as one grapheme cluster of ICU's character break iterator.
      */

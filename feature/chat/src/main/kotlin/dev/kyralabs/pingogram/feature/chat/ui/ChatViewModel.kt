@@ -36,7 +36,6 @@ import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
-import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
@@ -74,6 +73,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotCommandsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.bot.ChatBotCommands
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bot.SlashSources
 import dev.kyralabs.pingogram.feature.chat.ui.bot.withBots
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialog
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardDialog
@@ -366,7 +366,7 @@ class ChatViewModel internal constructor(
     threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
     private val botButtonRepository: BotButtonRepository,
-    botInfoRepository: BotInfoRepository,
+    slashSources: SlashSources,
     botStartInbox: BotStartInbox,
     inlineBotRepositories: InlineBotRepositories,
     translationRepositories: TranslationRepositories,
@@ -418,7 +418,7 @@ class ChatViewModel internal constructor(
         threadRepositories: ThreadRepositories,
         shareInbox: ShareInbox,
         botButtonRepository: BotButtonRepository,
-        botInfoRepository: BotInfoRepository,
+        slashSources: SlashSources,
         botStartInbox: BotStartInbox,
         inlineBotRepositories: InlineBotRepositories,
         translationRepositories: TranslationRepositories,
@@ -465,7 +465,7 @@ class ChatViewModel internal constructor(
         threadRepositories,
         shareInbox,
         botButtonRepository,
-        botInfoRepository,
+        slashSources,
         botStartInbox,
         inlineBotRepositories,
         translationRepositories,
@@ -699,7 +699,7 @@ class ChatViewModel internal constructor(
     private val bots =
         ChatBotCommands(
             chatId = chatId,
-            repository = botInfoRepository,
+            sources = slashSources,
             users = userRepository,
             chats = chatRepository,
             messages = messageRepository,
