@@ -44,6 +44,8 @@ import javax.inject.Inject
  *   place among the new posts; those read here are counted for "You're all caught up". Nothing new shows "No new
  *   posts", until [FeedEvent.ShowReadPosts].
  * - **Filter**: the chosen channels and "Only unread", kept in the [SavedStateHandle].
+ * - **A post's menu** ([FeedEvent.Act]): open, forward, its link, a bookmark, read or its channel unread
+ *   ([FeedPostActions]); results and failures come as [effects].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -52,6 +54,7 @@ class FeedViewModel internal constructor(
     private val savedStateHandle: SavedStateHandle,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
+    private val actions: FeedPostActions,
     dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale = Locale::getDefault,
 ) : ViewModel() {
@@ -61,8 +64,9 @@ class FeedViewModel internal constructor(
         savedStateHandle: SavedStateHandle,
         clock: WallClock,
         timePatterns: TimePatterns,
+        actions: FeedPostActions,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
-    ) : this(repository, savedStateHandle, clock, timePatterns, dispatcher, Locale::getDefault)
+    ) : this(repository, savedStateHandle, clock, timePatterns, actions, dispatcher, Locale::getDefault)
 
     private val reads = MutableStateFlow(0)
 
@@ -113,6 +117,35 @@ class FeedViewModel internal constructor(
             FeedEvent.ShowReadPosts -> savedStateHandle[KEY_SHOW_READ] = true
             is FeedEvent.Open -> effectChannel.trySend(FeedEffect.OpenPost(event.chatId, event.messageId))
             is FeedEvent.SetFilter -> setFilter(event.filter)
+            is FeedEvent.Act -> act(event)
+        }
+    }
+
+    /** Does what post [FeedEvent.Act.key]'s menu asked, if the post is still shown. */
+    private fun act(event: FeedEvent.Act) {
+        val content = uiState.value.content as? FeedContent.Posts ?: return
+        val post = (content.unread + content.read).firstOrNull { it.key == event.key } ?: return
+        val first = post.messageIds.first()
+        when (event.action) {
+            FeedPostAction.Open -> effectChannel.trySend(FeedEffect.OpenPost(post.chatId, first))
+            FeedPostAction.Forward -> effectChannel.trySend(FeedEffect.Forward(post.chatId, post.messageIds))
+            FeedPostAction.MarkAsRead -> see(FeedEvent.Seen(post.chatId, post.messageIds))
+            FeedPostAction.CopyLink -> launchAction({ actions.link(post) }) { FeedEffect.CopyLink(it) }
+            FeedPostAction.Bookmark -> launchAction({ actions.bookmark(post) }) { FeedEffect.Bookmarked }
+            FeedPostAction.MarkChannelUnread -> launchAction({ actions.markChannelUnread(post) }) { null }
+        }
+    }
+
+    /** Runs [action], then sends [done]'s effect, or its failure. */
+    private fun <T> launchAction(
+        action: suspend () -> Outcome<T>,
+        done: (T) -> FeedEffect?,
+    ) {
+        viewModelScope.launch {
+            when (val outcome = action()) {
+                is Outcome.Success -> done(outcome.value)?.let(effectChannel::trySend)
+                is Outcome.Failure -> effectChannel.trySend(FeedEffect.ShowError(outcome.error))
+            }
         }
     }
 

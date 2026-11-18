@@ -359,6 +359,10 @@
     <string name="feed_show_read">Show read posts</string>
     <string name="feed_error_title">Couldn\'t load new posts</string>
     <string name="feed_retry">Try again</string>
+    <!-- The clipboard's label of a copied post link. -->
+    <string name="feed_link_label">Post link</string>
+    <string name="feed_link_copied">Link copied</string>
+    <string name="feed_bookmarked">Bookmarked</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
