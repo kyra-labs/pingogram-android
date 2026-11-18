@@ -58,17 +58,17 @@ import kotlinx.collections.immutable.ImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The folder tabs (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6, §13.3; owner decision 2026-11-13): one
- * floating bar over the top of the chat list's sheet, a full pill on `surfaceContainer` with the floating navigation
- * bar's elevation, as wide as its chips and never wider than the sheet. Inside it "All chats" and the user's folders,
- * each with the number of its unread unmuted chats: [ToggleButton] chips in a [ButtonGroup] that scrolls sideways,
- * whatever their number, fading at the bar's edges, `spacing.extraSmall` around them.
+ * The folder tabs (`REQUIREMENTS.md` FR-L3, `docs/DESIGN_SYSTEM.md` §6, §13.3; owner decision 2026-11-13): one floating
+ * bar over the top of the chat list's sheet, a full pill on `surfaceContainerHigh` with the floating navigation bar's
+ * elevation, as wide as its chips and never wider than the sheet. Inside it "All chats" and the user's folders, each
+ * with the number of its unread unmuted chats: [ToggleButton] chips in a [ButtonGroup] that scrolls sideways, whatever
+ * their number, fading at the bar's edges, `spacing.extraSmall` around them.
  *
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * The selected chip is a neutral tonal pill with its count in an inverted badge, the others without a container, their
- * labels in `onSurface` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
+ * The selected chip is a tinted pill with its count in an inverted badge, the others without a container, their
+ * labels in `onSurfaceVariant` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
  * folders" ([EditFoldersButton]) ends the bar, inside it, opening the folder settings (null), unless Appearance → Chat
  * list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
  *
@@ -104,12 +104,13 @@ internal fun FolderTabs(
         remember(menu, canEditFolders, enabled, haptics, resources, onAction) {
             TabMenu(menu, canEditFolders, enabled, haptics, resources, onAction)
         }
-    val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
+    // The floating navigation bar's color, a tonal step above the sheet (docs/DESIGN_SYSTEM.md §13.3).
+    val barColor = MaterialTheme.colorScheme.surfaceContainerHigh
     Surface(
         modifier = modifier,
         shape = CircleShape,
-        color = colors.toolbarContainerColor,
-        contentColor = colors.toolbarContentColor,
+        color = barColor,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         // The floating navigation bar's elevation, so the two floating bars match.
         shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
     ) {
@@ -117,7 +118,7 @@ internal fun FolderTabs(
         Row(Modifier.padding(MaterialTheme.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
             // As wide as its chips, or the room left beside "Edit folders", then scrolling.
             Box(Modifier.weight(1f, fill = false).folderTabMenuContainer(menu)) {
-                FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu, barColor = colors.toolbarContainerColor)
+                FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu, barColor = barColor)
                 if (enabled) FolderTabMenuAnchor(menu, tabs, canEditFolders, onAction)
             }
             if (onEditFolder != null && LocalChatSwipes.current.editFoldersButton) {

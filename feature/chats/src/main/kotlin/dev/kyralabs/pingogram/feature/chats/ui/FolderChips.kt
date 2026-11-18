@@ -12,17 +12,17 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * The tabs' colors in the floating bar, as the floating navigation bar's tabs (`docs/DESIGN_SYSTEM.md` §13.3): the
- * chips at rest without a container, their labels in `onSurface` on the bar's `surfaceContainer`, the selected chip a
- * neutral tonal pill, `surfaceContainerHighest` / `onSurface`.
+ * chips at rest without a container, their labels in `onSurfaceVariant` on the bar's `surfaceContainerHigh`, the
+ * selected chip a tinted pill, `secondaryContainer` / `onSecondaryContainer`.
  */
 @Composable
 internal fun folderButtonColors(): ToggleButtonColors {
     val scheme = MaterialTheme.colorScheme
     return ToggleButtonDefaults.colors(
         containerColor = Color.Transparent,
-        contentColor = scheme.onSurface,
-        checkedContainerColor = scheme.surfaceContainerHighest,
-        checkedContentColor = scheme.onSurface,
+        contentColor = scheme.onSurfaceVariant,
+        checkedContainerColor = scheme.secondaryContainer,
+        checkedContentColor = scheme.onSecondaryContainer,
     )
 }
 
