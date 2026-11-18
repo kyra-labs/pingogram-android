@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
+import dev.kyralabs.pingogram.core.domain.model.TextFindings
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -43,6 +44,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChecklistRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceTextFinder
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -193,6 +195,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
+import java.util.concurrent.TimeUnit.SECONDS
 
 /**
  * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8) as [uiState], and the text of its
@@ -383,6 +386,7 @@ class ChatViewModel internal constructor(
     private val appInfo: AppInfo = AppInfo(versionName = ""),
     transcriptionRepositories: TranscriptionRepositories? = null,
     places: ChatPlaces = ChatPlaces(),
+    private val textFinder: DeviceTextFinder? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -428,6 +432,7 @@ class ChatViewModel internal constructor(
         appInfo: AppInfo,
         transcriptionRepositories: TranscriptionRepositories,
         places: ChatPlaces,
+        textFinder: DeviceTextFinder,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -479,6 +484,7 @@ class ChatViewModel internal constructor(
         appInfo = appInfo,
         transcriptionRepositories = transcriptionRepositories,
         places = places,
+        textFinder = textFinder,
     )
 
     /**
@@ -813,6 +819,10 @@ class ChatViewModel internal constructor(
             },
             onRetractVote = { polls.retract(it) },
             onStopPoll = { polls.askStop(it) },
+            findInText = { message ->
+                textFinder?.find(message.content.textOrCaption.text, SECONDS.toMillis(message.date))
+                    ?: TextFindings.None
+            },
         )
 
     private val selection =

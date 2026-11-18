@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
@@ -126,6 +127,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 appInfo = AppInfo(versionName = ""),
                 transcriptionRepositories = transcriptionRepositories(),
                 places = ChatPlaces(),
+                textFinder = FakeDeviceTextFinder(),
                 applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

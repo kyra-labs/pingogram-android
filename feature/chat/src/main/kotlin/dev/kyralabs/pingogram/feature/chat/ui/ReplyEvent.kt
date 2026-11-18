@@ -1,11 +1,13 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.FoundEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
 
 /**
- * Quote replies, replies in another chat, message links and replacing the media of a message being edited
+ * Quote replies, replies in another chat, message links, the links, dates and addresses of a message's text, and
+ * replacing the media of a message being edited
  * (`REQUIREMENTS.md` FR-C5, FR-C6; `docs/DESIGN_SYSTEM.md` §6 "Message actions", "Composer"), for [ChatViewModel].
  */
 sealed interface ReplyEvent : ChatEvent {
@@ -62,6 +64,19 @@ sealed interface ReplyEvent : ChatEvent {
         override fun toString() = "CopyUrl(…)"
     }
 
+    /** "Add to calendar" of message [messageId]: the calendar opens a new event for [event], found in its text. */
+    data class AddToCalendar(
+        val messageId: Long,
+        val event: FoundEvent,
+    ) : ReplyEvent
+
+    /** "Open in maps": [address], found in a message's text, opens in a maps app. */
+    data class OpenInMaps(
+        val address: String,
+    ) : ReplyEvent {
+        override fun toString() = "OpenInMaps(…)"
+    }
+
     /** The edit bar's "Replace": the picker of the edited message's kind of media opens ([ReplyEffect.Pick]). */
     data object ReplaceMedia : ReplyEvent
 
@@ -88,6 +103,26 @@ sealed interface ReplyEffect : ChatEffect {
         override fun toString() = "CopyLink(…)"
     }
 
+    /**
+     * Open the calendar's new event (`CalendarContract` insert): [title] and [description], starting at [startMillis]
+     * where known, all day if [isAllDay]; a snackbar where no calendar app opens. `toString()` leaves the texts out.
+     */
+    data class AddToCalendar(
+        val title: String,
+        val description: String,
+        val startMillis: Long?,
+        val isAllDay: Boolean,
+    ) : ReplyEffect {
+        override fun toString() = "AddToCalendar(startMillis=$startMillis, isAllDay=$isAllDay, …)"
+    }
+
+    /** Open [address] in a maps app (a `geo:` link); a snackbar where none opens. */
+    data class OpenInMaps(
+        val address: String,
+    ) : ReplyEffect {
+        override fun toString() = "OpenInMaps(…)"
+    }
+
     /** Open the picker of [kind] for the media that replaces the edited message's; a snackbar where no app opens. */
     data class Pick(
         val kind: ReplaceMedia,
@@ -99,8 +134,9 @@ sealed interface ReplyEffect : ChatEffect {
 
 /**
  * Hands this event to the part of [ChatViewModel] that handles it: the message actions check and start a quote, a reply
- * in another chat, a copied link and a pressed link opened or copied ([actions]), [replacement] replaces an edited message's media, and [elsewhere]
- * holds the chat picker of a reply in another chat.
+ * in another chat, a copied link, a pressed link opened or copied, and a found date or address handed to the calendar
+ * or maps ([actions]); [replacement] replaces an edited message's media, and [elsewhere] holds the chat picker of a
+ * reply in another chat.
  */
 internal fun ReplyEvent.dispatch(
     actions: ChatMessageActions,
@@ -126,6 +162,14 @@ internal fun ReplyEvent.dispatch(
 
         is ReplyEvent.CopyUrl -> {
             actions.copyUrl(url)
+        }
+
+        is ReplyEvent.AddToCalendar -> {
+            actions.addToCalendar(messageId, event)
+        }
+
+        is ReplyEvent.OpenInMaps -> {
+            actions.openInMaps(address)
         }
 
         ReplyEvent.ReplaceMedia, is ReplyEvent.ReplacementPicked, ReplyEvent.SaveReplacement -> {

@@ -43,6 +43,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.domain.model.FoundEvent
 import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -259,6 +260,8 @@ internal val MessageAction.label: Int
             MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
             MessageAction.Translate -> R.string.message_action_translate
             MessageAction.ShowOriginal -> R.string.message_action_show_original
+            MessageAction.AddToCalendar -> R.string.message_action_add_to_calendar
+            MessageAction.OpenInMaps -> R.string.message_action_open_in_maps
             MessageAction.Summarize -> R.string.message_action_summarize
             MessageAction.ShowFullText -> R.string.message_action_show_full_text
             MessageAction.Forward -> R.string.message_action_forward
@@ -290,6 +293,8 @@ internal val MessageAction.icon: Int
             MessageAction.Copy -> UiR.drawable.ic_content_copy
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
+            MessageAction.AddToCalendar -> UiR.drawable.ic_edit_calendar
+            MessageAction.OpenInMaps -> UiR.drawable.ic_location_on
             MessageAction.Summarize, MessageAction.ShowFullText -> UiR.drawable.ic_summarize
             MessageAction.Forward -> UiR.drawable.ic_forward
             MessageAction.Bookmark -> R.drawable.ic_bookmark
@@ -304,6 +309,9 @@ internal val MessageAction.icon: Int
             MessageAction.Report -> UiR.drawable.ic_error
             MessageAction.Delete -> UiR.drawable.ic_delete
         }
+
+/** A date found without a moment it reads as, which the calendar opens without a start. */
+private val UNKNOWN_TIME = FoundEvent(startMillis = null, isAllDay = false)
 
 /** The event of choosing [this] in [sheet], for its message or the link pressed. */
 internal fun MessageAction.eventFor(sheet: MessageActionsSheet): ChatEvent =
@@ -320,6 +328,8 @@ internal fun MessageAction.eventFor(sheet: MessageActionsSheet): ChatEvent =
         MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(sheet.messageId)
         MessageAction.Translate -> TranslationEvent.Translate(sheet.messageId)
         MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(sheet.messageId)
+        MessageAction.AddToCalendar -> ReplyEvent.AddToCalendar(sheet.messageId, sheet.findings.event ?: UNKNOWN_TIME)
+        MessageAction.OpenInMaps -> ReplyEvent.OpenInMaps(sheet.findings.address.orEmpty())
         MessageAction.Summarize -> SummaryEvent.Summarize(sheet.messageId)
         MessageAction.ShowFullText -> SummaryEvent.ShowFullText(sheet.messageId)
         MessageAction.Forward -> ChatEvent.Forward(sheet.messageId)
@@ -361,6 +371,19 @@ private fun MessageActionsLinkPreview() {
     PingogramPreview {
         MessageActionsBottomSheet(
             sheet.copy(link = "https://developer.android.com/jetpack/compose", actions = actions.toImmutableList()),
+            onEvent = {},
+        )
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun MessageActionsFoundTextPreview() {
+    val sheet = ChatPreviewData.incomingMessageActions
+    val found = listOf(MessageAction.AddToCalendar, MessageAction.OpenInMaps)
+    PingogramPreview {
+        MessageActionsBottomSheet(
+            sheet.copy(actions = (sheet.actions.take(2) + found + sheet.actions.drop(2)).toImmutableList()),
             onEvent = {},
         )
     }

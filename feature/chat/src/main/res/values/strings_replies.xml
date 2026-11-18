@@ -10,6 +10,12 @@
     <string name="message_action_copy_message_link">Copy message link</string>
     <!-- A long press on a link of a message's text: the link opens. ("Copy link" copies its address.) -->
     <string name="message_action_open_link">Open link</string>
+    <!-- A date or time found in the message's text: the calendar app's new event opens with it filled in. -->
+    <string name="message_action_add_to_calendar">Add to calendar</string>
+    <!-- An address found in the message's text: it opens in a maps app. -->
+    <string name="message_action_open_in_maps">Open in maps</string>
+    <string name="message_no_calendar_app">No calendar app on this phone</string>
+    <string name="message_no_maps_app">No maps app on this phone</string>
     <!-- Before Android 13, which confirms copies itself. -->
     <string name="message_link_copied">Link copied</string>
 

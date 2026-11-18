@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.TextFindings
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.ImmutableList
@@ -26,6 +27,8 @@ import kotlinx.collections.immutable.persistentMapOf
  *   emoji without one shows a placeholder.
  * @property link the address of the link of the message's text the long press landed on, which [MessageAction.OpenLink]
  *   and [MessageAction.CopyPressedLink] act on; null for none.
+ * @property findings the date or time and the address the device found in the message's text, which
+ *   [MessageAction.AddToCalendar] and [MessageAction.OpenInMaps] act on.
  */
 @Immutable
 data class MessageActionsSheet(
@@ -37,6 +40,7 @@ data class MessageActionsSheet(
     val showsPicker: Boolean = false,
     val customEmojiPictures: ImmutableMap<Long, Int> = persistentMapOf(),
     val link: String? = null,
+    val findings: TextFindings = TextFindings.None,
 ) {
     /** Leaves the link out, as the logs must. */
     override fun toString() = "MessageActionsSheet(messageId=$messageId, actions=$actions, showsPicker=$showsPicker, …)"
@@ -147,6 +151,12 @@ enum class MessageAction {
 
     /** Show its own text again in place of the translation its bubble shows. */
     ShowOriginal,
+
+    /** Open the calendar's new event for the date or time found in its text ([MessageActionsSheet.findings]). */
+    AddToCalendar,
+
+    /** Open the address found in its text in a maps app. */
+    OpenInMaps,
 
     /** Show Telegram's summary of a long message in its bubble (`ChatSummaries`). */
     Summarize,

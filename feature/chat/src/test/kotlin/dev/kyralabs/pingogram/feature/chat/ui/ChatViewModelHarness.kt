@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
+import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
@@ -82,6 +83,9 @@ abstract class ChatViewModelHarness {
 
     /** Where the user left each conversation, shared by the view models of a test as by those of a process. */
     protected val chatPlaces = ChatPlaces()
+
+    /** What the device finds in messages' texts: nothing unless a test says so. */
+    protected val textFinder = FakeDeviceTextFinder()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     internal val camera = FakeVideoNoteRecorder()
@@ -210,6 +214,7 @@ abstract class ChatViewModelHarness {
                 appInfo = appInfo,
                 transcriptionRepositories = transcription,
                 places = chatPlaces,
+                textFinder = textFinder,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
