@@ -15,6 +15,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A long press on a link in a message shows that link in the message's actions, with "Open link" and "Copy link". The
   message's own link then reads "Copy message link".
 
+### Changed
+- The floating navigation bar, its New chat and Add contact button and the folder tabs take neutral colors: the
+  selected tab on a neutral pill and the button in the bar's own color, in place of the accent colors.
+
 ### Fixed
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
   page blank above Photos.

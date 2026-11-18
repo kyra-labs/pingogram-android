@@ -67,7 +67,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * A long press on a tab (or a right click) opens its menu below it ([FolderTabMenuAnchor]): "Edit folder" ("Edit
  * folders" on "All chats") where [onEditFolder] is given, and "Mark all as read" ([onMarkAllAsRead]) while any of
  * its chats is unread; screen readers get the same as the tab's custom actions. A tab with neither has no menu.
- * The selected chip is a `primary` pill with its count in an inverted badge, the others without a container, their
+ * The selected chip is a neutral tonal pill with its count in an inverted badge, the others without a container, their
  * labels in `onSurface` with a `primary` badge ([folderButtonColors], [chipShapes]). With [onEditFolder], "Edit
  * folders" ([EditFoldersButton]) ends the bar, inside it, opening the folder settings (null), unless Appearance → Chat
  * list turned the button off ([ChatSwipes.editFoldersButton]); the tabs' menus keep it.
