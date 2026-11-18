@@ -46,6 +46,7 @@ internal fun FolderBar(
     state: ChatListUiState,
     onEvent: (ChatListEvent) -> Unit,
     onEditFolder: ((folderId: Int?) -> Unit)?,
+    onOpenFeed: () -> Unit,
     space: FolderBarSpace,
     modifier: Modifier = Modifier,
 ) {
@@ -80,6 +81,8 @@ internal fun FolderBar(
                 enabled = state.selection == null,
                 onMarkAllAsRead = { onEvent(ChatListEvent.MarkAllAsRead(it)) },
                 onEditFolder = onEditFolder,
+                feedTab = state.feedTab,
+                onOpenFeed = onOpenFeed,
             )
         }
     }

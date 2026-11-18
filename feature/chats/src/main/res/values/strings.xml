@@ -95,6 +95,13 @@
         <item quantity="one">%d unread chat</item>
         <item quantity="other">%d unread chats</item>
     </plurals>
+    <!-- The Feed tab, first in the folder row: the Channel feed (REQUIREMENTS.md FR-X5). -->
+    <string name="chat_list_feed_tab">Feed</string>
+    <!-- The Feed tab for screen readers, after its name (chat_list_a11y_tab). -->
+    <plurals name="chat_list_a11y_unread_posts">
+        <item quantity="one">%d unread post from channels</item>
+        <item quantity="other">%d unread posts from channels</item>
+    </plurals>
 
     <!-- A community's entry in the main list (board 19b): its chats show as one entry there. -->
     <plurals name="chat_list_community_chats">

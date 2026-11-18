@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.Flow
  * the folder instead ([ChatListSettings.swipeChangesFolder], off by default), whether the folder tabs end in an
  * "Edit folders" button ([ChatListSettings.showEditFoldersButton], on by default), whether the rows show the kind of
  * chat before its name ([ChatListSettings.showChatTypeIcons], on by default), and how the folder tabs show their
- * folders ([ChatListSettings.folderTabStyle], their names by default), and whether Catch-up takes muted chats and
- * channels too ([ChatListSettings.catchUpIncludesMuted], off by default).
+ * folders ([ChatListSettings.folderTabStyle], their names by default), whether Catch-up takes muted chats and
+ * channels too ([ChatListSettings.catchUpIncludesMuted], off by default), and whether the Channel feed's tab starts the
+ * folder row ([ChatListSettings.showFeedTab], on by default).
  */
 interface ChatListSettingsRepository {
     /** The settings, then every change. Never fails: unreadable settings read as the defaults. */
@@ -40,6 +41,9 @@ interface ChatListSettingsRepository {
 
     /** Saves whether Catch-up takes muted chats and channels; fails as [setShowStories] does. */
     suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit>
+
+    /** Saves whether the folder row starts with the Feed tab; fails as [setShowStories] does. */
+    suspend fun setShowFeedTab(show: Boolean): Outcome<Unit>
 }
 
 /**
@@ -50,7 +54,8 @@ interface ChatListSettingsRepository {
  * [showEditFoldersButton] is off, the folder row ends at the tabs; their menus keep "Edit folders". While
  * [showChatTypeIcons] is off, the rows show no group or channel symbol before the chat's name. [folderTabStyle] is what
  * each folder tab shows: its name, its icon and name, or its icon alone. Catch-up (`docs/DESIGN_SYSTEM.md` §6
- * "Catch-up") leaves muted chats and channels out unless [catchUpIncludesMuted].
+ * "Catch-up") leaves muted chats and channels out unless [catchUpIncludesMuted]. While [showFeedTab] is off, the folder
+ * row has no Feed tab (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"), whatever the channels followed.
  */
 data class ChatListSettings(
     val showStories: Boolean = true,
@@ -61,6 +66,7 @@ data class ChatListSettings(
     val showChatTypeIcons: Boolean = true,
     val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
     val catchUpIncludesMuted: Boolean = false,
+    val showFeedTab: Boolean = true,
 )
 
 /**

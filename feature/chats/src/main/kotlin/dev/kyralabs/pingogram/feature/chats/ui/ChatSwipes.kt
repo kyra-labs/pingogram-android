@@ -22,7 +22,8 @@ import javax.inject.Inject
  * It carries the chat list's other device settings too, as the same settings hold them: whether the folder tabs end
  * in "Edit folders" ([editFoldersButton], Appearance → Chat list → "Edit folders button", on by default), and whether
  * rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
- * default), and what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default).
+ * default), what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default), and whether the
+ * Channel feed's tab starts them ([feedTab], "Show Feed tab", on by default).
  */
 @Immutable
 data class ChatSwipes(
@@ -32,6 +33,7 @@ data class ChatSwipes(
     val editFoldersButton: Boolean = true,
     val chatTypeIcons: Boolean = true,
     val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
+    val feedTab: Boolean = true,
 )
 
 /**
@@ -57,6 +59,7 @@ class ChatSwipesViewModel
                         editFoldersButton = it.showEditFoldersButton,
                         chatTypeIcons = it.showChatTypeIcons,
                         folderTabStyle = it.folderTabStyle,
+                        feedTab = it.showFeedTab,
                     )
                 }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())

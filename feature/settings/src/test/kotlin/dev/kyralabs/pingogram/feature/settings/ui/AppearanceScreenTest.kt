@@ -291,6 +291,19 @@ class AppearanceScreenTest {
     }
 
     @Test
+    fun `the Show Feed tab row is a switch, on at first, whose tap hides the tab`() {
+        setScreen()
+
+        switchRow(R.string.settings_show_feed_tab)
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
+            .assert(hasText(string(R.string.settings_show_feed_tab_summary)))
+            .performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetShowFeedTab(false)), events)
+    }
+
+    @Test
     fun `the skip silence row is a switch, off at first, whose tap turns it on`() {
         setScreen()
 

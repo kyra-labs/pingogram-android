@@ -121,6 +121,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `the Feed tab shows until it is turned off, and turning it off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showFeedTab)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowFeedTab(false))
+
+            assertEquals(ChatListSettings(showFeedTab = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showFeedTab)
+        }
+
+    @Test
     fun `chat type icons show until they are turned off, and turning them off is kept`() =
         runTest {
             val store = dataStore()

@@ -49,6 +49,17 @@ class ChatSwipesViewModelTest {
         }
 
     @Test
+    fun `follows whether the folder row starts with the Feed tab`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().feedTab)
+
+                settings.settings.value = ChatListSettings(showFeedTab = false)
+                assertEquals(ChatSwipes(feedTab = false), awaitItem())
+            }
+        }
+
+    @Test
     fun `follows whether the folder tabs end in Edit folders`() =
         runTest {
             ChatSwipesViewModel(settings).swipes.test {

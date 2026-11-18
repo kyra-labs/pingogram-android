@@ -92,6 +92,11 @@ sealed interface AppearanceEvent {
         val show: Boolean,
     ) : AppearanceEvent
 
+    /** "Show Feed tab" turned on or off. */
+    data class SetShowFeedTab(
+        val show: Boolean,
+    ) : AppearanceEvent
+
     /** "Chat type icons" turned on or off. */
     data class SetShowChatTypeIcons(
         val show: Boolean,
@@ -223,6 +228,10 @@ class AppearanceViewModel
                     chatListSettingsRepository.setShowEditFoldersButton(
                         event.show,
                     )
+                }
+
+                is AppearanceEvent.SetShowFeedTab -> {
+                    chatListSettingsRepository.setShowFeedTab(event.show)
                 }
 
                 is AppearanceEvent.SetShowChatTypeIcons -> {
