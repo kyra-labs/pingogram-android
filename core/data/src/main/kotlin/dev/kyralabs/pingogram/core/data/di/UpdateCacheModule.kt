@@ -7,6 +7,7 @@ import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
+import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
@@ -105,6 +106,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun bookmarkCache(repository: FileBookmarkRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's snippets when it logs out. */
+    @Binds
+    @IntoSet
+    fun snippetCache(repository: FileSnippetRepository): TdlibUpdateCache
 
     /** It matches new messages with the keyword alert words, and deletes the account's matches when it logs out. */
     @Binds
