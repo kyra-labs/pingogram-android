@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.FoundEvent
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
@@ -16,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.domain.model.TextFindings
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -94,6 +96,7 @@ internal class ChatMessageActions(
     private val onSave: (List<Message>) -> Unit = {},
     private val onSelectionDeleted: () -> Unit = {},
     private val translationAction: suspend (Message) -> List<MessageAction> = { emptyList() },
+    private val findInText: suspend (Message) -> TextFindings = { TextFindings.None },
     private val onRetractVote: (messageId: Long) -> Unit = {},
     private val onStopPoll: (messageId: Long) -> Unit = {},
 ) {
@@ -112,7 +115,8 @@ internal class ChatMessageActions(
     /**
      * Opens the actions sheet of message [messageId] once TDLib told what it allows, at its reactions picker if
      * [showsPicker] and the sheet has one, with "Open link" and "Copy link" first for the [link] of its text the long
-     * press landed on; then asks for the pictures of the custom emoji it shows.
+     * press landed on, and "Add to calendar" and "Open in maps" for what the device finds in its text ([findInText],
+     * asked only now, beside TDLib); then asks for the pictures of the custom emoji it shows.
      */
     fun show(
         messageId: Long,
@@ -127,10 +131,12 @@ internal class ChatMessageActions(
                 val reactionsMessage = context.reactionsMessageOf(message)
                 val reactions = async { repository.availableReactions(chatId, reactionsMessage.id) }
                 val translate = async { translationAction(message) }
+                val found = async { findInText(message) }
                 when (val properties = repository.properties(chatId, messageId)) {
                     is Outcome.Failure -> {
                         reactions.cancel()
                         translate.cancel()
+                        found.cancel()
                         onEffect(ChatEffect.ShowError(properties.error))
                     }
 
@@ -138,6 +144,7 @@ internal class ChatMessageActions(
                         val available = reactions.await().getOrNull() ?: NO_REACTIONS
                         val quick = reactionOptions(available.top.take(MAX_QUICK_REACTIONS), reactionsMessage)
                         val picker = reactionPicker(available, quick.size, reactionsMessage)
+                        val findings = found.await()
                         val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
@@ -148,11 +155,12 @@ internal class ChatMessageActions(
                                         (if (link == null) emptyList() else LINK_ACTIONS) +
                                             context
                                                 .actionsOf(message, properties.value, inThread)
-                                                .withTranslation(translate.await())
+                                                .withTranslation(translate.await() + findings.actions)
                                     ).toImmutableList(),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
                                 link = link,
+                                findings = findings,
                             )
                         mutableSheet.value = sheet
                         loadCustomEmojiPictures(sheet)
@@ -210,6 +218,40 @@ internal class ChatMessageActions(
     fun openUrl(url: String) {
         dismiss()
         onEffect(ChatEffect.OpenUrl(url))
+    }
+
+    /**
+     * Opens the calendar's new event for the date or time found in message [messageId]'s text ([event]): starting then
+     * where it reads as a moment, the text's first line as its title and the whole text as its description.
+     */
+    fun addToCalendar(
+        messageId: Long,
+        event: FoundEvent,
+    ) {
+        dismiss()
+        scope.launch {
+            val text =
+                current()
+                    ?.history
+                    ?.messages
+                    ?.findById(messageId)
+                    ?.textOrCaption
+                    ?.text ?: return@launch
+            val title =
+                text
+                    .lineSequence()
+                    .firstOrNull { it.isNotBlank() }
+                    .orEmpty()
+                    .trim()
+                    .take(MAX_EVENT_TITLE)
+            onEffect(ReplyEffect.AddToCalendar(title, text, event.startMillis, event.isAllDay))
+        }
+    }
+
+    /** Opens [address], found in a message's text, in a maps app. */
+    fun openInMaps(address: String) {
+        dismiss()
+        onEffect(ReplyEffect.OpenInMaps(address))
     }
 
     /** Copies [url], the link of a message's text a long press landed on. */
@@ -459,6 +501,9 @@ internal class ChatMessageActions(
 
         val NO_REACTIONS = AvailableReactions(persistentListOf())
 
+        /** The longest calendar event title taken from a message's first line. */
+        const val MAX_EVENT_TITLE = 100
+
         /** What a long press on a link offers for it, before the message's actions. */
         val LINK_ACTIONS = listOf(MessageAction.OpenLink, MessageAction.CopyPressedLink)
     }
@@ -573,7 +618,8 @@ private fun ActionContext.laterActions(
 
 /**
  * The actions with [translation] ("Translate" or "Show original", `ChatTranslation`; "Summarize" or "Show full
- * text", `ChatSummaries`) after copying, or replying where the text cannot be copied, else first; as they were without.
+ * text", `ChatSummaries`; then "Add to calendar" and "Open in maps") after copying, or replying where the text
+ * cannot be copied, else first; as they were without.
  */
 private fun List<MessageAction>.withTranslation(translation: List<MessageAction>): List<MessageAction> {
     if (translation.isEmpty()) return this
@@ -658,3 +704,11 @@ internal val ReactionType.label: ReactionLabel
             is ReactionType.CustomEmoji -> ReactionLabel.CustomEmoji(customEmojiId)
             ReactionType.Paid -> ReactionLabel.Paid
         }
+
+/** "Add to calendar" for a date or time found, and "Open in maps" for an address. */
+private val TextFindings.actions: List<MessageAction>
+    get() =
+        listOfNotNull(
+            MessageAction.AddToCalendar.takeIf { event != null },
+            MessageAction.OpenInMaps.takeIf { address != null },
+        )
