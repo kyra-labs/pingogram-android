@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.notifications.AutomaticBackups
 import dev.kyralabs.pingogram.core.notifications.KeywordAlertNotifier
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ReminderAlarms
@@ -68,6 +69,10 @@ class PingogramApplication :
     /** Schedules each account's weekly clean-up of TDLib's files (docs/PERFORMANCE.md §3). */
     @Inject
     lateinit var storageOptimization: dagger.Lazy<StorageOptimization>
+
+    /** Schedules the backups that write themselves (docs/adr/0039-local-backup-and-restore.md). */
+    @Inject
+    lateinit var automaticBackups: dagger.Lazy<AutomaticBackups>
 
     /** Keeps the rings of the message reminders scheduled, for every account (the owner's board 29). */
     @Inject
@@ -172,6 +177,8 @@ class PingogramApplication :
                 conversationWidgetUpdater.get().start()
                 // Schedules each logged-in account's weekly clean-up of TDLib's files, a few seconds after the start.
                 storageOptimization.get().start()
+                // Schedules the automatic backups as the user chose, a few seconds after the start as well.
+                automaticBackups.get().start()
                 // Schedules the message reminders' rings, a few seconds after the start too.
                 reminderAlarms.get().start()
                 // Posts a notification for each new keyword match of a muted chat, while the setting asks for it.
