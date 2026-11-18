@@ -85,7 +85,10 @@ abstract class ChatViewModelHarness {
     protected val savedState = SavedStateHandle()
 
     /** Where the user left each conversation, shared by the view models of a test as by those of a process. */
-    protected val chatPlaces = ChatPlaces()
+
+    /** The account the screens show, for where [chatPlaces] keeps each conversation's place. */
+    protected var activeAccount = 0
+    protected val chatPlaces = ChatPlaces { activeAccount }
 
     /** What the device finds in messages' texts: nothing unless a test says so. */
     protected val textFinder = FakeDeviceTextFinder()
