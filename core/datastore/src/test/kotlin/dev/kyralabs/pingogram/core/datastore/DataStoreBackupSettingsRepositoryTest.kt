@@ -28,27 +28,30 @@ class DataStoreBackupSettingsRepositoryTest {
     @Test
     fun `nothing is kept at first`() =
         runTest {
-            val repository = DataStoreBackupSettingsRepository(dataStore())
+            val repository = DataStoreBackupSettingsRepository(dataStore(), backgroundScope)
 
             assertEquals(null, repository.folderUri.first())
             assertEquals(null, repository.restoreDismissedFor.first())
-            assertEquals(false, repository.restorePromptDismissed.first())
+            assertEquals(false, repository.restorePromptPending.first())
         }
 
     @Test
-    fun `the folder and what the user hid survive the process, and the folder can be let go`() =
+    fun `the folder, what the user hid and a sign-in's offer survive the process, and can be let go`() =
         runTest {
             val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
-            val first = DataStoreBackupSettingsRepository(dataStore(firstProcess))
+            val first = DataStoreBackupSettingsRepository(dataStore(firstProcess), firstProcess)
             assertEquals(Outcome.Success(Unit), first.setFolderUri("content://tree/backups"))
             assertEquals(Outcome.Success(Unit), first.dismissRestore("content://tree/backups/1"))
-            assertEquals(Outcome.Success(Unit), first.dismissRestorePrompt())
+            first.offerRestorePrompt()
+            first.restorePromptPending.first { it }
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
-            val again = DataStoreBackupSettingsRepository(dataStore())
+            val again = DataStoreBackupSettingsRepository(dataStore(), backgroundScope)
             assertEquals("content://tree/backups", again.folderUri.first())
             assertEquals("content://tree/backups/1", again.restoreDismissedFor.first())
-            assertEquals(true, again.restorePromptDismissed.first())
+            assertEquals(true, again.restorePromptPending.first())
+            assertEquals(Outcome.Success(Unit), again.dismissRestorePrompt())
+            assertEquals(false, again.restorePromptPending.first())
             again.setFolderUri(null)
             assertEquals(null, again.folderUri.first())
         }
@@ -57,12 +60,15 @@ class DataStoreBackupSettingsRepositoryTest {
     fun `how often backups write themselves is none chosen until chosen, then survives the process`() =
         runTest {
             val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
-            val first = DataStoreBackupSettingsRepository(dataStore(firstProcess))
+            val first = DataStoreBackupSettingsRepository(dataStore(firstProcess), firstProcess)
             assertEquals(null, first.frequency.first())
             assertEquals(Outcome.Success(Unit), first.setFrequency(BackupFrequency.Daily))
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
-            assertEquals(BackupFrequency.Daily, DataStoreBackupSettingsRepository(dataStore()).frequency.first())
+            assertEquals(
+                BackupFrequency.Daily,
+                DataStoreBackupSettingsRepository(dataStore(), backgroundScope).frequency.first(),
+            )
         }
 
     @Test
@@ -72,7 +78,7 @@ class DataStoreBackupSettingsRepositoryTest {
             listOf(
                 "backup.folder",
                 "backup.restore_dismissed_for",
-                "backup.restore_prompt_dismissed",
+                "backup.restore_prompt_pending",
                 "backup.frequency",
             ).map(::isBackedUp),
         )

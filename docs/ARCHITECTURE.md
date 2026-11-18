@@ -2152,6 +2152,13 @@ its folder or its password.
   "Restore from file" (`ACTION_OPEN_DOCUMENT`, or `BackupRoute(restore)` from the chat list's card), which
   `BackupRestoreFlow` takes through the password and a summary of what the backup holds to the restore; passwords go
   to the backup and are never kept or saved in the state, nor is the opened backup.
+- **The restore card** (`feature:chats` `restore/`, `RestorePromptViewModel`, `RestorePromptHost` in the chat list's
+  header beside the notification request): the kept folder's newest backup until restored or hidden for it
+  (`BackupSettingsRepository.restoreDismissedFor`), or, while no folder is kept, the offer to restore from a file
+  from a sign-in until used or hidden (`restorePromptPending`, set through `offerRestorePrompt()` by `core:data`'s
+  `SignInRestoreOffer`, which `PingogramApplication` starts: an account that asked for a login, then ready; an account
+  that starts ready, as after an update, offers nothing); never in the demo. "Restore" and a picked file open
+  `BackupRoute(restore)` through `ChatListHeaderActions.openBackup`.
 
 ## Feedback
 

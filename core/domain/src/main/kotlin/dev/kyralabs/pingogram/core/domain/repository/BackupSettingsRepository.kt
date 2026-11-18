@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * What the backups (`docs/adr/0039-local-backup-and-restore.md`) keep on this phone, never in a backup: the folder the
- * user picked, how often backups write themselves, and the restore card's "Not now". Never fails to read: what cannot
- * be read is none.
+ * user picked, how often backups write themselves, a sign-in that offers the restore card, and the card's "Not now".
+ * Never fails to read: what cannot be read is none.
  */
 interface BackupSettingsRepository {
     /** The backup folder's tree URI; null while none is kept. */
@@ -22,10 +22,19 @@ interface BackupSettingsRepository {
     /** Hides the restore card of backup [document]; fails as [setFolderUri]. */
     suspend fun dismissRestore(document: String): Outcome<Unit>
 
-    /** Whether the user hid the card that offers to restore from a file while no folder is kept. */
-    val restorePromptDismissed: Flow<Boolean>
+    /**
+     * Whether the card that offers to restore from a file (while no folder is kept) shows: from a sign-in on this phone
+     * until the user uses or hides it.
+     */
+    val restorePromptPending: Flow<Boolean>
 
-    /** Hides that card for good; fails as [setFolderUri]. */
+    /**
+     * Notes a sign-in that just completed, so the chat list offers to restore from a file. Written in the app's scope
+     * and returns at once; a write that fails offers nothing.
+     */
+    fun offerRestorePrompt()
+
+    /** Hides that card until the next sign-in; fails as [setFolderUri]. */
     suspend fun dismissRestorePrompt(): Outcome<Unit>
 
     /** How often backups write themselves, as the user chose; null while they have not chosen. */

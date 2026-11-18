@@ -15,6 +15,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   choose.
 - Restore a backup there with "Restore from file": after its password, see what it holds, then restore the settings
   and your account's bookmarks, reminders, keyword alerts and snippets, merged with those already on this phone.
+- After signing in, the chat list offers to restore your latest backup, or, on a new phone, to pick a backup file.
 - Snippets: save texts you often write in Settings → Appearance → Chats → Snippets, each with a one-word name, and
   reorder, edit or delete them there. They stay on this phone.
 - In a chat, type / and the start of a snippet's name to insert its text, or pick one with "Insert snippet" in the
