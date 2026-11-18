@@ -30,7 +30,8 @@ import javax.inject.Singleton
 /**
  * [BackupFolderRepository] on [documents], the Storage Access Framework: the folder's tree URI kept in [settings], its
  * grant kept for good once picked (and given back when another one is), its backups the files whose name ends with
- * ".pgbackup", the newest first. Written and read through [backups], on the [io] dispatcher. Nothing about the folder
+ * ".pgbackup", the newest first. Written and read through [backups], on the [io] dispatcher; a backup the user writes
+ * keeps its password's key in [keys] for automatic backups. Nothing about the folder
  * or its files is logged.
  */
 @Singleton
@@ -40,6 +41,7 @@ class DocumentBackupFolderRepository
         private val documents: BackupDocuments,
         private val backups: BackupRepository,
         private val settings: BackupSettingsRepository,
+        private val keys: BackupKeyStore,
         private val clock: WallClock,
         @param:Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : BackupFolderRepository {
@@ -67,7 +69,11 @@ class DocumentBackupFolderRepository
                 }
             }
 
-        override suspend fun backUp(password: String): Outcome<BackupFileInfo> = backUp { backups.write(it, password) }
+        override suspend fun backUp(password: String): Outcome<BackupFileInfo> =
+            backUp { backups.write(it, password) }.also { written ->
+                // Its key, kept for automatic backups; never the password.
+                if (written is Outcome.Success) withContext(io) { keys.keep(BackupKey.of(password)) }
+            }
 
         /** Writes a dated backup into the kept folder with [write]; a file that fails is deleted. */
         internal suspend fun backUp(write: suspend (OutputStream) -> Outcome<BackupHeader>): Outcome<BackupFileInfo> =

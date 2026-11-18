@@ -27,7 +27,14 @@ class KeystoreAutomaticBackupRepositoryTest {
     private val settings = FakeBackupSettingsRepository()
     private val keys = MemoryBackupKeyStore()
     private val folders =
-        DocumentBackupFolderRepository(documents, FakeBackupRepository(), settings, FixedClock, Dispatchers.Unconfined)
+        DocumentBackupFolderRepository(
+            documents,
+            FakeBackupRepository(),
+            settings,
+            keys,
+            FixedClock,
+            Dispatchers.Unconfined,
+        )
     private val writtenWith = mutableListOf<BackupKey>()
     private var fails = false
     private val repository =

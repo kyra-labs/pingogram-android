@@ -32,8 +32,9 @@ class DocumentBackupFolderRepositoryTest {
     private val documents = MemoryDocuments()
     private val settings = FakeBackupSettingsRepository()
     private val backups = FakeBackups()
+    private val keys = MemoryBackupKeyStore()
     private val repository =
-        DocumentBackupFolderRepository(documents, backups, settings, FixedClock, Dispatchers.Unconfined)
+        DocumentBackupFolderRepository(documents, backups, settings, keys, FixedClock, Dispatchers.Unconfined)
 
     @Test
     fun `keeping a folder keeps its grant and gives back the one kept before`() =
@@ -69,6 +70,9 @@ class DocumentBackupFolderRepositoryTest {
                 BackupFileInfo("$TREE/3", "Pingogram backup 2026-11-18.pgbackup", Instant.ofEpochMilli(NOW_MILLIS), 2)
             assertEquals(Outcome.Success(file), written)
             assertEquals("pw", documents.contents.getValue(file.document).decodeToString())
+            // Its password's key is kept for automatic backups.
+            val key = checkNotNull(keys.kept.value)
+            assertEquals(key.key, BackupCipher.key("pw", key.salt, key.rounds))
             assertEquals(
                 BackupFolder(
                     TREE,
@@ -92,6 +96,7 @@ class DocumentBackupFolderRepositoryTest {
 
             assertEquals(Outcome.Failure(DomainError.Unknown(0, "full")), repository.backUp("pw"))
             assertEquals(emptyMap<String, ByteArray>(), documents.contents)
+            assertEquals(null, keys.kept.value)
         }
 
     @Test
