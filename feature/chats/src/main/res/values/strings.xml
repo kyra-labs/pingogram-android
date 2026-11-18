@@ -312,6 +312,9 @@
     <string name="mentions_empty_body">When someone in a group mentions you or replies to you, it shows here.</string>
     <string name="mentions_error_title">Couldn\'t load mentions</string>
     <string name="mentions_retry">Try again</string>
+    <!-- The Channel feed (REQUIREMENTS.md FR-X5): an unread post's time, after its dot. -->
+    <string name="feed_new_at">New · %1$s</string>
+    <string name="feed_open_in_channel">Open in channel</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
