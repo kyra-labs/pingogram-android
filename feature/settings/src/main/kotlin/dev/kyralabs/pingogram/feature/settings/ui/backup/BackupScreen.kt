@@ -51,8 +51,27 @@ internal fun BackupRoute(
         viewModel.effects.collect { effect ->
             val message =
                 when (effect) {
-                    is BackupEffect.BackedUp -> resources.getString(R.string.backup_done, effect.folderName)
-                    is BackupEffect.ShowError -> errorMessage(resources, effect.error, showErrorDetails)
+                    is BackupEffect.BackedUp -> {
+                        resources.getString(R.string.backup_done, effect.folderName)
+                    }
+
+                    is BackupEffect.ShowError -> {
+                        errorMessage(resources, effect.error, showErrorDetails)
+                    }
+
+                    is BackupEffect.Restored -> {
+                        val restored = if (effect.otherAccount) R.string.backup_restored_other_account else null
+                        resources.getString(restored ?: R.string.backup_restored)
+                    }
+
+                    is BackupEffect.RestoreRefused -> {
+                        resources.getString(
+                            when (effect.refusal) {
+                                RestoreRefusal.NewerVersion -> R.string.backup_restore_newer
+                                RestoreRefusal.NotABackup -> R.string.backup_restore_not_backup
+                            },
+                        )
+                    }
                 }
             // Snackbars queue up; later effects must not wait for them.
             launch { snackbarHostState.showSnackbar(message) }

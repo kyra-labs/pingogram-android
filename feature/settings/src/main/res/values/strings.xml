@@ -1803,4 +1803,8 @@
     <string name="backup_password_repeat">Repeat password</string>
     <string name="backup_password_mismatch">Passwords don\'t match</string>
     <string name="backup_password_confirm">Back up</string>
+    <string name="backup_restored">Restored</string>
+    <string name="backup_restored_other_account">Restored. Another account\'s data stays in the backup.</string>
+    <string name="backup_restore_newer">This backup is from a newer Pingogram. Update the app to restore it.</string>
+    <string name="backup_restore_not_backup">This file isn\'t a Pingogram backup, or it\'s damaged.</string>
 </resources>

@@ -4,6 +4,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.BackupFileInfo
 import dev.kyralabs.pingogram.core.domain.model.BackupFolder
 import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
+import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
+import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -40,7 +42,7 @@ class BackupViewModelTest {
     }
 
     private fun TestScope.viewModel(): BackupViewModel =
-        BackupViewModel(folders).also {
+        BackupViewModel(folders, FakeBackupRepository(), FakeDeviceAccountsRepository()).also {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { it.uiState.collect {} }
             runCurrent()
         }
