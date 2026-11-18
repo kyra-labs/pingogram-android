@@ -15,7 +15,6 @@ import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.model.codeLength
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
-import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
@@ -65,7 +64,6 @@ class AuthViewModel internal constructor(
     connectionRepository: ConnectionRepository,
     private val deviceAccounts: DeviceAccountsRepository,
     private val demo: DemoRepository,
-    private val backupSettings: BackupSettingsRepository,
     private val timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
     @Inject
@@ -76,7 +74,6 @@ class AuthViewModel internal constructor(
         connectionRepository: ConnectionRepository,
         deviceAccounts: DeviceAccountsRepository,
         demo: DemoRepository,
-        backupSettings: BackupSettingsRepository,
     ) : this(
         savedStateHandle,
         authRepository,
@@ -84,7 +81,6 @@ class AuthViewModel internal constructor(
         connectionRepository,
         deviceAccounts,
         demo,
-        backupSettings,
         ElapsedRealtimeTimeSource,
     )
 
@@ -232,8 +228,6 @@ class AuthViewModel internal constructor(
 
     private fun onAuthorized() {
         cancelCountdowns()
-        // The chat list then offers to restore a backup (docs/adr/0039-local-backup-and-restore.md, "Restoring").
-        backupSettings.offerRestorePrompt()
         sendEffect(AuthEffect.Authorized)
     }
 

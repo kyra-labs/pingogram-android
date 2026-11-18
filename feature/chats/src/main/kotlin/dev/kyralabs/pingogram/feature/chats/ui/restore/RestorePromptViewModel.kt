@@ -21,7 +21,7 @@ import javax.inject.Inject
 /** What the chat list offers about restoring a backup (`docs/adr/0039-local-backup-and-restore.md`). */
 @Immutable
 sealed interface RestorePromptUiState {
-    /** Nothing: the demo, a backup hidden, a folder without backups, or no folder and no sign-in to offer a file for. */
+    /** Nothing: the demo, a backup hidden, a folder without backups, or no folder and no sign-in to offer it for. */
     data object Hidden : RestorePromptUiState
 
     /** "Restore from your backup of 12 Nov?": the kept folder's newest backup, [document], written at [modifiedAt]. */

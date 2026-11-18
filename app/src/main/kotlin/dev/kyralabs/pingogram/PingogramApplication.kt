@@ -10,6 +10,7 @@ import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.backup.SignInRestoreOffer
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -75,6 +76,10 @@ class PingogramApplication :
     /** Posts the keyword alerts of muted chats, for every account (the owner's board 30). */
     @Inject
     lateinit var keywordAlertNotifier: dagger.Lazy<KeywordAlertNotifier>
+
+    /** Has the chat list offer to restore a backup after each sign-in (docs/adr/0039-local-backup-and-restore.md). */
+    @Inject
+    lateinit var signInRestoreOffer: dagger.Lazy<SignInRestoreOffer>
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -171,6 +176,8 @@ class PingogramApplication :
                 reminderAlarms.get().start()
                 // Posts a notification for each new keyword match of a muted chat, while the setting asks for it.
                 keywordAlertNotifier.get().start()
+                // Offers to restore a backup once an account that asked for a login is ready.
+                signInRestoreOffer.get().start()
             }
         }
     }

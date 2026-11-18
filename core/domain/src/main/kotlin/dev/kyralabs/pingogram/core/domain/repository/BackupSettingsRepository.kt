@@ -29,8 +29,8 @@ interface BackupSettingsRepository {
     val restorePromptPending: Flow<Boolean>
 
     /**
-     * Notes a sign-in that just completed, so the chat list offers to restore from a file. Written in the app's scope,
-     * so leaving the login screen does not cancel it; a write that fails offers nothing.
+     * Notes a sign-in that just completed, so the chat list offers to restore from a file. Written in the app's scope
+     * and returns at once; a write that fails offers nothing.
      */
     fun offerRestorePrompt()
 
