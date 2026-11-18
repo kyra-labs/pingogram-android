@@ -240,7 +240,7 @@ private suspend fun ChatRepository.chatsOf(ids: List<Long>): ImmutableList<Chat>
     ids.distinct().mapNotNull { getChat(it).getOrNull() }.toImmutableList()
 
 /** The messages of [found] with their chats; a message whose chat cannot be read is left out. */
-private suspend fun ChatRepository.foundMessages(found: TdApi.FoundMessages): FoundMessages {
+internal suspend fun ChatRepository.foundMessages(found: TdApi.FoundMessages): FoundMessages {
     val chats = HashMap<Long, Chat?>()
     val messages =
         found.messages

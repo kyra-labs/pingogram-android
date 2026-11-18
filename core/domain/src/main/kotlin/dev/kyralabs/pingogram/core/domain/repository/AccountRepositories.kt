@@ -60,6 +60,8 @@ interface AccountRepositories {
 
     fun searchRepository(): SearchRepository
 
+    fun mentionRepository(): MentionRepository
+
     fun contactRepository(): ContactRepository
 
     fun contactSyncRepository(): ContactSyncRepository

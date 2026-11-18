@@ -60,6 +60,7 @@ import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
+import dev.kyralabs.pingogram.core.domain.repository.MentionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
@@ -202,6 +203,9 @@ object ActiveAccountModule {
 
     @Provides
     fun searchRepository(accounts: Accounts): SearchRepository = accounts.active.searchRepository()
+
+    @Provides
+    fun mentionRepository(accounts: Accounts): MentionRepository = accounts.active.mentionRepository()
 
     @Provides
     fun contactRepository(accounts: Accounts): ContactRepository = accounts.active.contactRepository()
