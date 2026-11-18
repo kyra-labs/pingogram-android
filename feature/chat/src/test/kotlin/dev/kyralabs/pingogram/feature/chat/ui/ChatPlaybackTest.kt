@@ -376,7 +376,73 @@ class ChatPlaybackTest : ChatViewModelHarness() {
             assertNull(player.listener)
         }
 
+    // Round video messages
+
+    private fun roundVideo(fileId: Int) =
+        ContentPreviewData.videoNote(minithumbnail = null, isViewed = true).let { content ->
+            content.copy(videoNote = content.videoNote.copy(file = FileRef(fileId, size = 4)))
+        }
+
+    /** A chat with voice message 1 (file 501) and round video message 2 (file 602), both downloaded. */
+    private fun TestScope.chatWithRoundVideo(): ChatViewModel {
+        listOf(VOICE_1, ROUND_VIDEO).forEach(::downloaded)
+        return showing(
+            chat(),
+            history(message(1, content = voice(VOICE_1)), message(2, content = roundVideo(ROUND_VIDEO))),
+        )
+    }
+
+    @Test
+    fun `a round video message plays its file through the voice messages' player, and stays in it while paused`() =
+        runViewModelTest {
+            val viewModel = chatWithRoundVideo()
+
+            send(viewModel, play(2))
+            assertEquals(listOf("play:/f$ROUND_VIDEO:Speech:0"), player.calls)
+            assertTrue(viewModel.playback!!.playback.isPlaying && viewModel.playback!!.playback.inPlayer)
+
+            send(viewModel, play(2))
+            assertEquals(2L, viewModel.playback?.messageId)
+            assertFalse(viewModel.playback!!.playback.isPlaying)
+            assertTrue(viewModel.playback!!.playback.inPlayer)
+        }
+
+    @Test
+    fun `a round video message and a voice message stop each other, one audio item at a time`() =
+        runViewModelTest {
+            val viewModel = chatWithRoundVideo()
+
+            send(viewModel, play(1), play(2))
+            assertEquals(2L, viewModel.playback?.messageId)
+            send(viewModel, play(1))
+
+            assertEquals(
+                listOf(
+                    "play:/f$VOICE_1:Speech:0",
+                    "stop",
+                    "play:/f$ROUND_VIDEO:Speech:0",
+                    "stop",
+                    "play:/f$VOICE_1:Speech:0",
+                ),
+                player.calls,
+            )
+            assertEquals(1L, viewModel.playback?.messageId)
+        }
+
+    @Test
+    fun `a round video message that ends leaves the player, so it shrinks back`() =
+        runViewModelTest {
+            val viewModel = chatWithRoundVideo()
+            send(viewModel, play(2))
+
+            player.end()
+            runCurrent()
+
+            assertNull(viewModel.playback?.takeIf { it.messageId == 2L })
+        }
+
     private companion object {
+        const val ROUND_VIDEO = 602
         const val VOICE_1 = 501
         const val VOICE_3 = 503
         const val TICK = 32L

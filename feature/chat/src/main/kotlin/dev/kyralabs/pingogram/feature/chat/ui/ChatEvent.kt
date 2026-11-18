@@ -153,8 +153,8 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped: it plays, or
-     * pauses, downloading the file first if it is not on the device.
+     * The play button of the voice message or song [messageId], or the round video message, whose file is [fileId], was
+     * tapped: it plays, or pauses, downloading the file first if it is not on the device.
      */
     data class PlayPause(
         val messageId: Long,

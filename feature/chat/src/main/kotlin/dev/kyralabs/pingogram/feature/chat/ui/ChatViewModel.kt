@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.os.SystemClock
+import android.view.Surface
 import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
@@ -583,6 +584,9 @@ class ChatViewModel internal constructor(
             onPlaybackFailed = { effectChannel.trySend(ChatEffect.PlaybackFailed) },
             log = log,
         )
+
+    /** Where the round video message playing shows its picture: the surface its bubble draws; null when it has none. */
+    var videoNoteSurface: Surface? by playback::videoSurface
 
     private val composer: ChatComposer =
         ChatComposer(

@@ -25,6 +25,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   selected tab on a neutral pill and the button in the bar's own color, in place of the accent colors.
 
 ### Fixed
+- Round video messages play: a tap plays one with sound in its circle, which grows to the bubble's width with a
+  progress ring; another tap pauses, and it shrinks back when it ends.
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
   page blank above Photos.
 - A conversation opened again opens where you left it, until the app closes, not at the newest message. With new

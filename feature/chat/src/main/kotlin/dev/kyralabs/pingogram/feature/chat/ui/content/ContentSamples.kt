@@ -153,7 +153,10 @@ internal val ContentSamples: List<ContentSample> =
             )
         },
         ContentSample("videoNote", SampleBubbles.None) { _, _ ->
-            MessageVideoNote(ContentPreviewData.videoNote(rememberSampleMinithumbnail(), isViewed = false), onOpen = {})
+            MessageVideoNote(
+                ContentPreviewData.videoNote(rememberSampleMinithumbnail(), isViewed = false),
+                onPlayPause = {},
+            )
         },
         ContentSample("audio", SampleBubbles.Both) { colors, outgoing ->
             MessageAudio(

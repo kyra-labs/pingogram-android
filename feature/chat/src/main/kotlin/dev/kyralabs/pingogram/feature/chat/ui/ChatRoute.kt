@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.os.Build
 import android.text.format.DateFormat
+import android.view.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -52,6 +53,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.content.LocalVideoNoteSurface
 import dev.kyralabs.pingogram.feature.chat.ui.dates.addToCalendar
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsHost
@@ -271,6 +273,7 @@ internal fun ConversationRoute(
         }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    val videoNoteSurface = remember(viewModel) { { surface: Surface? -> viewModel.videoNoteSurface = surface } }
     // The bubbles' reminder chips; a tap opens the reminder in the Remind me sheet.
     val reminderLabels = reminderViewModel.chips.collectAsStateWithLifecycle()
     val reminderChips =
@@ -296,6 +299,7 @@ internal fun ConversationRoute(
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
         LocalReminderChips provides reminderChips,
+        LocalVideoNoteSurface provides videoNoteSurface,
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {

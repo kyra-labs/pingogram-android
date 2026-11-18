@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.SystemClock
+import android.view.Surface
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -66,6 +67,14 @@ internal class ExoAudioPlayer
         private var clock = PlaybackClock.Empty
 
         override var listener: AudioPlayer.Listener? = null
+
+        /** Where a round video message's picture shows; the player's thread reads it too. */
+        @Volatile
+        override var videoSurface: Surface? = null
+            set(surface) {
+                field = surface
+                onPlayer { it.setVideoSurface(surface) }
+            }
 
         override val positionMillis: Long get() = clock.positionAt(SystemClock.elapsedRealtime())
 
@@ -163,6 +172,7 @@ internal class ExoAudioPlayer
                     if (kind == AudioKind.Music) speechFocus?.abandon()
                 }
                 player.skipSilenceEnabled = kind == AudioKind.Speech && skipSilence.enabled
+                player.setVideoSurface(videoSurface)
                 player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))), positionMillis)
                 player.prepare()
                 // A voice message plays once it has the focus; SpeechFocus shows a refusal as a pause.
