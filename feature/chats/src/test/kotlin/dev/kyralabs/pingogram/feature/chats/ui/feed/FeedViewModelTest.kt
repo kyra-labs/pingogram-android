@@ -237,6 +237,29 @@ class FeedViewModelTest {
             assertEquals(listOf<FeedEffect>(FeedEffect.ShowError(DomainError.Network)), effects)
         }
 
+    @Test
+    fun `the filter sheet sees every channel with its counts, and Mark all as read reads the chosen ones`() =
+        runTest {
+            feed(post(1, 12), post(1, 11), post(2, 25), post(3, 31, lastRead = 31))
+            val viewModel = viewModel()
+            send(viewModel, FeedEvent.SetFilter(FeedFilter(chosen = persistentSetOf(1))))
+
+            val channels = viewModel.uiState.value.channels
+            assertEquals(
+                listOf(1L to (2 to 2), 2L to (1 to 1), 3L to (1 to 0)),
+                channels.map {
+                    it.chatId to
+                        (it.postCount to it.unreadCount)
+                },
+            )
+            assertEquals(2, channels.postCount(FeedFilter(chosen = persistentSetOf(1, 3), onlyUnread = true)))
+            assertEquals(4, channels.postCount(FeedFilter()))
+
+            send(viewModel, FeedEvent.MarkAllAsRead(persistentSetOf(1, 3)))
+
+            assertEquals(listOf(1L to listOf(12L, 11L)), repository.viewed)
+        }
+
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */
     private class FakeChannelFeedRepository : ChannelFeedRepository {
         override val feed = MutableStateFlow(ChannelFeed(persistentListOf(), 0))

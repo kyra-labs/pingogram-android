@@ -10,8 +10,8 @@ import kotlinx.collections.immutable.persistentListOf
 
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5, `docs/DESIGN_SYSTEM.md` §6 "Channel feed"): its posts, the counts its top
- * bar shows, why reading new posts failed if it did ([error], a card above the posts already on the phone), and the
- * filter.
+ * bar shows, why reading new posts failed if it did ([error], a card above the posts already on the phone), the
+ * filter, and the followed channels with their counts, for the filter sheet ([channels]).
  */
 @Immutable
 data class FeedUiState(
@@ -20,7 +20,26 @@ data class FeedUiState(
     val channelCount: Int = 0,
     val error: DomainError? = null,
     val filter: FeedFilter = FeedFilter(),
+    val channels: ImmutableList<FeedChannel> = persistentListOf(),
 )
+
+/**
+ * A followed channel as the filter sheet lists it: its [title] and [photo], and how many of the feed's cards are its
+ * own ([postCount]), [unreadCount] of them unread.
+ */
+@Immutable
+data class FeedChannel(
+    val chatId: Long,
+    val title: String,
+    val photo: ProfilePhoto?,
+    val postCount: Int,
+    val unreadCount: Int,
+)
+
+/** How many cards [filter] lets through of [this] list of channels, for the sheet's "Show N posts". */
+fun List<FeedChannel>.postCount(filter: FeedFilter): Int =
+    filter { filter.chosen == null || it.chatId in filter.chosen }
+        .sumOf { if (filter.onlyUnread) it.unreadCount else it.postCount }
 
 /** What the feed's list shows. */
 @Immutable
