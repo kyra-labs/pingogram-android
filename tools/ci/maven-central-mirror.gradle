@@ -1,0 +1,32 @@
+// Google's mirror of Maven Central, tried before Maven Central, for CI's check, debug APK and APK size jobs
+// (ci.yml passes it with -I). Maven Central answers 429 Too Many Requests to the shared addresses GitHub's runners use,
+// and Gradle does not retry a 429. The mirror serves the same artifacts, so nothing a build uses changes. Releases
+// (release.yml) keep downloading from Maven Central. Google's own repository (androidx, com.android, Firebase, Play
+// services) and TDLib's local repository are left out.
+def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+def configure = { repos ->
+    repos.maven {
+        name = 'MavenCentralMirror'
+        url = mirror
+        content {
+            excludeGroupByRegex 'androidx\\..*'
+            excludeGroupByRegex 'com\\.android(\\..*)?'
+            excludeGroupByRegex 'com\\.google\\.android\\..*'
+            excludeGroupByRegex 'com\\.google\\.firebase(\\..*)?'
+            excludeGroupByRegex 'com\\.google\\.gms(\\..*)?'
+            excludeGroup 'org.drinkless'
+        }
+    }
+}
+beforeSettings { settings ->
+    configure(settings.pluginManagement.repositories)
+    // Declaring any plugin repository drops Gradle's implicit plugin portal, which build-logic relies on.
+    settings.pluginManagement.repositories.gradlePluginPortal()
+    configure(settings.dependencyResolutionManagement.repositories)
+}
+// Robolectric downloads its android-all jars itself, from gcp.mirrors.maven.org, which rate-limits shared addresses too.
+allprojects {
+    tasks.withType(Test).configureEach {
+        systemProperty 'robolectric.dependency.repo.url', mirror
+    }
+}
