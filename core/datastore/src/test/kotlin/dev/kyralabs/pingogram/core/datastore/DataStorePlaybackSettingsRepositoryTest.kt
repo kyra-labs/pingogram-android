@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -64,4 +65,27 @@ class DataStorePlaybackSettingsRepositoryTest {
             assertEquals(true, again.skipSilence.first())
             assertEquals(RaiseToListenSettings(), again.raiseToListen.first())
         }
+
+    @Test
+    fun `voice messages play at 1x until another speed is saved, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStorePlaybackSettingsRepository(dataStore(firstProcess))
+            assertEquals(PlaybackSpeed.Normal, first.playbackSpeed.first())
+            assertEquals(Outcome.Success(Unit), first.setPlaybackSpeed(PlaybackSpeed.Faster))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStorePlaybackSettingsRepository(dataStore())
+            assertEquals(PlaybackSpeed.Faster, again.playbackSpeed.first())
+            assertEquals(false, again.skipSilence.first())
+        }
+
+    @Test
+    fun `the speeds go round from 1x to 1_5x to 2x and back`() {
+        assertEquals(
+            listOf(PlaybackSpeed.Faster, PlaybackSpeed.Fastest, PlaybackSpeed.Normal),
+            PlaybackSpeed.entries.map { it.next },
+        )
+        assertEquals(listOf(1f, 1.5f, 2f), PlaybackSpeed.entries.map { it.factor })
+    }
 }

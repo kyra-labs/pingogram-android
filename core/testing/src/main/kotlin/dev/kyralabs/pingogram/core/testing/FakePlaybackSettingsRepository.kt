@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.testing
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -26,6 +27,14 @@ class FakePlaybackSettingsRepository(
     override suspend fun setSkipSilence(enabled: Boolean): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
         skipSilence.value = enabled
+        return Outcome.Success(Unit)
+    }
+
+    override val playbackSpeed = MutableStateFlow(PlaybackSpeed.Normal)
+
+    override suspend fun setPlaybackSpeed(speed: PlaybackSpeed): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        playbackSpeed.value = speed
         return Outcome.Success(Unit)
     }
 
