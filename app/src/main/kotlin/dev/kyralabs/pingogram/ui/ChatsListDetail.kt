@@ -63,6 +63,7 @@ import dev.kyralabs.pingogram.core.ui.transition.rememberSeekableSteps
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListHeaderActions
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListPane
+import dev.kyralabs.pingogram.feature.chats.navigation.FeedPane
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.SearchPane
 import dev.kyralabs.pingogram.navigation.ChatToShow
@@ -147,6 +148,7 @@ internal fun ChatsListDetail(
     onOpenScheduledMessages: (chatId: Long) -> Unit = {},
     headerActions: ChatListHeaderActions? = null,
     onOpenTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, _ -> onOpenChat(chatId, null) },
+    onForward: (chatId: Long, messageIds: List<Long>) -> Unit = { _, _ -> },
 ) {
     val navigator = rememberChatsPaneNavigator(chatsPaneScaffoldDirective(currentWindowAdaptiveInfoV2()))
     FollowScaffoldDirective(navigator)
@@ -161,8 +163,16 @@ internal fun ChatsListDetail(
     val listVisible = value[ListDetailPaneScaffoldRole.List] != PaneAdaptedValue.Hidden
     val detailVisible = value[ListDetailPaneScaffoldRole.Detail] != PaneAdaptedValue.Hidden
     val extraVisible = value[ListDetailPaneScaffoldRole.Extra] != PaneAdaptedValue.Hidden
-    // The conversation shows alone in the floating navigation bar's window, like a pushed one, and so does search.
-    HideNavigationBar(hidden = !listVisible || (search.isDocked && !twoPanes))
+    // The Channel feed docks in the list pane on two panes, as search does; the Feed tab opens it there.
+    var feedDocked by rememberSaveable { mutableStateOf(false) }
+    val listActions =
+        remember(
+            headerActions,
+            twoPanes,
+        ) { if (twoPanes) headerActions?.withOpenFeed { feedDocked = true } else headerActions }
+    // The conversation shows alone in the floating navigation bar's window, like a pushed one, and so do search and
+    // the docked feed.
+    HideNavigationBar(hidden = !listVisible || ((search.isDocked || feedDocked) && !twoPanes))
     val opener =
         rememberPaneOpener(navigator, scope, twoPanes, threePanes = partitions > 2) {
             PaneCallbacks(onOpenChat, onOpenProfile, onOpenChatInfo, onOpenTopic)
@@ -195,22 +205,37 @@ internal fun ChatsListDetail(
                             twoPanes = twoPanes,
                             searchBackEnabled = !navigator.canNavigateBack(BACK_BEHAVIOR),
                         ) {
-                            ChatListPane(
-                                onOpenArchive = onOpenArchive,
-                                onOpenChat = { keyboard.opening(it, twoPanes) { opener.openChat(it) } },
-                                onOpenNewChat = onOpenNewChat,
-                                onOpenStory = onOpenStory,
-                                onNewStory = onNewStory,
-                                openChatId = shownChatId,
-                                onEditFolder = onEditFolder,
-                                headerActions = headerActions,
-                                onOpenMessage = { chatId, messageId ->
-                                    keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                            DockedFeedOrList(
+                                docked = feedDocked,
+                                backEnabled = !navigator.canNavigateBack(BACK_BEHAVIOR),
+                                onClose = { feedDocked = false },
+                                feed = {
+                                    FeedPane(
+                                        onBack = { feedDocked = false },
+                                        onOpenPost = { chatId, messageId ->
+                                            keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                                        },
+                                        onForward = onForward,
+                                    )
                                 },
-                                onOpenTopic = { chatId, topicId ->
-                                    keyboard.opening(chatId, twoPanes) { opener.open(chatId, topicId = topicId) }
-                                },
-                            )
+                            ) {
+                                ChatListPane(
+                                    onOpenArchive = onOpenArchive,
+                                    onOpenChat = { keyboard.opening(it, twoPanes) { opener.openChat(it) } },
+                                    onOpenNewChat = onOpenNewChat,
+                                    onOpenStory = onOpenStory,
+                                    onNewStory = onNewStory,
+                                    openChatId = shownChatId,
+                                    onEditFolder = onEditFolder,
+                                    headerActions = listActions,
+                                    onOpenMessage = { chatId, messageId ->
+                                        keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                                    },
+                                    onOpenTopic = { chatId, topicId ->
+                                        keyboard.opening(chatId, twoPanes) { opener.open(chatId, topicId = topicId) }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
