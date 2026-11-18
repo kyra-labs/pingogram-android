@@ -170,7 +170,7 @@ The owner's decision of 2026-11-17 (`REQUIREMENTS.md` §5.10, ADR 0039):
 - [ ] Snippets (FR-X2)
 - [ ] Add to calendar, open in maps (FR-X3)
 - [ ] Skip silence in voice and round video messages (FR-X4)
-- [ ] Channel feed (FR-X5), once the owner's design board exists
+- [ ] Channel feed (FR-X5)
 
 ## Backlog (unscheduled)
 
