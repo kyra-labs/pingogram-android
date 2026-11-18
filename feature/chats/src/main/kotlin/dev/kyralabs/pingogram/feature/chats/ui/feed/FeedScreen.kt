@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -30,7 +31,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -74,12 +79,16 @@ internal fun FeedScreen(
     modifier: Modifier = Modifier,
     snackbars: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    var filtering by rememberSaveable { mutableStateOf(false) }
+    if (filtering) {
+        FeedFilterSheet(state.channels, state.filter, onEvent, onDismiss = { filtering = false })
+    }
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },
         // The top bar's container; the list sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { FeedTopBar(state, onBack) },
+        topBar = { FeedTopBar(state, onBack, onFilter = { filtering = true }) },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             val body = Modifier.fillMaxSize().padding(contentPadding)
@@ -106,6 +115,7 @@ internal fun FeedScreen(
 private fun FeedTopBar(
     state: FeedUiState,
     onBack: () -> Unit,
+    onFilter: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -128,6 +138,12 @@ private fun FeedTopBar(
         navigationIcon = {
             IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(painterResource(UiR.drawable.ic_arrow_back), stringResource(R.string.feed_back))
+            }
+        },
+        actions = {
+            // The board's tonal square: the filter on a tonal button with medium corners.
+            FilledTonalIconButton(onClick = onFilter, shape = MaterialTheme.shapes.medium) {
+                Icon(painterResource(UiR.drawable.ic_filter_list), stringResource(R.string.feed_filter))
             }
         },
         colors =

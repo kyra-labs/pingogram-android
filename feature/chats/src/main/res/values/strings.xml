@@ -370,6 +370,27 @@
     <string name="feed_action_mark_read">Mark as read</string>
     <!-- Telegram marks a whole chat unread, never one post: this marks the post's channel. -->
     <string name="feed_action_mark_channel_unread">Mark channel as unread</string>
+    <!-- The feed's filter: its top bar button and its sheet (REQUIREMENTS.md FR-X5). -->
+    <string name="feed_filter">Filter</string>
+    <string name="feed_filter_reset">Reset</string>
+    <!-- A segment of the filter sheet: every followed channel, and how many. -->
+    <string name="feed_filter_all">All channels · %1$d</string>
+    <!-- A segment of the filter sheet: the channels chosen below, and how many. -->
+    <string name="feed_filter_chosen">Chosen · %1$d</string>
+    <string name="feed_filter_only_unread">Only unread</string>
+    <string name="feed_filter_mark_all">Mark all as read</string>
+    <!-- The filter sheet's button that applies it: how many posts the feed will then show. -->
+    <plurals name="feed_filter_show">
+        <item quantity="one">Show %1$d post</item>
+        <item quantity="other">Show %1$d posts</item>
+    </plurals>
+    <!-- Asked before marking this many unread posts as read. -->
+    <plurals name="feed_mark_all_title">
+        <item quantity="one">Mark %1$d post as read?</item>
+        <item quantity="other">Mark %1$d posts as read?</item>
+    </plurals>
+    <string name="feed_mark_all_body">They\'re marked as read in their channels too.</string>
+    <string name="feed_mark_all_cancel">Cancel</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>

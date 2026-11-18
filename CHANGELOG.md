@@ -26,6 +26,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
 - In the Feed, a long press on a post forwards it, copies its link, bookmarks it on this phone, or marks it as read
   (or its channel as unread).
+- The Feed's filter shows all channels or only those you choose, and only unread posts if you like; "Mark all as
+  read" reads them in their channels, asking first when that is 20 posts or more.
 - Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
 - Voice and round video messages play faster: while one plays, its speed chip goes from 1× to 1.5× and 2×, and the
   speed is remembered for the next ones.
