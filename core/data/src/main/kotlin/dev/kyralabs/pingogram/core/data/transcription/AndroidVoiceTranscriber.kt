@@ -54,7 +54,8 @@ import kotlin.coroutines.resume
  *   when the recognizer says the language is not available (`ERROR_LANGUAGE_NOT_SUPPORTED`,
  *   `ERROR_LANGUAGE_UNAVAILABLE`).
  * - **Threads**: the recognizer is made, used and destroyed on the main thread, as it asks; it waits at most twice the
- *   audio's length, and at least [MIN_TIMEOUT_MILLIS].
+ *   audio's length, and at least [MIN_TIMEOUT_MILLIS]. One recognizer checks the languages and transcribes: destroying
+ *   one unbinds the recognition service, which cancels a session another recognizer has just started.
  *
  * Neither the audio nor the text is logged.
  */
@@ -92,19 +93,35 @@ class AndroidVoiceTranscriber internal constructor(
     private suspend fun transcribeOnDevice(
         path: String,
         durationSeconds: Int,
-    ): TranscriptionResult {
-        val language =
-            languageFor(languages()?.ready.orEmpty(), preferredLanguages())
-                ?: return TranscriptionResult.LanguageUnavailable
-        val timeout = maxOf(MIN_TIMEOUT_MILLIS, durationSeconds * MILLIS_PER_SECOND * 2L)
-        return withTimeoutOrNull(timeout) { recognize(path, language) } ?: TranscriptionResult.Failed
-    }
+    ): TranscriptionResult =
+        withRecognizer { recognizer ->
+            val ready = withTimeoutOrNull(SUPPORT_TIMEOUT_MILLIS) { checkSupport(recognizer) }?.ready.orEmpty()
+            val language = languageFor(ready, preferredLanguages())
+            if (language == null) {
+                TranscriptionResult.LanguageUnavailable
+            } else {
+                val timeout = maxOf(MIN_TIMEOUT_MILLIS, durationSeconds * MILLIS_PER_SECOND * 2L)
+                withTimeoutOrNull(timeout) { recognize(recognizer, path, language) } ?: TranscriptionResult.Failed
+            }
+        }
 
     override suspend fun languages(): TranscriptionLanguages? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && isAvailable) {
-            withTimeoutOrNull(SUPPORT_TIMEOUT_MILLIS) { checkSupport() }
+            withTimeoutOrNull(SUPPORT_TIMEOUT_MILLIS) { withRecognizer(::checkSupport) }
         } else {
             null
+        }
+
+    /** Runs [block] on the main thread with an on-device recognizer, destroyed after it. */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private suspend fun <T> withRecognizer(block: suspend (SpeechRecognizer) -> T): T =
+        withContext(Dispatchers.Main) {
+            val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+            try {
+                block(recognizer)
+            } finally {
+                recognizer.destroy()
+            }
         }
 
     private fun holdsMicrophonePermission(): Boolean =
@@ -118,42 +135,36 @@ class AndroidVoiceTranscriber internal constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private suspend fun checkSupport(): TranscriptionLanguages? =
-        withContext(Dispatchers.Main) {
-            val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-            try {
-                suspendCancellableCoroutine { continuation ->
-                    recognizer.checkRecognitionSupport(
-                        recognitionIntent(language = null),
-                        MainExecutor,
-                        object : RecognitionSupportCallback {
-                            override fun onSupportResult(support: RecognitionSupport) {
-                                continuation.resume(
-                                    TranscriptionLanguages(
-                                        ready = support.installedOnDeviceLanguages,
-                                        downloading = support.pendingOnDeviceLanguages,
-                                        notDownloaded =
-                                            support.supportedOnDeviceLanguages -
-                                                support.installedOnDeviceLanguages.toSet() -
-                                                support.pendingOnDeviceLanguages.toSet(),
-                                    ),
-                                )
-                            }
+    private suspend fun checkSupport(recognizer: SpeechRecognizer): TranscriptionLanguages? =
+        suspendCancellableCoroutine { continuation ->
+            recognizer.checkRecognitionSupport(
+                recognitionIntent(language = null),
+                MainExecutor,
+                object : RecognitionSupportCallback {
+                    override fun onSupportResult(support: RecognitionSupport) {
+                        continuation.resume(
+                            TranscriptionLanguages(
+                                ready = support.installedOnDeviceLanguages,
+                                downloading = support.pendingOnDeviceLanguages,
+                                notDownloaded =
+                                    support.supportedOnDeviceLanguages -
+                                        support.installedOnDeviceLanguages.toSet() -
+                                        support.pendingOnDeviceLanguages.toSet(),
+                            ),
+                        )
+                    }
 
-                            override fun onError(error: Int) {
-                                continuation.resume(null)
-                            }
-                        },
-                    )
-                }
-            } finally {
-                recognizer.destroy()
-            }
+                    override fun onError(error: Int) {
+                        continuation.resume(null)
+                    }
+                },
+            )
         }
 
-    /** Decodes [path] into a pipe while the recognizer reads it, in [language]. */
+    /** Decodes [path] into a pipe while [recognizer], on the main thread, reads it in [language]. */
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun recognize(
+        recognizer: SpeechRecognizer,
         path: String,
         language: String,
     ): TranscriptionResult =
@@ -162,7 +173,7 @@ class AndroidVoiceTranscriber internal constructor(
             val writer =
                 launch(io) { decoder.decode(path, ParcelFileDescriptor.AutoCloseOutputStream(sink)) }
             try {
-                withContext(Dispatchers.Main) { listen(source, language) }
+                listen(recognizer, source, language)
             } finally {
                 // Closing the read end ends a write still waiting for the recognizer to read.
                 source.close()
@@ -172,61 +183,56 @@ class AndroidVoiceTranscriber internal constructor(
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun listen(
+        recognizer: SpeechRecognizer,
         source: ParcelFileDescriptor,
         language: String,
-    ): TranscriptionResult {
-        val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-        return try {
-            suspendCancellableCoroutine { continuation ->
-                val segments = mutableListOf<String>()
+    ): TranscriptionResult =
+        suspendCancellableCoroutine { continuation ->
+            val segments = mutableListOf<String>()
 
-                fun finish(result: TranscriptionResult) {
-                    if (continuation.isActive) continuation.resume(result)
-                }
-
-                recognizer.setRecognitionListener(
-                    object : RecognitionListener {
-                        override fun onSegmentResults(segmentResults: Bundle) {
-                            segmentResults.bestResult()?.let(segments::add)
-                        }
-
-                        override fun onEndOfSegmentedSession() {
-                            finish(TranscriptionResult.Recognized(segments.joinTranscript()))
-                        }
-
-                        override fun onResults(results: Bundle) {
-                            results.bestResult()?.let(segments::add)
-                            finish(TranscriptionResult.Recognized(segments.joinTranscript()))
-                        }
-
-                        override fun onError(error: Int) {
-                            finish(resultOf(error, segments))
-                        }
-
-                        override fun onPartialResults(partialResults: Bundle?) = Unit
-
-                        override fun onReadyForSpeech(params: Bundle?) = Unit
-
-                        override fun onBeginningOfSpeech() = Unit
-
-                        override fun onRmsChanged(rmsdB: Float) = Unit
-
-                        override fun onBufferReceived(buffer: ByteArray?) = Unit
-
-                        override fun onEndOfSpeech() = Unit
-
-                        override fun onEvent(
-                            eventType: Int,
-                            params: Bundle?,
-                        ) = Unit
-                    },
-                )
-                recognizer.startListening(recognitionIntent(language, source))
+            fun finish(result: TranscriptionResult) {
+                if (continuation.isActive) continuation.resume(result)
             }
-        } finally {
-            recognizer.destroy()
+
+            recognizer.setRecognitionListener(
+                object : RecognitionListener {
+                    override fun onSegmentResults(segmentResults: Bundle) {
+                        segmentResults.bestResult()?.let(segments::add)
+                    }
+
+                    override fun onEndOfSegmentedSession() {
+                        finish(TranscriptionResult.Recognized(segments.joinTranscript()))
+                    }
+
+                    override fun onResults(results: Bundle) {
+                        results.bestResult()?.let(segments::add)
+                        finish(TranscriptionResult.Recognized(segments.joinTranscript()))
+                    }
+
+                    override fun onError(error: Int) {
+                        finish(resultOf(error, segments))
+                    }
+
+                    override fun onPartialResults(partialResults: Bundle?) = Unit
+
+                    override fun onReadyForSpeech(params: Bundle?) = Unit
+
+                    override fun onBeginningOfSpeech() = Unit
+
+                    override fun onRmsChanged(rmsdB: Float) = Unit
+
+                    override fun onBufferReceived(buffer: ByteArray?) = Unit
+
+                    override fun onEndOfSpeech() = Unit
+
+                    override fun onEvent(
+                        eventType: Int,
+                        params: Bundle?,
+                    ) = Unit
+                },
+            )
+            recognizer.startListening(recognitionIntent(language, source))
         }
-    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun recognitionIntent(
