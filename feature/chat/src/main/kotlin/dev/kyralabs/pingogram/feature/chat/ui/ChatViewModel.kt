@@ -50,6 +50,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GiveawayRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -388,6 +389,7 @@ class ChatViewModel internal constructor(
     transcriptionRepositories: TranscriptionRepositories? = null,
     places: ChatPlaces = ChatPlaces(),
     private val textFinder: DeviceTextFinder? = null,
+    playbackSettings: PlaybackSettingsRepository,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -434,6 +436,7 @@ class ChatViewModel internal constructor(
         transcriptionRepositories: TranscriptionRepositories,
         places: ChatPlaces,
         textFinder: DeviceTextFinder,
+        playbackSettings: PlaybackSettingsRepository,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -486,6 +489,7 @@ class ChatViewModel internal constructor(
         transcriptionRepositories = transcriptionRepositories,
         places = places,
         textFinder = textFinder,
+        playbackSettings = playbackSettings,
     )
 
     /**
@@ -578,6 +582,7 @@ class ChatViewModel internal constructor(
         ChatPlayback(
             player = audioPlayer,
             files = fileRepository,
+            settings = playbackSettings,
             scope = viewModelScope,
             history = { messageRepository.history(chatId).first() },
             onError = { effectChannel.trySend(ChatEffect.ShowError(it)) },
@@ -1418,6 +1423,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
             is ChatEvent.Forward -> messageActions.forward(event.messageId)
             is ChatEvent.OpenNextChannel -> nextChannels.open(event.chatId)
+            ChatEvent.ChangePlaybackSpeed -> playback.changeSpeed()
             is ForwardEvent -> forwarding.onEvent(event)
             else -> onAttachEvent(event)
         }

@@ -10,6 +10,8 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioKind
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
@@ -19,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
@@ -38,15 +41,20 @@ import kotlinx.coroutines.launch
  * - **Progress**: while playing, the position goes into snapshot state every [TICK_MILLIS], which [Playback.progress]
  *   reads. Only the playing message's waveform or progress bar reads it, in the draw phase, so a tick neither changes
  *   [state] nor recomposes anything. Nothing ticks while paused: this is a UI ticker during playback, not polling.
+ * - **Speed** ([changeSpeed], `REQUIREMENTS.md` FR-X4): voice and round video messages play at the speed remembered
+ *   for the app ([PlaybackSettingsRepository.playbackSpeed]), read as each one starts; changing it changes what plays
+ *   at once and is saved for whatever plays next. Songs play at 1×.
  * - [pause] when the screen stops, as nothing plays in the background; [release] when the view model is cleared.
  *
- * Main thread only, like the player. A failed download goes to [onError]; a file the player cannot play to
+ * Main thread only, like the player. A failed download or speed not saved goes to [onError]; a file the player cannot
+ * play to
  * [onPlaybackFailed], logged without user data.
  */
-@Suppress("LongParameterList") // The player, where files and messages come from, and where failures go.
+@Suppress("LongParameterList") // The player, where files, messages and the speed come from, and where failures go.
 internal class ChatPlayback(
     private val player: AudioPlayer,
     private val files: FileRepository,
+    private val settings: PlaybackSettingsRepository,
     private val scope: CoroutineScope,
     private val history: suspend () -> ChatHistory,
     private val onError: (DomainError) -> Unit,
@@ -60,6 +68,17 @@ internal class ChatPlayback(
 
     private var session: Session? = null
     private var ticker: Job? = null
+
+    /** The speed speech plays at: the remembered one, once something played; the player has it too. */
+    private var speed = PlaybackSpeed.Normal
+        set(speed) {
+            field = speed
+            player.speed = speed.factor
+            publish()
+        }
+
+    /** Saving the speed last changed, which the next message waits for, so it reads the speed saved. */
+    private var savingSpeed: Job? = null
 
     /** What the player does by itself: pause or play on, reach the end, fail. */
     private val listener =
@@ -99,10 +118,28 @@ internal class ChatPlayback(
     fun playPause(messageId: Long) {
         val current = session
         when {
-            current == null || current.messageId != messageId -> start(messageId, startFraction = 0f)
-            current.isPlaying -> pause()
-            else -> resume(current)
+            current == null || current.messageId != messageId -> {
+                start(messageId, startFraction = 0f)
+            }
+
+            current.isPlaying -> {
+                pause()
+            }
+
+            current.media != null -> {
+                player.resume()
+                current.isPlaying = true
+                startTicker(current)
+                publish()
+            }
         }
+    }
+
+    /** Plays speech at the next speed (1×, 1.5×, 2×, then 1× again), now and from now on, saved for the app. */
+    fun changeSpeed() {
+        val next = speed.next
+        speed = next
+        savingSpeed = scope.launch { settings.setPlaybackSpeed(next).onFailure(onError) }
     }
 
     /**
@@ -163,6 +200,8 @@ internal class ChatPlayback(
         publish()
         session.preparing =
             scope.launch {
+                savingSpeed?.join()
+                settings.playbackSpeed.first().let { if (it != speed) speed = it }
                 val media =
                     history()
                         .messages
@@ -179,14 +218,6 @@ internal class ChatPlayback(
                 player.play(file.path, media.kind, (session.progress.floatValue * media.durationMillis).toLong())
                 startTicker(session)
             }
-    }
-
-    private fun resume(current: Session) {
-        if (current.media == null) return
-        player.resume()
-        current.isPlaying = true
-        startTicker(current)
-        publish()
     }
 
     /** Ends the session: stops waiting for its file, the ticker, and the player. */
@@ -218,7 +249,8 @@ internal class ChatPlayback(
     }
 
     private fun publish() {
-        mutableState.value = session?.let { MessagePlayback(it.messageId, Playback(it.isPlaying, it.readProgress)) }
+        mutableState.value =
+            session?.let { MessagePlayback(it.messageId, Playback(it.isPlaying, it.readProgress, speed = speed)) }
     }
 
     private companion object {

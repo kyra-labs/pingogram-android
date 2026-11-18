@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
@@ -24,8 +25,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * Voice messages and songs playing in [ChatViewModel] ([ChatPlayback]) on a fake player: one at a time, downloading
- * first, the next voice message after one ends, the progress ticking without re-emitting the state, and the player
- * following the screen's lifecycle.
+ * first, the next voice message after one ends, the progress ticking without re-emitting the state, the speed, and the
+ * player following the screen's lifecycle.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatPlaybackTest : ChatViewModelHarness() {
@@ -439,6 +440,68 @@ class ChatPlaybackTest : ChatViewModelHarness() {
             runCurrent()
 
             assertNull(viewModel.playback?.takeIf { it.messageId == 2L })
+        }
+
+    // Speed
+
+    @Test
+    fun `a voice message plays at the speed remembered for the app, which its chip shows`() =
+        runViewModelTest {
+            playbackSettings.playbackSpeed.value = PlaybackSpeed.Fastest
+            val viewModel = chatWithAudio()
+
+            send(viewModel, play(1))
+
+            assertEquals(2f, player.speed)
+            assertEquals(PlaybackSpeed.Fastest, viewModel.playback?.playback?.speed)
+        }
+
+    @Test
+    fun `the speed chip goes from 1x to 1_5x to 2x and back, at once and remembered for the app`() =
+        runViewModelTest {
+            val viewModel = chatWithRoundVideo()
+            send(viewModel, play(2))
+
+            val speeds =
+                List(3) {
+                    send(viewModel, ChatEvent.ChangePlaybackSpeed)
+                    Triple(player.speed, viewModel.playback?.playback?.speed, playbackSettings.playbackSpeed.value)
+                }
+
+            assertEquals(
+                listOf(
+                    Triple(1.5f, PlaybackSpeed.Faster, PlaybackSpeed.Faster),
+                    Triple(2f, PlaybackSpeed.Fastest, PlaybackSpeed.Fastest),
+                    Triple(1f, PlaybackSpeed.Normal, PlaybackSpeed.Normal),
+                ),
+                speeds,
+            )
+        }
+
+    @Test
+    fun `the speed changed plays the next message too`() =
+        runViewModelTest {
+            val viewModel = chatWithRoundVideo()
+            send(viewModel, play(2), ChatEvent.ChangePlaybackSpeed)
+
+            send(viewModel, play(1))
+
+            assertEquals(1L, viewModel.playback?.messageId)
+            assertEquals(PlaybackSpeed.Faster, viewModel.playback?.playback?.speed)
+            assertEquals(1.5f, player.speed)
+        }
+
+    @Test
+    fun `a speed that cannot be saved shows the error`() =
+        runViewModelTest {
+            val viewModel = chatWithAudio()
+            send(viewModel, play(1))
+            playbackSettings.failure = DomainError.Unknown(code = 0, message = "disk full")
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.ChangePlaybackSpeed)
+                assertEquals(ChatEffect.ShowError(DomainError.Unknown(code = 0, message = "disk full")), awaitItem())
+            }
         }
 
     private companion object {

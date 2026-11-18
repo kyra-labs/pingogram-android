@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -136,7 +137,11 @@ internal val ContentSamples: List<ContentSample> =
                 content = ContentPreviewData.voiceNote(isListened = true),
                 fileState = null,
                 playback =
-                    Playback(isPlaying = !outgoing, progress = { if (outgoing) PAUSED_PROGRESS else PLAYING_PROGRESS }),
+                    Playback(
+                        isPlaying = !outgoing,
+                        progress = { if (outgoing) PAUSED_PROGRESS else PLAYING_PROGRESS },
+                        speed = if (outgoing) PlaybackSpeed.Normal else PlaybackSpeed.Faster,
+                    ),
                 onPlayPause = {},
                 onSeek = {},
                 colors = colors,

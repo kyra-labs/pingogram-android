@@ -36,7 +36,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   for a minute and more. The part played ([Playback.progress]) is in the bubble's accent, read in the draw phase, so
  *   playing never recomposes per frame; tapping or dragging it seeks ([onSeek]).
  * - **Time**: the length, or "0:12 / 0:42" once playing started; it recomposes once a second at most
- *   ([playedSeconds]). A dot in the accent follows it while nobody has listened to the message yet.
+ *   ([playedSeconds]). A dot in the accent follows it while nobody has listened to the message yet, and the
+ *   [SpeedChip] in the bubble's block colors while the message is in the player ([onChangeSpeed]).
  * - **Download**: while [fileState] is [FileState.Downloading], a determinate wavy ring runs around the button.
  *
  * - **Transcript** ([transcription], `docs/DESIGN_SYSTEM.md` §6 "Voice message transcription"): the Transcribe button
@@ -48,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param fileState the voice file's state, from `FileRepository`; null while unknown.
  * @param playback whether this message plays and how far, from the ViewModel's player.
  * @param onSeek called with the fraction (0–1) to play from.
+ * @param onChangeSpeed called when the speed chip is tapped: speech plays at the next speed.
  * @param colors the bubble's colors, `MaterialTheme.pingogramColors.incomingBubble` or `outgoingBubble`.
  */
 @Composable
@@ -58,6 +60,7 @@ internal fun MessageVoiceNote(
     onPlayPause: () -> Unit,
     onSeek: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    onChangeSpeed: () -> Unit = {},
     colors: BubbleColors = MaterialTheme.pingogramColors.incomingBubble,
     transcription: MessageTranscription? = null,
 ) {
@@ -72,19 +75,20 @@ internal fun MessageVoiceNote(
                 colors = colors,
                 onClick = onPlayPause,
             )
-            WaveformAndTime(content, playback, onSeek, colors)
+            WaveformAndTime(content, playback, onSeek, onChangeSpeed, colors)
             if (transcription?.showsButton == true) TranscribeButton(transcription, colors)
         }
         transcription?.let { TranscriptBlock(it, colors) }
     }
 }
 
-/** The [Waveform], which seeks, over the time and the dot of a message nobody listened to yet. */
+/** The [Waveform], which seeks, over the time, the dot of a message nobody listened to yet and the speed chip. */
 @Composable
 private fun WaveformAndTime(
     content: MessageContent.VoiceNote,
     playback: Playback,
     onSeek: (Float) -> Unit,
+    onChangeSpeed: () -> Unit,
     colors: BubbleColors,
 ) {
     val voiceNote = content.voiceNote
@@ -121,12 +125,18 @@ private fun WaveformAndTime(
                 },
         )
         Row(
-            modifier = Modifier.clearAndSetSemantics {},
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = time, color = colors.content, maxLines = 1, style = MaterialTheme.typography.labelSmall)
-            if (!content.isListened) Badge(containerColor = colors.accent)
+            Row(
+                modifier = Modifier.clearAndSetSemantics {},
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = time, color = colors.content, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+                if (!content.isListened) Badge(containerColor = colors.accent)
+            }
+            SpeedChip(playback.inPlayer, playback.speed, onChangeSpeed, colors.block, colors.blockContent)
         }
     }
 }

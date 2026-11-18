@@ -40,6 +40,14 @@ interface AudioPlayer {
         get() = null
         set(_) {}
 
+    /**
+     * How fast speech plays (voice and round video messages), as a factor of its own speed: what plays now at once,
+     * and what plays next. Music always plays at 1×.
+     */
+    var speed: Float
+        get() = 1f
+        set(_) {}
+
     /** Stops and empties the player; it can [play] again. */
     fun stop()
 

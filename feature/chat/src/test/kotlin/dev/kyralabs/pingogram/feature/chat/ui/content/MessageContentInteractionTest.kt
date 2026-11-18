@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chat.ui.content
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
 import org.junit.Assert.assertEquals
@@ -76,6 +79,52 @@ class MessageContentInteractionTest {
     }
 
     @Test
+    fun `the speed chip of a voice message in the player reads its speed and changes it`() {
+        setContent { VoiceNoteUnderTest(isPlaying = true, speed = PlaybackSpeed.Faster) }
+
+        composeRule
+            .onNode(hasContentDescription("Playback speed, 1.5 times") and hasClickAction())
+            .assert(
+                SemanticsMatcher("its action is \"Change speed\"") {
+                    it.config[SemanticsActions.OnClick].label == "Change speed"
+                },
+            ).performClick()
+
+        assertEquals(listOf("changeSpeed"), calls)
+    }
+
+    @Test
+    fun `a round video message in the player has its own speed chip`() {
+        setContent {
+            MessageVideoNote(
+                content = ContentPreviewData.videoNote(minithumbnail = null, isViewed = true),
+                onPlayPause = { calls += "playPause" },
+                onChangeSpeed = { calls += "changeSpeed" },
+                playback = Playback(isPlaying = true, progress = { 0f }),
+            )
+        }
+
+        composeRule.onNode(hasContentDescription("Playback speed, normal") and hasClickAction()).performClick()
+
+        assertEquals(listOf("changeSpeed"), calls)
+    }
+
+    @Test
+    fun `a voice message out of the player has no speed chip`() {
+        setContent {
+            MessageVoiceNote(
+                content = ContentPreviewData.voiceNote(isListened = true),
+                fileState = null,
+                playback = Playback.Stopped,
+                onPlayPause = {},
+                onSeek = {},
+            )
+        }
+
+        composeRule.onNode(hasContentDescription("Playback speed", substring = true)).assertDoesNotExist()
+    }
+
+    @Test
     fun `a file that is not downloaded can be downloaded`() {
         setContent { DocumentUnderTest(FileState.NotDownloaded(size = 0, canBeDownloaded = true)) }
 
@@ -103,13 +152,17 @@ class MessageContentInteractionTest {
     }
 
     @Composable
-    private fun VoiceNoteUnderTest(isPlaying: Boolean) {
+    private fun VoiceNoteUnderTest(
+        isPlaying: Boolean,
+        speed: PlaybackSpeed = PlaybackSpeed.Normal,
+    ) {
         MessageVoiceNote(
             content = ContentPreviewData.voiceNote(isListened = true),
             fileState = null,
-            playback = Playback(isPlaying = isPlaying, progress = { 0f }),
+            playback = Playback(isPlaying = isPlaying, progress = { 0f }, speed = speed),
             onPlayPause = { calls += "playPause" },
             onSeek = { calls += "seek $it" },
+            onChangeSpeed = { calls += "changeSpeed" },
         )
     }
 

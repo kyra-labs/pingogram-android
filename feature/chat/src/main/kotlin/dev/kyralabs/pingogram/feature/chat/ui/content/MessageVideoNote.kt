@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.util.lerp
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -54,8 +55,8 @@ internal val LocalVideoNoteSurface = staticCompositionLocalOf<((Surface?) -> Uni
  * A tap ([onPlayPause]) plays it with sound in its circle, through the voice messages' player ([playback]): the circle
  * grows to the bubble's full width on the expressive spatial spring, in the layout phase, its picture on the player's
  * surface ([LocalVideoNoteSurface]), with a progress ring around it read in the draw phase; another tap pauses, and at
- * its end it shrinks back. Screen readers hear "Round video message, 0:12", and "Playing" or "Paused" when that
- * changes, never the progress.
+ * its end it shrinks back. While it is in the player, the [SpeedChip] ([onChangeSpeed]) takes its length's place.
+ * Screen readers hear "Round video message, 0:12", and "Playing" or "Paused" when that changes, never the progress.
  *
  * Where the device can transcribe ([transcription]), the Transcribe button sits on the circle's top end; the
  * transcript shows in a bubble under it (`VideoNoteTranscript`).
@@ -65,6 +66,7 @@ internal fun MessageVideoNote(
     content: MessageContent.VideoNote,
     onPlayPause: () -> Unit,
     modifier: Modifier = Modifier,
+    onChangeSpeed: () -> Unit = {},
     transcription: MessageTranscription? = null,
     playback: Playback = Playback.Stopped,
 ) {
@@ -108,7 +110,7 @@ internal fun MessageVideoNote(
                 modifier = Modifier.matchParentSize(),
             )
             if (playback.inPlayer) VideoNoteSurface(Modifier.matchParentSize())
-            VideoNoteOverlay(playback, duration, isViewed = content.isViewed)
+            VideoNoteOverlay(playback, duration, isViewed = content.isViewed, onChangeSpeed)
         }
         // The Transcribe button on the circle's top end, clear of the time at its bottom end (board 28c).
         if (transcription?.showsButton == true) {
@@ -134,12 +136,16 @@ private fun videoNoteDescription(
     return if (isViewed) description else stringResource(R.string.content_kind_and_details, description, notPlayed)
 }
 
-/** Over the circle: the play badge unless it plays, and its length with the unwatched dot at rest. */
+/**
+ * Over the circle: the play badge unless it plays, and its length with the unwatched dot at rest, or the speed chip
+ * while it is in the player.
+ */
 @Composable
 private fun BoxScope.VideoNoteOverlay(
     playback: Playback,
     duration: String,
     isViewed: Boolean,
+    onChangeSpeed: () -> Unit,
 ) {
     Box(Modifier.matchParentSize().clearAndSetSemantics {}) {
         if (!playback.isPlaying) PlayBadge(Modifier.align(Alignment.Center))
@@ -151,6 +157,14 @@ private fun BoxScope.VideoNoteOverlay(
             )
         }
     }
+    SpeedChip(
+        visible = playback.inPlayer,
+        speed = playback.speed,
+        onChange = onChangeSpeed,
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = MaterialTheme.spacing.large),
+    )
 }
 
 /**
@@ -220,7 +234,9 @@ private fun RoundVideoIdlePreview() {
 @PingogramPreviews
 @Composable
 private fun RoundVideoPlayingPreview() {
-    PingogramPreview { RoundVideoSample(Playback(isPlaying = true, progress = { PLAYING_PROGRESS })) }
+    PingogramPreview {
+        RoundVideoSample(Playback(isPlaying = true, progress = { PLAYING_PROGRESS }, speed = PlaybackSpeed.Faster))
+    }
 }
 
 @PingogramPreviews

@@ -2,20 +2,22 @@ package dev.kyralabs.pingogram.feature.chat.ui.player
 
 /**
  * Where a file plays, as the player last reported it: at [positionMillis] at [atMillis] (`SystemClock.elapsedRealtime`
- * time), moving on in real time while [advancing], up to [durationMillis] when the player knows it. The main thread
- * reads the position from this instead of asking the player, which runs on a thread of its own ([ExoAudioPlayer]), as
- * media sessions publish a position and the time it was taken.
+ * time), moving on at [speed] times real time while [advancing], up to [durationMillis] when the player knows it. The
+ * main thread
+ * reads the position from this instead of asking the player, which runs on a thread of its own ([ExoAudioPlayer]),
+ * as media sessions publish a position, the time it was taken and the speed.
  */
 internal data class PlaybackClock(
     val positionMillis: Long,
     val advancing: Boolean,
     val atMillis: Long,
     val durationMillis: Long?,
+    val speed: Float = 1f,
 ) {
     /** The position at [nowMillis]. */
     fun positionAt(nowMillis: Long): Long {
         if (!advancing) return positionMillis
-        val position = positionMillis + (nowMillis - atMillis).coerceAtLeast(0)
+        val position = positionMillis + ((nowMillis - atMillis).coerceAtLeast(0) * speed).toLong()
         return durationMillis?.let { position.coerceAtMost(it) } ?: position
     }
 

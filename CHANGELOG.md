@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Mentions & replies: a page, opened from the Chats tab's header, of the messages that mention you or reply to
   you, unread ones first; each opens its chat at the message.
 - Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
+- Voice and round video messages play faster: while one plays, its speed chip goes from 1× to 1.5× and 2×, and the
+  speed is remembered for the next ones.
 - A message's actions offer "Add to calendar" for a date or time in its text, opening your calendar with the event
   filled in, and "Open in maps" for an address. Your phone finds them on its own; nothing is sent anywhere.
 - On a forum's row in the chat list, a tap on a topic it names (the newest topic's tab, or a name after it) opens that
