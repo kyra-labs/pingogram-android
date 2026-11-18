@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.bot.SlashSources
 import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
@@ -113,7 +115,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 threadRepositories = threadRepositories(),
                 shareInbox = ShareInbox(),
                 botButtonRepository = FakeBotButtonRepository(),
-                botInfoRepository = FakeBotInfoRepository(),
+                slashSources = SlashSources(FakeBotInfoRepository(), FakeSnippetRepository()),
                 botStartInbox = BotStartInbox(),
                 inlineBotRepositories = inlineBotRepositories(),
                 translationRepositories = translationRepositories(),

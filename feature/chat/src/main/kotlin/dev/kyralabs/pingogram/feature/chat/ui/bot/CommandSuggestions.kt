@@ -76,7 +76,8 @@ internal fun CommandSuggestionsArea(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val suggestions = bots.suggestions.takeIf { enabled }
+    // Snippets alone show once their rows do (REQUIREMENTS.md FR-X2).
+    val suggestions = bots.suggestions.takeIf { enabled && it?.commands?.isNotEmpty() == true }
     val onSend = bots.onSendCommand
     val onInsert = bots.onInsertCommand
     var shown by remember { mutableStateOf(suggestions) }

@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.bot.SlashSources
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
 import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
@@ -115,6 +117,7 @@ abstract class ChatViewModelHarness {
     internal val pinnedJumps = PinnedJumps()
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
+    protected val snippets = FakeSnippetRepository()
     protected val botStarts = BotStartInbox()
     protected val inlineBots = FakeInlineBotRepository()
     internal val deviceLocation = FakeDeviceLocationRepository()
@@ -195,7 +198,7 @@ abstract class ChatViewModelHarness {
                 threadRepositories = threadRepositories(),
                 shareInbox = shareInbox,
                 botButtonRepository = botButtons,
-                botInfoRepository = bots,
+                slashSources = SlashSources(bots, snippets),
                 botStartInbox = botStarts,
                 inlineBotRepositories = InlineBotRepositories(inlineBots, deviceLocation, locationConsent, botStarts),
                 translationRepositories =

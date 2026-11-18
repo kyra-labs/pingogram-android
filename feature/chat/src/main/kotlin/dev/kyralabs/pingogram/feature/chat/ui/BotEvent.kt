@@ -27,6 +27,11 @@ sealed interface BotEvent : ChatEvent {
         val text: String,
     ) : BotEvent
 
+    /** A suggested snippet chosen: its text in place of the "/name" typed for it, never sent. */
+    data class InsertSnippet(
+        val id: Long,
+    ) : BotEvent
+
     /** "Start" in an empty bot chat or after a start link: the bot is started, with the link's parameter if any. */
     data object Start : BotEvent
 }

@@ -4,8 +4,10 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.Snippet
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * The button at the start of the composer's pill in a chat whose bots offer something (`docs/DESIGN_SYSTEM.md` §6
@@ -57,13 +59,15 @@ data class BotCommandsSheet(
 )
 
 /**
- * The commands suggested above the composer while the field holds a command being typed ("/sta"): [query] is what
- * follows the "/", [commands] those it starts, in the bots' order.
+ * What "/" suggests above the composer: while the field holds a command being typed ("/sta") the [commands] it starts,
+ * in the bots' order, then, while a "/" word is typed anywhere, the [snippets] whose names it starts, in the user's
+ * order (`REQUIREMENTS.md` FR-X2); [query] is what follows the "/".
  */
 @Immutable
 data class CommandSuggestions(
     val query: String,
     val commands: ImmutableList<BotCommandItem>,
+    val snippets: ImmutableList<Snippet> = persistentListOf(),
 )
 
 /**
