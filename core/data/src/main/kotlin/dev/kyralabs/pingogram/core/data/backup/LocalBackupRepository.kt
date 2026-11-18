@@ -4,12 +4,14 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AccountBackup
 import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.Backup
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
+import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
@@ -36,7 +38,8 @@ import javax.inject.Singleton
  * bookmarks with their tags, reminders, keyword hits and snippets, without those of locked chats and of secret chats
  * (or of chats TDLib cannot tell, to be safe).
  *
- * The body's JSON is read and written on the [io] dispatcher, as are the files.
+ * Restoring merges into the account with the same user id only ([AccountRestore]); the body's JSON is read and written
+ * on the [io] dispatcher, as are the files.
  */
 @Singleton
 class LocalBackupRepository
@@ -105,6 +108,29 @@ class LocalBackupRepository
                     BackupOpening.NotABackup
                 }
             }
+
+        override suspend fun restore(backup: Backup): Outcome<BackupRestored> {
+            val settingsRestored = backup.settings?.let { settings.restoreSettings(it) } ?: Outcome.Success(Unit)
+            val byUser =
+                accounts.accounts.first().associateBy {
+                    it.repositories
+                        .userRepository()
+                        .myUserId.value
+                }
+            val onPhone = backup.accounts.filter { it.userId in byUser }
+            return settingsRestored
+                .then {
+                    onPhone.firstFailure { section ->
+                        AccountRestore(byUser.getValue(section.userId).repositories, clock.now()).restore(section)
+                    }
+                }.map {
+                    BackupRestored(
+                        settings = backup.settings != null,
+                        accounts = onPhone.map { it.userId },
+                        otherAccounts = backup.accounts.map { it.userId } - onPhone.map { it.userId }.toSet(),
+                    )
+                }
+        }
 
         /** The account section of [repositories]' account; null before it signed in. */
         private suspend fun backupOf(repositories: AccountRepositories): AccountBackup? {
