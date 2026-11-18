@@ -48,6 +48,20 @@ sealed interface ReplyEvent : ChatEvent {
         val messageId: Long,
     ) : ReplyEvent
 
+    /** "Open link" of the link a long press landed on: [url] opens ([ChatEffect.OpenUrl]). */
+    data class OpenUrl(
+        val url: String,
+    ) : ReplyEvent {
+        override fun toString() = "OpenUrl(…)"
+    }
+
+    /** "Copy link" of the link a long press landed on: [url] goes to the clipboard ([ReplyEffect.CopyLink]). */
+    data class CopyUrl(
+        val url: String,
+    ) : ReplyEvent {
+        override fun toString() = "CopyUrl(…)"
+    }
+
     /** The edit bar's "Replace": the picker of the edited message's kind of media opens ([ReplyEffect.Pick]). */
     data object ReplaceMedia : ReplyEvent
 
@@ -85,7 +99,7 @@ sealed interface ReplyEffect : ChatEffect {
 
 /**
  * Hands this event to the part of [ChatViewModel] that handles it: the message actions check and start a quote, a reply
- * in another chat and a copied link ([actions]), [replacement] replaces an edited message's media, and [elsewhere]
+ * in another chat, a copied link and a pressed link opened or copied ([actions]), [replacement] replaces an edited message's media, and [elsewhere]
  * holds the chat picker of a reply in another chat.
  */
 internal fun ReplyEvent.dispatch(
@@ -104,6 +118,14 @@ internal fun ReplyEvent.dispatch(
 
         is ReplyEvent.CopyLink -> {
             actions.copyLink(messageId)
+        }
+
+        is ReplyEvent.OpenUrl -> {
+            actions.openUrl(url)
+        }
+
+        is ReplyEvent.CopyUrl -> {
+            actions.copyUrl(url)
         }
 
         ReplyEvent.ReplaceMedia, is ReplyEvent.ReplacementPicked, ReplyEvent.SaveReplacement -> {

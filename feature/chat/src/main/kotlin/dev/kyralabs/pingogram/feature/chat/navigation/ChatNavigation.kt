@@ -75,11 +75,13 @@ fun NavGraphBuilder.chatScreen(
 /**
  * The conversation of chat [chatId] in the detail pane of the Chats tab's list-detail layout (`docs/ARCHITECTURE.md`,
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
- * i.e. when the pane shows alone, opened at [messageId] if not null (a message found by search). [onOpenMedia] opens a
- * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
- * were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page, which the
- * layout pushes above itself or shows beside the conversation; [onOpenScheduledMessages] the chat's scheduled messages,
- * which it pushes above itself; [onOpenMessage] a chat at a message, the original of a post forwarded from a channel.
+ * i.e. when the pane shows alone, opened at [messageId] if not null (a message found by search), or in forum topic
+ * [topicId] if not null (a topic the chat list's row names), whose back button then closes the pane. [onOpenMedia]
+ * opens a tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat
+ * messages were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page,
+ * which the layout pushes above itself or shows beside the conversation; [onOpenScheduledMessages] the chat's scheduled
+ * messages, which it pushes above itself; [onOpenMessage] a chat at a message, the original of a post forwarded from a
+ * channel.
  *
  * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
  * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own
@@ -112,8 +114,9 @@ fun ChatPane(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
+    topicId: Int? = null,
 ) {
-    key(chatId, messageId) {
+    key(chatId, messageId, topicId) {
         var threads by rememberSaveable(stateSaver = PaneThreads.Saver) { mutableStateOf(PaneThreads()) }
         // Back from a topic or thread follows the predictive back gesture, the one below sliding in with its progress
         // (docs/DESIGN_SYSTEM.md §5.1, Q-08).
@@ -139,7 +142,7 @@ fun ChatPane(
                 ChatRoute(
                     chatId = top?.chatId ?: chatId,
                     messageId = messageId.takeIf { top == null },
-                    topic = top?.topic,
+                    topic = top?.topic ?: topicId?.let(MessageTopic::Forum),
                     onBack = if (top == null) onBack else ({ threads = threads.popped() }),
                     onOpenMedia = onOpenMedia,
                     modifier = modifier,

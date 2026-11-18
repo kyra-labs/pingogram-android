@@ -77,6 +77,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param onClick opens the chat, or selects it in selection mode; null makes the row not clickable.
  * @param onLongClick e.g. starts selection; only with [onClick].
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
+ * @param onTopicClick opens a topic a forum's row names, tapped ([ForumRowPreview]); only with [onClick].
  * @param dragged the row is being swiped: it takes its `large` container, as when pressed ([ChatRow]).
  * @param segment the row's place in the pinned chats' group (`docs/DESIGN_SYSTEM.md` §6 "Chat list row"; owner
  *   decision 2026-11-06): at rest it takes Material's segmented shapes (`large` corners at the group's ends,
@@ -93,6 +94,7 @@ internal fun ChatListItem(
     open: Boolean = false,
     dragged: Boolean = false,
     segment: RowSegment? = null,
+    onTopicClick: ((topicId: Int) -> Unit)? = null,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
@@ -104,7 +106,7 @@ internal fun ChatListItem(
     // The row of docs/DESIGN_SYSTEM.md §13.3: the kind of chat before its name, the mute icon only while nothing is
     // unread, the time in `primary` while unread and not muted, the kind of message before its text.
     val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
-    val supporting = @Composable { RowSupporting(item, shownPreview) }
+    val supporting = @Composable { RowSupporting(item, shownPreview, onTopicClick.takeIf { onClick != null }) }
     val headline = @Composable { ChatRowTitle(item, title) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)

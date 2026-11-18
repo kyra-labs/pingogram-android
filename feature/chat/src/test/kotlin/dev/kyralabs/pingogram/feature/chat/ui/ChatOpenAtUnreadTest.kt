@@ -122,7 +122,7 @@ class ChatOpenAtUnreadTest : ChatViewModelHarness() {
             val restored = viewModel(handle = SavedStateHandle(saved))
 
             assertEquals("around:102", messages.loads.last())
-            assertEquals(AnchorTarget.Message(102, highlight = false), restored.anchor.target)
+            assertEquals(AnchorTarget.Message(102, highlight = false, atBottom = true), restored.anchor.target)
             val outline = restored.outline()
             assertEquals(outline.indexOf("m101") + 1, outline.indexOf("unread"))
         }

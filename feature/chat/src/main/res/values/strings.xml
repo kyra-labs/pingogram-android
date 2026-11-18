@@ -767,6 +767,8 @@
     <string name="search_sender_error">Couldn\'t load the members</string>
     <string name="search_sender_owner">Owner</string>
     <string name="search_sender_admin">Admin</string>
+    <!-- After a channel's name, on its post forwarded to its discussion group. -->
+    <string name="chat_sender_channel">Channel</string>
     <string name="search_date_title">Jump to date</string>
     <string name="search_date_go">Go</string>
     <string name="search_date_cancel">Cancel</string>

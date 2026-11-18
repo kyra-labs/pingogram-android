@@ -187,8 +187,9 @@ private fun Modifier.overTab(
  * Opens tab [index]'s menu in [state] once the pointer has stayed down, without moving beyond the touch slop, for the
  * long-press timeout (with the `LongPress` haptic), or at once for a mouse's secondary button (a right click), and
  * then consumes the rest of the gesture. It watches the pointer before the tab does (the initial pass), so the tab
- * sees the release consumed and is not selected; a scroll of the tabs that starts first cancels it. Keyed by what it
- * reads only, so recomposing the tab never restarts a gesture under way.
+ * sees the release consumed and is not selected; a scroll of the tabs that starts first cancels it. A press that stops
+ * the tabs' fling only stops it, as in Telegram's apps: their scrolling consumes such a press before the tabs see it,
+ * and it opens nothing here. Keyed by what it reads only, so recomposing the tab never restarts a gesture under way.
  */
 private fun Modifier.opensMenuOnLongPress(
     state: FolderTabMenuState,
@@ -198,6 +199,8 @@ private fun Modifier.opensMenuOnLongPress(
     pointerInput(state, index, haptics) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            // The tabs' scrolling consumed it: it stops their fling, and does nothing else.
+            if (down.isConsumed) return@awaitEachGesture
             if (currentEvent.buttons.isSecondaryPressed) {
                 down.consume()
                 state.openIndex = index

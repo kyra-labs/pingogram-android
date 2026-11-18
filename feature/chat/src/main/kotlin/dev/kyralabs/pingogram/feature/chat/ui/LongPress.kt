@@ -28,63 +28,81 @@ import androidx.compose.ui.unit.toSize
  * timeout, with where this element is in the window (unclipped, so a row half under the top bar keeps its full
  * height), and then consumes the rest of the gesture. It watches the pointer before the content does (the initial
  * pass), so it works over buttons, media and links, which then see the release consumed and take no tap; a scroll or a
- * swipe that starts first cancels it. A mouse's secondary button (a right click) calls [onSecondaryClick] at once, the
- * same way, and the content sees none of it (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so
- * the element's place is read only when a long press or a right click needs it, never while the list scrolls.
+ * swipe that starts first cancels it. A press that stops the list's fling only stops it, as in Telegram's apps: the
+ * list's scrolling consumes such a press before its items see it, and it starts nothing here. A mouse's secondary
+ * button (a right click) calls [onSecondaryClick] at once, the same way, and the content sees none of it
+ * (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so the element's place is read only when a long
+ * press or a right click needs it, never while the list scrolls.
  *
  * Where there is [onDragOut], a finger that moves beyond the touch slop after the long press calls it once, to drag
- * the element's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop").
+ * the element's files into another app (`docs/DESIGN_SYSTEM.md` §6 "Drag and drop"). Where there is [onPressedLink], it
+ * gets the link of a text inside the element ([linkTarget]) the long press or the right click landed on, or null, just
+ * before.
  */
 internal fun Modifier.onLongPress(
     onLongPress: (Rect) -> Unit,
     onSecondaryClick: (Rect) -> Unit = onLongPress,
     onDragOut: (() -> Boolean)? = null,
-): Modifier = this then LongPressElement(onLongPress, onSecondaryClick, onDragOut)
+    onPressedLink: ((String?) -> Unit)? = null,
+): Modifier = this then LongPressElement(onLongPress, onSecondaryClick, onDragOut, onPressedLink)
 
 private class LongPressElement(
     private val onLongPress: (Rect) -> Unit,
     private val onSecondaryClick: (Rect) -> Unit,
     private val onDragOut: (() -> Boolean)?,
+    private val onPressedLink: ((String?) -> Unit)?,
 ) : ModifierNodeElement<LongPressNode>() {
-    override fun create() = LongPressNode(onLongPress, onSecondaryClick, onDragOut)
+    override fun create() = LongPressNode(onLongPress, onSecondaryClick, onDragOut, onPressedLink)
 
     override fun update(node: LongPressNode) {
         node.onLongPress = onLongPress
         node.onSecondaryClick = onSecondaryClick
         node.onDragOut = onDragOut
+        node.onPressedLink = onPressedLink
     }
 
     override fun equals(other: Any?): Boolean =
         other is LongPressElement &&
             other.onLongPress === onLongPress &&
             other.onSecondaryClick === onSecondaryClick &&
-            other.onDragOut === onDragOut
+            other.onDragOut === onDragOut &&
+            other.onPressedLink === onPressedLink
 
     override fun hashCode(): Int =
-        (31 * onLongPress.hashCode() + onSecondaryClick.hashCode()) * 31 + onDragOut.hashCode()
+        ((31 * onLongPress.hashCode() + onSecondaryClick.hashCode()) * 31 + onDragOut.hashCode()) * 31 +
+            onPressedLink.hashCode()
 }
 
 private class LongPressNode(
     var onLongPress: (Rect) -> Unit,
     var onSecondaryClick: (Rect) -> Unit,
     var onDragOut: (() -> Boolean)?,
+    var onPressedLink: ((String?) -> Unit)?,
 ) : DelegatingNode() {
     init {
         delegate(
             SuspendingPointerInputModifierNode {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    // The list consumed it: it stops the list's fling, and does nothing else.
+                    if (down.isConsumed) return@awaitEachGesture
                     if (currentEvent.buttons.isSecondaryPressed) {
                         down.consume()
+                        pressedAt(down.position)
                         onSecondaryClick(windowBounds())
                         consumeUntilUp()
                     } else if (awaitLongPress(down)) {
+                        pressedAt(down.position)
                         onLongPress(windowBounds())
                         consumeUntilUp(dragFrom = down.position, onDrag = onDragOut)
                     }
                 }
             },
         )
+    }
+
+    private fun pressedAt(position: Offset) {
+        onPressedLink?.invoke(linkUnder(requireLayoutCoordinates().localToWindow(position)))
     }
 
     private fun windowBounds(): Rect {
@@ -107,9 +125,18 @@ internal fun Modifier.bubbleGestures(
     dragOut: (() -> Boolean)? = null,
 ): Modifier =
     when {
-        selecting -> onSelectionTap(toggle)
-        swipe != null -> onLongPress(showActions, showActions.onSecondaryClick, dragOut).swipeToReply(swipe, isRtl)
-        else -> onLongPress(showActions, showActions.onSecondaryClick, dragOut)
+        selecting -> {
+            onSelectionTap(toggle)
+        }
+
+        swipe != null -> {
+            onLongPress(showActions, showActions.onSecondaryClick, dragOut, showActions.onPressedLink)
+                .swipeToReply(swipe, isRtl)
+        }
+
+        else -> {
+            onLongPress(showActions, showActions.onSecondaryClick, dragOut, showActions.onPressedLink)
+        }
     }
 
 /**
@@ -117,7 +144,8 @@ internal fun Modifier.bubbleGestures(
  * row's place in the window by a long press, it lifts the message there for its floating menu where [lift] allows
  * ([MessageLiftState.lift]); called without one (screen readers' long click), the actions open in their sheet. A
  * mouse's secondary button ([onSecondaryClick]) and a key ([open] with the focus to give back) lift it the same way,
- * and the menu takes the focus, so that Esc closes it.
+ * and the menu takes the focus, so that Esc closes it. A long press or a right click on a link of the message's text
+ * ([onPressedLink]) opens the actions with that link.
  */
 @Stable
 internal class ActionsOpener(
@@ -126,6 +154,12 @@ internal class ActionsOpener(
     private val haptics: HapticFeedback,
     private val lift: MessageLiftState,
 ) : (Rect?) -> Unit {
+    /** The link the long press or right click that opens the actions next landed on; null for none. */
+    private var pressedLink: String? = null
+
+    /** The link of the message's text the next long press or right click landed on, or null. */
+    val onPressedLink: (String?) -> Unit = { link -> pressedLink = link }
+
     /** A right click: lifted as by a long press, the menu taking the focus. */
     val onSecondaryClick: (Rect) -> Unit = { bounds -> open(bounds, takesFocus = true) }
 
@@ -139,7 +173,9 @@ internal class ActionsOpener(
     ) {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         lift.lift(messageId, bounds, takesFocus, returnFocus)
-        onEvent(ChatEvent.ShowMessageActions(messageId))
+        val link = pressedLink.takeIf { bounds != null }
+        pressedLink = null
+        onEvent(ChatEvent.ShowMessageActions(messageId, link))
     }
 }
 
@@ -158,12 +194,14 @@ internal fun rememberActionsOpener(
  * Selection mode's taps: calls [onToggle] when the pointer is released within the touch slop, or once it has stayed
  * down for the long-press timeout (then consuming the rest of the gesture), so a tap and a long press both select or
  * deselect. It takes the press before the content does (the initial pass): buttons, media and links inside see it
- * consumed and do nothing. A scroll that starts first is left to the list.
+ * consumed and do nothing. A scroll that starts first is left to the list, and so is a press that stops its fling
+ * (consumed by the list before it gets here).
  */
 internal fun Modifier.onSelectionTap(onToggle: () -> Unit): Modifier =
     pointerInput(onToggle) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            if (down.isConsumed) return@awaitEachGesture
             // Consumed, so the content's buttons and links do not start a press; the list still scrolls.
             down.consume()
             val released =

@@ -382,6 +382,7 @@ class ChatViewModel internal constructor(
     private val cleanupScope: CoroutineScope? = null,
     private val appInfo: AppInfo = AppInfo(versionName = ""),
     transcriptionRepositories: TranscriptionRepositories? = null,
+    places: ChatPlaces = ChatPlaces(),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -426,6 +427,7 @@ class ChatViewModel internal constructor(
         targetPreferences: TargetPreferences,
         appInfo: AppInfo,
         transcriptionRepositories: TranscriptionRepositories,
+        places: ChatPlaces,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -476,6 +478,7 @@ class ChatViewModel internal constructor(
         cleanupScope = applicationScope,
         appInfo = appInfo,
         transcriptionRepositories = transcriptionRepositories,
+        places = places,
     )
 
     /**
@@ -1053,6 +1056,7 @@ class ChatViewModel internal constructor(
             history = history,
             content = { uiState.value.content },
             initialMessageId = initialMessageId,
+            place = places.place(chatId, topic, savedStateHandle),
             onEffect = { effectChannel.trySend(it) },
         )
 
@@ -1382,7 +1386,7 @@ class ChatViewModel internal constructor(
     /** The events of the message actions, the reactions and the forward sheet, which [onEvent] hands on. */
     private fun onMessageEvent(event: ChatEvent) {
         when (event) {
-            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
+            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId, link = event.link)
             is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
             is ChatEvent.ShowInteractions -> messageActions.showInteractions(event.messageId, event.reactions)
             ChatEvent.ExpandReactions -> messageActions.showPicker(true)
@@ -1489,15 +1493,15 @@ class ChatViewModel internal constructor(
      * The messages the list shows go to TDLib as viewed, move the pinned messages bar (`ChatPinnedMessages`), are
      * translated while the chat's translation is on (`ChatTranslation`) and have their custom emoji loaded
      * ([ChatCustomEmoji]); the
-     * newest of them is kept in the [SavedStateHandle], which the conversation opens around after process death
-     * ([ChatWindow]).
+     * newest of them is where the conversation opens again, after process death or later in this process
+     * ([ChatPlaces.Place.shown]).
      */
     private fun onMessagesVisible(messageIds: Set<Long>) {
         views.setVisible(messageIds)
         pinned.setVisible(messageIds)
         translation.setVisible(messageIds)
         transcripts?.onVisible(messageIds)
-        messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
+        messageIds.maxOrNull()?.let(window.place::shown)
         val messages =
             history.replayCache
                 .firstOrNull()

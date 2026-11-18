@@ -295,10 +295,16 @@ sealed interface ChatEvent {
     // Message actions (REQUIREMENTS.md FR-C6, FR-C7). Each closes the actions sheet, and does nothing where TDLib does
     // not allow it (any more).
 
-    /** Message [messageId] was long-pressed, or a screen reader asked for its actions: open the actions sheet. */
+    /**
+     * Message [messageId] was long-pressed, or a screen reader asked for its actions: open the actions sheet, with the
+     * [link] of its text the long press landed on, if any.
+     */
     data class ShowMessageActions(
         val messageId: Long,
-    ) : ChatEvent
+        val link: String? = null,
+    ) : ChatEvent {
+        override fun toString() = "ShowMessageActions($messageId, …)"
+    }
 
     /**
      * The "+N" badge on message [messageId]'s bubble, or a screen reader's action for it: open the actions sheet at

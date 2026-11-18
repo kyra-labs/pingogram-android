@@ -220,38 +220,9 @@ private fun NavGraphBuilder.mainGraph(
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
-        val openMessage = { chatId: Long, messageId: Long ->
-            navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
-        }
         // Full screen above everything, the list-detail layout too.
         val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
-        // The Chats tab lays out the chat list and the conversation side by side on expanded windows, and a profile or
-        // an info page beside them on extra-large ones.
-        composable<ChatsRoute> { entry ->
-            val request by entry.savedStateHandle.chatToShow().collectAsStateWithLifecycle()
-            // The conversation in the detail pane shares its media with the viewer, as the pushed one does.
-            ProvideNavAnimatedVisibilityScope(this) {
-                ChatsListDetail(
-                    search = search,
-                    headerActions = headerActions,
-                    onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
-                    onOpenChat = { chatId, messageId ->
-                        if (messageId == null) openChat(chatId) else openMessage(chatId, messageId)
-                    },
-                    onOpenMedia = openMedia,
-                    onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
-                    onOpenProfile = navController::navigateToProfile,
-                    onOpenChatInfo = navController::navigateToChatInfo,
-                    onEditContact = navController::navigateToEditContact,
-                    onOpenStory = navController::navigateToStoryViewer,
-                    onNewStory = navController::navigateToNewStory,
-                    onEditFolder = navController::navigateToFolderEditor,
-                    chatToShow = request.toChatToShow(),
-                    onChatShown = { entry.savedStateHandle.chatShown() },
-                    onOpenScheduledMessages = navController::navigateToScheduledMessages,
-                )
-            }
-        }
+        chatsTab(navController, search, headerActions, openChat, openMedia)
         contacts(navController, openChat)
         settings(navController)
         qrScanner(navController, onOpenLinkTarget)

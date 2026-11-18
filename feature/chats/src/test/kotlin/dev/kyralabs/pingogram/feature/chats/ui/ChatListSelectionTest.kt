@@ -55,6 +55,31 @@ class ChatListSelectionTest : ChatListViewModelHarness() {
         }
 
     @Test
+    fun `a tap on a topic a forum's row names opens that topic and selects nothing`() =
+        runTest {
+            val viewModel = mainList()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatListEvent.ChatClicked(3, topicId = 7))
+
+            assertNull(viewModel.state.selection)
+            assertEquals(listOf(ChatListEffect.OpenChat(3, topicId = 7)), effects)
+        }
+
+    @Test
+    fun `a tap on a topic in selection mode selects its forum and opens nothing`() =
+        runTest {
+            val viewModel = mainList()
+            send(viewModel, ChatListEvent.ChatLongClicked(2))
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatListEvent.ChatClicked(3, topicId = 7))
+
+            assertEquals(setOf(2L, 3L), viewModel.selectedIds())
+            assertEquals(emptyList<ChatListEffect>(), effects)
+        }
+
+    @Test
     fun `a tap in selection mode selects a chat, and deselects it again`() =
         runTest {
             val viewModel = mainList()

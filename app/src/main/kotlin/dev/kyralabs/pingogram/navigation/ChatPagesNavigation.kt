@@ -45,3 +45,11 @@ internal fun NavGraphBuilder.chatScreens(
         onEditTags = navController::navigateToBookmarkTags,
     )
 }
+
+/** Pushes the conversation of forum topic [topicId] of chat [chatId]: a topic a forum's row names in a chat list. */
+internal fun NavHostController.navigateToTopic(
+    chatId: Long,
+    topicId: Int,
+) {
+    navigate(ChatRoute(chatId, topicId = topicId)) { launchSingleTop = true }
+}

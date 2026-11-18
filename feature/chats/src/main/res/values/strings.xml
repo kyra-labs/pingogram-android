@@ -77,6 +77,8 @@
     </plurals>
     <!-- A forum's row for screen readers: its newest topics, which the row names above its last message. -->
     <string name="chat_list_a11y_topics">Topics: %1$s</string>
+    <!-- A forum's row for screen readers: the action that opens one of the topics the row names, as a tap on it does. -->
+    <string name="chat_list_open_topic">Open %1$s</string>
     <!-- A forum's row for screen readers: how many of its topics have unread messages, which its badge counts. -->
     <plurals name="chat_list_a11y_unread_topics">
         <item quantity="one">%d topic with unread messages</item>

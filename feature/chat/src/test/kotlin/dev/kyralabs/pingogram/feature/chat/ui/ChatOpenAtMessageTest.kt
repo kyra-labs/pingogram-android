@@ -116,7 +116,10 @@ class ChatOpenAtMessageTest : ChatViewModelHarness() {
             val restored = viewModel(PRIVATE_CHAT, SavedStateHandle(saved), messageId = 50)
 
             assertEquals("around:54", messages.loads.last())
-            assertEquals(ListAnchor(first.anchor.id + 1, AnchorTarget.Message(54, highlight = false)), restored.anchor)
+            assertEquals(
+                ListAnchor(first.anchor.id + 1, AnchorTarget.Message(54, highlight = false, atBottom = true)),
+                restored.anchor,
+            )
             restored.effects.test { expectNoEvents() }
         }
 

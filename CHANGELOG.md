@@ -9,6 +9,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- On a forum's row in the chat list, a tap on a topic it names (the newest topic's tab, or a name after it) opens that
+  topic, as Telegram's apps do; a tap elsewhere on the row still opens the forum.
+- A long press on a link in a message shows that link in the message's actions, with "Open link" and "Copy link". The
+  message's own link then reads "Copy message link".
+
 ### Changed
 - The floating navigation bar, its New chat and Add contact button and the folder tabs take neutral colors: the
   selected tab on a neutral pill and the button in the bar's own color, in place of the accent colors.
@@ -16,6 +22,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - On a person's profile, scrolling back up brings the photo, name and actions back again instead of leaving the
   page blank above Photos.
+- A conversation opened again opens where you left it, until the app closes, not at the newest message. With new
+  messages unread since, it still opens at the unread divider.
+- In a conversation, a touch that stops the messages from scrolling only stops them: holding it no longer opens a
+  message's menu, and in selection mode it no longer selects a message.
+- In the chat list, a touch that stops the folder tabs from sliding only stops them: holding it no longer opens a
+  tab's menu.
+- A forum topic created, renamed, closed, reopened, hidden or unhidden says so in the conversation and the chat list
+  ("Ada reopened the topic", "Ada changed the topic name to “Releases”"), not "Chat event".
+- A channel's post in its discussion group shows the channel's name with "Channel" after it, without "Forwarded from",
+  and the pinned messages page names the channel instead of "Someone".
 
 ## [2.3.0] - 2026-11-17
 
