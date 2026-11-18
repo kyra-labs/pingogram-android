@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui.feed
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 
 /** What the user does in the Channel feed, sent to [FeedViewModel.onEvent]. */
 sealed interface FeedEvent {
@@ -27,6 +28,11 @@ sealed interface FeedEvent {
     data class Act(
         val key: String,
         val action: FeedPostAction,
+    ) : FeedEvent
+
+    /** The filter sheet's "Mark all as read": every unread post of the [chosen] channels (null for all) is read. */
+    data class MarkAllAsRead(
+        val chosen: ImmutableSet<Long>?,
     ) : FeedEvent
 
     /** The filter sheet's "Show N posts": the feed shows what [filter] lets through. */

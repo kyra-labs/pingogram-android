@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChannelFeed
+import dev.kyralabs.pingogram.core.domain.model.isUnreadPost
 import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -118,6 +120,23 @@ class FeedViewModel internal constructor(
             is FeedEvent.Open -> effectChannel.trySend(FeedEffect.OpenPost(event.chatId, event.messageId))
             is FeedEvent.SetFilter -> setFilter(event.filter)
             is FeedEvent.Act -> act(event)
+            is FeedEvent.MarkAllAsRead -> markAllAsRead(event.chosen)
+        }
+    }
+
+    /** Marks every unread post of the [chosen] channels (null for all) read in its channel, one call per channel. */
+    private fun markAllAsRead(chosen: Set<Long>?) {
+        viewModelScope.launch {
+            val unread =
+                repository.feed
+                    .first()
+                    .posts
+                    .filter { it.isUnreadPost && (chosen == null || it.chat.id in chosen) }
+                    .groupBy({ it.chat.id }, { it.message.id })
+            unread.forEach { (chatId, ids) ->
+                val outcome = repository.view(chatId, ids)
+                if (outcome is Outcome.Failure) effectChannel.trySend(FeedEffect.ShowError(outcome.error))
+            }
         }
     }
 
@@ -172,8 +191,8 @@ class FeedViewModel internal constructor(
     ): FeedUiState {
         val formatter = timeFormatter()
         val chosen = choices.filter.chosen
-        val posts =
-            feedPosts(feed.posts.filter { chosen == null || it.chat.id in chosen }) { formatter.format(it, now) }
+        val all = feedPosts(feed.posts) { formatter.format(it, now) }
+        val posts = all.filter { chosen == null || it.chatId in chosen }
         posts.forEach { if (it.isUnread) fresh += it.key }
         val (unread, older) = posts.partition { it.key in fresh }
         val content =
@@ -195,7 +214,14 @@ class FeedViewModel internal constructor(
                 }
             }
         val unreadCount = unread.count(FeedPost::isUnread)
-        return FeedUiState(content, unreadCount, feed.channelCount, (read as? Read.Done)?.error, choices.filter)
+        return FeedUiState(
+            content = content,
+            unreadCount = unreadCount,
+            channelCount = feed.channelCount,
+            error = (read as? Read.Done)?.error,
+            filter = choices.filter,
+            channels = feedChannels(all),
+        )
     }
 
     /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */

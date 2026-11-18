@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.isUnreadPost
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 /**
@@ -122,3 +123,12 @@ private fun MessageContent.pictureFileId(): Int? =
 
 /** An album card shows its first four pictures, two by two, the last saying how many more there are. */
 private const val ALBUM_TILES = 4
+
+/** The channels of [cards], in the order of their newest card, with how many cards each has and how many are unread. */
+internal fun feedChannels(cards: List<FeedPost>): ImmutableList<FeedChannel> =
+    cards
+        .groupBy(FeedPost::chatId)
+        .map { (chatId, own) ->
+            val first = own.first()
+            FeedChannel(chatId, first.channelTitle, first.channelPhoto, own.size, own.count(FeedPost::isUnread))
+        }.toImmutableList()
