@@ -34,8 +34,8 @@ enum class CategoryHue(
 /**
  * The category colors of the theme in use (`docs/DESIGN_SYSTEM.md` §2.2, owner decision 2026-11-18): each
  * [CategoryHue] harmonized toward `primary`, as `online` is, and generated at the tones of `primaryContainer` and
- * `onPrimaryContainer`, so every color theme, wallpaper colors, contrast level and AMOLED black get Material's container
- * tones and the content keeps the contrast `onPrimaryContainer` keeps on `primaryContainer`.
+ * `onPrimaryContainer`, so every color theme, wallpaper colors, contrast level and AMOLED black get Material's
+ * container tones and the content keeps the contrast `onPrimaryContainer` keeps on `primaryContainer`.
  */
 @Immutable
 class CategoryPalette internal constructor(
