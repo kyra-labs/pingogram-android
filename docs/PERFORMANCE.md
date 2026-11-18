@@ -445,8 +445,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `closeMedia` (back, a swipe or the back button until the viewer has left the composition) and `overlayExit` (the
   transform out). `OpenMediaBenchmark` opens the newest photo of Saved Messages 10 times per compilation mode, with the
   frame times and the four sections (`openMediaSumMs.median` and the others in `compare.py`'s terms; no budget yet: the
-  first run on the owner's phone sets one). It needs a photo without a caption among Saved Messages' newest messages,
-  sent by yourself. To run it alone, as `SendMessageBenchmark` above, with
+  first run on the owner's phone sets one). Each closing presses back and waits until the way out has ended
+  (`OverlayHost`'s `overlay` tag is gone), not only until the viewer left the screen readers' view, which it does in
+  the way out's first frame: a trace keeps only the sections that ended before the iteration did. It needs a photo
+  without a caption among Saved Messages' newest messages, sent by yourself. To run it alone, as `SendMessageBenchmark`
+  above, with
   `-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.OpenMediaBenchmark`.
   `tools/perfetto/media-viewer.sh` (`media-viewer.ps1` in PowerShell) records one Perfetto trace
   (`media-viewer.pbtxt`: the frames of the main thread and the RenderThread, SurfaceFlinger's frame timeline, the

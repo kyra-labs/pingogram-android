@@ -34,11 +34,18 @@ internal fun MacrobenchmarkScope.openNewestPhoto(): UiObject2 {
         ?: error("The media viewer did not open within $TIMEOUT_MS ms.")
 }
 
-/** Closes the media viewer with back and waits until it is gone. */
+/**
+ * Closes the media viewer with back and waits until it is gone: until its way out ended, not only until it left the
+ * screen readers' view, which it does in the first frame of its way out. The `closeMedia` and `overlayExit` sections
+ * end with the way out, and the trace keeps only the sections that ended before the iteration did.
+ */
 internal fun MacrobenchmarkScope.closeMediaViewer() {
     device.pressBack()
     if (!device.wait(Until.gone(By.res(MEDIA_VIEWER)), TIMEOUT_MS)) {
         error("The media viewer did not close within $TIMEOUT_MS ms.")
+    }
+    if (!device.wait(Until.gone(By.res(OVERLAY)), TIMEOUT_MS)) {
+        error("The media viewer's way out did not end within $TIMEOUT_MS ms.")
     }
     device.waitForIdle()
 }
@@ -52,6 +59,9 @@ private fun UiDevice.displayDensity(): Float =
 
 // The tag in feature:media (MediaViewerScreen.kt).
 private const val MEDIA_VIEWER = "media_viewer"
+
+// The tag of core:ui's OverlayHost while an overlay is drawn, until its way out ended (OverlayNavigator.kt).
+private const val OVERLAY = "overlay"
 
 /** A bubble row whose description (sender, time, then its content) names a photo (core:ui's "Photo"). */
 private val PHOTO_ROW: Pattern = Pattern.compile(".*\\bPhoto\\b.*", Pattern.DOTALL)
