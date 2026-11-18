@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBotButtonRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallHistoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChannelFeedRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionBarRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
@@ -137,6 +138,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
@@ -330,6 +332,9 @@ interface RepositoryModule {
 
     @Binds
     fun mentionRepository(repository: TdlibMentionRepository): MentionRepository
+
+    @Binds
+    fun channelFeedRepository(repository: TdlibChannelFeedRepository): ChannelFeedRepository
 
     @Binds
     fun contactRepository(repository: TdlibContactRepository): ContactRepository

@@ -863,6 +863,15 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   archive (as `getChats` lists them) whose `unread_mention_count` is not 0, and with `searchMessagesFilterMention`, one
   short page each, in the most recent groups of the main list, at most four searches at once. They are merged, unread
   first, then newest first, as `FoundMessage`s, with their chats; a chat that cannot be searched is left out.
+- **Channel feed** (FR-X5): `core:domain`'s `ChannelFeedRepository` (`TdlibChannelFeedRepository`, `core:data`, no
+  storage) is the followed channels' newest posts as one timeline. td_api.tl's `openChat` says channels get their
+  updates only while open, so the feed does not wait for `updateNewMessage`: `load` reads each main-list channel's
+  newest 10 posts with `getChatHistory` (asking once more from the oldest where TDLib's first answer is short), at
+  most four channels at once, and the feed follows each channel's last post, which the chat list keeps current
+  (`updateChatLastMessage`), reading the posts since whenever it is newer than the newest read. A post is unread while
+  newer than its channel's `last_read_inbox_message_id`; `view` marks posts read with `viewMessages`
+  (`messageSourceOther`, `force_read`), which also reports a channel's sponsored message seen, as td_api.tl has no
+  `viewSponsoredMessage`.
 - **Replies and links** (FR-C5, FR-C6): what a message being sent or a draft replies to is `core:domain`'s
   `ReplyTarget` (a message of the chat, or of another chat, with the `TextQuote` it quotes), which every send of
   `MessageRepository`, `AttachmentRepository`, `VoiceNoteRepository` and `InlineBotRepository`, `ChatDraft` and the
