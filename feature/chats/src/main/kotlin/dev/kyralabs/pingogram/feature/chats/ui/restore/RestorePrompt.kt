@@ -25,7 +25,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -71,6 +74,9 @@ internal fun RestorePromptHost(
             }
         }
     }
+    // The card as last shown, kept while it shrinks away, so it does not change as it goes.
+    var shown by remember { mutableStateOf(state) }
+    if (state != RestorePromptUiState.Hidden) shown = state
     val motion = MaterialTheme.motionScheme
     AnimatedVisibility(
         visible = state != RestorePromptUiState.Hidden,
@@ -78,8 +84,7 @@ internal fun RestorePromptHost(
         enter = expandVertically(motion.defaultSpatialSpec()) + fadeIn(motion.defaultEffectsSpec()),
         exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
     ) {
-        // Kept while it shrinks away, so the card does not change as it goes.
-        if (state != RestorePromptUiState.Hidden) RestorePromptCard(state, viewModel::onEvent)
+        if (shown != RestorePromptUiState.Hidden) RestorePromptCard(shown, viewModel::onEvent)
     }
 }
 
