@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
  *   ([openMentions], `REQUIREMENTS.md` FR-X1).
  * - **Focus**: the Focus switcher's "Manage" opens Settings → Focus ([openFocus], board 31).
  * - **Feed**: the Feed tab, first in the folder row, opens the Channel feed ([openFeed], `REQUIREMENTS.md` FR-X5).
+ * - **Restore**: the restore card above the list opens Backup & restore restoring a backup ([openBackup], by its
+ *   document URI; `docs/adr/0039-local-backup-and-restore.md`).
  */
 @Stable
 class ChatListHeaderActions(
@@ -31,6 +33,7 @@ class ChatListHeaderActions(
     val openMentions: () -> Unit = {},
     val openFocus: () -> Unit = {},
     val openFeed: () -> Unit = {},
+    val openBackup: (document: String) -> Unit = {},
 ) {
     /** Search shows, docked or as its own destination: the search button is away. */
     val isSearchOpen: Boolean get() = searchOpen.value

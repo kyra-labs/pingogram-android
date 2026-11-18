@@ -595,4 +595,12 @@
     <string name="catch_up_settings_title">Catch-up</string>
     <string name="catch_up_include_muted">Include muted chats and channels</string>
     <string name="catch_up_include_muted_summary">Catch-up shows them too. The setting stays on this device.</string>
+    <!-- The card above the chat list that offers to restore a backup (docs/adr/0039-local-backup-and-restore.md).
+         %1$s is the backup's date, "12 Nov". -->
+    <string name="restore_prompt_title_folder">Restore from your backup of %1$s?</string>
+    <string name="restore_prompt_title_file">Restore settings from a backup?</string>
+    <string name="restore_prompt_body">Your settings, bookmarks, reminders, keyword alerts and snippets, kept on this phone only.</string>
+    <string name="restore_prompt_not_now">Not now</string>
+    <string name="restore_prompt_restore">Restore</string>
+    <string name="restore_prompt_choose">Choose file</string>
 </resources>

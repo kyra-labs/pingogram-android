@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.content.res.Resources
 import androidx.activity.compose.ReportDrawnWhen
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -30,6 +31,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchEvent
 import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitchViewModel
 import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusSwitcherHost
 import dev.kyralabs.pingogram.feature.chats.ui.focus.LocalChatListFocus
+import dev.kyralabs.pingogram.feature.chats.ui.restore.RestorePromptHost
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsUiState
@@ -45,7 +47,9 @@ import kotlinx.coroutines.launch
  * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Tapping a row
  * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive, and the "New chat" buttons [onOpenNewChat].
  * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
- * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
+ * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered, and the offer to restore a
+ * backup ([RestorePromptHost], whose "Restore" opens Backup & restore through [headerActions]). The list's first row
+ * holds
  * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat, and
  * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
  * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
@@ -111,7 +115,12 @@ internal fun ChatListRoute(
                 ),
             modifier = modifier,
             openChatId = openChatId,
-            header = { NotificationPromptHost() },
+            header = {
+                Column {
+                    NotificationPromptHost()
+                    RestorePromptHost(onOpenBackup = { headerActions?.openBackup?.invoke(it) })
+                }
+            },
             stories = stories.takeIf { hasStories },
             onEditFolder = onEditFolder,
             summary = { summary.value },
