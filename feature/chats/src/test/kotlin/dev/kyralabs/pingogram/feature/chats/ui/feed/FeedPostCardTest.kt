@@ -20,8 +20,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * A Channel feed card (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"): "New" on an unread post only, its text, reactions
- * and views, and "Open in channel" opening it.
+ * A Channel feed card (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"): "New" on an unread post only, its text, reactions,
+ * views and media, and "Open in channel" opening it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -43,7 +43,7 @@ class FeedPostCardTest {
 
     @Test
     fun `an unread post says New, a read one only its time`() {
-        setCards(FeedPreviewData.text, FeedPreviewData.read)
+        setCards(FeedPreviewData.text, FeedPreviewData.video)
 
         composeRule.onNodeWithText("New · 9:41 AM").assertIsDisplayed()
         assertEquals(1, composeRule.onAllNodesWithText("9:41 AM").fetchSemanticsNodes().size)
@@ -60,5 +60,15 @@ class FeedPostCardTest {
         composeRule.onNodeWithText("Open in channel").performClick()
 
         assertEquals(listOf(FeedPreviewData.text.key), opened)
+    }
+
+    @Test
+    fun `media show their details`() {
+        setCards(FeedPreviewData.album, FeedPreviewData.video, FeedPreviewData.poll)
+
+        composeRule.onNodeWithText("+3", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("2:31", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("Anonymous poll · 1,284 votes", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("64%", useUnmergedTree = true).assertExists()
     }
 }

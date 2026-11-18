@@ -49,8 +49,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A post of the Channel feed (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"): a card with the shape scale's `extraLarge`
- * corners, its channel's avatar (`Cookie6Sided`, `AvatarShape.Channel`), name and time, its text, reactions, views
- * and "Open in channel" ([onOpen], as a tap on the card).
+ * corners, its channel's avatar (`Cookie6Sided`, `AvatarShape.Channel`), name and time, its text and media
+ * ([FeedPostMedia]), reactions, views and "Open in channel" ([onOpen], as a tap on the card).
  *
  * Unread and read differ by three signals, never color alone: an unread post on `surfaceContainerHigh` with its name in
  * the emphasized weight and a `primary` dot before "New · 9:41 AM"; a read one on `surfaceContainerLow` with an
@@ -106,6 +106,7 @@ internal fun FeedPostCard(
                 val styled = remember(text, styles) { text.toAnnotatedString(styles) }
                 Text(styled, style = MaterialTheme.typography.bodyLarge.userContent)
             }
+            post.media?.let { FeedPostMedia(it) }
             PostFooter(post, onOpen)
         }
     }

@@ -1,11 +1,13 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedMedia
+import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedPollOption
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedPost
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedReaction
 import kotlinx.collections.immutable.persistentListOf
 
-/** Channel feed posts for previews and tests, unread and read. */
+/** Channel feed posts for previews and tests: one of each kind of content, unread and read. */
 internal object FeedPreviewData {
     private fun formatted(value: String) = FormattedText(value, persistentListOf())
 
@@ -15,6 +17,7 @@ internal object FeedPreviewData {
         title: String,
         isUnread: Boolean,
         text: String? = null,
+        media: FeedMedia? = null,
     ) = FeedPost(
         chatId = chatId,
         messageIds = persistentListOf(id),
@@ -23,7 +26,7 @@ internal object FeedPreviewData {
         time = "9:41 AM",
         isUnread = isUnread,
         text = text?.let(::formatted),
-        media = null,
+        media = media,
         reactions =
             persistentListOf(
                 FeedReaction("👍", count = 128, isChosen = true),
@@ -40,14 +43,44 @@ internal object FeedPreviewData {
             isUnread = true,
             text = "Coroutines 2.1 is out: structured concurrency for everyone.",
         )
-    val read =
+    val photo =
         post(
-            4,
-            40,
-            "Cooking Club",
+            2,
+            20,
+            "Astronomy Daily",
+            isUnread = true,
+            "The Pillars of Creation, again.",
+            FeedMedia.Photo(1, 1280, 720),
+        )
+    val album =
+        post(3, 30, "Travel Notes", isUnread = true, media = FeedMedia.Album(persistentListOf(1, 2, 3, 4), more = 3))
+    val video = post(4, 40, "Cooking Club", isUnread = false, "Bread in ten minutes.", FeedMedia.Video(null, 151))
+    val file =
+        post(
+            5,
+            50,
+            "Design Library",
             isUnread = false,
-            text = "Bread in ten minutes, and the oven does the rest.",
+            media = FeedMedia.File("Expressive-components-2026-final-v3.pdf", 38_200_000),
+        )
+    val poll =
+        post(
+            6,
+            60,
+            "Weekend Plans",
+            isUnread = false,
+            media =
+                FeedMedia.Poll(
+                    question = formatted("Where to this weekend?"),
+                    options =
+                        persistentListOf(
+                            FeedPollOption(formatted("The mountains"), 64, isChosen = true),
+                            FeedPollOption(formatted("The sea"), 36, isChosen = false),
+                        ),
+                    voterCount = 1_284,
+                    isAnonymous = true,
+                ),
         )
 
-    val posts = persistentListOf(text, read)
+    val posts = persistentListOf(text, photo, album, video, file, poll)
 }
