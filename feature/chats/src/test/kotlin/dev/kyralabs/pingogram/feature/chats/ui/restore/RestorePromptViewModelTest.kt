@@ -24,8 +24,8 @@ import java.time.Instant
 
 /**
  * The chat list's restore card: the kept folder's newest backup, or after a sign-in the offer to restore from a file
- * while no folder is kept; "Not now" hiding it (for that backup, or until the next sign-in), "Restore" and a picked file
- * opening Backup & restore, and nothing in the demo.
+ * while no folder is kept; "Not now" hiding it (for that backup, or until the next sign-in), "Restore" and a picked
+ * file opening Backup & restore, and nothing in the demo.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestorePromptViewModelTest {
