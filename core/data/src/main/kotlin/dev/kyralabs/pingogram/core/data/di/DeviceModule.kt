@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceTextFinder
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedSongRepository
@@ -33,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.DevicePushRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceTextFinder
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
@@ -102,6 +104,9 @@ interface DeviceModule {
 
     @Binds
     fun deviceLanguageDetector(detector: AndroidDeviceLanguageDetector): DeviceLanguageDetector
+
+    @Binds
+    fun deviceTextFinder(finder: AndroidDeviceTextFinder): DeviceTextFinder
 
     @Binds
     fun voiceTranscriber(transcriber: AndroidVoiceTranscriber): VoiceTranscriber
