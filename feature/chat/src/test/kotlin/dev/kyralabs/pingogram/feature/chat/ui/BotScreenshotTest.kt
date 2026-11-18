@@ -28,7 +28,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the bots in the conversation (`docs/TESTING.md`, `REQUIREMENTS.md` FR-C5) on a compact phone, light and
  * dark: the bot chat's composer with "/" at the pill's start and "+" at its end; the suggestions while "/st" is typed;
- * a group's suggestions of two bots, with their avatars; the commands sheet, and a group's; the empty bot chat with
+ * a group's suggestions of two bots, with their avatars; snippets suggested in a chat with a person, and after a bot's
+ * commands (`REQUIREMENTS.md` FR-X2); the commands sheet, and a group's; the empty bot chat with
  * what the bot does and "Start". The suggestions also right to left; the empty chat and the suggestions in an expanded
  * window; the sheet at 200% font scale. Brand colors.
  */
@@ -121,6 +122,9 @@ class BotScreenshotTest(
                     "composer" to Shown(botChat),
                     "suggestions" to Shown(botChat, typed = "/st", suggestions = suggestions),
                     "groupSuggestions" to Shown(groupChat, typed = "/s", suggestions = groupSuggestions),
+                    "snippetSuggestions" to
+                        Shown(ChatPreviewData.privateChat, typed = "/ad", suggestions = snippetSuggestions),
+                    "commandsAndSnippets" to Shown(botChat, typed = "/st", suggestions = commandsAndSnippets),
                     "sheet" to Shown(botChat, sheet = sheet),
                     "groupSheet" to Shown(groupChat, sheet = groupSheet),
                     "start" to Shown(emptyBotChat),

@@ -3,7 +3,10 @@ package dev.kyralabs.pingogram.feature.chat.ui.bot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -22,6 +25,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import dev.kyralabs.pingogram.core.domain.model.Snippet
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -120,6 +124,51 @@ internal fun Modifier.commandSemantics(
                     true
                 },
             )
+    }
+}
+
+/**
+ * A suggested snippet (`REQUIREMENTS.md` FR-X2): "/" and its name, the typed part highlighted as a command's is, over
+ * the first line of its text; a tap ([onInsert]) puts the text in place of the "/" word, and screen readers hear the
+ * name and the text.
+ */
+@Suppress("LongParameterList") // A row's snippet, its highlight, its states and what a tap does.
+@Composable
+internal fun SnippetSuggestionRow(
+    snippet: Snippet,
+    matched: Int,
+    selected: Boolean,
+    shapes: ListItemShapes,
+    colors: ListItemColors,
+    onInsert: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val match =
+        SpanStyle(color = colorScheme.primary, fontWeight = MaterialTheme.typography.bodyLargeEmphasized.fontWeight)
+    val name = "/${snippet.name}"
+    val text = remember(name, matched, match) { highlighted(name, matched, match) }
+    SegmentedListItem(
+        selected = selected,
+        onClick = onInsert,
+        shapes = shapes,
+        modifier = modifier,
+        colors = colors,
+        supportingContent = {
+            Text(
+                text = snippet.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium.userContent,
+            )
+        },
+    ) {
+        Text(
+            text = text,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyLarge.userContent,
+        )
     }
 }
 

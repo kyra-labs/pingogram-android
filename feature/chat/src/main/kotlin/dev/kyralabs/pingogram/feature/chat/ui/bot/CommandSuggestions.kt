@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
@@ -44,6 +46,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.min
 import dev.kyralabs.pingogram.core.ui.component.GrowingVisibility
+import dev.kyralabs.pingogram.core.ui.component.ItemMotion
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -61,13 +64,15 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.BotPreviewData
  * at most `sizes.inputPanelHeight` (about four rows) or a third of the window tall, scrolling beyond. Each row shows
  * the command with the typed part highlighted ([CommandText]), what it does on one line, in a group its bot's avatar,
  * and the insert button: [bots]' suggestions, none while not [enabled] (recording). A tap sends the command
- * ([BotInput.onSendCommand]); the insert button puts it into the field ([BotInput.onInsertCommand]).
+ * ([BotInput.onSendCommand]); the insert button puts it into the field ([BotInput.onInsertCommand]). The snippets
+ * whose names the "/" word starts follow the commands in the same group ([SnippetSuggestionRow], `REQUIREMENTS.md`
+ * FR-X2): a tap puts the snippet's text in place of the word ([BotInput.onInsertSnippet]), never sending it.
  *
  * It grows in from the bottom on the motion scheme's default spatial spring with an effects-spring fade, and shrinks
  * away as the command's arguments start; the last suggestions stay while it leaves. A hardware keyboard picks among
- * them with the arrow keys, sends with Enter and inserts with Tab, Escape hides them ([CommandSuggestionsState]); the
- * row picked so shows selected (`secondaryContainer`, `large` all round). Screen readers hear "3 commands" as the
- * pane's title as it shows, and each row as one item ([commandSemantics]).
+ * them with the arrow keys, sends a command with Enter and inserts with Tab (a snippet with either), Escape hides them
+ * ([CommandSuggestionsState]); the row picked so shows selected (`secondaryContainer`, `large` all round). Screen
+ * readers hear "3 commands" (", 1 snippet") as the pane's title as it shows, and each row as one item.
  */
 @Composable
 internal fun CommandSuggestionsArea(
@@ -76,33 +81,34 @@ internal fun CommandSuggestionsArea(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // Snippets alone show once their rows do (REQUIREMENTS.md FR-X2).
-    val suggestions = bots.suggestions.takeIf { enabled && it?.commands?.isNotEmpty() == true }
-    val onSend = bots.onSendCommand
-    val onInsert = bots.onInsertCommand
+    val suggestions = bots.suggestions.takeIf { enabled }
     var shown by remember { mutableStateOf(suggestions) }
     val visible = state.isShown(suggestions)
     if (visible) shown = suggestions
     LaunchedEffect(suggestions?.query) { state.onQuery(suggestions?.query) }
     // Shrinks away as it grew in, on the default spatial spring (docs/DESIGN_SYSTEM.md §5.1, Q-01).
     GrowingVisibility(visible = visible, modifier = modifier, expandFrom = Alignment.Bottom) {
-        shown?.let { CommandSuggestionList(it, state.highlighted, onSend, onInsert) }
+        shown?.let { CommandSuggestionList(it, state.highlighted, bots) }
     }
 }
 
-/** The suggested commands, the one at [highlighted] selected while a hardware keyboard picks (-1: none). */
+/**
+ * The suggested commands, then the suggested snippets, the row at [highlighted] selected while a hardware keyboard
+ * picks (-1: none); what a row does goes to [bots].
+ */
 @Composable
 internal fun CommandSuggestionList(
     suggestions: CommandSuggestions,
     highlighted: Int,
-    onSend: (String) -> Unit,
-    onInsert: (String) -> Unit,
+    bots: BotInput,
 ) {
     val spacing = MaterialTheme.spacing
     val commands = suggestions.commands
+    val snippets = suggestions.snippets
+    val count = commands.size + snippets.size
     val listState = rememberLazyListState()
     LaunchedEffect(highlighted) { if (highlighted >= 0) listState.animateScrollToItem(highlighted) }
-    val title = pluralStringResource(R.plurals.bot_command_suggestions, commands.size, commands.size)
+    val title = suggestionsTitle(commands.size, snippets.size)
     val colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     val motion = rememberItemMotion()
     LazyColumn(
@@ -120,11 +126,11 @@ internal fun CommandSuggestionList(
             index,
             item,
             ->
-            val insert = { onInsert(item.text) }
+            val insert = { bots.onInsertCommand(item.text) }
             SegmentedListItem(
                 selected = index == highlighted,
-                onClick = { onSend(item.text) },
-                shapes = ListItemDefaults.segmentedShapes(index, commands.size),
+                onClick = { bots.onSendCommand(item.text) },
+                shapes = ListItemDefaults.segmentedShapes(index, count),
                 modifier = Modifier.animateItem(this, motion).commandSemantics(item, insert),
                 colors = colors,
                 leadingContent = item.bot?.let { bot -> { CommandBotAvatar(bot, colors.containerColor) } },
@@ -138,8 +144,52 @@ internal fun CommandSuggestionList(
                 content = { CommandText(item, matched = suggestions.query.length) },
             )
         }
+        snippetItems(suggestions, highlighted, bots, SnippetRowLook(colors, motion))
     }
 }
+
+/** How the snippets' rows look in the pane: its rows' [colors] and item [motion]. */
+private class SnippetRowLook(
+    val colors: ListItemColors,
+    val motion: ItemMotion,
+)
+
+/** The suggested snippets' rows, after the commands' in the same group. */
+private fun LazyListScope.snippetItems(
+    suggestions: CommandSuggestions,
+    highlighted: Int,
+    bots: BotInput,
+    look: SnippetRowLook,
+) {
+    val offset = suggestions.commands.size
+    val count = offset + suggestions.snippets.size
+    itemsIndexed(
+        suggestions.snippets,
+        key = { _, snippet -> "snippet-${snippet.id}" },
+        contentType = { _, _ -> CONTENT_TYPE_SNIPPET },
+    ) { index, snippet ->
+        SnippetSuggestionRow(
+            snippet = snippet,
+            matched = suggestions.query.length,
+            selected = offset + index == highlighted,
+            shapes = ListItemDefaults.segmentedShapes(offset + index, count),
+            colors = look.colors,
+            onInsert = { bots.onInsertSnippet(snippet.id) },
+            modifier = Modifier.animateItem(this, look.motion),
+        )
+    }
+}
+
+/** The pane's title for screen readers: "3 commands", "2 snippets", or both. */
+@Composable
+private fun suggestionsTitle(
+    commands: Int,
+    snippets: Int,
+): String =
+    listOfNotNull(
+        pluralStringResource(R.plurals.bot_command_suggestions, commands, commands).takeIf { commands > 0 },
+        pluralStringResource(R.plurals.snippet_suggestions, snippets, snippets).takeIf { snippets > 0 },
+    ).joinToString(", ")
 
 /** The tallest the suggestions get: about four rows (the emoji panel's height), at most a third of the window. */
 @Composable
@@ -176,25 +226,26 @@ internal class CommandSuggestionsState {
     }
 
     /** What the composer's field does first with its keys, for [bots]' suggestions ([onKeyEvent]). */
-    fun keysFor(bots: BotInput): (KeyEvent) -> Boolean =
-        { event -> onKeyEvent(event, bots.suggestions, bots.onSendCommand, bots.onInsertCommand) }
+    fun keysFor(bots: BotInput): (KeyEvent) -> Boolean = { event -> onKeyEvent(event, bots.suggestions, bots) }
 
     /**
-     * Handles [event] for the [suggestions] shown: true if it picked, sent ([onSend]), inserted ([onInsert]) or hid
-     * them, so the field does not act on it too.
+     * Handles [event] for the [suggestions] shown: true if it picked, sent or inserted a command, inserted a snippet
+     * (through [bots]) or hid them, so the field does not act on it too.
      */
     fun onKeyEvent(
         event: KeyEvent,
         suggestions: CommandSuggestions?,
-        onSend: (String) -> Unit,
-        onInsert: (String) -> Unit,
+        bots: BotInput,
     ): Boolean {
         if (event.type != KeyEventType.KeyDown || !isShown(suggestions) || suggestions == null) return false
         val commands = suggestions.commands
-        val current = commands[highlighted.coerceIn(0, commands.lastIndex)]
+        val last = commands.size + suggestions.snippets.size - 1
+        val index = highlighted.coerceIn(0, last)
+        val command = commands.getOrNull(index)?.text
+        val snippet = suggestions.snippets.getOrNull(index - commands.size)?.id
         return when {
             event.key == Key.DirectionDown -> {
-                highlighted = (highlighted + 1).coerceAtMost(commands.lastIndex)
+                highlighted = (highlighted + 1).coerceAtMost(last)
                 true
             }
 
@@ -203,13 +254,12 @@ internal class CommandSuggestionsState {
                 true
             }
 
-            event.isHardwareEnter() -> {
-                onSend(current.text)
-                true
-            }
-
-            event.key == Key.Tab && !event.isShiftPressed -> {
-                onInsert(current.text)
+            event.isHardwareEnter() || (event.key == Key.Tab && !event.isShiftPressed) -> {
+                when {
+                    command == null -> snippet?.let(bots.onInsertSnippet)
+                    event.key == Key.Tab -> bots.onInsertCommand(command)
+                    else -> bots.onSendCommand(command)
+                }
                 true
             }
 
@@ -242,6 +292,7 @@ internal fun KeyEvent.isHardwareEnter(): Boolean =
 private const val WINDOW_FRACTION = 3
 
 private const val CONTENT_TYPE_COMMAND = "command"
+private const val CONTENT_TYPE_SNIPPET = "snippet"
 
 /** The suggestions, for UI tests. */
 internal const val SUGGESTIONS_TEST_TAG = "command_suggestions"
@@ -249,18 +300,19 @@ internal const val SUGGESTIONS_TEST_TAG = "command_suggestions"
 @PingogramPreviews
 @Composable
 private fun CommandSuggestionsPreview() {
-    PingogramPreview { CommandSuggestionList(BotPreviewData.suggestions, highlighted = -1, onSend = {}, onInsert = {}) }
+    PingogramPreview { CommandSuggestionList(BotPreviewData.suggestions, highlighted = -1, BotInput()) }
 }
 
 @PingogramPreviews
 @Composable
 private fun CommandSuggestionsGroupPreview() {
     PingogramPreview {
-        CommandSuggestionList(
-            BotPreviewData.groupSuggestions,
-            highlighted = 1,
-            onSend = {},
-            onInsert = {},
-        )
+        CommandSuggestionList(BotPreviewData.groupSuggestions, highlighted = 1, BotInput())
     }
+}
+
+@PingogramPreviews
+@Composable
+private fun SnippetSuggestionsPreview() {
+    PingogramPreview { CommandSuggestionList(BotPreviewData.snippetSuggestions, highlighted = -1, BotInput()) }
 }

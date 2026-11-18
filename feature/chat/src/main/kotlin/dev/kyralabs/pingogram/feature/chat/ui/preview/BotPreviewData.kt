@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.preview
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
+import dev.kyralabs.pingogram.core.domain.model.Snippet
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
@@ -60,6 +61,21 @@ internal object BotPreviewData {
 
     /** While "/st" is typed. */
     val suggestions = CommandSuggestions("st", commands.startingWith("st"))
+
+    /** While "/ad" is typed in a chat with a person: the snippets whose names it starts. */
+    val snippetSuggestions =
+        CommandSuggestions(
+            "ad",
+            persistentListOf(),
+            persistentListOf(
+                Snippet(1, "address", "12 Crescent Road, Flat 4, Marylebone, London NW1 5LR"),
+                Snippet(2, "admin_note", "Please ask in the group before adding anyone."),
+            ),
+        )
+
+    /** While "/st" is typed in the bot chat: its commands, then the snippet "/stickers_list". */
+    val commandsAndSnippets =
+        suggestions.copy(snippets = persistentListOf(Snippet(3, "stickers_list", "Cats, Space, Retro")))
 
     /** While "/s" is typed in the group. */
     val groupSuggestions = CommandSuggestions("s", groupCommands.startingWith("s"))
