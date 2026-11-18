@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -63,6 +62,7 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.isLargeFontScale
 import dev.kyralabs.pingogram.feature.chats.ui.preview.FeedPreviewStates
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -104,7 +104,7 @@ internal fun FeedScreen(
                 }
 
                 is FeedContent.Posts -> {
-                    FeedList(content, state.error, onEvent, contentPadding)
+                    FeedList(content, state.error, state.ads, onEvent, contentPadding)
                 }
             }
         }
@@ -169,10 +169,19 @@ private fun feedSummary(state: FeedUiState): String {
 private fun FeedList(
     content: FeedContent.Posts,
     error: DomainError?,
+    ads: ImmutableMap<Long, FeedAd>,
     onEvent: (FeedEvent) -> Unit,
     contentPadding: PaddingValues,
 ) {
     val viewport = remember { LayoutBoundsHolder() }
+    // Each channel's ad goes after its newest card, the first of the channel in the list.
+    val adAfter =
+        remember(content, ads) {
+            (content.unread + content.read)
+                .distinctBy(FeedPost::chatId)
+                .mapNotNull { first -> ads[first.chatId]?.let { first.key to it } }
+                .toMap()
+        }
     val style = CardStyle(MaterialTheme.sizes.contentMaxWidth, MaterialTheme.spacing.medium, MaterialTheme.motionScheme)
     LazyColumn(
         modifier = Modifier.fillMaxSize().layoutBounds(viewport),
@@ -185,7 +194,7 @@ private fun FeedList(
                 FeedErrorCard(error, onRetry = { onEvent(FeedEvent.Retry) }, Modifier.card(this, style))
             }
         }
-        posts(content.unread, onEvent, style, viewport)
+        posts(content.unread, adAfter, onEvent, style, viewport)
         if (content.unread.isNotEmpty() && content.unread.none(FeedPost::isUnread)) {
             item(key = CAUGHT_UP, contentType = CAUGHT_UP) {
                 FeedCaughtUp(content.readHere, hasOlder = content.read.isNotEmpty(), Modifier.card(this, style))
@@ -193,27 +202,42 @@ private fun FeedList(
         } else if (content.read.isNotEmpty()) {
             item(key = EARLIER, contentType = EARLIER) { FeedDivider(Modifier.card(this, style)) }
         }
-        posts(content.read, onEvent, style, viewport)
+        posts(content.read, adAfter, onEvent, style, viewport)
     }
 }
 
-/** [posts] as cards; an unread one 60% inside [viewport] for a second is reported seen. */
+/**
+ * [posts] as cards, each followed by the ad of [adAfter] keyed by it; an unread one 60% inside [viewport] for a second
+ * is reported seen, and an ad wholly inside it is reported viewed.
+ */
 private fun LazyListScope.posts(
     posts: ImmutableList<FeedPost>,
+    adAfter: Map<String, FeedAd>,
     onEvent: (FeedEvent) -> Unit,
     style: CardStyle,
     viewport: LayoutBoundsHolder,
 ) {
-    items(posts, key = FeedPost::key, contentType = { POST }) { post ->
-        val seen =
-            if (post.isUnread) {
-                Modifier.onVisibilityChanged(SEEN_MILLIS, SEEN_FRACTION, viewport) { visible ->
-                    if (visible) onEvent(FeedEvent.Seen(post.chatId, post.messageIds))
+    posts.forEach { post ->
+        item(key = post.key, contentType = POST) {
+            val seen =
+                if (post.isUnread) {
+                    Modifier.onVisibilityChanged(SEEN_MILLIS, SEEN_FRACTION, viewport) { visible ->
+                        if (visible) onEvent(FeedEvent.Seen(post.chatId, post.messageIds))
+                    }
+                } else {
+                    Modifier
                 }
-            } else {
-                Modifier
+            FeedPostWithMenu(post = post, onEvent = onEvent, modifier = Modifier.card(this, style).then(seen))
+        }
+        adAfter[post.key]?.let { ad ->
+            item(key = ad.key, contentType = AD) {
+                val viewed =
+                    Modifier.onVisibilityChanged(minFractionVisible = 1f, viewportBounds = viewport) { visible ->
+                        if (visible) onEvent(FeedAdEvent.Viewed(ad.chatId, ad.id))
+                    }
+                FeedAdCard(ad, post.channelTitle, onEvent, Modifier.card(this, style).then(viewed))
             }
-        FeedPostWithMenu(post = post, onEvent = onEvent, modifier = Modifier.card(this, style).then(seen))
+        }
     }
 }
 
@@ -304,6 +328,7 @@ private fun FeedScreenPreview(
 
 // Keys and content types of the list's entries; a post's key is its chat's and its first message's id.
 private const val POST = "post"
+private const val AD = "ad"
 private const val ERROR = "error"
 private const val EARLIER = "earlier"
 private const val CAUGHT_UP = "caughtUp"

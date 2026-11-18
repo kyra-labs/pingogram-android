@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chats.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.chats.ui.preview.FeedPreviewData
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -171,6 +172,37 @@ class FeedScreenTest {
         )
         actions.last().action()
         assertEquals(FeedEvent.Act(FeedPreviewData.video.key, FeedPostAction.MarkChannelUnread), events.last())
+    }
+
+    @Test
+    fun `a channel's ad follows its newest post, labelled, and its buttons act on it`() {
+        val ad = FeedPreviewData.ad
+        setFeed(
+            posts(unread = listOf(FeedPreviewData.text, FeedPreviewData.photo)).copy(ads = persistentMapOf(1L to ad)),
+        )
+
+        val post = composeRule.onNodeWithText("Kotlin Weekly", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val label =
+            composeRule.onNodeWithContentDescription(
+                "Sponsored message from Trip Planner",
+                useUnmergedTree = true,
+            )
+        val adTop = label.fetchSemanticsNode().boundsInRoot.top
+        assertEquals(true, post.top < adTop)
+        composeRule.onNodeWithText("Open Trip Planner").performClick()
+        composeRule.onNodeWithContentDescription("About this ad").performClick()
+        composeRule.onNodeWithContentDescription("Report ad").performClick()
+
+        assertEquals(
+            listOf(
+                FeedAdEvent.Open(ad.chatId, ad.id),
+                FeedAdEvent.ShowInfo(ad.chatId, ad.id),
+                FeedAdEvent.ShowInfo(ad.chatId, ad.id),
+                FeedAdEvent.Report,
+            ),
+            events.filterIsInstance<FeedAdEvent>().filterNot { it is FeedAdEvent.Viewed },
+        )
+        assertEquals(true, events.contains(FeedAdEvent.Viewed(ad.chatId, ad.id)))
     }
 
     private companion object {

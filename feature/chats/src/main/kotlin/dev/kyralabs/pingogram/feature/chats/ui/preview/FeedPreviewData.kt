@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedAd
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedMedia
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedPollOption
 import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedPost
@@ -80,6 +81,19 @@ internal object FeedPreviewData {
                     voterCount = 1_284,
                     isAnonymous = true,
                 ),
+        )
+
+    /** Kotlin Weekly's sponsored message, as a text with a button. */
+    val ad =
+        FeedAd(
+            chatId = 1,
+            id = 1L shl 30,
+            isRecommended = false,
+            title = "Trip Planner",
+            text = formatted("Plan trips with friends, share the costs and keep every booking in one place."),
+            media = null,
+            sponsorPhoto = null,
+            buttonText = "Open Trip Planner",
         )
 
     val posts = persistentListOf(text, photo, album, video, file, poll)

@@ -391,6 +391,10 @@
     </plurals>
     <string name="feed_mark_all_body">They\'re marked as read in their channels too.</string>
     <string name="feed_mark_all_cancel">Cancel</string>
+    <!-- Screen readers, first on a feed ad: who placed it (its sponsor, or the channel without one). -->
+    <string name="feed_ad_from">Sponsored message from %1$s</string>
+    <!-- After a feed ad's label ("Sponsored"): the channel it comes from. -->
+    <string name="feed_ad_in">\u0020· in %1$s</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
