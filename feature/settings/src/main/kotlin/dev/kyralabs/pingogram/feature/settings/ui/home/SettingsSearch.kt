@@ -205,7 +205,7 @@ internal fun SettingsSearchResults(
             item(key = entry.title) { shapes ->
                 HomeEntryRow(
                     entry = entry,
-                    index = SearchEntries.indexOf(entry),
+                    category = homeCategory(entry),
                     shapes = shapes,
                     state = HomeRowState(summaries, selection = null),
                     onClick = { onOpen(entry.destination) },

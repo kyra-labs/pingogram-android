@@ -17,9 +17,6 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
@@ -31,21 +28,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.ui.component.RoundBackButton
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -54,7 +53,6 @@ import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The frame every settings screen shares (docs/DESIGN_SYSTEM.md §6, "Settings rows"): a transparent medium flexible
 // top bar on the page's `surfaceContainerHigh` (settingsPageColor), and below it the page's groups of rows
@@ -95,8 +93,9 @@ internal fun SettingsPageScaffold(
 
 /**
  * [SettingsPageScaffold] around a [body] of its own, for a page that lays out its content itself, e.g. a lazy list in
- * a [SettingsBody]; [body] gets the `Scaffold`'s inner padding. The back button shows unless
- * [LocalSettingsBackButton] says the page sits beside Settings home, where there is nothing to go back to.
+ * a [SettingsBody]; [body] gets the `Scaffold`'s inner padding. The back button, a tonal circle ([RoundBackButton],
+ * `docs/DESIGN_SYSTEM.md` §13.10), shows unless [LocalSettingsBackButton] says the page sits beside Settings home,
+ * where there is nothing to go back to. The page's groups take its category colors in turn ([SettingsGroupOrder]).
  */
 @Composable
 internal fun SettingsPageFrame(
@@ -110,6 +109,7 @@ internal fun SettingsPageFrame(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val backButton = LocalSettingsBackButton.current
+    val groupOrder = rememberSaveable(saver = SettingsGroupOrder.Saver) { SettingsGroupOrder() }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
@@ -119,22 +119,16 @@ internal fun SettingsPageFrame(
                 title = title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    if (backButton) {
-                        IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
-                            Icon(
-                                painter = painterResource(UiR.drawable.ic_arrow_back),
-                                contentDescription = stringResource(R.string.settings_back),
-                            )
-                        }
-                    }
+                    if (backButton) RoundBackButton(label = stringResource(R.string.settings_back), onClick = onBack)
                 },
                 actions = actions,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = contentWindowInsets,
-        content = body,
-    )
+    ) { innerPadding ->
+        CompositionLocalProvider(LocalSettingsGroupOrder provides groupOrder) { body(innerPadding) }
+    }
 }
 
 /**
@@ -267,7 +261,10 @@ internal fun SettingsContent(
     }
 }
 
-/** A group's [title]: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3). */
+/**
+ * A group's [title]: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3), `spacing.small`
+ * in from the rows' edge, as its footer ([SettingsFooter]).
+ */
 @Composable
 internal fun SettingsSectionHeader(
     title: String,
@@ -277,14 +274,16 @@ internal fun SettingsSectionHeader(
         text = title,
         modifier =
             modifier
-                .padding(start = MaterialTheme.spacing.large, bottom = MaterialTheme.spacing.small)
+                .padding(start = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.small)
                 .semantics { heading() },
         color = MaterialTheme.colorScheme.primary,
         style = MaterialTheme.typography.titleSmallEmphasized,
     )
 }
 
-/** A note below a group: `bodyMedium` in `onSurfaceVariant`. */
+/**
+ * A note below a group: `bodyMedium` in `onSurfaceVariant`, in line with the group's header ([SettingsSectionHeader]).
+ */
 @Composable
 internal fun SettingsFooter(
     text: String,
@@ -294,8 +293,8 @@ internal fun SettingsFooter(
         text = text,
         modifier =
             modifier.padding(
-                start = MaterialTheme.spacing.large,
-                end = MaterialTheme.spacing.large,
+                start = MaterialTheme.spacing.small,
+                end = MaterialTheme.spacing.small,
                 top = MaterialTheme.spacing.small,
             ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,

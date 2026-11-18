@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.home
 import android.content.res.Resources
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import dev.kyralabs.pingogram.core.ui.theme.CategoryHue
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.OtherAccountUiModel
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
@@ -41,12 +42,28 @@ internal class HomeEntry(
     @param:DrawableRes val icon: Int,
 )
 
-/** A group of entries under its [title], with a [footer] where it explains what the group holds. */
+/**
+ * A group of entries under its [title], its rows' icons in circles of its own [category] color
+ * (`docs/DESIGN_SYSTEM.md` §13.9), with a [footer] where it explains what the group holds.
+ */
 internal class HomeGroup(
     @param:StringRes val title: Int,
     val entries: List<HomeEntry>,
+    val category: CategoryHue,
     @param:StringRes val footer: Int? = null,
 )
+
+/**
+ * The category color of [entry]'s group on Settings home, or of its parent page's for a page above one (settings
+ * search); teal for Edit profile and the QR code, which are in no group.
+ */
+internal fun homeCategory(entry: HomeEntry): CategoryHue {
+    val destination =
+        (entry.destination as? HomeDestination.SubPage)?.let { HomeDestination.Page(it.subPage.parent) }
+            ?: entry.destination
+    return HomeGroups.firstOrNull { group -> group.entries.any { it.destination == destination } }?.category
+        ?: CategoryHue.Teal
+}
 
 internal fun page(
     page: SettingsPage,
@@ -63,6 +80,7 @@ internal fun page(
 internal val OnThisPhoneGroup: HomeGroup =
     HomeGroup(
         R.string.settings_home_on_this_phone,
+        category = CategoryHue.Pink,
         entries =
             listOf(
                 page(
@@ -129,6 +147,7 @@ internal val HomeGroups: List<HomeGroup> =
                     UiR.drawable.ic_mood,
                 ),
             ),
+            category = CategoryHue.Green,
         ),
         HomeGroup(
             R.string.settings_home_alerts_privacy,
@@ -152,6 +171,7 @@ internal val HomeGroups: List<HomeGroup> =
                     R.drawable.ic_storage,
                 ),
             ),
+            category = CategoryHue.Orange,
         ),
         HomeGroup(
             R.string.settings_home_more,
@@ -175,6 +195,7 @@ internal val HomeGroups: List<HomeGroup> =
                     R.drawable.ic_language,
                 ),
             ),
+            category = CategoryHue.Blue,
         ),
         HomeGroup(
             R.string.settings_home_app,
@@ -187,6 +208,7 @@ internal val HomeGroups: List<HomeGroup> =
                 ),
                 page(SettingsPage.About, R.string.settings_about, R.string.settings_about_summary, R.drawable.ic_info),
             ),
+            category = CategoryHue.Purple,
         ),
     )
 

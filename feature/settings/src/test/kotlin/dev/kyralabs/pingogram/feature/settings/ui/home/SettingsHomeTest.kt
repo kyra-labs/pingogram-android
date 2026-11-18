@@ -196,7 +196,10 @@ class SettingsHomeTest {
 
     @Test
     fun `on this phone stays hidden while no tool has a row there`() {
-        val groups = HomeGroups.map { if (it === OnThisPhoneGroup) HomeGroup(it.title, emptyList(), it.footer) else it }
+        val groups =
+            HomeGroups.map {
+                if (it === OnThisPhoneGroup) HomeGroup(it.title, emptyList(), it.category, it.footer) else it
+            }
         composeRule.setContent {
             PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
                 Column {
@@ -253,7 +256,8 @@ class SettingsHomeTest {
                 R.string.settings_appearance_summary,
                 R.drawable.ic_shield,
             )
-        val groups = listOf(HomeGroup(OnThisPhoneGroup.title, listOf(tool), OnThisPhoneGroup.footer))
+        val onThisPhone = OnThisPhoneGroup
+        val groups = listOf(HomeGroup(onThisPhone.title, listOf(tool), onThisPhone.category, onThisPhone.footer))
         composeRule.setContent {
             PingogramTheme(themeMode = ThemeMode.Light, dynamicColor = false) {
                 Column {

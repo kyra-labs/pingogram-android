@@ -43,6 +43,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The floating navigation bar, its New chat and Add contact button and the folder tabs look like Google Photos' bar:
   the selected tab on a softly tinted pill, the others in a softer color, and the bar and its button a step above
   what they float over, in place of the accent colors.
+- Settings has a calmer look: every icon sits in a circle, all the icons of a group share one soft color, and back is
+  a round button.
 
 ### Fixed
 - With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer

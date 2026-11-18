@@ -125,7 +125,7 @@ internal fun CacheGroup(
     onEvent: (DataStorageEvent) -> Unit,
     onOptionsEvent: (DataOptionsEvent) -> Unit,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_section_cache), iconTone = SettingsIconTone.Tertiary) {
+    SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
         item { shapes ->
             ClearCacheItem(
                 isClearing = state.isClearingCache,
