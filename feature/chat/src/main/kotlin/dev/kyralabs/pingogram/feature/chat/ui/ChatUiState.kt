@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview

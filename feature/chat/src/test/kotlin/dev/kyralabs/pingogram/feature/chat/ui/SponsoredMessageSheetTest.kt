@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
@@ -17,6 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** "About this ad": what it shows, reporting only where the ad can be reported, and the report step's reasons. */
 @RunWith(RobolectricTestRunner::class)
@@ -42,11 +44,11 @@ class SponsoredMessageSheetTest {
         val sheet = SponsoredPreviewData.info
         setSheet(sheet)
 
-        composeRule.onNodeWithText(string(R.string.sponsored_about)).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_about)).assertExists()
         composeRule.onNodeWithText(sheet.sponsorInfo).assertExists()
         composeRule.onNodeWithText(sheet.additionalInfo).assertExists()
-        composeRule.onNodeWithText(string(R.string.sponsored_premium_note)).assertExists()
-        composeRule.onNodeWithText(string(R.string.sponsored_report)).performClick()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_premium_note)).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_report)).performClick()
 
         assertEquals(listOf<ChatEvent>(SponsoredEvent.Report), events)
     }
@@ -55,8 +57,8 @@ class SponsoredMessageSheetTest {
     fun `an ad that cannot be reported offers no report`() {
         setSheet(SponsoredPreviewData.info.copy(canBeReported = false, isRecommended = true))
 
-        composeRule.onNodeWithText(string(R.string.sponsored_about_recommended)).assertExists()
-        composeRule.onNodeWithText(string(R.string.sponsored_report)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_about_recommended)).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_report)).assertDoesNotExist()
     }
 
     @Test
@@ -64,9 +66,10 @@ class SponsoredMessageSheetTest {
         val sheet = SponsoredPreviewData.reportStep
         setSheet(sheet)
 
-        composeRule.onNodeWithText(sheet.report!!.title).assertExists()
-        composeRule.onNodeWithText(sheet.report.options[1]).performClick()
-        composeRule.onNodeWithContentDescription(string(R.string.sponsored_report_back)).performClick()
+        val report = sheet.report!!
+        composeRule.onNodeWithText(report.title).assertExists()
+        composeRule.onNodeWithText(report.options[1]).performClick()
+        composeRule.onNodeWithContentDescription(string(UiR.string.sponsored_report_back)).performClick()
 
         assertEquals(listOf(SponsoredEvent.ChooseReportOption(1), SponsoredEvent.BackToInfo), events)
     }

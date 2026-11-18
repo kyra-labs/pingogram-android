@@ -93,6 +93,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The conversation of chat [chatId] (of its forum topic or message thread [topic], if not null; [ChatRoute] decides
@@ -488,7 +489,7 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.OpenUrl -> {
-                        if (openUri(effect.url)) "" else resources.getString(R.string.sponsored_no_app)
+                        if (openUri(effect.url)) "" else resources.getString(UiR.string.sponsored_no_app)
                     }
 
                     is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect, is BotButtonEffect -> {
@@ -582,10 +583,10 @@ internal fun Context.openedFileNotice(
 private val SponsoredReportNotice.text: Int
     get() =
         when (this) {
-            SponsoredReportNotice.Reported -> R.string.sponsored_reported
-            SponsoredReportNotice.AdsHidden -> R.string.sponsored_ads_hidden
-            SponsoredReportNotice.PremiumRequired -> R.string.sponsored_premium_required
-            SponsoredReportNotice.ReportFailed -> R.string.sponsored_report_failed
+            SponsoredReportNotice.Reported -> UiR.string.sponsored_reported
+            SponsoredReportNotice.AdsHidden -> UiR.string.sponsored_ads_hidden
+            SponsoredReportNotice.PremiumRequired -> UiR.string.sponsored_premium_required
+            SponsoredReportNotice.ReportFailed -> UiR.string.sponsored_report_failed
         }
 
 /** The text of a snackbar that only tells something. */

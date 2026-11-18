@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toImmutableList

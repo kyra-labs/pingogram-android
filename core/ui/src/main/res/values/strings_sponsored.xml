@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Sponsored messages in channels and bots (ui/Sponsored*). "Telegram" only names the service, never the app. -->
+    <!-- Sponsored messages in channels and bots (feature:chat ui/Sponsored*, the Channel feed). "Telegram" only names the service, never the app. -->
     <!-- The label at the top of a sponsored message's card. -->
     <string name="sponsored_label">Sponsored</string>
     <!-- The label of a sponsored message that recommends a channel. -->
