@@ -126,7 +126,7 @@ class FeedViewModelTest {
         }
 
     @Test
-    fun `a seen unread post is marked read once and counted for all caught up`() =
+    fun `a seen unread post is marked read once, counted, and keeps its place`() =
         runTest {
             feed(post(1, 12))
             val viewModel = viewModel()
@@ -138,7 +138,14 @@ class FeedViewModelTest {
 
             assertEquals(listOf(1L to listOf(12L)), repository.viewed)
             assertEquals(1, viewModel.posts.readHere)
-            assertEquals(emptyList<String>() to listOf("1:12"), viewModel.posts.keys())
+            assertEquals(listOf("1:12") to emptyList<String>(), viewModel.posts.keys())
+            assertEquals(
+                false,
+                viewModel.posts.unread
+                    .single()
+                    .isUnread,
+            )
+            assertEquals(0, viewModel.uiState.value.unreadCount)
         }
 
     @Test
