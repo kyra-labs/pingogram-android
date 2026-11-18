@@ -125,8 +125,9 @@ internal fun ChatListScreenTopBar(
  *   the connection pill ([ConnectionPill]) in its place (`REQUIREMENTS.md` FR-L5).
  * - **Collapsed**: "Chats" in `titleLargeEmphasized` on the dense bar's height (`sizes.denseTopAppBar`, §7); the
  *   status line goes, and while not connected one line says the connection's state.
- * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), search ([HeaderSearchButton])
- *   and the signed-in user's avatar ([HeaderAccountButton]), from [actions].
+ * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), Mentions & replies
+ *   ([HeaderMentionsButton]), search ([HeaderSearchButton]) and the signed-in user's avatar
+ *   ([HeaderAccountButton]), from [actions].
  *
  * The bar keeps the window margin ([windowMargin]): on medium and wider windows its title lines up with the rows'
  * content. In selection mode it shows how many chats are selected, with a button that clears the selection, no
@@ -185,6 +186,7 @@ internal fun ChatListTopBar(
                 actions = {
                     if (selectedCount == null) {
                         state.hiddenArchive?.let { HiddenArchiveButton(it, onOpenArchive) }
+                        HeaderMentionsButton(summary, onClick = { actions?.openMentions?.invoke() })
                         HeaderSearchButton(actions)
                         HeaderAccountButton(summary, actions)
                     }

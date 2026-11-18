@@ -299,6 +299,11 @@
     <!-- Mentions & replies (REQUIREMENTS.md FR-X1): the page's title, also the Chats tab header's button. -->
     <string name="mentions_title">Mentions &amp; replies</string>
     <string name="mentions_back">Back</string>
+    <!-- The Chats tab header's Mentions & replies button for screen readers: how many chats have unread mentions. -->
+    <plurals name="mentions_a11y_unread_chats">
+        <item quantity="one">%d chat with unread mentions</item>
+        <item quantity="other">%d chats with unread mentions</item>
+    </plurals>
     <!-- The page's groups: messages still unread where they were sent, then the ones read already. -->
     <string name="mentions_unread">Unread</string>
     <string name="mentions_earlier">Earlier</string>

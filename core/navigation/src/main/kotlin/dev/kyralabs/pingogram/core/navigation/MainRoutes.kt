@@ -359,6 +359,13 @@ data object SearchRoute
 data object ArchiveRoute
 
 /**
+ * Mentions & replies (`REQUIREMENTS.md` FR-X1), `:feature:chats`: the messages that mention the user or reply to them,
+ * pushed above the Chats tab from its header.
+ */
+@Serializable
+data object MentionsRoute
+
+/**
  * The archive's settings (`REQUIREMENTS.md` FR-L9): which chats Telegram archives and keeps archived, and how the
  * "Archived chats" row shows in the chat list, `:feature:chats`, pushed above the archive from its top bar, and
  * reachable from any screen that navigates to it (e.g. a settings page).
