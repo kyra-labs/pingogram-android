@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.io.OutputStream
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,15 +67,15 @@ class DocumentBackupFolderRepository
                 }
             }
 
-        override suspend fun backUp(password: String): Outcome<BackupFileInfo> =
+        override suspend fun backUp(password: String): Outcome<BackupFileInfo> = backUp { backups.write(it, password) }
+
+        /** Writes a dated backup into the kept folder with [write]; a file that fails is deleted. */
+        internal suspend fun backUp(write: suspend (OutputStream) -> Outcome<BackupHeader>): Outcome<BackupFileInfo> =
             withContext(io) {
                 val treeUri = settings.folderUri.first()
                 val date = clock.now().atZone(clock.zone()).toLocalDate()
                 val document = treeUri?.let { guardedOrNull { documents.create(it, "$NAME $date$EXTENSION") } }
-                val written =
-                    document?.let { file ->
-                        guardedOrNull { documents.openOutput(file).use { backups.write(it, password) } }
-                    }
+                val written = document?.let { file -> guardedOrNull { documents.openOutput(file).use { write(it) } } }
                 val info = document?.takeIf { written is Outcome.Success }?.let { guardedOrNull { documents.file(it) } }
                 if (document != null && info == null) guarded { documents.delete(document) }
                 changes.update { it + 1 }
@@ -99,6 +100,15 @@ class DocumentBackupFolderRepository
                 guardedOrNull { documents.openInput(document).use { backups.open(it, password) } }
                     ?: BackupOpening.NotABackup
             }
+
+        /** Deletes the kept folder's backups but the newest [kept]; what cannot be deleted stays. */
+        internal suspend fun prune(kept: Int) {
+            withContext(io) {
+                val treeUri = settings.folderUri.first() ?: return@withContext
+                read(treeUri)?.backups?.drop(kept)?.forEach { guarded { documents.delete(it.document) } }
+                changes.update { it + 1 }
+            }
+        }
 
         /** Folder [treeUri] with its backups; null when it is gone or its grant was taken back. */
         private fun read(treeUri: String): BackupFolder? =

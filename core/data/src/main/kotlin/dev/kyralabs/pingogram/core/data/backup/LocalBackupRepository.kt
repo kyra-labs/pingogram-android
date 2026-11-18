@@ -38,8 +38,9 @@ import javax.inject.Singleton
  * bookmarks with their tags, reminders, keyword hits and snippets, without those of locked chats and of secret chats
  * (or of chats TDLib cannot tell, to be safe).
  *
- * Restoring merges into the account with the same user id only ([AccountRestore]); the body's JSON is read and written
- * on the [io] dispatcher, as are the files.
+ * A backup written with a password keeps its key in [keys], for automatic backups. Restoring merges into the account
+ * with the same user id only ([AccountRestore]); the body's JSON is read and written on the [io] dispatcher, as are
+ * the files.
  */
 @Singleton
 class LocalBackupRepository
@@ -49,12 +50,23 @@ class LocalBackupRepository
         private val accounts: AccountGraphs,
         private val lockedChats: LockedChatIdsRepository,
         private val appInfo: AppInfo,
+        private val keys: BackupKeyStore,
         private val clock: WallClock,
         @param:Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : BackupRepository {
         override suspend fun write(
             output: OutputStream,
             password: String,
+        ): Outcome<BackupHeader> =
+            withContext(io) {
+                val key = BackupKey.of(password)
+                write(output, key).also { if (it is Outcome.Success) keys.keep(key) }
+            }
+
+        /** Writes a backup into [output] with [key], made from a password: automatic backups' kept one. */
+        internal suspend fun write(
+            output: OutputStream,
+            key: BackupKey,
         ): Outcome<BackupHeader> =
             withContext(io) {
                 val sections = accounts.accounts.first().mapNotNull { backupOf(it.repositories) }
@@ -74,7 +86,7 @@ class LocalBackupRepository
                         .put(SETTINGS, settings.backedUpSettings().toSettingsJson())
                         .put(ACCOUNTS, JSONArray(sections.map { it.toJson() }))
                 try {
-                    BackupFile.write(output, header, BackupKey.of(password), body.toString())
+                    BackupFile.write(output, header, key, body.toString())
                     Outcome.Success(header)
                 } catch (error: IOException) {
                     Outcome.Failure(DomainError.Unknown(code = 0, message = "Backup not written: ${error.message}"))

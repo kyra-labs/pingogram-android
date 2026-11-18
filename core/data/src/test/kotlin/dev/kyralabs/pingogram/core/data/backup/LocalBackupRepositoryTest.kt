@@ -67,6 +67,7 @@ class LocalBackupRepositoryTest {
 
     private val settings = FakeSettings(mapOf("appearance.theme_mode" to "Dark"))
     private val locked = MutableStateFlow(setOf(LOCKED_CHAT))
+    private val keys = MemoryBackupKeyStore()
 
     private fun repository(vararg accounts: Account) =
         LocalBackupRepository(
@@ -79,6 +80,7 @@ class LocalBackupRepositoryTest {
                 ),
             lockedChats = FakeLockedChats(locked),
             appInfo = AppInfo(versionName = "2.4.0"),
+            keys = keys,
             clock = FixedClock,
             io = Dispatchers.Unconfined,
         )
@@ -139,6 +141,20 @@ class LocalBackupRepositoryTest {
 
             assertEquals(emptyList<AccountBackup>(), backup.accounts)
             assertEquals(setOf(BackupSection.Settings), backup.header.sections)
+        }
+
+    @Test
+    fun `a backup written with a password keeps its key, whose backups the password opens`() =
+        runTest {
+            val repository = repository(Account(USER).withData())
+            repository.backup()
+            val key = checkNotNull(keys.kept.value)
+
+            val automatic = ByteArrayOutputStream().also { repository.write(it, key) }.toByteArray()
+
+            val opened = repository.open(automatic.inputStream(), PASSWORD) as BackupOpening.Opened
+            assertEquals(setOf(USER), opened.backup.accounts.map { it.userId }.toSet())
+            assertEquals(BackupOpening.WrongPassword, repository.open(automatic.inputStream(), "guess"))
         }
 
     @Test

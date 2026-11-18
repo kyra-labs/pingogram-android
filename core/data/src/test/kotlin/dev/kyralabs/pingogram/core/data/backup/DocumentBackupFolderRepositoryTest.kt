@@ -117,7 +117,7 @@ class DocumentBackupFolderRepositoryTest {
         }
 
     /** Folders by tree URI, files by "<tree>/<n>", the grants kept. */
-    private class MemoryDocuments : BackupDocuments {
+    class MemoryDocuments : BackupDocuments {
         val folders = mutableMapOf<String, String>()
         val contents = mutableMapOf<String, ByteArray>()
         private val files = mutableMapOf<String, BackupDocument>()
@@ -204,7 +204,7 @@ class DocumentBackupFolderRepositoryTest {
             Outcome.Success(BackupRestored(settings = true, accounts = emptyList(), otherAccounts = emptyList()))
     }
 
-    private object FixedClock : WallClock {
+    object FixedClock : WallClock {
         override fun now(): Instant = Instant.ofEpochMilli(NOW_MILLIS)
 
         override fun zone(): ZoneId = ZoneId.of("UTC")

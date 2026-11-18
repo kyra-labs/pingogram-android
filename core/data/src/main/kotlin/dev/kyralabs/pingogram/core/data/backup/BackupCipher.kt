@@ -45,16 +45,23 @@ internal object BackupCipher {
         }
     }
 
-    /** [plain] encrypted with [key] under a new random nonce, which comes back with it; [aad] is authenticated too. */
+    /**
+     * [plain] encrypted with [key] under a new random nonce, which [aad] is given to authenticate with the rest. A key
+     * kept in Android's Keystore ([key] without its bytes) picks its own nonce, as the Keystore requires.
+     */
     fun encrypt(
         key: SecretKey,
         aad: (nonce: ByteArray) -> ByteArray,
         plain: ByteArray,
     ): ByteArray {
-        val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, nonce))
-        cipher.updateAAD(aad(nonce))
+        if (key.encoded == null) {
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+        } else {
+            val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
+            cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, nonce))
+        }
+        cipher.updateAAD(aad(cipher.iv))
         return cipher.doFinal(plain)
     }
 

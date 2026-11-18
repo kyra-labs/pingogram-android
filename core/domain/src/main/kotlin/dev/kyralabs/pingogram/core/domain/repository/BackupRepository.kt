@@ -17,8 +17,9 @@ import java.io.OutputStream
 interface BackupRepository {
     /**
      * Writes a backup of the settings and of every signed-in account (never the demo) into [output], encrypted with
-     * [password], and answers its header. Slow (the key's rounds); fails with `DomainError.Unknown` if [output] cannot
-     * be written.
+     * [password], and answers its header; the password's key is then kept for automatic backups
+     * ([AutomaticBackupRepository]), never the password. Slow (the key's rounds); fails with `DomainError.Unknown` if
+     * [output] cannot be written.
      */
     suspend fun write(
         output: OutputStream,
