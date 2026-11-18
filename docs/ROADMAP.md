@@ -166,10 +166,10 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 The owner's decision of 2026-11-17 (`REQUIREMENTS.md` §5.10, ADR 0039):
 
 - [ ] Backup and restore (ADR 0039)
-- [ ] Mentions & replies page (FR-X1)
-- [ ] Snippets (FR-X2)
-- [ ] Add to calendar, open in maps (FR-X3)
-- [ ] Skip silence in voice and round video messages (FR-X4)
+- [x] Mentions & replies page (FR-X1)
+- [x] Snippets (FR-X2)
+- [x] Add to calendar, open in maps (FR-X3)
+- [x] Skip silence in voice and round video messages (FR-X4)
 - [ ] Channel feed (FR-X5)
 
 ## Backlog (unscheduled)
