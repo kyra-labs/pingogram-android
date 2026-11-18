@@ -888,6 +888,8 @@ internal class FakeAudioPlayer : AudioPlayer {
 
     override var durationMillis: Long? = null
 
+    override var speed = 1f
+
     /** `play:<path>:<kind>:<position>`, `pause`, `resume`, `seek:<position>`, `stop` and `release`, in order. */
     val calls = mutableListOf<String>()
 

@@ -39,7 +39,7 @@ import javax.inject.Inject
  * started: playing on in the background would need a media session in a foreground service. Voice messages play at the
  * earpiece while the phone is held to the ear ([RaiseToListen]), and skip their silences where the user chose so
  * (Media3's own silence skipping, `REQUIREMENTS.md` FR-X4, [SkipSilence]; never for music), which is Media3's
- * [UnstableApi], hence the opt-in.
+ * [UnstableApi], hence the opt-in. They play at the [speed] the conversation sets; music at 1×.
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 internal class ExoAudioPlayer
@@ -74,6 +74,14 @@ internal class ExoAudioPlayer
             set(surface) {
                 field = surface
                 onPlayer { it.setVideoSurface(surface) }
+            }
+
+        /** How fast speech plays; the player's thread reads it too. */
+        @Volatile
+        override var speed: Float = 1f
+            set(speed) {
+                field = speed
+                onPlayer { if (kind == AudioKind.Speech) it.setPlaybackSpeed(speed) }
             }
 
         override val positionMillis: Long get() = clock.positionAt(SystemClock.elapsedRealtime())
@@ -172,6 +180,7 @@ internal class ExoAudioPlayer
                     if (kind == AudioKind.Music) speechFocus?.abandon()
                 }
                 player.skipSilenceEnabled = kind == AudioKind.Speech && skipSilence.enabled
+                player.setPlaybackSpeed(if (kind == AudioKind.Speech) speed else 1f)
                 player.setVideoSurface(videoSurface)
                 player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))), positionMillis)
                 player.prepare()
@@ -265,6 +274,7 @@ internal class ExoAudioPlayer
                     advancing = player.isPlaying,
                     atMillis = SystemClock.elapsedRealtime(),
                     durationMillis = player.duration.takeIf { it != C.TIME_UNSET },
+                    speed = player.playbackParameters.speed,
                 )
             onMainThread { this.clock = clock }
         }
@@ -278,10 +288,11 @@ internal class ExoAudioPlayer
         private companion object {
             const val THREAD_NAME = "ChatAudioPlayer"
 
-            /** What moves the position or the length the main thread reads. */
+            /** What moves the position, its speed or the length the main thread reads. */
             val CLOCK_EVENTS =
                 intArrayOf(
                     Player.EVENT_IS_PLAYING_CHANGED,
+                    Player.EVENT_PLAYBACK_PARAMETERS_CHANGED,
                     Player.EVENT_POSITION_DISCONTINUITY,
                     Player.EVENT_PLAYBACK_STATE_CHANGED,
                     Player.EVENT_TIMELINE_CHANGED,

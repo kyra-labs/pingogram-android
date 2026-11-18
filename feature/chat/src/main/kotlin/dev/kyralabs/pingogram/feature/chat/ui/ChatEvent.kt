@@ -162,6 +162,12 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
+     * The speed chip of the voice or round video message in the player was tapped: speech plays at the next speed, now
+     * and from now on.
+     */
+    data object ChangePlaybackSpeed : ChatEvent
+
+    /**
      * The voice message or song [messageId] is to play from [fraction] (0–1) of its length: the one in the player
      * moves there, another one starts there.
      */

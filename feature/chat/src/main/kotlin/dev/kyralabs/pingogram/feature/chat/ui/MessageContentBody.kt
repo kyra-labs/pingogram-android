@@ -171,6 +171,7 @@ private fun BareOrEdgeToEdge(
                 content = content,
                 onPlayPause = { onEvent(ChatEvent.PlayPause(bubble.id, content.videoNote.file.id)) },
                 modifier = modifier,
+                onChangeSpeed = { onEvent(ChatEvent.ChangePlaybackSpeed) },
                 transcription = transcriptionOf(bubble, canTranscribe, onEvent),
                 playback = playback,
             )
@@ -274,6 +275,7 @@ private fun FileContent(
                 onPlayPause = onPlayPause,
                 onSeek = onSeek,
                 modifier = modifier,
+                onChangeSpeed = { onEvent(ChatEvent.ChangePlaybackSpeed) },
                 colors = colors,
                 transcription = transcriptionOf(bubble, canTranscribe, onEvent),
             )

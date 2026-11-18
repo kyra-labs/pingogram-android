@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
@@ -88,6 +89,7 @@ abstract class ChatViewModelHarness {
 
     /** What the device finds in messages' texts: nothing unless a test says so. */
     protected val textFinder = FakeDeviceTextFinder()
+    protected val playbackSettings = FakePlaybackSettingsRepository()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     internal val camera = FakeVideoNoteRecorder()
@@ -218,6 +220,7 @@ abstract class ChatViewModelHarness {
                 transcriptionRepositories = transcription,
                 places = chatPlaces,
                 textFinder = textFinder,
+                playbackSettings = playbackSettings,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

@@ -15,6 +15,11 @@ class PlaybackClockTest {
     }
 
     @Test
+    fun `at another speed, the position moves on that many times faster`() {
+        assertEquals(1_375, playing.copy(speed = 1.5f).positionAt(nowMillis = 50_250))
+    }
+
+    @Test
     fun `while the player does not advance, the position stays where it was reported`() {
         val paused = playing.copy(advancing = false)
 

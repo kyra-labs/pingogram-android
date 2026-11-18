@@ -20,6 +20,14 @@
     <!-- What screen readers hear when a round video message starts playing, or is paused. -->
     <string name="content_playing">Playing</string>
     <string name="content_paused">Paused</string>
+    <!-- The speed chip of a voice or round video message in the player: %1$s is the speed in the language's digits, "1.5×". -->
+    <string name="content_speed_value">%1$s×</string>
+    <!-- The speed chip, as screen readers hear it: %1$s is the speed in the language's digits, "Playback speed, 1.5 times". -->
+    <string name="content_speed">Playback speed, %1$s times</string>
+    <!-- The speed chip at 1×, as screen readers hear it. -->
+    <string name="content_speed_normal">Playback speed, normal</string>
+    <!-- What tapping the speed chip does, for screen readers. -->
+    <string name="content_change_speed">Change speed</string>
     <!-- For screen readers: nobody has played this voice message or watched this video message yet. -->
     <string name="content_not_played">Not played yet</string>
     <string name="content_download">Download</string>
