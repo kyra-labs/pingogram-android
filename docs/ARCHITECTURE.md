@@ -2148,8 +2148,10 @@ its folder or its password.
   (`takePersistableUriPermission`) and its tree URI in `BackupSettingsRepository` (keys under `backup.`, never in a
   backup); backups are its files ending in ".pgbackup", written as "Pingogram backup YYYY-MM-DD.pgbackup".
 - **The page** (`feature:settings` `backup/`, `BackupViewModel`, `BackupRoute` from Settings home's "On this phone"):
-  the folder and "Back up now", which asks for the password in a dialog (set at the folder's first backup); the
-  password goes to the backup and is never kept or saved in the state.
+  the folder and "Back up now", which asks for the password in a dialog (set at the folder's first backup), and
+  "Restore from file" (`ACTION_OPEN_DOCUMENT`, or `BackupRoute(restore)` from the chat list's card), which
+  `BackupRestoreFlow` takes through the password and a summary of what the backup holds to the restore; passwords go
+  to the backup and are never kept or saved in the state, nor is the opened backup.
 
 ## Feedback
 

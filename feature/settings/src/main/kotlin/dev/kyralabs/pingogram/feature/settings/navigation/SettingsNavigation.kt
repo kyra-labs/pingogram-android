@@ -273,7 +273,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<KeywordAlertsRoute> { KeywordAlertsScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     settingsPage<RemindersRoute> { RemindersScreenRoute(onBack = onBack) }
-    settingsPage<BackupRoute> { BackupScreenRoute(onBack = onBack) }
+    settingsPage<BackupRoute> { BackupScreenRoute(onBack, restore = it.toRoute<BackupRoute>().restore) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
@@ -396,7 +396,7 @@ internal val SettingsPage.route: Any
             SettingsPage.Focus -> FocusRoute
             SettingsPage.KeywordAlerts -> KeywordAlertsRoute
             SettingsPage.Reminders -> RemindersRoute
-            SettingsPage.Backup -> BackupRoute
+            SettingsPage.Backup -> BackupRoute()
         }
 
 private val NotificationSettingsPage.route: Any

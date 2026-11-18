@@ -252,9 +252,14 @@ data object LockedChatsRoute
 @Serializable
 data object RemindersRoute
 
-/** Backup & restore (`docs/adr/0039-local-backup-and-restore.md`), from Settings home's "On this phone" group. */
+/**
+ * Backup & restore (`docs/adr/0039-local-backup-and-restore.md`), from Settings home's "On this phone" group, or from
+ * the chat list's restore card, which names the backup to [restore] (its document URI).
+ */
 @Serializable
-data object BackupRoute
+data class BackupRoute(
+    val restore: String? = null,
+)
 
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable

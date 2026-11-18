@@ -12,7 +12,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +44,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun BackupRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    restore: String? = null,
     viewModel: BackupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,6 +81,18 @@ internal fun BackupRoute(
             launch { snackbarHostState.showSnackbar(message) }
         }
     }
+    // The backup the chat list's restore card named, restored once, not again after a rotation.
+    var restoreStarted by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(restore) {
+        if (restore != null && !restoreStarted) {
+            restoreStarted = true
+            viewModel.onEvent(BackupEvent.RestoreFile(restore))
+        }
+    }
+    val pickFile =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let { viewModel.onEvent(BackupEvent.RestoreFile(it.toString())) }
+        }
     val pickFolder =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
             uri?.let { viewModel.onEvent(BackupEvent.FolderPicked(it.toString())) }
@@ -85,6 +101,7 @@ internal fun BackupRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onPickFolder = { pickFolder.launch(null) },
+        onPickFile = { pickFile.launch(arrayOf("*/*")) },
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -93,14 +110,16 @@ internal fun BackupRoute(
 
 /**
  * Backup & restore (`docs/adr/0039-local-backup-and-restore.md`, `docs/DESIGN_SYSTEM.md` §6 "Backup & restore"): the
- * backup folder, picked once and shown by its name ([onPickFolder]), and "Back up now" with the last backup's date and
- * size, which asks for the backup's password ([BackupPasswordDialog]).
+ * backup folder, picked once and shown by its name ([onPickFolder]), "Back up now" with the last backup's date and
+ * size, which asks for the backup's password ([BackupPasswordDialog]), and "Restore from file" ([onPickFile]), whose
+ * password and summary [RestoreDialog] asks for.
  */
 @Composable
 internal fun BackupScreen(
     state: BackupUiState,
     onEvent: (BackupEvent) -> Unit,
     onPickFolder: () -> Unit,
+    onPickFile: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -114,6 +133,8 @@ internal fun BackupScreen(
         if (state is BackupUiState.Content) {
             Folder(state.folderName, onPickFolder)
             BackUpNow(state, onEvent)
+            Restore(onPickFile)
+            state.restore?.let { RestoreDialog(it, onEvent) }
             state.password?.let { dialog ->
                 BackupPasswordDialog(
                     dialog = dialog,
@@ -185,6 +206,22 @@ private fun BackUpNow(
                     },
                 onClick = { onEvent(BackupEvent.BackUp) },
                 enabled = state.canBackUp,
+            )
+        }
+    }
+}
+
+/** "Restore from file": Android's file picker (`ACTION_OPEN_DOCUMENT`), which finds backups in Drive or on USB. */
+@Composable
+private fun Restore(onPickFile: () -> Unit) {
+    SettingsGroup(title = stringResource(R.string.backup_section_restore)) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.backup_restore_file),
+                shapes = shapes,
+                icon = UiR.drawable.ic_download,
+                supportingContent = { Text(stringResource(R.string.backup_restore_file_summary)) },
+                onClick = onPickFile,
             )
         }
     }
