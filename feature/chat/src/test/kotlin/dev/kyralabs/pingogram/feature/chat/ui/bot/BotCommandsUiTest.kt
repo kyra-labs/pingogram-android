@@ -10,6 +10,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
@@ -61,6 +62,7 @@ class BotCommandsUiTest {
     private val sent = mutableListOf<String>()
     private val inserted = mutableListOf<String>()
     private val insertedSnippets = mutableListOf<Long>()
+    private var snippetSheets = 0
     private var menus = 0
     private var starts = 0
 
@@ -89,6 +91,7 @@ class BotCommandsUiTest {
                             onSendCommand = { sent += it },
                             onInsertCommand = { inserted += it },
                             onInsertSnippet = { insertedSnippets += it },
+                            onOpenSnippets = { snippetSheets++ },
                             onMenu = { menus++ },
                             onStart = { starts++ },
                         ),
@@ -145,6 +148,22 @@ class BotCommandsUiTest {
 
         assertEquals(listOf(3L), insertedSnippets)
         assertEquals(emptyList<String>(), sent)
+    }
+
+    @Test
+    fun `with snippets saved, the field offers Insert snippet to screen readers`() {
+        setComposer(ComposerUiState.Available(canSchedule = true, hasSnippets = true))
+
+        performCustomAction(string(R.string.composer_insert_snippet))
+
+        assertEquals(1, snippetSheets)
+    }
+
+    @Test
+    fun `without snippets the field offers no Insert snippet`() {
+        setComposer(ComposerUiState.Available(canSchedule = true))
+
+        field().assert(hasCustomAction(string(R.string.composer_insert_snippet)).not())
     }
 
     @Test

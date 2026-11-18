@@ -73,6 +73,9 @@ internal object BotPreviewData {
             ),
         )
 
+    /** The sheet of the field's "Insert snippet". */
+    val snippetsSheet = BotCommandsSheet(persistentListOf(), snippetSuggestions.snippets)
+
     /** While "/st" is typed in the bot chat: its commands, then the snippet "/stickers_list". */
     val commandsAndSnippets =
         suggestions.copy(snippets = persistentListOf(Snippet(3, "stickers_list", "Cats, Space, Retro")))

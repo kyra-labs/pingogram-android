@@ -215,7 +215,7 @@ internal fun ChatBottomBar(
                             panelState,
                             now,
                             onSendAs,
-                            bots.onMenu,
+                            bots,
                             // The commands' keys first, then the inline results'; the two never show together.
                             onFieldKey = { suggestionsState.keysFor(bots)(it) || inlineState.keysFor(inline)(it) },
                             fieldHint = inline.state?.takeIf { it.showsPlaceholder }?.placeholder,
@@ -273,7 +273,7 @@ private fun UnavailableLabel(reason: UiText) {
  * confirm with a haptic (`HapticFeedbackType.Confirm`).
  * [focus] moves the focus to the text field. While it records, the recording bar ([RecordingBar]) takes the place of
  * the pill. Before the pill, the send-as avatar ([SendAsButton]) where the user can choose who they send as
- * ([onSendAs]). The bot button opens the bots' commands or menu ([onBotMenu]); [onFieldKey] sees the field's keys
+ * ([onSendAs]). The bot button opens the bots' commands or menu ([bots]); [onFieldKey] sees the field's keys
  * first, for the command suggestions.
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach buttons.
@@ -289,7 +289,7 @@ private fun Composer(
     panel: ComposerPanelState,
     now: () -> Instant = Instant::now,
     onSendAs: () -> Unit = {},
-    onBotMenu: () -> Unit = {},
+    bots: BotInput = BotInput(),
     onFieldKey: (KeyEvent) -> Boolean = { false },
     fieldHint: String? = null,
     botKeyboard: BotKeyboardInput? = null,
@@ -336,7 +336,7 @@ private fun Composer(
                         focusRequester = focusRequester,
                         canSend = canSend,
                         modifier = Modifier.weight(1f),
-                        onBotMenu = onBotMenu,
+                        bots = bots,
                         onFieldKey = onFieldKey,
                         hint = fieldHint,
                         botKeyboard = botKeyboard,
@@ -416,8 +416,9 @@ private fun RowScope.ComposerAction(
  * field is empty ([canSend] false) where the chat takes photos and the composer does not edit.
  *
  * Where the chat's bots offer commands or a menu ([ComposerUiState.Available.bot]), the bot button ([BotMenuButton],
- * [onBotMenu]) takes the start and the "+" the gallery's place at the end, while the field is empty, so the field keeps
- * the width it has in other chats; the gallery is the attach menu's first option.
+ * [BotInput.onMenu]) takes the start and the "+" the gallery's place at the end, while the field is empty, so the
+ * field keeps the width it has in other chats; the gallery is the attach menu's first option. With snippets saved, the
+ * field's menu offers "Insert snippet" ([BotInput.onOpenSnippets]).
  */
 @Suppress("LongParameterList") // The field's state, where its text and focus go, and its buttons.
 @Composable
@@ -432,7 +433,7 @@ private fun ComposerPill(
     focusRequester: FocusRequester,
     canSend: State<Boolean>,
     modifier: Modifier = Modifier,
-    onBotMenu: () -> Unit = {},
+    bots: BotInput = BotInput(),
     onFieldKey: (KeyEvent) -> Boolean = { false },
     hint: String? = null,
     botKeyboard: BotKeyboardInput? = null,
@@ -450,7 +451,7 @@ private fun ComposerPill(
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        leadingIcons = pillLeadingIcons(composer, hasText, attach, onBotMenu),
+        leadingIcons = pillLeadingIcons(composer, hasText, attach, bots.onMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
             PanelButton(panel, focusRequester)
@@ -460,6 +461,7 @@ private fun ComposerPill(
         hint = hint,
         // The AI editor rewrites the message being written, never a caption or a comment.
         onAiEdit = LocalAiEditor.current?.let { open -> { open(text.content) } },
+        onSnippets = bots.onOpenSnippets.takeIf { composer.hasSnippets },
     )
 }
 
@@ -476,6 +478,7 @@ internal class BotInput(
     val onSendCommand: (String) -> Unit = {},
     val onInsertCommand: (String) -> Unit = {},
     val onInsertSnippet: (id: Long) -> Unit = {},
+    val onOpenSnippets: () -> Unit = {},
     val onMenu: () -> Unit = {},
     val onStart: () -> Unit = {},
     val reply: BotReplyUiState = BotReplyUiState(),

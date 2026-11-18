@@ -23,11 +23,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.BotEvent
@@ -58,7 +60,60 @@ internal fun BotCommandsBottomSheet(
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
     PingogramBottomSheet(onDismissRequest = { currentOnEvent(BotEvent.DismissCommands) }) {
-        BotCommandsContent(sheet, currentOnEvent)
+        if (sheet.commands.isEmpty() && sheet.snippets.isNotEmpty()) {
+            SnippetsContent(sheet, currentOnEvent)
+        } else {
+            BotCommandsContent(sheet, currentOnEvent)
+        }
+    }
+}
+
+/**
+ * The sheet of the field's "Insert snippet" (`REQUIREMENTS.md` FR-X2): "Snippets" in `titleLargeEmphasized`, then the
+ * account's snippets in their order as the commands are listed, each "/" and its name over two lines of its text; a tap
+ * puts the text at the cursor, in place of the selection ([BotEvent.PickSnippet]), and closes the sheet. Nothing is
+ * sent.
+ */
+@Composable
+internal fun SnippetsContent(
+    sheet: BotCommandsSheet,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    val insets = sheetRowInsets()
+    Column(Modifier.padding(bottom = spacing.large)) {
+        Text(
+            text = stringResource(R.string.snippets_sheet_title),
+            style = MaterialTheme.typography.titleLargeEmphasized,
+            modifier =
+                Modifier
+                    .padding(horizontal = spacing.large, vertical = spacing.small)
+                    .semantics { heading() },
+        )
+        LazyColumn(Modifier.testTag(SNIPPETS_TEST_TAG)) {
+            items(sheet.snippets, key = { it.id }, contentType = { CONTENT_TYPE_SNIPPET }) { snippet ->
+                ListItem(
+                    onClick = { onEvent(BotEvent.PickSnippet(snippet.id)) },
+                    modifier = Modifier.padding(insets),
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    contentPadding = insetContentPadding(insets),
+                    supportingContent = {
+                        Text(
+                            text = snippet.text,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyMedium.userContent,
+                        )
+                    },
+                ) {
+                    Text(
+                        text = "/${snippet.name}",
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodyLarge.userContent,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -142,6 +197,10 @@ private fun BotCommandRow(
 private const val SEARCH_THRESHOLD = 8
 
 private const val CONTENT_TYPE_COMMAND = "command"
+private const val CONTENT_TYPE_SNIPPET = "snippet"
+
+/** The sheet's snippets, for UI tests. */
+internal const val SNIPPETS_TEST_TAG = "snippets_sheet"
 
 /** The sheet's commands, for UI tests. */
 internal const val COMMANDS_TEST_TAG = "bot_commands"
@@ -150,6 +209,12 @@ internal const val COMMANDS_TEST_TAG = "bot_commands"
 @Composable
 private fun BotCommandsSheetPreview() {
     PingogramPreview { BotCommandsContent(BotPreviewData.sheet, onEvent = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun SnippetsSheetPreview() {
+    PingogramPreview { SnippetsContent(BotPreviewData.snippetsSheet, onEvent = {}) }
 }
 
 @PingogramPreviews
