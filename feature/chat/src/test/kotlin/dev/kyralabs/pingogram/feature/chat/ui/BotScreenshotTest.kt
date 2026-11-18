@@ -29,9 +29,9 @@ import org.robolectric.annotation.Config
  * Goldens of the bots in the conversation (`docs/TESTING.md`, `REQUIREMENTS.md` FR-C5) on a compact phone, light and
  * dark: the bot chat's composer with "/" at the pill's start and "+" at its end; the suggestions while "/st" is typed;
  * a group's suggestions of two bots, with their avatars; snippets suggested in a chat with a person, and after a bot's
- * commands (`REQUIREMENTS.md` FR-X2); the commands sheet, and a group's; the field menu's snippets sheet; the empty bot chat with
- * what the bot does and "Start". The suggestions also right to left; the empty chat and the suggestions in an expanded
- * window; the sheet at 200% font scale. Brand colors.
+ * commands (`REQUIREMENTS.md` FR-X2); the commands sheet, and a group's; the field menu's snippets sheet; the empty
+ * bot chat with what the bot does and "Start". The suggestions also right to left; the empty chat and the suggestions
+ * in an expanded window; the sheet at 200% font scale. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
