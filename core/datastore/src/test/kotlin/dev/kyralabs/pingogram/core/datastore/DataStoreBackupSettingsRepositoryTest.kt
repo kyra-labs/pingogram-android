@@ -65,7 +65,10 @@ class DataStoreBackupSettingsRepositoryTest {
             assertEquals(Outcome.Success(Unit), first.setFrequency(BackupFrequency.Daily))
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
-            assertEquals(BackupFrequency.Daily, DataStoreBackupSettingsRepository(dataStore(), backgroundScope).frequency.first())
+            assertEquals(
+                BackupFrequency.Daily,
+                DataStoreBackupSettingsRepository(dataStore(), backgroundScope).frequency.first(),
+            )
         }
 
     @Test
