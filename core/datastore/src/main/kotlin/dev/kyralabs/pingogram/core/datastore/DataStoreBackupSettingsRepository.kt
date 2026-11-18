@@ -8,14 +8,17 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +31,7 @@ class DataStoreBackupSettingsRepository
     @Inject
     constructor(
         @param:SettingsDataStore private val dataStore: DataStore<Preferences>,
+        @param:ApplicationScope private val scope: CoroutineScope,
     ) : BackupSettingsRepository {
         private val data: Flow<Preferences> =
             dataStore.data.catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
@@ -41,10 +45,14 @@ class DataStoreBackupSettingsRepository
 
         override suspend fun dismissRestore(document: String): Outcome<Unit> = save { it[DISMISSED_FOR] = document }
 
-        override val restorePromptDismissed: Flow<Boolean> =
-            data.map { it[PROMPT_DISMISSED] ?: false }.distinctUntilChanged()
+        override val restorePromptPending: Flow<Boolean> =
+            data.map { it[PROMPT_PENDING] ?: false }.distinctUntilChanged()
 
-        override suspend fun dismissRestorePrompt(): Outcome<Unit> = save { it[PROMPT_DISMISSED] = true }
+        override fun offerRestorePrompt() {
+            scope.launch { save { it[PROMPT_PENDING] = true } }
+        }
+
+        override suspend fun dismissRestorePrompt(): Outcome<Unit> = save { it.remove(PROMPT_PENDING) }
 
         override val frequency: Flow<BackupFrequency?> =
             data
@@ -66,7 +74,7 @@ class DataStoreBackupSettingsRepository
 // The keys in the settings file; renaming one loses what users saved under it.
 private val FOLDER = stringPreferencesKey("backup.folder")
 private val DISMISSED_FOR = stringPreferencesKey("backup.restore_dismissed_for")
-private val PROMPT_DISMISSED = booleanPreferencesKey("backup.restore_prompt_dismissed")
+private val PROMPT_PENDING = booleanPreferencesKey("backup.restore_prompt_pending")
 
 /** By its name, so one this version does not know reads as none chosen. */
 private val FREQUENCY = stringPreferencesKey("backup.frequency")

@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 
 /**
- * The chat list's restore card: the kept folder's newest backup, or the offer to restore from a file while no folder is
- * kept; "Not now" hiding it (for that backup, or for good), "Restore" and a picked file opening Backup & restore, and
- * nothing in the demo.
+ * The chat list's restore card: the kept folder's newest backup, or after a sign-in the offer to restore from a file while
+ * no folder is kept; "Not now" hiding it (for that backup, or until the next sign-in), "Restore" and a picked file
+ * opening Backup & restore, and nothing in the demo.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestorePromptViewModelTest {
@@ -63,20 +63,25 @@ class RestorePromptViewModelTest {
     }
 
     @Test
-    fun `without a kept folder, it offers to restore from a file until hidden for good`() =
+    fun `without a kept folder, a sign-in offers to restore from a file until hidden`() =
         runTest {
             val viewModel = viewModel()
+            assertEquals(RestorePromptUiState.Hidden, viewModel.uiState.value)
+
+            settings.offerRestorePrompt()
+            runCurrent()
             assertEquals(RestorePromptUiState.FromFile, viewModel.uiState.value)
 
             send(viewModel, RestorePromptEvent.NotNow)
 
-            assertEquals(true, settings.restorePromptDismissed.value)
+            assertEquals(false, settings.restorePromptPending.value)
             assertEquals(RestorePromptUiState.Hidden, viewModel.uiState.value)
         }
 
     @Test
     fun `a picked file opens Backup & restore with it, and the offer goes`() =
         runTest {
+            settings.offerRestorePrompt()
             val viewModel = viewModel()
             val effects = effects(viewModel)
 

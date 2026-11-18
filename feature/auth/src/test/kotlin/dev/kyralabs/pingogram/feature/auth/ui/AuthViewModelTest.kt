@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeBackupSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -53,6 +54,7 @@ import kotlin.time.Duration.Companion.seconds
 class AuthViewModelTest {
     private val client = FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready)
     private val savedState = SavedStateHandle()
+    private val backupSettings = FakeBackupSettingsRepository()
 
     @BeforeEach
     fun setUp() {
@@ -82,6 +84,7 @@ class AuthViewModelTest {
             connectionRepository = TdlibConnectionRepository(client),
             deviceAccounts = deviceAccounts,
             demo = demo,
+            backupSettings = backupSettings,
             timeSource = testScheduler.timeSource,
         ).also { runCurrent() }
 
@@ -1850,6 +1853,8 @@ class AuthViewModelTest {
 
                 assertEquals(AuthStepUiState.Done, viewModel.state.step)
                 assertEquals(listOf(AuthEffect.InputAccepted, AuthEffect.Authorized), effects)
+                // The chat list then offers to restore a backup.
+                assertEquals(true, backupSettings.restorePromptPending.value)
             }
 
         @Test

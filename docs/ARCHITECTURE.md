@@ -2155,7 +2155,8 @@ its folder or its password.
 - **The restore card** (`feature:chats` `restore/`, `RestorePromptViewModel`, `RestorePromptHost` in the chat list's
   header beside the notification request): the kept folder's newest backup until restored or hidden for it
   (`BackupSettingsRepository.restoreDismissedFor`), or, while no folder is kept, the offer to restore from a file
-  until used or hidden (`restorePromptDismissed`); never in the demo. "Restore" and a picked file open
+  from a sign-in until used or hidden (`restorePromptPending`, set by `AuthViewModel` through `offerRestorePrompt()`
+  in the app's scope, so the users of an update never see it); never in the demo. "Restore" and a picked file open
   `BackupRoute(restore)` through `ChatListHeaderActions.openBackup`.
 
 ## Feedback

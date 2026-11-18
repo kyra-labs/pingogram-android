@@ -21,7 +21,7 @@ import javax.inject.Inject
 /** What the chat list offers about restoring a backup (`docs/adr/0039-local-backup-and-restore.md`). */
 @Immutable
 sealed interface RestorePromptUiState {
-    /** Nothing: the demo, a backup hidden, a folder without backups, or the offer to restore from a file hidden. */
+    /** Nothing: the demo, a backup hidden, a folder without backups, or no folder and no sign-in to offer a file for. */
     data object Hidden : RestorePromptUiState
 
     /** "Restore from your backup of 12 Nov?": the kept folder's newest backup, [document], written at [modifiedAt]. */
@@ -30,13 +30,13 @@ sealed interface RestorePromptUiState {
         val modifiedAt: Instant,
     ) : RestorePromptUiState
 
-    /** "Restore settings from a backup?" while no folder is kept (a new phone, a reinstall), with "Choose file". */
+    /** "Restore settings from a backup?" after a sign-in while no folder is kept (a new phone), with "Choose file". */
     data object FromFile : RestorePromptUiState
 }
 
 /** What the user does with the card. */
 sealed interface RestorePromptEvent {
-    /** Hides the card: for that backup, or the offer to restore from a file for good. */
+    /** Hides the card: for that backup, or the offer to restore from a file until the next sign-in. */
     data object NotNow : RestorePromptEvent
 
     /** "Restore" on the kept folder's backup. */
@@ -65,7 +65,8 @@ sealed interface RestorePromptEffect {
 /**
  * The restore card above the chat list (`docs/adr/0039-local-backup-and-restore.md`, "Restoring"), shown after signing
  * in: while a backup folder is kept, its newest backup until the user restores it or hides it ("Not now" hides it for
- * that backup); while none is kept, the offer to restore from a file until it is used or hidden. Never in the demo.
+ * that backup); while none is kept, after a sign-in on this phone, the offer to restore from a file until it is used or
+ * hidden, so the users of an update never see it. Never in the demo.
  * Restoring itself is Backup & restore's, which the card opens with the backup named.
  */
 @HiltViewModel
@@ -84,16 +85,16 @@ class RestorePromptViewModel
             combine(
                 folders.folder,
                 settings.restoreDismissedFor,
-                settings.restorePromptDismissed,
+                settings.restorePromptPending,
                 demo.isDemo,
-            ) { folder, dismissedFor, promptDismissed, isDemo ->
+            ) { folder, dismissedFor, promptPending, isDemo ->
                 val newest = folder?.backups?.firstOrNull()
                 when {
                     isDemo -> {
                         RestorePromptUiState.Hidden
                     }
 
-                    folder == null && !promptDismissed -> {
+                    folder == null && promptPending -> {
                         RestorePromptUiState.FromFile
                     }
 
