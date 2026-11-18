@@ -34,8 +34,10 @@ import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelViewModel
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.mentions.MentionsRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute as ArchiveSettingsDestination
 import dev.kyralabs.pingogram.core.navigation.CatchUpRoute as CatchUpDestination
+import dev.kyralabs.pingogram.core.navigation.MentionsRoute as MentionsDestination
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
@@ -86,6 +88,17 @@ fun ChatListPane(
         onOpenMessage = onOpenMessage,
         onOpenTopic = onOpenTopic,
     )
+}
+
+/**
+ * Adds Mentions & replies, [MentionsDestination], to the graph; [onBack] leaves it, and a row opens its chat at the
+ * message through [onOpenMessage].
+ */
+fun NavGraphBuilder.mentionsScreen(
+    onBack: () -> Unit,
+    onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
+) {
+    composable<MentionsDestination> { MentionsRoute(onBack = onBack, onOpenMessage = onOpenMessage) }
 }
 
 /**

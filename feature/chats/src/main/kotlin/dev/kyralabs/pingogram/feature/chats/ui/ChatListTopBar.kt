@@ -125,8 +125,9 @@ internal fun ChatListScreenTopBar(
  *   the connection pill ([ConnectionPill]) in its place (`REQUIREMENTS.md` FR-L5).
  * - **Collapsed**: "Chats" in `titleLargeEmphasized` on the dense bar's height (`sizes.denseTopAppBar`, §7); the
  *   status line goes, and while not connected one line says the connection's state.
- * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), search ([HeaderSearchButton])
- *   and the signed-in user's avatar ([HeaderAccountButton]), from [actions].
+ * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), Mentions & replies
+ *   ([MentionsButton]), search ([HeaderSearchButton]) and the signed-in user's avatar ([HeaderAccountButton]), from
+ *   [actions].
  *
  * The bar keeps the window margin ([windowMargin]): on medium and wider windows its title lines up with the rows'
  * content. In selection mode it shows how many chats are selected, with a button that clears the selection, no
@@ -185,6 +186,7 @@ internal fun ChatListTopBar(
                 actions = {
                     if (selectedCount == null) {
                         state.hiddenArchive?.let { HiddenArchiveButton(it, onOpenArchive) }
+                        MentionsButton(summary, onClick = { actions?.openMentions?.invoke() })
                         HeaderSearchButton(actions)
                         HeaderAccountButton(summary, actions)
                     }
@@ -276,6 +278,46 @@ private fun SelectionTitle(
             maxLines = 1,
             style = style,
         )
+    }
+}
+
+/**
+ * Mentions & replies (`docs/DESIGN_SYSTEM.md` §6): a [TopBarAction] with the alternate email symbol, which opens the
+ * page, and how many chats have unread mentions ([summary]'s) in a `primary` badge. Screen readers hear "Mentions &
+ * replies, 3 chats with unread mentions".
+ */
+@Composable
+private fun MentionsButton(
+    summary: () -> ChatListSummary,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(R.string.mentions_title)
+    val resources = LocalResources.current
+    TopBarAction(
+        label = label,
+        onClick = onClick,
+        description = {
+            val count = summary().mentionChats
+            if (count > 0) {
+                val unread = resources.getQuantityString(R.plurals.mentions_a11y_unread_chats, count, count)
+                resources.getString(R.string.chat_list_a11y_tab, label, unread)
+            } else {
+                label
+            }
+        },
+    ) {
+        BadgedBox(
+            badge = {
+                // Read here alone, so a count changing recomposes the badge and nothing else.
+                val count = summary().mentionChats
+                if (count > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) { Text(unreadCountText(count)) }
+                }
+            },
+        ) { Icon(painterResource(UiR.drawable.ic_alternate_email), contentDescription = null) }
     }
 }
 
