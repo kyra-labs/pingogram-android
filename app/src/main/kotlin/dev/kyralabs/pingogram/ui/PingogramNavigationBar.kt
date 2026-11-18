@@ -129,13 +129,14 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * over the content and holds the [TopLevelDestination]s as tabs. It takes less height than a navigation bar and keeps
  * the tabs within thumb's reach. Search opens from the Chats tab's header (owner decision 2026-11-06).
  *
- * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
- * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
+ * Material has no floating navigation bar component. The pill takes the floating toolbar's shape and elevation on
+ * `surfaceContainerHigh`, a tonal step above the content it floats over (§6.1, as Google Photos' bar); Material's
+ * [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
  * `sizes.floatingNavigationBar` (56 dp). The tabs are built from tokens: the selected tab shows its filled icon and
- * label on a neutral tonal pill (`surfaceContainerHighest`, §6.1), the others their label, all in `onSurface`. Where
- * the labels do not fit (narrow phones, large font scales: measured, never cut, [labelsFit]), the other tabs show their
- * outlined icon instead, named for screen readers by the label. With an [accountMenu], a long press on the Settings tab
- * opens it ([AccountMenuAnchor]).
+ * label on a tinted pill (`secondaryContainer` / `onSecondaryContainer`), the others their label in `onSurfaceVariant`.
+ * Where the labels do not fit (narrow phones, large font scales: measured, never cut, [labelsFit]), the other tabs show
+ * their outlined icon instead, named for screen readers by the label. With an [accountMenu], a long press on the
+ * Settings tab opens it ([AccountMenuAnchor]).
  *
  * [newChat] (the Chats tab's round "New chat", [BarNewChatButton], or the Contacts tab's "Add contact") sits
  * `spacing.small` beside the pill, at its end. The pill stays centred in the window; only where it and the button's
@@ -150,7 +151,6 @@ internal fun PingogramNavigationBar(
     accountMenu: AccountMenuActions? = null,
     newChat: (@Composable () -> Unit)? = null,
 ) {
-    val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
     val gap = MaterialTheme.spacing.small
     val buttonWidth = MaterialTheme.sizes.floatingNavigationBar
     BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
@@ -159,8 +159,8 @@ internal fun PingogramNavigationBar(
         PillAndButton(gap, buttonWidth) {
             Surface(
                 shape = FloatingToolbarDefaults.ContainerShape,
-                color = colors.toolbarContainerColor,
-                contentColor = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
             ) {
                 NavigationTabs(selected, onSelect, showLabels, accountMenu)
@@ -214,9 +214,9 @@ private fun NavigationTabs(
             .padding(horizontal = MaterialTheme.spacing.small)
             .selectableGroup(),
     ) {
-        // The selected tab's pill and its content: a neutral tonal pill (§6.1).
+        // The selected tab's pill and its content: a tinted pill (§6.1).
         val colors = MaterialTheme.colorScheme
-        val selectedColors = colors.surfaceContainerHighest to colors.onSurface
+        val selectedColors = colors.secondaryContainer to colors.onSecondaryContainer
         TopLevelDestination.entries.forEach { destination ->
             val isSelected = destination == selected
             AccountMenuAnchor(

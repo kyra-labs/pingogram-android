@@ -44,9 +44,9 @@ import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 /**
  * The Chats tab's "New chat" beside the floating navigation bar on compact windows (`REQUIREMENTS.md` FR-L7,
  * `docs/DESIGN_SYSTEM.md` §6.1, §13.2; owner decision 2026-11-13): a round [FloatingActionButton], a full circle as
- * tall as the pill (`sizes.floatingNavigationBar`), with the filled edit symbol, in the bar's color with an
- * `onSurface` icon, named "New chat" for screen readers. It shows while [shown] (on the Chats tab, until New chat
- * opens) and grows into New chat from the circle ([NewChatButtonSlot]); [onClick] opens it.
+ * tall as the pill (`sizes.floatingNavigationBar`), with the filled edit symbol, in the bar's `surfaceContainerHigh`
+ * with an `onSurfaceVariant` icon, named "New chat" for screen readers. It shows while [shown] (on the Chats tab,
+ * until New chat opens) and grows into New chat from the circle ([NewChatButtonSlot]); [onClick] opens it.
  */
 @Composable
 internal fun BarNewChatButton(
@@ -62,8 +62,8 @@ internal fun BarNewChatButton(
             modifier = transform.size(size),
             shape = shape,
             // The bar's own color (`docs/DESIGN_SYSTEM.md` §6.1).
-            containerColor = FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_edit),
@@ -156,7 +156,7 @@ internal fun RailPrimaryActions(
 /**
  * The Contacts tab's "Add contact" (`docs/DESIGN_SYSTEM.md` §13.8; owner decision 2026-11-13), where "New chat" sits on
  * the Chats tab: beside the floating navigation bar, the same round button as tall as the pill, in the bar's color,
- * with the add-person symbol in `onSurface`. It shows while [shown] (on the Contacts tab) and fades in and out;
+ * with the add-person symbol in `onSurfaceVariant`. It shows while [shown] (on the Contacts tab) and fades in and out;
  * [onClick] opens Add contact.
  */
 @Composable
@@ -173,8 +173,8 @@ internal fun BarAddContactButton(
             modifier = Modifier.size(size),
             shape = shape,
             // The bar's own color (`docs/DESIGN_SYSTEM.md` §6.1).
-            containerColor = FloatingToolbarDefaults.standardFloatingToolbarColors().toolbarContainerColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_person_add),
