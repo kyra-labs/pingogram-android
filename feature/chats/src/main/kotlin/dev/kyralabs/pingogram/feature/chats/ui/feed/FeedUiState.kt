@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -14,8 +15,8 @@ import kotlinx.collections.immutable.persistentMapOf
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5, `docs/DESIGN_SYSTEM.md` §6 "Channel feed"): its posts, the counts its top
  * bar shows, why reading new posts failed if it did ([error], a card above the posts already on the phone), the
- * filter, the followed channels with their counts, for the filter sheet ([channels]), and each channel's sponsored
- * message ([ads], by channel).
+ * filter, the followed channels with their counts, for the filter sheet ([channels]), each channel's sponsored
+ * message ([ads], by channel), and "About this ad" while it is open ([adSheet]).
  */
 @Immutable
 data class FeedUiState(
@@ -26,6 +27,7 @@ data class FeedUiState(
     val filter: FeedFilter = FeedFilter(),
     val channels: ImmutableList<FeedChannel> = persistentListOf(),
     val ads: ImmutableMap<Long, FeedAd> = persistentMapOf(),
+    val adSheet: SponsoredSheet? = null,
 )
 
 /**

@@ -4,13 +4,14 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.SponsoredMessage
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -19,12 +20,14 @@ import kotlinx.coroutines.sync.withPermit
 /**
  * The channels' sponsored messages in the feed (`REQUIREMENTS.md` §2, FR-X5; `docs/DESIGN_SYSTEM.md` §6 "Channel
  * feed", frames 3 and 3b; Telegram's API terms), as the conversation's (`ChatSponsoredMessages` of `feature:chat`):
- * shown as TDLib returns them, labelled, and never changed or left out.
+ * shown as TDLib returns them, labelled, and never changed; only a report takes one away.
  *
  * - **Loading** ([load]): each channel's once per feed session, [PARALLEL_LOADS] at a time, never polled.
  * - **Placing** ([state]): a channel's first one, after that channel's newest post; never counted as unread.
  * - **Viewed** ([FeedAdEvent.Viewed]): once its whole card is on screen, through [view], once per session.
  * - **Opening** ([FeedAdEvent.Open]): TDLib hears of the click, then the sponsor's link opens ([FeedEffect.OpenUrl]).
+ * - **About this ad** ([FeedAdEvent.ShowInfo]) and reporting it ([FeedAdReports]), as the conversation's sheet does
+ *   (`core:ui`'s `SponsoredMessageSheet`).
  */
 internal class FeedSponsored(
     private val actions: FeedCardActions,
@@ -35,17 +38,37 @@ internal class FeedSponsored(
     /** Each loaded channel's sponsored messages, by channel. */
     private val loaded = MutableStateFlow<Map<Long, List<SponsoredMessage>>>(emptyMap())
 
+    /** Reported here, or all of them once Telegram hid ads for the user. */
+    private val hidden = MutableStateFlow<Set<Long>>(emptySet())
+
     private val asked = mutableSetOf<Long>()
     private val viewed = mutableSetOf<Long>()
     private val loads = Semaphore(PARALLEL_LOADS)
 
-    /** Each channel's first sponsored message, by channel. */
-    val state: Flow<ImmutableMap<Long, FeedAd>> =
-        loaded.map { loaded ->
-            loaded
-                .mapNotNull { (chatId, ads) -> ads.firstOrNull()?.let { chatId to it.toFeedAd(chatId) } }
-                .toMap()
-                .toImmutableMap()
+    private val reports =
+        FeedAdReports(
+            actions = actions,
+            scope = scope,
+            onEffect = onEffect,
+            onHide = { id -> hidden.update { it + id } },
+            onHideAll = {
+                hidden.update {
+                    it +
+                        loaded.value.values
+                            .flatten()
+                            .map(SponsoredMessage::id)
+                }
+            },
+        )
+
+    /** Each channel's shown ad, by channel, and "About this ad" while it is open. */
+    val state: Flow<FeedAds> =
+        combine(loaded, hidden, reports.sheet) { loaded, hidden, sheet ->
+            val ads =
+                loaded.mapNotNull { (chatId, ads) ->
+                    ads.firstOrNull { it.id !in hidden }?.let { chatId to it.toFeedAd(chatId) }
+                }
+            FeedAds(ads.toMap().toImmutableMap(), sheet?.sheet)
         }
 
     /** Loads the sponsored messages of [chatIds] not asked for yet in this session. */
@@ -71,6 +94,14 @@ internal class FeedSponsored(
             is FeedAdEvent.Open -> {
                 open(event)
             }
+
+            is FeedAdEvent.ShowInfo -> {
+                ad(event.chatId, event.id)?.let { reports.show(event.chatId, it) }
+            }
+
+            else -> {
+                reports.onEvent(event)
+            }
         }
     }
 
@@ -94,6 +125,12 @@ internal class FeedSponsored(
         const val PARALLEL_LOADS = 4
     }
 }
+
+/** The ads the feed shows, by channel, and "About this ad" while it is open. */
+internal data class FeedAds(
+    val byChannel: ImmutableMap<Long, FeedAd>,
+    val sheet: SponsoredSheet?,
+)
 
 /** [this] sponsored message of channel [chatId] as its card shows it, exactly as TDLib returned it. */
 private fun SponsoredMessage.toFeedAd(chatId: Long): FeedAd {

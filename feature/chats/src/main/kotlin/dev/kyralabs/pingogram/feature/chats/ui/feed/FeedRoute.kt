@@ -81,12 +81,26 @@ internal fun FeedRoute(
                         val opened = runCatching { uriHandler.openUri(effect.url) }.isSuccess
                         if (opened) "" else resources.getString(UiR.string.sponsored_no_app)
                     }
+
+                    is FeedEffect.AdNotice -> {
+                        resources.getString(effect.notice.text)
+                    }
                 }
             if (message.isNotEmpty()) snackbars.showSnackbar(message)
         }
     }
     FeedScreen(state = state, onEvent = viewModel::onEvent, onBack = onBack, modifier = modifier, snackbars = snackbars)
 }
+
+/** What a report of a sponsored message came to, as the conversation says it. */
+private val FeedAdNotice.text: Int
+    get() =
+        when (this) {
+            FeedAdNotice.Reported -> UiR.string.sponsored_reported
+            FeedAdNotice.AdsHidden -> UiR.string.sponsored_ads_hidden
+            FeedAdNotice.PremiumRequired -> UiR.string.sponsored_premium_required
+            FeedAdNotice.ReportFailed -> UiR.string.sponsored_report_failed
+        }
 
 /** Puts [link] on the clipboard as plain text, labelled for the system's clipboard preview. */
 private fun Context.copyLink(link: String) {

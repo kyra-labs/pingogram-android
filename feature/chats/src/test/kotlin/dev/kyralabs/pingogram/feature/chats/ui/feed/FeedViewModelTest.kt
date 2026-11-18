@@ -306,7 +306,7 @@ class FeedViewModelTest {
         }
 
     @Test
-    fun `an ad's click goes to TDLib before its link opens`() =
+    fun `an ad's click goes to TDLib before its link, and a report takes it away`() =
         runTest {
             feed(post(1, 12))
             ads.onLoad = { Outcome.Success(SponsoredMessages(persistentListOf(ad(100), ad(101)), 0)) }
@@ -315,9 +315,26 @@ class FeedViewModelTest {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
 
             send(viewModel, FeedAdEvent.Open(1, 100))
+            send(viewModel, FeedAdEvent.ShowInfo(1, 100))
+            assertEquals(
+                100L,
+                viewModel.uiState.value.adSheet
+                    ?.messageId,
+            )
+            send(viewModel, FeedAdEvent.Report)
 
             assertEquals(listOf(FakeSponsoredMessageRepository.Click(1, 100, false)), ads.clicks)
-            assertEquals(listOf<FeedEffect>(FeedEffect.OpenUrl("https://example.org/100")), effects)
+            assertEquals(
+                listOf(FeedEffect.OpenUrl("https://example.org/100"), FeedEffect.AdNotice(FeedAdNotice.Reported)),
+                effects,
+            )
+            assertEquals(null, viewModel.uiState.value.adSheet)
+            assertEquals(
+                101L,
+                viewModel.uiState.value.ads
+                    .getValue(1)
+                    .id,
+            )
         }
 
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */

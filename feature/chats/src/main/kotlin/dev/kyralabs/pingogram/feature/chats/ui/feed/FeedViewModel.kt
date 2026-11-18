@@ -14,7 +14,6 @@ import dev.kyralabs.pingogram.core.domain.model.isUnreadPost
 import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
@@ -200,7 +199,7 @@ class FeedViewModel internal constructor(
         read: Read,
         choices: Choices,
         now: Instant,
-        ads: ImmutableMap<Long, FeedAd>,
+        ads: FeedAds,
     ): FeedUiState {
         val formatter = timeFormatter()
         val chosen = choices.filter.chosen
@@ -234,7 +233,8 @@ class FeedViewModel internal constructor(
             error = (read as? Read.Done)?.error,
             filter = choices.filter,
             channels = feedChannels(all),
-            ads = ads,
+            ads = ads.byChannel,
+            adSheet = ads.sheet,
         )
     }
 

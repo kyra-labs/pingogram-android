@@ -5,7 +5,9 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SponsoredMessages
+import dev.kyralabs.pingogram.core.domain.model.SponsoredReportResult
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -16,7 +18,8 @@ import javax.inject.Inject
 /**
  * What the feed's cards do besides opening and reading posts (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"), through the
  * repositories the conversation uses: a post's link, a bookmark on this phone, and marking its channel as unread, the
- * only unread mark Telegram keeps (frame 6); and a channel's sponsored messages and their clicks (frames 3 and 3b).
+ * only unread mark Telegram keeps (frame 6); and a channel's sponsored messages, their clicks and their reports
+ * (frames 3 and 3b).
  */
 class FeedCardActions
     @Inject
@@ -36,6 +39,13 @@ class FeedCardActions
             id: Long,
             isMediaClick: Boolean,
         ): Outcome<Unit> = sponsored.click(chatId, id, isMediaClick)
+
+        /** Reports sponsored message [id] of channel [chatId], first without a reason, then with [option]. */
+        suspend fun reportAd(
+            chatId: Long,
+            id: Long,
+            option: ReportOptionId,
+        ): Outcome<SponsoredReportResult> = sponsored.report(chatId, id, option)
 
         /** The public or members-only link of [post], to its whole album. */
         suspend fun link(post: FeedPost): Outcome<String> =

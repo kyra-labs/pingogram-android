@@ -83,6 +83,7 @@ internal fun FeedScreen(
     if (filtering) {
         FeedFilterSheet(state.channels, state.filter, onEvent, onDismiss = { filtering = false })
     }
+    state.adSheet?.let { sheet -> FeedAdSheet(sheet, onEvent) }
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },
