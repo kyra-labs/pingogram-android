@@ -6,9 +6,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSpeed
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -19,7 +21,8 @@ import javax.inject.Singleton
 
 /**
  * [PlaybackSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). A file that cannot
- * be read and missing keys read as the defaults ([RaiseToListenSettings], silences not skipped).
+ * be read and missing keys read as the defaults ([RaiseToListenSettings], silences not skipped, 1×); the speed is kept
+ * as its factor, and one no speed has any more reads as 1×.
  */
 @Singleton
 class DataStorePlaybackSettingsRepository
@@ -50,9 +53,19 @@ class DataStorePlaybackSettingsRepository
 
         override suspend fun setSkipSilence(enabled: Boolean): Outcome<Unit> = save(SKIP_SILENCE, enabled)
 
-        private suspend fun save(
-            key: Preferences.Key<Boolean>,
-            value: Boolean,
+        override val playbackSpeed: Flow<PlaybackSpeed> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { preferences ->
+                    val factor = preferences[PLAYBACK_SPEED]
+                    PlaybackSpeed.entries.firstOrNull { it.factor == factor } ?: PlaybackSpeed.Normal
+                }.distinctUntilChanged()
+
+        override suspend fun setPlaybackSpeed(speed: PlaybackSpeed): Outcome<Unit> = save(PLAYBACK_SPEED, speed.factor)
+
+        private suspend fun <T> save(
+            key: Preferences.Key<T>,
+            value: T,
         ): Outcome<Unit> =
             try {
                 dataStore.edit { it[key] = value }
@@ -66,3 +79,4 @@ class DataStorePlaybackSettingsRepository
 private val RAISE_TO_LISTEN = booleanPreferencesKey("playback.raise_to_listen")
 private val PAUSE_WHEN_LOWERED = booleanPreferencesKey("playback.pause_when_lowered")
 private val SKIP_SILENCE = booleanPreferencesKey("playback.skip_silence")
+private val PLAYBACK_SPEED = floatPreferencesKey("playback.speed")
