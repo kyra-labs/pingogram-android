@@ -1460,6 +1460,19 @@
     <string name="settings_swipe_short_none">Nothing</string>
     <!-- Snippets (FR-X2, Appearance → Chats): texts the user saves to insert in the message field with "/" and a name. -->
     <string name="settings_snippets">Snippets</string>
+    <string name="settings_snippets_summary">Texts you insert by typing / and their name</string>
+    <string name="settings_snippets_new">New snippet</string>
+    <string name="settings_snippets_edit">Edit snippet</string>
+    <string name="settings_snippets_name_label">Name</string>
+    <string name="settings_snippets_name_hint">One word: letters, digits and _</string>
+    <string name="settings_snippets_name_not_one_word">Use one word of letters, digits and _, without spaces.</string>
+    <string name="settings_snippets_name_taken">Another snippet has this name.</string>
+    <string name="settings_snippets_text_label">Text</string>
+    <string name="settings_snippets_save">Save</string>
+    <string name="settings_snippets_delete">Delete</string>
+    <!-- The question before deleting a snippet; %1$s is its name, without the "/". -->
+    <string name="settings_snippets_delete_title">Delete /%1$s?</string>
+    <string name="settings_snippets_delete_text">Its text is deleted from this device. Messages you already sent keep it.</string>
     <string name="settings_snippets_loading">Loading snippets</string>
     <string name="settings_snippets_empty_title">No snippets yet</string>
     <string name="settings_snippets_empty_body">Save a text you often write, then type / and its name in a chat to insert it.</string>

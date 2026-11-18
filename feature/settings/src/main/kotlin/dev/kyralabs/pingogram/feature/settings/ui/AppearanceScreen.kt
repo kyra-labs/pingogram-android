@@ -46,8 +46,8 @@ import java.text.NumberFormat
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
  * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react, [onOpenSwipeActions]
- * Swipe actions, [onOpenShownFirst] Chats shown first, [onOpenTranscription] voice message transcription; [onBack]
- * leaves.
+ * Swipe actions, [onOpenShownFirst] Chats shown first, [onOpenTranscription] voice message transcription,
+ * [onOpenSnippets] Snippets; [onBack] leaves.
  */
 @Suppress("LongParameterList") // The six pages it opens, back, the modifier and the view model.
 @Composable
@@ -60,6 +60,7 @@ internal fun AppearanceRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenTranscription: () -> Unit = {},
+    onOpenSnippets: () -> Unit = {},
     viewModel: AppearanceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +98,7 @@ internal fun AppearanceRoute(
         onOpenSwipeActions = onOpenSwipeActions,
         onOpenShownFirst = onOpenShownFirst,
         onOpenTranscription = onOpenTranscription,
+        onOpenSnippets = onOpenSnippets,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -126,6 +128,7 @@ internal fun AppearanceScreen(
     onOpenSwipeActions: () -> Unit = {},
     onOpenShownFirst: () -> Unit = {},
     onOpenTranscription: () -> Unit = {},
+    onOpenSnippets: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     systemContrast: Contrast? = null,
     wallpaperSchemes: WallpaperSchemes? = null,
@@ -156,6 +159,7 @@ internal fun AppearanceScreen(
                         onOpenSwipeActions,
                         onOpenShownFirst,
                         onOpenTranscription,
+                        onOpenSnippets,
                     )
                 AppearanceContent(state.settings, chats, onEvent, pages, wallpaperSchemes, systemContrast)
             }
@@ -179,6 +183,7 @@ internal class AppearancePages(
     val onOpenSwipeActions: () -> Unit,
     val onOpenShownFirst: () -> Unit,
     val onOpenTranscription: () -> Unit = {},
+    val onOpenSnippets: () -> Unit = {},
 )
 
 @PingogramPreviews

@@ -18,7 +18,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Snippets: the page, light and dark, in AMOLED black, high contrast, right to left, a 700 dp window and at twice the
- * font size (`docs/DESIGN_SYSTEM.md` §12), and without snippets.
+ * font size (`docs/DESIGN_SYSTEM.md` §12), without snippets, the editor (new, and editing with a name taken) and the
+ * question before deleting.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -42,6 +43,15 @@ class SnippetsScreenshotTest {
     fun emptyDark() = capture("emptyDark", ThemeMode.Dark, SnippetsPreviewStates.empty)
 
     @Test
+    fun editorNewLight() = captureEditor("editorNewLight", ThemeMode.Light, SnippetsPreviewStates.newDraft)
+
+    @Test
+    fun editorEditingDark() = captureEditor("editorEditingDark", ThemeMode.Dark, SnippetsPreviewStates.editing)
+
+    @Test
+    fun deletingLight() = capture("deletingLight", ThemeMode.Light, SnippetsPreviewStates.deleting)
+
+    @Test
     fun amoled() = captureAudit(ScreenshotVariant.Amoled)
 
     @Test
@@ -63,6 +73,12 @@ class SnippetsScreenshotTest {
         themeMode: ThemeMode,
         state: SnippetsUiState = SnippetsPreviewStates.content,
     ) = composeRule.captureScreen(javaClass, name, themeMode) { Page(state) }
+
+    private fun captureEditor(
+        name: String,
+        themeMode: ThemeMode,
+        draft: SnippetDraft,
+    ) = composeRule.captureScreen(javaClass, name, themeMode) { SnippetEditorContent(draft, onEvent = {}) }
 
     private fun captureAudit(variant: ScreenshotVariant) =
         composeRule.captureScreen(javaClass, variant.goldenName, variant) { Page(SnippetsPreviewStates.content) }
