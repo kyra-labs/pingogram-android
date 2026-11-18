@@ -122,6 +122,27 @@ class TdlibKeywordHitRepositoryTest {
         }
 
     @Test
+    fun `a backup's matches are added where they are missing, the week's only`() =
+        runTest {
+            val repository = repository()
+            runCurrent()
+            receive(id = 10, chatId = 1)
+
+            repository.restore(
+                listOf(
+                    KeywordHit(chatId = 1, messageId = 10, word = "other", date = NOW),
+                    KeywordHit(chatId = 2, messageId = 20, word = "launch", date = NOW - 1),
+                    KeywordHit(2, 21, "launch", date = NOW - TdlibKeywordHitRepository.RECENT_SECONDS - 1),
+                ),
+            )
+
+            assertEquals(
+                listOf(KeywordHit(1, 10, "launch", NOW), KeywordHit(2, 20, "launch", NOW - 1)),
+                repository.recent.first(),
+            )
+        }
+
+    @Test
     fun `matches survive the process, older than a week ones go, and a read chat's are forgotten`() =
         runTest {
             val repository = repository()

@@ -125,6 +125,13 @@ class TdlibKeywordHitRepository internal constructor(
         change { list -> list.filterNot { it.chatId == chatId } }
     }
 
+    override suspend fun restore(hits: List<KeywordHit>) {
+        change { list ->
+            list +
+                hits.filter { hit -> list.none { it.chatId == hit.chatId && it.messageId == hit.messageId } }
+        }
+    }
+
     private suspend fun consider(message: TdApi.Message) {
         val text = message.takeIf { !it.isOutgoing && it.schedulingState == null }?.content?.searchableText()
         val matching = text?.let { matching.filterNotNull().first() }?.takeUnless { it.matcher.isEmpty }
