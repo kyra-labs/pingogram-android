@@ -46,7 +46,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
-import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -82,7 +81,7 @@ internal fun FeedScreen(
             val body = Modifier.fillMaxSize().padding(contentPadding)
             when (val content = state.content) {
                 FeedContent.Loading -> {
-                    FeedLoading(body)
+                    FeedSkeleton(contentPadding)
                 }
 
                 FeedContent.NoNewPosts -> {
@@ -223,15 +222,6 @@ private fun Modifier.card(
             .fillMaxWidth()
             .padding(horizontal = style.margin)
     }
-
-/** The delayed loading indicator in the middle of the sheet, named for screen readers. */
-@Composable
-private fun FeedLoading(modifier: Modifier) {
-    val description = stringResource(R.string.feed_loading)
-    Box(modifier, contentAlignment = Alignment.Center) {
-        DelayedLoadingIndicator(Modifier.semantics { contentDescription = description })
-    }
-}
 
 /** Nothing new: an empty state with "Back to chats" ([onBack]) and "Show read posts". */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

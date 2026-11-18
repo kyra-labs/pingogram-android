@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -131,6 +132,14 @@ class FeedScreenTest {
 
         composeRule.onNodeWithText("Couldn't load new posts").assertIsDisplayed()
         assertEquals(0, composeRule.onAllNodesWithText("No new posts").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun `while loading, skeleton cards are one Loading posts for screen readers`() {
+        setFeed(FeedUiState(content = FeedContent.Loading, channelCount = 14))
+
+        composeRule.onNodeWithContentDescription("Loading posts…").assertExists()
+        assertEquals(1, composeRule.onAllNodesWithText("Loading posts…").fetchSemanticsNodes().size)
     }
 
     private companion object {
