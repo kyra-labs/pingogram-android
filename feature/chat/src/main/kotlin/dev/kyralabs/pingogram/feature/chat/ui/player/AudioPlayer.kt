@@ -1,9 +1,12 @@
 package dev.kyralabs.pingogram.feature.chat.ui.player
 
+import android.view.Surface
+
 /**
- * Plays one local audio file at a time: the platform side of a conversation's playback (`ChatPlayback`), behind an
- * interface so tests use a fake. [ExoAudioPlayer] in the app. Used on the main thread only, where its [listener]
- * is called too. Public only because `ChatViewModel`'s injected constructor takes it.
+ * Plays one local audio file at a time (a round video message's picture too, on [videoSurface]): the platform side
+ * of a conversation's playback (`ChatPlayback`), behind an interface so tests use a fake. [ExoAudioPlayer] in the app.
+ * Used on the main thread only, where its [listener] is called too. Public only because `ChatViewModel`'s injected
+ * constructor takes it.
  */
 interface AudioPlayer {
     /** Told what the player does by itself; set by `ChatPlayback`. */
@@ -28,6 +31,14 @@ interface AudioPlayer {
     fun resume()
 
     fun seekTo(positionMillis: Long)
+
+    /**
+     * Where the picture of what plays, a round video message's, shows; null for none (the surface is gone). Kept for
+     * what plays next until it changes.
+     */
+    var videoSurface: Surface?
+        get() = null
+        set(_) {}
 
     /** Stops and empties the player; it can [play] again. */
     fun stop()

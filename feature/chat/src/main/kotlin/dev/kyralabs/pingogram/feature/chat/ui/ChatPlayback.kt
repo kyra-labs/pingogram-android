@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import android.view.Surface
 import androidx.compose.runtime.mutableFloatStateOf
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.onFailure
@@ -23,8 +24,9 @@ import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 
 /**
- * The voice messages and songs of a conversation as they play, for [ChatViewModel] (`REQUIREMENTS.md` FR-C4): one at
- * a time, on an [AudioPlayer], from files [files] downloads. [state] is the message in the player.
+ * The voice messages, round video messages and songs of a conversation as they play, for [ChatViewModel]
+ * (`REQUIREMENTS.md` FR-C4): one at a time, on an [AudioPlayer], from files [files] downloads. [state] is the message
+ * in the player.
  *
  * - **Play and pause** ([playPause]) toggle the message in the player; another message stops it and plays instead.
  *   A file that is not on the device downloads at visible priority first and plays once it is there; the message
@@ -135,6 +137,9 @@ internal class ChatPlayback(
             publish()
         }
     }
+
+    /** Where the picture of the round video message in the player shows; null for none. */
+    var videoSurface: Surface? by player::videoSurface
 
     /** Stops and frees the player for good. */
     fun release() {
@@ -248,6 +253,7 @@ private val MessageContent.playable: Playable?
     get() =
         when (this) {
             is MessageContent.VoiceNote -> Playable(voiceNote.file.id, AudioKind.Speech, voiceNote.duration * MILLIS)
+            is MessageContent.VideoNote -> Playable(videoNote.file.id, AudioKind.Speech, videoNote.duration * MILLIS)
             is MessageContent.Audio -> Playable(audio.file.id, AudioKind.Music, audio.duration * MILLIS)
             else -> null
         }

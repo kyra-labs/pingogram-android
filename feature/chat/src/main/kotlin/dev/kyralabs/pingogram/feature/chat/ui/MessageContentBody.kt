@@ -135,7 +135,7 @@ internal fun MessageContentBody(
         }
 
         content.isEdgeToEdge || content.isBare -> {
-            BareOrEdgeToEdge(bubble, onEvent, modifier, mediaShape, uploads, mediaDownloads, canTranscribe)
+            BareOrEdgeToEdge(bubble, playback, onEvent, modifier, mediaShape, uploads, mediaDownloads, canTranscribe)
         }
 
         content.downloadableFileId != null -> {
@@ -149,13 +149,14 @@ internal fun MessageContentBody(
 }
 
 /**
- * Photos, videos, GIFs, stickers and the like, with the upload of one being sent; a round video message with its
- * Transcribe button where the device can transcribe ([canTranscribe]).
+ * Photos, videos, GIFs, stickers and the like, with the upload of one being sent; a round video message, playing as
+ * [playback] says, with its Transcribe button where the device can transcribe ([canTranscribe]).
  */
 @Suppress("LongParameterList") // The message, how it shows, uploads and downloads, and whether it transcribes.
 @Composable
 private fun BareOrEdgeToEdge(
     bubble: ChatItem.Bubble,
+    playback: Playback,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
     mediaShape: CornerBasedShape,
@@ -168,9 +169,10 @@ private fun BareOrEdgeToEdge(
         if (content is MessageContent.VideoNote) {
             MessageVideoNote(
                 content = content,
-                onOpen = { onEvent(ChatEvent.OpenMedia(bubble.id)) },
+                onPlayPause = { onEvent(ChatEvent.PlayPause(bubble.id, content.videoNote.file.id)) },
                 modifier = modifier,
                 transcription = transcriptionOf(bubble, canTranscribe, onEvent),
+                playback = playback,
             )
         } else {
             MediaContent(bubble.id, content, onEvent, modifier, mediaShape, mediaDownloads)
@@ -224,7 +226,7 @@ private fun MediaContent(
         }
 
         is MessageContent.VideoNote -> {
-            MessageVideoNote(content, onOpen, modifier)
+            MessageVideoNote(content, { onEvent(ChatEvent.PlayPause(messageId, content.videoNote.file.id)) }, modifier)
         }
 
         is MessageContent.Sticker -> {
