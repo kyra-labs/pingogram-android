@@ -1,8 +1,10 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Backup
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
+import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -31,4 +33,12 @@ interface BackupRepository {
         input: InputStream,
         password: String,
     ): BackupOpening
+
+    /**
+     * Restores [backup]: its settings replace the current ones, except what never goes into backups (the passcode
+     * stays as it is); each account's data merges into the account on the phone with the same Telegram user id only,
+     * the newer of two entries for one message winning and past reminders restored as done. Deletes nothing and sends
+     * nothing to Telegram. Fails with `DomainError.Unknown` if the settings or an account's data cannot be written.
+     */
+    suspend fun restore(backup: Backup): Outcome<BackupRestored>
 }

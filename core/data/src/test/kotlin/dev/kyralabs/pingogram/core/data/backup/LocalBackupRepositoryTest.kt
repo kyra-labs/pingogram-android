@@ -5,8 +5,10 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AccountBackup
 import dev.kyralabs.pingogram.core.domain.model.AppInfo
+import dev.kyralabs.pingogram.core.domain.model.Backup
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
+import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
@@ -45,8 +47,8 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
- * [LocalBackupRepository] on fake accounts: what a backup holds and leaves out, its password and a newer format. On
- * Robolectric for Android's `org.json`.
+ * [LocalBackupRepository] on fake accounts: what a backup holds and leaves out, its password, a newer format, and a
+ * restore into the same account and into another one. On Robolectric for Android's `org.json`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -162,6 +164,51 @@ class LocalBackupRepositoryTest {
             assertEquals(BackupOpening.NewerVersion(newer), opened)
         }
 
+    @Test
+    fun `restoring merges into the same account, the newer entry winning and past reminders done`() =
+        runTest {
+            val source = repository(Account(USER, secretChats = setOf(SECRET_CHAT)).withData())
+            val backup = (source.open(source.backup().inputStream(), PASSWORD) as BackupOpening.Opened).backup
+            val phone = Account(USER)
+            phone.bookmarks.savedTags.value = listOf(BookmarkTag(id = 5, name = "work", color = 0))
+            phone.bookmarks.saved.value = listOf(Bookmark(CHAT, 10, savedAt = 50, note = "older"))
+            phone.snippets.saved.value = listOf(Snippet(3, "ADDR", "the phone's"))
+            settings.values = mapOf("appearance.theme_mode" to "Light", "passcode.hash" to "kept")
+
+            val restored = repository(phone).restore(backup)
+
+            assertEquals(Outcome.Success(BackupRestored(true, listOf(USER), otherAccounts = emptyList())), restored)
+            assertEquals(
+                listOf(Bookmark(CHAT, 10, savedAt = 100, tagIds = persistentListOf(5), note = "read later")),
+                phone.bookmarks.saved.value,
+            )
+            assertEquals(
+                listOf(MessageReminder(CHAT, 10, Instant.ofEpochSecond(PAST), isDone = true)),
+                phone.reminders.saved.value,
+            )
+            assertEquals(listOf(KeywordHit(CHAT, 13, "launch", date = 900)), phone.hits.hits.value)
+            assertEquals(listOf(Snippet(3, "ADDR", "the phone's")), phone.snippets.saved.value)
+            assertEquals(mapOf("appearance.theme_mode" to "Dark"), settings.restored)
+        }
+
+    @Test
+    fun `a backup of another account restores only the settings`() =
+        runTest {
+            val backup =
+                Backup(
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
+                    settings = mapOf("stickers.loop" to false),
+                    accounts = listOf(AccountBackup(USER, snippets = listOf(Snippet(1, "addr", "1 Main St")))),
+                )
+            val other = Account(OTHER_USER)
+
+            val restored = repository(other).restore(backup)
+
+            assertEquals(Outcome.Success(BackupRestored(true, emptyList(), otherAccounts = listOf(USER))), restored)
+            assertEquals(emptyList<Snippet>(), other.snippets.saved.value)
+            assertEquals(mapOf("stickers.loop" to false), settings.restored)
+        }
+
     /** The account's repositories that a backup uses; every other one fails the test. */
     private fun Account.repositories(): AccountRepositories =
         proxy { name, _ ->
@@ -264,6 +311,7 @@ class LocalBackupRepositoryTest {
     private companion object {
         const val PASSWORD = "correct horse"
         const val USER = 7L
+        const val OTHER_USER = 8L
         const val CHAT = 100L
         const val SECRET_CHAT = 200L
         const val LOCKED_CHAT = 300L
