@@ -296,6 +296,17 @@
     <string name="notification_prompt_allow">Allow</string>
     <string name="notification_prompt_open_settings">Open settings</string>
     <!-- Starting a chat (FR-L7): the Chats tab's button and its empty state's, and the New chat screen. -->
+    <!-- Mentions & replies (REQUIREMENTS.md FR-X1): the page's title, also the Chats tab header's button. -->
+    <string name="mentions_title">Mentions &amp; replies</string>
+    <string name="mentions_back">Back</string>
+    <!-- The page's groups: messages still unread where they were sent, then the ones read already. -->
+    <string name="mentions_unread">Unread</string>
+    <string name="mentions_earlier">Earlier</string>
+    <string name="mentions_loading">Loading mentions and replies</string>
+    <string name="mentions_empty_title">No mentions or replies</string>
+    <string name="mentions_empty_body">When someone in a group mentions you or replies to you, it shows here.</string>
+    <string name="mentions_error_title">Couldn\'t load mentions</string>
+    <string name="mentions_retry">Try again</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
