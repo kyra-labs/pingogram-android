@@ -315,6 +315,15 @@
     <!-- The Channel feed (REQUIREMENTS.md FR-X5): an unread post's time, after its dot. -->
     <string name="feed_new_at">New · %1$s</string>
     <string name="feed_open_in_channel">Open in channel</string>
+    <!-- An album card's last picture: how many more the album holds. -->
+    <string name="feed_album_more">+%1$d</string>
+    <!-- A poll option's share of the votes. -->
+    <string name="feed_poll_share">%1$d%%</string>
+    <plurals name="feed_poll_votes">
+        <item quantity="one">%1$s vote</item>
+        <item quantity="other">%1$s votes</item>
+    </plurals>
+    <string name="feed_poll_anonymous">Anonymous poll · %1$s</string>
     <string name="new_chat">New chat</string>
     <string name="new_chat_back">Back</string>
     <string name="new_chat_group">New group</string>
