@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
@@ -207,6 +208,9 @@ object ActiveAccountModule {
 
     @Provides
     fun mentionRepository(accounts: Accounts): MentionRepository = accounts.active.mentionRepository()
+
+    @Provides
+    fun channelFeedRepository(accounts: Accounts): ChannelFeedRepository = accounts.active.channelFeedRepository()
 
     @Provides
     fun contactRepository(accounts: Accounts): ContactRepository = accounts.active.contactRepository()
