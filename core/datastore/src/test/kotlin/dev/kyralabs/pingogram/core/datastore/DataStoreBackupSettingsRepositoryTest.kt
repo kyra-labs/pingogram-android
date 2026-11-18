@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -53,13 +54,26 @@ class DataStoreBackupSettingsRepositoryTest {
         }
 
     @Test
+    fun `how often backups write themselves is none chosen until chosen, then survives the process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStoreBackupSettingsRepository(dataStore(firstProcess))
+            assertEquals(null, first.frequency.first())
+            assertEquals(Outcome.Success(Unit), first.setFrequency(BackupFrequency.Daily))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            assertEquals(BackupFrequency.Daily, DataStoreBackupSettingsRepository(dataStore()).frequency.first())
+        }
+
+    @Test
     fun `none of it ever goes into a backup`() {
         assertEquals(
-            listOf(false, false, false),
+            listOf(false, false, false, false),
             listOf(
                 "backup.folder",
                 "backup.restore_dismissed_for",
                 "backup.restore_prompt_dismissed",
+                "backup.frequency",
             ).map(::isBackedUp),
         )
     }

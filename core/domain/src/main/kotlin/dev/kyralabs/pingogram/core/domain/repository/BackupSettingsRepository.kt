@@ -1,11 +1,13 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import kotlinx.coroutines.flow.Flow
 
 /**
  * What the backups (`docs/adr/0039-local-backup-and-restore.md`) keep on this phone, never in a backup: the folder the
- * user picked, and the restore card's "Not now". Never fails to read: what cannot be read is none.
+ * user picked, how often backups write themselves, and the restore card's "Not now". Never fails to read: what cannot
+ * be read is none.
  */
 interface BackupSettingsRepository {
     /** The backup folder's tree URI; null while none is kept. */
@@ -25,4 +27,10 @@ interface BackupSettingsRepository {
 
     /** Hides that card for good; fails as [setFolderUri]. */
     suspend fun dismissRestorePrompt(): Outcome<Unit>
+
+    /** How often backups write themselves, as the user chose; null while they have not chosen. */
+    val frequency: Flow<BackupFrequency?>
+
+    /** Saves how often backups write themselves; fails as [setFolderUri]. */
+    suspend fun setFrequency(frequency: BackupFrequency): Outcome<Unit>
 }
