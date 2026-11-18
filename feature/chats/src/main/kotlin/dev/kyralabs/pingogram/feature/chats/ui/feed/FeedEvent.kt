@@ -41,6 +41,22 @@ sealed interface FeedEvent {
     ) : FeedEvent
 }
 
+/** What the user does to a channel's sponsored message in the feed, as in the conversation. */
+sealed interface FeedAdEvent : FeedEvent {
+    /** The whole card of ad [id] of channel [chatId] is on screen: TDLib hears it was viewed, once. */
+    data class Viewed(
+        val chatId: Long,
+        val id: Long,
+    ) : FeedAdEvent
+
+    /** The user opened ad [id]: its button, or its media ([isMediaClick]); the sponsor's link opens. */
+    data class Open(
+        val chatId: Long,
+        val id: Long,
+        val isMediaClick: Boolean = false,
+    ) : FeedAdEvent
+}
+
 /**
  * What a post's menu offers (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 6): [MarkAsRead] for an unread post,
  * [MarkChannelUnread] for a read one, whose channel then shows as unread in the chat list.
@@ -69,6 +85,13 @@ sealed interface FeedEffect {
 
     /** Says the post was bookmarked. */
     data object Bookmarked : FeedEffect
+
+    /** Opens a sponsor's link. */
+    data class OpenUrl(
+        val url: String,
+    ) : FeedEffect {
+        override fun toString() = "OpenUrl(…)"
+    }
 
     /** Says an action failed with [error]. */
     data class ShowError(

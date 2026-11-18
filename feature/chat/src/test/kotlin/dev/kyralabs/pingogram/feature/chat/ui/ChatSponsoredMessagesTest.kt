@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.SponsoredMessage
 import dev.kyralabs.pingogram.core.domain.model.SponsoredMessages
 import dev.kyralabs.pingogram.core.domain.model.SponsoredReportResult
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.testing.FakeSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.ui.component.SponsoredReportStep
 import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA

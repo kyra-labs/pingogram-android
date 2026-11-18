@@ -3,15 +3,19 @@ package dev.kyralabs.pingogram.feature.chats.ui.feed
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5, `docs/DESIGN_SYSTEM.md` §6 "Channel feed"): its posts, the counts its top
  * bar shows, why reading new posts failed if it did ([error], a card above the posts already on the phone), the
- * filter, and the followed channels with their counts, for the filter sheet ([channels]).
+ * filter, the followed channels with their counts, for the filter sheet ([channels]), and each channel's sponsored
+ * message ([ads], by channel).
  */
 @Immutable
 data class FeedUiState(
@@ -21,7 +25,29 @@ data class FeedUiState(
     val error: DomainError? = null,
     val filter: FeedFilter = FeedFilter(),
     val channels: ImmutableList<FeedChannel> = persistentListOf(),
+    val ads: ImmutableMap<Long, FeedAd> = persistentMapOf(),
 )
+
+/**
+ * A channel's sponsored message as its card shows it (`REQUIREMENTS.md` §2), exactly as TDLib returned it: shown after
+ * channel [chatId]'s newest post, labelled "Recommended" if [isRecommended] else "Sponsored", the sponsor's [title],
+ * [text], [media] and [sponsorPhoto] (null where none, or it must not be shown), and its button ([buttonText]).
+ */
+@Immutable
+data class FeedAd(
+    val chatId: Long,
+    val id: Long,
+    val isRecommended: Boolean,
+    val title: String,
+    val text: FormattedText,
+    val media: FeedMedia?,
+    val sponsorPhoto: Photo?,
+    val buttonText: String,
+) {
+    val key: String get() = "ad:$chatId:$id"
+
+    override fun toString() = "FeedAd($key, isRecommended=$isRecommended)"
+}
 
 /**
  * A followed channel as the filter sheet lists it: its [title] and [photo], and how many of the feed's cards are its

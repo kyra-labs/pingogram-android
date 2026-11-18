@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
+import dev.kyralabs.pingogram.core.testing.FakeSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber

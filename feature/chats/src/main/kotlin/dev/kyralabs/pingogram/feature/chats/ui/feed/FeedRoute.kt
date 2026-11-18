@@ -13,11 +13,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5), pushed above the Chats tab from its Feed tab: hoists its
@@ -39,6 +41,7 @@ internal fun FeedRoute(
     val context = LocalContext.current
     val resources = LocalResources.current
     val showDetails = isDebuggable()
+    val uriHandler = LocalUriHandler.current
     val currentOnOpenPost by rememberUpdatedState(onOpenPost)
     val currentOnForward by rememberUpdatedState(onForward)
     LaunchedEffect(viewModel) {
@@ -72,6 +75,11 @@ internal fun FeedRoute(
 
                     is FeedEffect.ShowError -> {
                         errorMessage(resources, effect.error, showDetails)
+                    }
+
+                    is FeedEffect.OpenUrl -> {
+                        val opened = runCatching { uriHandler.openUri(effect.url) }.isSuccess
+                        if (opened) "" else resources.getString(UiR.string.sponsored_no_app)
                     }
                 }
             if (message.isNotEmpty()) snackbars.showSnackbar(message)
