@@ -50,7 +50,8 @@ class AndroidVoiceTranscriberTest {
                     output.close()
                     true
                 }
-            val result = async { transcriber.transcribe(path = "voice.ogg", durationSeconds = 3) }
+            // In the background scope, so a failed assertion ends the test instead of waiting for the main thread.
+            val result = backgroundScope.async { transcriber.transcribe(path = "voice.ogg", durationSeconds = 3) }
             settle()
             val recognizer = ShadowSpeechRecognizer.getLatestSpeechRecognizer()
             recognizer.shadow.triggerSupportResult(
