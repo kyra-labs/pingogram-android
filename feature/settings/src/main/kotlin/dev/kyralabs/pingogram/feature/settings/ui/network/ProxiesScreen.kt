@@ -40,10 +40,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsHeroSwitch
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
-import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -83,7 +83,8 @@ internal fun ProxiesRoute(
 }
 
 /**
- * The proxies (`docs/DESIGN_SYSTEM.md` §6, "Proxies"): "Use proxy" (a switch, while there are proxies) and "Add proxy";
+ * The proxies (`docs/DESIGN_SYSTEM.md` §6, "Proxies"): "Use proxy", the page's master switch as a card at the top
+ * ([SettingsHeroSwitch], while there are proxies), and "Add proxy";
  * then the proxies as radio rows, the one in use selected, each with its protocol and how it answered, and a menu
  * (Edit; Delete in `error`, which asks first); a footer says what a proxy can see. Without proxies the first group's
  * footer says what they are for.
@@ -142,21 +143,18 @@ private fun ProxiesContent(
     onAddProxy: () -> Unit,
     onEditProxy: (id: Int) -> Unit,
 ) {
+    if (state.proxies.isNotEmpty()) {
+        SettingsHeroSwitch(
+            title = stringResource(R.string.settings_proxy_use),
+            summary = stringResource(R.string.settings_proxy_use_summary),
+            checked = state.isProxyOn,
+            onCheckedChange = { onEvent(ProxiesEvent.SetProxyOn(it)) },
+        )
+    }
     // Without proxies, the footer says what they are for.
     SettingsGroup(footer = stringResource(R.string.settings_proxy_none_text).takeIf { state.proxies.isEmpty() }) {
         // Keyed, so the rows that need a proxy grow in with the first and shrink away with the last
         // (docs/DESIGN_SYSTEM.md §5.1).
-        if (state.proxies.isNotEmpty()) {
-            item(key = USE_PROXY) { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_proxy_use),
-                    summary = stringResource(R.string.settings_proxy_use_summary),
-                    checked = state.isProxyOn,
-                    shapes = shapes,
-                    onCheckedChange = { onEvent(ProxiesEvent.SetProxyOn(it)) },
-                )
-            }
-        }
         item(key = ADD_PROXY) { shapes ->
             SettingsRow(stringResource(R.string.settings_proxy_add), shapes, onClick = onAddProxy)
         }
@@ -318,6 +316,5 @@ private fun pingText(ping: Duration): String {
 }
 
 // The keys of the proxy group's rows.
-private const val USE_PROXY = "use"
 private const val ADD_PROXY = "add"
 private const val CHECK_AGAIN = "check"

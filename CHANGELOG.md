@@ -45,6 +45,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   what they float over, in place of the accent colors.
 - Settings has a calmer look: every icon sits in a circle, all the icons of a group share one soft color, and back is
   a round button.
+- "Use proxy" is a card at the top of the Proxy page.
 
 ### Fixed
 - With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer
