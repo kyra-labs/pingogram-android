@@ -852,6 +852,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sender and the result shown are kept in the saved state; after process death it searches again at that result
   without moving the list. `core:ui`'s `MatchHighlight` (the query's words and where a text has them) is shared with
   global search.
+- **Mentions & replies** (FR-X1): `core:domain`'s `MentionRepository` (`TdlibMentionRepository`, `core:data`, no cache)
+  gathers the messages that mention the user or reply to the user's messages. td_api.tl's `searchMessages` across
+  chats rejects the mention filters, so they come chat by chat from `searchChatMessages` (`searchMessagesFilterMention`
+  covers mentions and replies alike): with `searchMessagesFilterUnreadMention` in every chat of the main list and the
+  archive (as `getChats` lists them) whose `unread_mention_count` is not 0, and with `searchMessagesFilterMention`, one
+  short page each, in the most recent groups of the main list, at most four searches at once. They are merged, unread
+  first, then newest first, as `FoundMessage`s, with their chats; a chat that cannot be searched is left out.
 - **Replies and links** (FR-C5, FR-C6): what a message being sent or a draft replies to is `core:domain`'s
   `ReplyTarget` (a message of the chat, or of another chat, with the `TextQuote` it quotes), which every send of
   `MessageRepository`, `AttachmentRepository`, `VoiceNoteRepository` and `InlineBotRepository`, `ChatDraft` and the
