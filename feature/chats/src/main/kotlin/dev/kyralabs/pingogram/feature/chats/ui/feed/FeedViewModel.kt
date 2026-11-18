@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.isUnreadPost
 import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
@@ -47,7 +48,8 @@ import javax.inject.Inject
  *   posts", until [FeedEvent.ShowReadPosts].
  * - **Filter**: the chosen channels and "Only unread", kept in the [SavedStateHandle].
  * - **A post's menu** ([FeedEvent.Act]): open, forward, its link, a bookmark, read or its channel unread
- *   ([FeedPostActions]); results and failures come as [effects].
+ *   ([FeedCardActions]); results and failures come as [effects].
+ * - **Sponsored messages** ([FeedSponsored]): each channel's, read once the newest posts are, after its newest post.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -56,7 +58,7 @@ class FeedViewModel internal constructor(
     private val savedStateHandle: SavedStateHandle,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
-    private val actions: FeedPostActions,
+    private val actions: FeedCardActions,
     dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale = Locale::getDefault,
 ) : ViewModel() {
@@ -66,7 +68,7 @@ class FeedViewModel internal constructor(
         savedStateHandle: SavedStateHandle,
         clock: WallClock,
         timePatterns: TimePatterns,
-        actions: FeedPostActions,
+        actions: FeedCardActions,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
     ) : this(repository, savedStateHandle, clock, timePatterns, actions, dispatcher, Locale::getDefault)
 
@@ -87,6 +89,8 @@ class FeedViewModel internal constructor(
 
     private val effectChannel = Channel<FeedEffect>(Channel.BUFFERED)
 
+    private val sponsored = FeedSponsored(actions, repository::view, viewModelScope) { effectChannel.trySend(it) }
+
     /** One-off effects for the screen: opening a channel at a post. */
     val effects: Flow<FeedEffect> = effectChannel.receiveAsFlow()
 
@@ -95,6 +99,13 @@ class FeedViewModel internal constructor(
         reads.transformLatest {
             emit(Read.Running)
             emit(Read.Done((repository.load() as? Outcome.Failure)?.error))
+            sponsored.load(
+                repository.feed
+                    .first()
+                    .posts
+                    .map { it.chat.id }
+                    .distinct(),
+            )
         }
 
     private val choices =
@@ -108,7 +119,7 @@ class FeedViewModel internal constructor(
         }
 
     val uiState: StateFlow<FeedUiState> =
-        combine(repository.feed, reading, choices, clock.minutes, ::toUiState)
+        combine(repository.feed, reading, choices, clock.minutes, sponsored.state, ::toUiState)
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), FeedUiState())
 
@@ -121,6 +132,7 @@ class FeedViewModel internal constructor(
             is FeedEvent.SetFilter -> setFilter(event.filter)
             is FeedEvent.Act -> act(event)
             is FeedEvent.MarkAllAsRead -> markAllAsRead(event.chosen)
+            is FeedAdEvent -> sponsored.onEvent(event)
         }
     }
 
@@ -188,6 +200,7 @@ class FeedViewModel internal constructor(
         read: Read,
         choices: Choices,
         now: Instant,
+        ads: ImmutableMap<Long, FeedAd>,
     ): FeedUiState {
         val formatter = timeFormatter()
         val chosen = choices.filter.chosen
@@ -221,6 +234,7 @@ class FeedViewModel internal constructor(
             error = (read as? Read.Done)?.error,
             filter = choices.filter,
             channels = feedChannels(all),
+            ads = ads,
         )
     }
 

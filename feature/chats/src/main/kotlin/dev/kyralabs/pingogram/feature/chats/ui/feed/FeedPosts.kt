@@ -66,6 +66,9 @@ private fun MessageContent.text(): FormattedText? =
         else -> null
     }
 
+/** What [content] shows besides its text, as a card draws it; a sponsored message's media too. */
+internal fun feedMedia(content: MessageContent): FeedMedia? = content.media()
+
 /** What a message shows besides its text; none for a text alone or what the feed does not draw. */
 private fun MessageContent.media(): FeedMedia? =
     when (this) {

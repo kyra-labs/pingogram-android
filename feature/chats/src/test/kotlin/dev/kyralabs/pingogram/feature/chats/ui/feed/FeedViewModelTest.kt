@@ -3,11 +3,17 @@ package dev.kyralabs.pingogram.feature.chats.ui.feed
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.AdvertisementSponsor
 import dev.kyralabs.pingogram.core.domain.model.ChannelFeed
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.SponsoredMessage
+import dev.kyralabs.pingogram.core.domain.model.SponsoredMessages
 import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.testing.FakeBookmarkRepository
+import dev.kyralabs.pingogram.core.testing.FakeSponsoredMessageRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatCall
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -48,6 +54,7 @@ class FeedViewModelTest {
     private val links = FakeMessageLinks()
     private val bookmarks = FakeBookmarkRepository()
     private val chats = FakeChatRepository()
+    private val ads = FakeSponsoredMessageRepository()
 
     @BeforeEach
     fun setUp() {
@@ -67,7 +74,7 @@ class FeedViewModelTest {
                 savedStateHandle = SavedStateHandle(),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
-                actions = FeedPostActions(links, bookmarks, chats, FakeWallClock(NOW)),
+                actions = FeedCardActions(links, bookmarks, chats, FakeWallClock(NOW), ads),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
             )
@@ -258,6 +265,59 @@ class FeedViewModelTest {
             send(viewModel, FeedEvent.MarkAllAsRead(persistentSetOf(1, 3)))
 
             assertEquals(listOf(1L to listOf(12L, 11L)), repository.viewed)
+        }
+
+    private fun ad(
+        id: Long,
+        title: String = "Sponsor $id",
+    ) = SponsoredMessage(
+        id = id,
+        isRecommended = false,
+        canBeReported = true,
+        title = title,
+        content = MessageContent.Text(FormattedText("Ad $id", persistentListOf()), linkPreview = null),
+        sponsor = AdvertisementSponsor("https://example.org/$id", photo = null, info = "Sponsor Ltd"),
+        buttonText = "Open",
+        accentColorId = 0,
+        additionalInfo = "",
+    )
+
+    @Test
+    fun `each channel's first ad is read once and shown, never as unread, and seen once`() =
+        runTest {
+            feed(post(1, 12), post(2, 25))
+            ads.onLoad = { chatId ->
+                Outcome.Success(SponsoredMessages(persistentListOf(ad(chatId * 100), ad(chatId * 100 + 1)), 0))
+            }
+            val viewModel = viewModel()
+            send(viewModel, FeedEvent.Retry)
+
+            assertEquals(listOf(1L, 2L), ads.loads)
+            assertEquals(
+                mapOf(1L to 100L, 2L to 200L),
+                viewModel.uiState.value.ads
+                    .mapValues { it.value.id },
+            )
+            assertEquals(2, viewModel.uiState.value.unreadCount)
+
+            send(viewModel, FeedAdEvent.Viewed(1, 100))
+            send(viewModel, FeedAdEvent.Viewed(1, 100))
+            assertEquals(listOf(1L to listOf(100L)), repository.viewed)
+        }
+
+    @Test
+    fun `an ad's click goes to TDLib before its link opens`() =
+        runTest {
+            feed(post(1, 12))
+            ads.onLoad = { Outcome.Success(SponsoredMessages(persistentListOf(ad(100), ad(101)), 0)) }
+            val viewModel = viewModel()
+            val effects = mutableListOf<FeedEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
+
+            send(viewModel, FeedAdEvent.Open(1, 100))
+
+            assertEquals(listOf(FakeSponsoredMessageRepository.Click(1, 100, false)), ads.clicks)
+            assertEquals(listOf<FeedEffect>(FeedEffect.OpenUrl("https://example.org/100")), effects)
         }
 
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */

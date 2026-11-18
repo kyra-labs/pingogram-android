@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.chat.ui
+package dev.kyralabs.pingogram.core.testing
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId

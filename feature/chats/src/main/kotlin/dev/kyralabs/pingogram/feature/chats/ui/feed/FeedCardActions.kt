@@ -5,25 +5,38 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
+import dev.kyralabs.pingogram.core.domain.model.SponsoredMessages
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
- * What a feed post's menu does besides opening and reading it (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 6),
- * through the repositories a message's own actions use: its link, a bookmark on this phone, and marking its channel
- * as unread, the only unread mark Telegram keeps.
+ * What the feed's cards do besides opening and reading posts (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"), through the
+ * repositories the conversation uses: a post's link, a bookmark on this phone, and marking its channel as unread, the
+ * only unread mark Telegram keeps (frame 6); and a channel's sponsored messages and their clicks (frames 3 and 3b).
  */
-class FeedPostActions
+class FeedCardActions
     @Inject
     constructor(
         private val messageActions: MessageActionRepository,
         private val bookmarks: BookmarkRepository,
         private val chats: ChatRepository,
         private val clock: WallClock,
+        private val sponsored: SponsoredMessageRepository,
     ) {
+        /** The sponsored messages TDLib has for channel [chatId]. */
+        suspend fun ads(chatId: Long): Outcome<SponsoredMessages> = sponsored.sponsoredMessages(chatId)
+
+        /** Tells TDLib the user opened sponsored message [id] of channel [chatId]: its button, or its media. */
+        suspend fun clickAd(
+            chatId: Long,
+            id: Long,
+            isMediaClick: Boolean,
+        ): Outcome<Unit> = sponsored.click(chatId, id, isMediaClick)
+
         /** The public or members-only link of [post], to its whole album. */
         suspend fun link(post: FeedPost): Outcome<String> =
             messageActions
