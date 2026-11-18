@@ -8,6 +8,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -33,6 +37,7 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChip
 import dev.kyralabs.pingogram.feature.chats.ui.focus.ChatListFocus
 import dev.kyralabs.pingogram.feature.chats.ui.focus.FocusPillChip
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Under the title: on the [expanded] row the connection pill while not connected, else the status line while
@@ -165,5 +170,45 @@ private fun FocusPillSlot(focus: ChatListFocus) {
                 modifier = Modifier.onSizeChanged { focus.pillHeight = with(density) { it.height.toDp() } },
             )
         }
+    }
+}
+
+/**
+ * Mentions & replies (`docs/DESIGN_SYSTEM.md` §6): a [TopBarAction] with the alternate email symbol, which opens the
+ * page, and how many chats have unread mentions ([summary]'s) in a `primary` badge. Screen readers hear "Mentions &
+ * replies, 3 chats with unread mentions".
+ */
+@Composable
+internal fun HeaderMentionsButton(
+    summary: () -> ChatListSummary,
+    onClick: () -> Unit,
+) {
+    val label = stringResource(R.string.mentions_title)
+    val resources = LocalResources.current
+    TopBarAction(
+        label = label,
+        onClick = onClick,
+        description = {
+            val count = summary().mentionChats
+            if (count > 0) {
+                val unread = resources.getQuantityString(R.plurals.mentions_a11y_unread_chats, count, count)
+                resources.getString(R.string.chat_list_a11y_tab, label, unread)
+            } else {
+                label
+            }
+        },
+    ) {
+        BadgedBox(
+            badge = {
+                // Read here alone, so a count changing recomposes the badge and nothing else.
+                val count = summary().mentionChats
+                if (count > 0) {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) { Text(unreadCountText(count)) }
+                }
+            },
+        ) { Icon(painterResource(UiR.drawable.ic_alternate_email), contentDescription = null) }
     }
 }
