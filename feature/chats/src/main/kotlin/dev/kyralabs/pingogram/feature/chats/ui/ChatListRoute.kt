@@ -49,9 +49,9 @@ import kotlinx.coroutines.launch
  * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
  * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered, and the offer to restore a
  * backup ([RestorePromptHost], whose "Restore" opens Backup & restore through [headerActions]). The list's first row
- * holds the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat, and
- * the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The
- * route reads only whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
+ * holds the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its
+ * chat, and the user's own ring [onNewStory] to post one (`docs/adr/0036-posting-stories.md`). The route reads only
+ * whether there are rings, so the rings changing recomposes the row alone. A folder tab's menu calls
  * [onEditFolder] with its folder (null for "All chats"), and offers "Edit folder" only where it is given. The header's
  * search and account buttons do what [headerActions] says; its status line reads [ChatListViewModel.summary]. A row
  * of the "Keyword alerts" tab opens its chat at its match through [onOpenMessage], or as any row without it. A topic a
