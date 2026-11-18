@@ -151,6 +151,7 @@ internal val BackedUpSettings: Set<String> =
 internal val LeftOutSettings: Map<String, String> =
     mapOf(
         "passcode." to "the passcode stays as it is on the phone a backup is restored on",
+        "backup." to "the backup folder's grant and the restore card's choices are this phone's",
         "privacy.locked_chats" to "a locked chat's existence is itself private",
         "media_viewer.controls_hint_shown" to "a one-time hint",
         "transcription.notice_shown" to "a one-time hint",
