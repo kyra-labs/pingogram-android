@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.contextmenu.data.TextContextMenuSession
 import androidx.compose.foundation.text.contextmenu.provider.LocalTextContextMenuToolbarProvider
 import androidx.compose.foundation.text.contextmenu.provider.TextContextMenuDataProvider
 import androidx.compose.foundation.text.contextmenu.provider.TextContextMenuProvider
+import androidx.compose.foundation.text.selection.LocalTextClassifierCoroutineContext
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Quote replies, replies in another chat, message links and replacing media on screen (`docs/DESIGN_SYSTEM.md` §6
@@ -97,7 +99,12 @@ class RepliesScreenTest {
         var state by mutableStateOf(ChatPreviewData.privateChat)
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalTextContextMenuToolbarProvider provides toolbar) {
+                CompositionLocalProvider(
+                    LocalTextContextMenuToolbarProvider provides toolbar,
+                    // The toolbar shows once the selected text is classified, by default on Dispatchers.IO, which
+                    // waitForIdle does not wait for: in the composition's own context, on the UI thread, it does.
+                    LocalTextClassifierCoroutineContext provides EmptyCoroutineContext,
+                ) {
                     ChatScreen(
                         state = state,
                         onEvent = { event ->
