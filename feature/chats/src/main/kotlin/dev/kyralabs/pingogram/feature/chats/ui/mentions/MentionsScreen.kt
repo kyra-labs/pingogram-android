@@ -134,21 +134,24 @@ private fun MentionsList(
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        group(R.string.mentions_unread, UNREAD, content.unread, onEvent) { row(maxWidth, margin, motionScheme) }
-        group(R.string.mentions_earlier, EARLIER, content.earlier, onEvent) { row(maxWidth, margin, motionScheme) }
+        val style = RowStyle(maxWidth, margin, motionScheme)
+        group(R.string.mentions_unread, UNREAD, content.unread, onEvent, style)
+        group(R.string.mentions_earlier, EARLIER, content.earlier, onEvent, style)
     }
 }
 
-/** A group of [items] under its header [title], left out while empty; [row] places each entry. */
+/** A group of [items] under its header [title], left out while empty, each entry placed as [style] says. */
 private fun LazyListScope.group(
     @StringRes title: Int,
     name: String,
     items: ImmutableList<SearchMessageItem>,
     onEvent: (MentionsEvent) -> Unit,
-    row: LazyItemScope.() -> Modifier,
+    style: RowStyle,
 ) {
     if (items.isEmpty()) return
-    item(key = "$name:$HEADER", contentType = HEADER) { SectionHeader(stringResource(title), row()) }
+    item(key = "$name:$HEADER", contentType = HEADER) {
+        SectionHeader(stringResource(title), Modifier.row(this, style))
+    }
     itemsIndexed(
         items = items,
         key = { _, item -> "$name:${item.chatId}:${item.messageId}" },
@@ -159,28 +162,36 @@ private fun LazyListScope.group(
             highlight = MatchHighlight.None,
             shapes = ListItemDefaults.segmentedShapes(index, items.size),
             onClick = { onEvent(MentionsEvent.Open(item.chatId, item.messageId)) },
-            modifier = row(),
+            modifier = Modifier.row(this, style),
         )
     }
 }
 
+/** How the list's entries sit: at most [maxWidth] wide, [margin] in from the sheet's sides, on [motionScheme]. */
+private class RowStyle(
+    val maxWidth: Dp,
+    val margin: Dp,
+    val motionScheme: MotionScheme,
+)
+
 /**
- * An entry at most [maxWidth] wide, [margin] in from the sheet's sides as global search's are, moving on
- * [motionScheme]'s springs as the list changes.
+ * An entry of [scope] at most [RowStyle.maxWidth] wide, [RowStyle.margin] in from the sheet's sides as global
+ * search's are, moving on the motion scheme's springs as the list changes.
  */
-private fun LazyItemScope.row(
-    maxWidth: Dp,
-    margin: Dp,
-    motionScheme: MotionScheme,
+private fun Modifier.row(
+    scope: LazyItemScope,
+    style: RowStyle,
 ): Modifier =
-    Modifier
-        .animateItem(
-            fadeInSpec = motionScheme.defaultEffectsSpec(),
-            placementSpec = motionScheme.defaultSpatialSpec(),
-            fadeOutSpec = motionScheme.fastEffectsSpec(),
-        ).widthIn(max = maxWidth)
-        .fillMaxWidth()
-        .padding(horizontal = margin)
+    with(scope) {
+        this@row
+            .animateItem(
+                fadeInSpec = style.motionScheme.defaultEffectsSpec(),
+                placementSpec = style.motionScheme.defaultSpatialSpec(),
+                fadeOutSpec = style.motionScheme.fastEffectsSpec(),
+            ).widthIn(max = style.maxWidth)
+            .fillMaxWidth()
+            .padding(horizontal = style.margin)
+    }
 
 /** The delayed loading indicator in the middle of the sheet, named for screen readers. */
 @Composable
