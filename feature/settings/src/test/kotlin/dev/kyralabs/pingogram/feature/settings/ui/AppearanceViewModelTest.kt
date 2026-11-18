@@ -331,6 +331,19 @@ class AppearanceViewModelTest {
         }
 
     @Test
+    fun `the Feed tab shows at first, and turning it off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showFeedTab)
+
+            send(viewModel, AppearanceEvent.SetShowFeedTab(false))
+
+            assertFalse(chatListSettings.settings.value.showFeedTab)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showFeedTab)
+        }
+
+    @Test
     fun `chat type icons show at first, and turning them off saves and shows`() =
         runTest {
             repository.save(AppearanceSettings())

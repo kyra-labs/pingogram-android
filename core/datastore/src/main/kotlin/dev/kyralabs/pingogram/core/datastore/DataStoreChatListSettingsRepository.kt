@@ -46,6 +46,7 @@ class DataStoreChatListSettingsRepository
                         showChatTypeIcons = preferences[CHAT_TYPE_ICONS] ?: defaults.showChatTypeIcons,
                         folderTabStyle = folderTabStyleOf(preferences[FOLDER_TAB_STYLE]) ?: defaults.folderTabStyle,
                         catchUpIncludesMuted = preferences[CATCH_UP_INCLUDES_MUTED] ?: defaults.catchUpIncludesMuted,
+                        showFeedTab = preferences[FEED_TAB] ?: defaults.showFeedTab,
                     )
                 }.distinctUntilChanged()
 
@@ -74,6 +75,8 @@ class DataStoreChatListSettingsRepository
         override suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit> =
             save { it[CATCH_UP_INCLUDES_MUTED] = include }
 
+        override suspend fun setShowFeedTab(show: Boolean): Outcome<Unit> = save { it[FEED_TAB] = show }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -96,3 +99,4 @@ private val EDIT_FOLDERS_BUTTON = booleanPreferencesKey("chat_list.edit_folders_
 private val CHAT_TYPE_ICONS = booleanPreferencesKey("chat_list.chat_type_icons")
 private val FOLDER_TAB_STYLE = stringPreferencesKey("chat_list.folder_tab_style")
 private val CATCH_UP_INCLUDES_MUTED = booleanPreferencesKey("chat_list.catch_up_includes_muted")
+private val FEED_TAB = booleanPreferencesKey("chat_list.feed_tab")

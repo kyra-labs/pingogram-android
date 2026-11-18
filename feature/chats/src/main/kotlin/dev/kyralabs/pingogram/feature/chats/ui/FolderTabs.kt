@@ -77,6 +77,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param enabled false disables every tab and its menu, e.g. in selection mode.
  * @param onMarkAllAsRead called with the folder's id, or null for "All chats".
  * @param onEditFolder called with the folder's id, or null for "All chats"; null leaves "Edit folder" out.
+ * @param feedTab the Channel feed's tab ([FeedTabButton]), first in the row unless Appearance → Chat list turned it
+ *   off ([ChatSwipes.feedTab]); null while the user follows fewer than 2 channels.
+ * @param onOpenFeed opens the Channel feed.
  */
 @Suppress("LongParameterList") // The tabs and their selection, and their menu's two actions.
 @Composable
@@ -88,6 +91,8 @@ internal fun FolderTabs(
     enabled: Boolean = true,
     onMarkAllAsRead: (Int?) -> Unit = {},
     onEditFolder: ((Int?) -> Unit)? = null,
+    feedTab: FeedTab? = null,
+    onOpenFeed: () -> Unit = {},
 ) {
     val menu = remember { FolderTabMenuState() }
     val canEditFolders = onEditFolder != null
@@ -116,6 +121,10 @@ internal fun FolderTabs(
     ) {
         // spacing.extraSmall around the chips' 48 dp touch targets: their 40 dp containers 8 dp inside the bar.
         Row(Modifier.padding(MaterialTheme.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
+            // The Channel feed's tab starts the row, outside the scrolling folders: it opens a view, not a list.
+            if (feedTab != null && LocalChatSwipes.current.feedTab) {
+                FeedTabButton(feedTab, onOpen = onOpenFeed, enabled = enabled)
+            }
             // As wide as its chips, or the room left beside "Edit folders", then scrolling.
             Box(Modifier.weight(1f, fill = false).folderTabMenuContainer(menu)) {
                 FolderButtonGroup(tabs, selectedFolderId, onSelect, tabMenu, barColor = barColor)

@@ -1422,6 +1422,8 @@
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
     <string name="settings_edit_folders_button">Edit folders button</string>
     <string name="settings_edit_folders_button_summary">Shows a button at the end of the folder tabs</string>
+    <string name="settings_show_feed_tab">Show Feed tab</string>
+    <string name="settings_show_feed_tab_summary">Puts the newest posts from the channels you follow first in the folder tabs</string>
     <string name="settings_chat_type_icons">Chat type icons</string>
     <string name="settings_chat_type_icons_summary">Shows a symbol before the names of groups and channels</string>
     <!-- Appearance → Chat list: what each folder tab above the chat list shows. -->

@@ -239,6 +239,16 @@ internal fun ChatListGroup(
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
             )
         }
+        // The Channel feed's tab, first in the folder row (docs/DESIGN_SYSTEM.md §6 "Channel feed").
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_show_feed_tab),
+                summary = stringResource(R.string.settings_show_feed_tab_summary),
+                checked = chatList.showFeedTab,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowFeedTab(it)) },
+            )
+        }
         // The symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
         item { shapes ->
             SwitchItem(

@@ -16,6 +16,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message field's menu; it is never sent until you tap Send. In chats with bots, their commands are suggested first.
 - Mentions & replies: a page, opened from the Chats tab's header, of the messages that mention you or reply to
   you, unread ones first; each opens its chat at the message.
+- Feed: with two or more channels, a Feed tab starts the folder tabs and opens the newest posts from the channels you
+  follow as one list, unread ones first. A post counts as read once you have seen it for a second, as in the
+  channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
 - Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
 - Voice and round video messages play faster: while one plays, its speed chip goes from 1× to 1.5× and 2×, and the
   speed is remembered for the next ones.

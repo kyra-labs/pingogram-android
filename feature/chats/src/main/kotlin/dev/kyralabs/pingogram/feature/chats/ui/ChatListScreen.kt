@@ -184,6 +184,7 @@ internal fun ChatListScreen(
                 header,
                 stories,
                 onEditFolder,
+                onOpenFeed = headerActions?.openFeed ?: {},
             )
         }
         SelectionToolbarHost(
@@ -232,7 +233,7 @@ private fun contentWindowInsets(
  * again, and a folder's list keeps where it was scrolled. The shown folder's list, and only it, asks for more chats
  * ([FolderListArgs.active]) and scrolls back to its top when the Chats tab is tapped again ([ScrollToTopOnReselect]).
  */
-@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots, folders.
+@Suppress("LongParameterList") // State, events, list, padding, open chat, folder switch, neighbours, slots, tabs.
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,
@@ -245,6 +246,7 @@ private fun ChatListBody(
     header: @Composable () -> Unit,
     stories: (@Composable (Modifier) -> Unit)?,
     onEditFolder: ((folderId: Int?) -> Unit)?,
+    onOpenFeed: () -> Unit,
 ) {
     val state = rememberShownList(uiState, listStates, folderSwitch)
     val hasStories = stories != null
@@ -252,7 +254,8 @@ private fun ChatListBody(
     ScrollToTopOnReselect(ChatsRoute, shownListState, enabled = state.kind == ChatListKind.Chats)
     val folderLists = remember { FolderLists() }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val showsTabs = uiState.kind == ChatListKind.Chats && uiState.folderTabs.isNotEmpty()
+    val showsFeedTab = uiState.feedTab != null && LocalChatSwipes.current.feedTab
+    val showsTabs = uiState.kind == ChatListKind.Chats && (uiState.folderTabs.isNotEmpty() || showsFeedTab)
     val folderBar = remember { FolderBarSpace() }
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
         // Below the folder bar while it shows, read in the layout phase (FolderBarSpace).
@@ -265,7 +268,8 @@ private fun ChatListBody(
                 // First, so it is measured before the lists, which read its height in the same pass; drawn above
                 // them, and reached first by screen readers.
                 if (showsTabs) {
-                    FolderBar(uiState, onEvent, onEditFolder, folderBar, Modifier.padding(sheetPadding.sidesOnly()))
+                    val sides = Modifier.padding(sheetPadding.sidesOnly())
+                    FolderBar(uiState, onEvent, onEditFolder, onOpenFeed, folderBar, sides)
                 }
                 Box(Modifier.fillMaxSize().folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
                     folderLists.of(state.selectedFolderId)(
