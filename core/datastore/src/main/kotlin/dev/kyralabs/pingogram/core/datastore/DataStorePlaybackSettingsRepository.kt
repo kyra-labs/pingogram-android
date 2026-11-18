@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 /**
  * [PlaybackSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). A file that cannot
- * be read and missing keys read as the defaults ([RaiseToListenSettings]).
+ * be read and missing keys read as the defaults ([RaiseToListenSettings], silences not skipped).
  */
 @Singleton
 class DataStorePlaybackSettingsRepository
@@ -42,6 +42,14 @@ class DataStorePlaybackSettingsRepository
 
         override suspend fun setPauseWhenLowered(enabled: Boolean): Outcome<Unit> = save(PAUSE_WHEN_LOWERED, enabled)
 
+        override val skipSilence: Flow<Boolean> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { preferences -> preferences[SKIP_SILENCE] ?: false }
+                .distinctUntilChanged()
+
+        override suspend fun setSkipSilence(enabled: Boolean): Outcome<Unit> = save(SKIP_SILENCE, enabled)
+
         private suspend fun save(
             key: Preferences.Key<Boolean>,
             value: Boolean,
@@ -57,3 +65,4 @@ class DataStorePlaybackSettingsRepository
 // The keys in the settings file; renaming one loses what users saved under it.
 private val RAISE_TO_LISTEN = booleanPreferencesKey("playback.raise_to_listen")
 private val PAUSE_WHEN_LOWERED = booleanPreferencesKey("playback.pause_when_lowered")
+private val SKIP_SILENCE = booleanPreferencesKey("playback.skip_silence")

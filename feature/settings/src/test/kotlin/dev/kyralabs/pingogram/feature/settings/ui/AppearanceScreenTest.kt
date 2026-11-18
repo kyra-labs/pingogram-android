@@ -289,4 +289,17 @@ class AppearanceScreenTest {
 
         assertEquals(listOf(AppearanceEvent.SetShowEditFoldersButton(false)), events)
     }
+
+    @Test
+    fun `the skip silence row is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_skip_silence)
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_skip_silence_summary)))
+            .performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetSkipSilence(true)), events)
+    }
 }

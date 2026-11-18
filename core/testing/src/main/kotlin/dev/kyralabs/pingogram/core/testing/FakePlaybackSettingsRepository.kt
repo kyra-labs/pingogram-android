@@ -21,6 +21,14 @@ class FakePlaybackSettingsRepository(
     override suspend fun setPauseWhenLowered(enabled: Boolean): Outcome<Unit> =
         save { it.copy(pauseWhenLowered = enabled) }
 
+    override val skipSilence = MutableStateFlow(false)
+
+    override suspend fun setSkipSilence(enabled: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        skipSilence.value = enabled
+        return Outcome.Success(Unit)
+    }
+
     private fun save(change: (RaiseToListenSettings) -> RaiseToListenSettings): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
         raiseToListen.update(change)

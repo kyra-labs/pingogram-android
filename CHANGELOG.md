@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
 - On a forum's row in the chat list, a tap on a topic it names (the newest topic's tab, or a name after it) opens that
   topic, as Telegram's apps do; a tap elsewhere on the row still opens the forum.
 - A long press on a link in a message shows that link in the message's actions, with "Open link" and "Copy link". The

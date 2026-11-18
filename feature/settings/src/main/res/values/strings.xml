@@ -1308,6 +1308,8 @@
     <string name="settings_raise_to_listen_summary">Hold the phone to your ear to hear voice messages through the earpiece</string>
     <string name="settings_pause_when_lowered">Pause when lowered</string>
     <string name="settings_pause_when_lowered_summary">Lowering the phone pauses the voice message instead of playing on aloud</string>
+    <string name="settings_skip_silence">Skip silence</string>
+    <string name="settings_skip_silence_summary">Voice messages play on past their pauses</string>
     <!-- Settings → Notifications → Reactions. -->
     <string name="settings_reactions">Reactions</string>
     <string name="settings_reactions_summary">Reactions to your messages and stories, votes in your polls</string>

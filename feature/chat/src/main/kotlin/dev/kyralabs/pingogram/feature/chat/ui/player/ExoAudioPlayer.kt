@@ -12,6 +12,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -35,15 +36,24 @@ import javax.inject.Inject
  * music of another app pauses for it and plays on after it; speech pauses when another app talks over it or a call
  * starts, music only gets quieter. It pauses when headphones are unplugged. It plays only while the conversation is
  * started: playing on in the background would need a media session in a foreground service. Voice messages play at the
- * earpiece while the phone is held to the ear ([RaiseToListen]).
+ * earpiece while the phone is held to the ear ([RaiseToListen]), and skip their silences where the user chose so
+ * (Media3's own silence skipping, `REQUIREMENTS.md` FR-X4, [SkipSilence]; never for music), which is Media3's
+ * [UnstableApi], hence the opt-in.
  */
+@androidx.annotation.OptIn(UnstableApi::class)
 internal class ExoAudioPlayer
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
         private val raiseToListen: RaiseToListen,
+        private val skipSilence: SkipSilence,
     ) : AudioPlayer {
         private val mainHandler = Handler(Looper.getMainLooper())
+
+        /** A voice message that plays when the setting changes skips its silences from then on. */
+        private val onSkipSilenceChanged: (Boolean) -> Unit = { skip ->
+            onPlayer { it.skipSilenceEnabled = skip && kind == AudioKind.Speech }
+        }
 
         // Main thread.
 
@@ -132,7 +142,12 @@ internal class ExoAudioPlayer
         ) {
             val generation = ++generation
             clock = PlaybackClock.startingAt(positionMillis, SystemClock.elapsedRealtime())
-            if (kind == AudioKind.Speech) raiseToListen.start() else raiseToListen.stop()
+            if (kind == AudioKind.Speech) {
+                raiseToListen.start()
+                skipSilence.follow(onSkipSilenceChanged)
+            } else {
+                raiseToListen.stop()
+            }
             val handler =
                 playerHandler
                     ?: Handler(HandlerThread(THREAD_NAME).apply { start() }.looper).also { playerHandler = it }
@@ -147,6 +162,7 @@ internal class ExoAudioPlayer
                     player.setAudioAttributes(attributesFor(kind, earpiece), kind == AudioKind.Music)
                     if (kind == AudioKind.Music) speechFocus?.abandon()
                 }
+                player.skipSilenceEnabled = kind == AudioKind.Speech && skipSilence.enabled
                 player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))), positionMillis)
                 player.prepare()
                 // A voice message plays once it has the focus; SpeechFocus shows a refusal as a pause.
@@ -186,6 +202,7 @@ internal class ExoAudioPlayer
         override fun release() {
             listener = null
             raiseToListen.release()
+            skipSilence.release()
             generation++
             val handler = playerHandler ?: return
             playerHandler = null

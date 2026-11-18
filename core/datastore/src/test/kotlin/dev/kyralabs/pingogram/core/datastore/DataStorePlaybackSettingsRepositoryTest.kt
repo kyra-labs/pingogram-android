@@ -50,4 +50,18 @@ class DataStorePlaybackSettingsRepositoryTest {
                 DataStorePlaybackSettingsRepository(dataStore()).raiseToListen.first(),
             )
         }
+
+    @Test
+    fun `voice messages keep their silences until skipping is turned on, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStorePlaybackSettingsRepository(dataStore(firstProcess))
+            assertEquals(false, first.skipSilence.first())
+            assertEquals(Outcome.Success(Unit), first.setSkipSilence(true))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStorePlaybackSettingsRepository(dataStore())
+            assertEquals(true, again.skipSilence.first())
+            assertEquals(RaiseToListenSettings(), again.raiseToListen.first())
+        }
 }

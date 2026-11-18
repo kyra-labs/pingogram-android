@@ -147,7 +147,7 @@ internal fun AppearanceScreen(
             }
 
             is AppearanceUiState.Content -> {
-                val chats = ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList)
+                val chats = ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList, state.skipSilence)
                 val pages =
                     AppearancePages(
                         onOpenColorTheme,
