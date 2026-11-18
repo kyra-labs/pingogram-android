@@ -483,7 +483,7 @@ class PingogramAppTest {
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        text(SettingsR.string.settings_notifications).performScrollTo().performClick()
+        text(SettingsR.string.settings_notifications).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
