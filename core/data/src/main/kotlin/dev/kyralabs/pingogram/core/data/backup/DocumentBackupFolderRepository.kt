@@ -31,8 +31,7 @@ import javax.inject.Singleton
  * [BackupFolderRepository] on [documents], the Storage Access Framework: the folder's tree URI kept in [settings], its
  * grant kept for good once picked (and given back when another one is), its backups the files whose name ends with
  * ".pgbackup", the newest first. Written and read through [backups], on the [io] dispatcher; a backup the user writes
- * keeps its password's key in [keys] for automatic backups. Nothing about the folder
- * or its files is logged.
+ * keeps its password's key in [keys] for automatic backups. Nothing about the folder or its files is logged.
  */
 @Singleton
 class DocumentBackupFolderRepository
