@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
 import dev.kyralabs.pingogram.core.data.account.SignedInUsers
+import dev.kyralabs.pingogram.core.data.backup.LocalBackupRepository
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.core.data.transcription.AndroidVoiceTranscriber
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
 import dev.kyralabs.pingogram.core.domain.repository.DemoRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
@@ -61,6 +63,10 @@ interface DeviceModule {
 
     @Binds
     fun accountGraphs(graphs: DefaultAccountGraphs): AccountGraphs
+
+    /** Backups hold the settings and every account (docs/adr/0039): one for the device. */
+    @Binds
+    fun backupRepository(repository: LocalBackupRepository): BackupRepository
 
     /** The demo is the device's: it shows instead of the accounts while it is on (docs/adr/0034). */
     @Binds
