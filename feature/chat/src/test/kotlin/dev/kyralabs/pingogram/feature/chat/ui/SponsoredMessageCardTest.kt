@@ -31,6 +31,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The sponsored message's card (`REQUIREMENTS.md` §2): its label, its button and info button, how screen readers hear
@@ -62,13 +63,17 @@ class SponsoredMessageCardTest {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) { SponsoredMessageCard(shown, onEvent = { events += it }) }
         }
-        composeRule.onNodeWithText(string(R.string.sponsored_label), useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_label), useUnmergedTree = true).assertExists()
 
         shown = SponsoredPreviewData.recommended
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(string(R.string.sponsored_label_recommended), useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithText(string(R.string.sponsored_label), useUnmergedTree = true).assertDoesNotExist()
+        composeRule
+            .onNodeWithText(
+                string(UiR.string.sponsored_label_recommended),
+                useUnmergedTree = true,
+            ).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_label), useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -85,8 +90,8 @@ class SponsoredMessageCardTest {
         setCard(card)
 
         composeRule
-            .onNodeWithContentDescription(string(R.string.sponsored_about))
-            .assertContentDescriptionEquals(string(R.string.sponsored_about))
+            .onNodeWithContentDescription(string(UiR.string.sponsored_about))
+            .assertContentDescriptionEquals(string(UiR.string.sponsored_about))
             .performClick()
 
         assertEquals(listOf<ChatEvent>(SponsoredEvent.ShowInfo(card.id)), events)
@@ -98,10 +103,10 @@ class SponsoredMessageCardTest {
 
         val node =
             composeRule
-                .onNode(hasText(string(R.string.sponsored_label)) and hasText(card.title) and hasText(card.text.text))
+                .onNode(hasText(string(UiR.string.sponsored_label)) and hasText(card.title) and hasText(card.text.text))
                 .fetchSemanticsNode()
         val actions = node.config.getOrNull(SemanticsActions.CustomActions).orEmpty()
-        assertEquals(listOf(string(R.string.sponsored_about)), actions.map { it.label })
+        assertEquals(listOf(string(UiR.string.sponsored_about)), actions.map { it.label })
 
         composeRule.runOnIdle { actions.single().action() }
         assertEquals(listOf<ChatEvent>(SponsoredEvent.ShowInfo(card.id)), events)

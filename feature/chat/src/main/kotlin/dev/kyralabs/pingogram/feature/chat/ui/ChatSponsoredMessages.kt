@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.SponsoredReportResult
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.ui.component.SponsoredReportStep
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentMapOf

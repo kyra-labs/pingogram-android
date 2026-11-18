@@ -6,14 +6,14 @@ import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.SponsoredReportStep
+import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.SponsoredCard
-import dev.kyralabs.pingogram.feature.chat.ui.SponsoredReportStep
-import dev.kyralabs.pingogram.feature.chat.ui.SponsoredSheet
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList

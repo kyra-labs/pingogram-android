@@ -30,31 +30,6 @@ data class SponsoredCard(
     override fun toString() = "SponsoredCard(id=$id, isRecommended=$isRecommended, …)"
 }
 
-/**
- * "About this ad" for sponsored message [messageId] while it is open: who placed it ([sponsorInfo]) and more about it
- * ([additionalInfo]), each empty if TDLib has nothing, and the report entry if [canBeReported]. While a report asks
- * why, [report] is the step that shows its options; [isReporting] while a report is on its way.
- */
-@Immutable
-data class SponsoredSheet(
-    val messageId: Long,
-    val isRecommended: Boolean,
-    val sponsorInfo: String,
-    val additionalInfo: String,
-    val canBeReported: Boolean,
-    val report: SponsoredReportStep? = null,
-    val isReporting: Boolean = false,
-) {
-    override fun toString() = "SponsoredSheet(messageId=$messageId, report=${report != null}, …)"
-}
-
-/** A report that asks why: [title] asks, and the user picks one of [options]. */
-@Immutable
-data class SponsoredReportStep(
-    val title: String,
-    val options: ImmutableList<String>,
-)
-
 /** What the user does to a sponsored message; [ChatViewModel] hands these to [ChatSponsoredMessages]. */
 sealed interface SponsoredEvent : ChatEvent {
     /** The whole card of [messageId] is on screen: it goes to TDLib as viewed, once. */

@@ -105,7 +105,7 @@ private fun SponsoredContent(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val about =
-        stringResource(if (card.isRecommended) R.string.sponsored_about_recommended else R.string.sponsored_about)
+        stringResource(if (card.isRecommended) UiR.string.sponsored_about_recommended else UiR.string.sponsored_about)
     val currentOnEvent by rememberUpdatedState(onEvent)
     val showInfo = remember(card.id) { { currentOnEvent(SponsoredEvent.ShowInfo(card.id)) } }
     Column(
@@ -186,7 +186,7 @@ private fun SponsoredHeader(
             Text(
                 text =
                     stringResource(
-                        if (card.isRecommended) R.string.sponsored_label_recommended else R.string.sponsored_label,
+                        if (card.isRecommended) UiR.string.sponsored_label_recommended else UiR.string.sponsored_label,
                     ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelMedium,

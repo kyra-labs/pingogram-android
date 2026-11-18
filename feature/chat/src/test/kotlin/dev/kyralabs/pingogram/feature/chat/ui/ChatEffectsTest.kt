@@ -29,6 +29,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * How the conversation's route handles a downloaded document to open ([ChatEffect.OpenFile]): handed to another app
@@ -197,7 +198,7 @@ class ChatEffectsTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf("https://t.me/sponsor"), openedUris)
-        composeRule.onNodeWithText(string(R.string.sponsored_no_app)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_no_app)).assertDoesNotExist()
     }
 
     @Test
@@ -207,7 +208,7 @@ class ChatEffectsTest {
         effects.trySend(ChatEffect.OpenUrl("tg://resolve?domain=sponsor"))
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(string(R.string.sponsored_no_app)).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.sponsored_no_app)).assertExists()
     }
 
     @Test
@@ -215,10 +216,10 @@ class ChatEffectsTest {
         setEffects()
         val notices =
             mapOf(
-                SponsoredReportNotice.Reported to R.string.sponsored_reported,
-                SponsoredReportNotice.AdsHidden to R.string.sponsored_ads_hidden,
-                SponsoredReportNotice.PremiumRequired to R.string.sponsored_premium_required,
-                SponsoredReportNotice.ReportFailed to R.string.sponsored_report_failed,
+                SponsoredReportNotice.Reported to UiR.string.sponsored_reported,
+                SponsoredReportNotice.AdsHidden to UiR.string.sponsored_ads_hidden,
+                SponsoredReportNotice.PremiumRequired to UiR.string.sponsored_premium_required,
+                SponsoredReportNotice.ReportFailed to UiR.string.sponsored_report_failed,
             )
 
         for ((notice, text) in notices) {
