@@ -173,7 +173,6 @@ internal fun DataStorageScreen(
         CallsGroup(callDataSaving, onCallDataSavingChange)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
-            iconTone = SettingsIconTone.Secondary,
         ) {
             when (usage) {
                 StorageUsageState.Loading -> {

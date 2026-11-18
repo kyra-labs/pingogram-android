@@ -1,29 +1,21 @@
 package dev.kyralabs.pingogram.feature.settings.ui.home
 
 import android.text.format.Formatter
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemShapes
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.ui.component.CategoryIconBadge
 import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
+import dev.kyralabs.pingogram.core.ui.theme.CategoryColors
+import dev.kyralabs.pingogram.core.ui.theme.CategoryHue
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
-import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
@@ -33,8 +25,8 @@ import java.util.Locale
 
 /**
  * Settings home's groups ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
- * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their badges' shapes taking
- * `Cookie9Sided`, `Flower`, `Clover4Leaf` and `Sunny` in turn across the page, and its footer where it has one.
+ * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their icons in circles of the group's
+ * own category color, and its footer where it has one.
  * Recent calls and Bookmarks are left out where the app does not provide their pages, and a group without a row is
  * not shown.
  */
@@ -48,7 +40,6 @@ internal fun SettingsHomeGroups(
     val hasRecentCalls = LocalRecentCallsLauncher.current != null
     val hasBookmarks = LocalBookmarksLauncher.current != null
     val rowState = HomeRowState(summaries, selection)
-    var index = 0
     groups.forEach { group ->
         val entries =
             group.entries.filter {
@@ -56,21 +47,14 @@ internal fun SettingsHomeGroups(
                     (hasBookmarks || it.destination != HomeDestination.Bookmarks)
             }
         if (entries.isEmpty()) return@forEach
-        val first = index
-        index += entries.size
         SettingsGroup(
             title = stringResource(group.title),
             footer = group.footer?.let { stringResource(it) },
+            category = group.category,
         ) {
-            entries.forEachIndexed { position, entry ->
+            entries.forEach { entry ->
                 item(key = entry.title) { shapes ->
-                    HomeEntryRow(
-                        entry,
-                        first + position,
-                        shapes,
-                        rowState,
-                        onClick = { onOpen(entry.destination) },
-                    )
+                    HomeEntryRow(entry, group.category, shapes, rowState, onClick = { onOpen(entry.destination) })
                 }
             }
         }
@@ -78,14 +62,14 @@ internal fun SettingsHomeGroups(
 }
 
 /**
- * An entry's row: Material's segmented list item (two lines, at least 72 dp), its icon on a badge of
- * `leadingIconContainer` in the shape of its place ([index]) filled with a vivid avatar color, its title and summary,
- * and a value at its end in `labelLarge` `primary` where the entry has one (the storage used, the language).
+ * An entry's row: Material's segmented list item (two lines, at least 72 dp), its icon in a circle of [category]'s
+ * color (`primary` on the selected row), its title and summary, and a value at its end in `labelLarge` `primary` where
+ * the entry has one (the storage used, the language).
  */
 @Composable
 internal fun HomeEntryRow(
     entry: HomeEntry,
-    index: Int,
+    category: CategoryHue,
     shapes: ListItemShapes,
     state: HomeRowState,
     onClick: () -> Unit,
@@ -96,7 +80,7 @@ internal fun HomeEntryRow(
     val summary = entrySummary(entry, summaries)
     val page = (entry.destination as? HomeDestination.Page)?.page
     val selected = selection?.let { page != null && it.openPage == page }
-    val leading = @Composable { EntryBadge(entry, index) }
+    val leading = @Composable { EntryBadge(entry, category, selected == true) }
     val trailing: (@Composable () -> Unit)? =
         value?.let {
             {
@@ -125,35 +109,24 @@ internal fun HomeEntryRow(
     }
 }
 
-/** The entry's icon on its badge: a vivid fill and its text color, in the shape of its place. */
+/** The entry's icon in a circle of [category]'s color, or `primary` / `onPrimary` on the [selected] row. */
 @Composable
 private fun EntryBadge(
     entry: HomeEntry,
-    index: Int,
+    category: CategoryHue,
+    selected: Boolean,
 ) {
-    val palette = MaterialTheme.pingogramColors.vividAvatars
-    val colors = palette[index % palette.size]
-    Box(
-        modifier =
-            Modifier
-                .size(MaterialTheme.sizes.leadingIconContainer)
-                .background(colors.container, badgeShape(index)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(painter = painterResource(entry.icon), contentDescription = null, tint = colors.content)
-    }
+    val colors = MaterialTheme.colorScheme
+    CategoryIconBadge(
+        icon = painterResource(entry.icon),
+        colors =
+            if (selected) {
+                CategoryColors(colors.primary, colors.onPrimary)
+            } else {
+                MaterialTheme.pingogramColors.categories[category]
+            },
+    )
 }
-
-/** The badge shapes in turn: `Cookie9Sided`, `Flower`, `Clover4Leaf`, `Sunny`. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun badgeShape(index: Int): Shape =
-    when (index % BADGE_SHAPES) {
-        0 -> MaterialShapes.Cookie9Sided.toShape()
-        1 -> MaterialShapes.Flower.toShape()
-        2 -> MaterialShapes.Clover4Leaf.toShape()
-        else -> MaterialShapes.Sunny.toShape()
-    }
 
 /** Devices' summary counts the active sessions once known, Reminders' the reminders still to come. */
 @Composable
@@ -208,5 +181,3 @@ private fun entryValue(
         }
     }
 }
-
-private const val BADGE_SHAPES = 4

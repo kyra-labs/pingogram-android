@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -41,12 +42,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.FocusIcon
+import dev.kyralabs.pingogram.core.ui.component.CategoryIconBadge
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.FocusBadge
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.component.symbol
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.theme.CategoryColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -54,6 +57,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
+import dev.kyralabs.pingogram.feature.settings.ui.settingsGroupIconColors
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -83,8 +87,8 @@ internal fun FocusRoute(
 }
 
 /**
- * Settings → Focus (`docs/DESIGN_SYSTEM.md` §13.13, board 31): the profiles as a connected list, each its symbol on its
- * shape, its name, how it runs and what it lets through, and a switch that turns it on or off by hand; the profile on
+ * Settings → Focus (`docs/DESIGN_SYSTEM.md` §13.13, board 31): the profiles as a connected list, each its symbol in a
+ * circle, its name, how it runs and what it lets through, and a switch that turns it on or off by hand; the profile on
  * now on `primaryContainer` with "On now". Then "New profile". Without profiles, three shapes, "No Focus profiles yet"
  * and the templates, each opening the editor filled in. Last, "While Focus is on": whether the chat list's header shows
  * the profile on now, and a disabled row: Telegram has no status that tells people the user is focusing. Nothing shows
@@ -142,9 +146,10 @@ internal fun FocusScreen(
 }
 
 /**
- * A profile's row: its symbol on its shape, its name, "On now" while it is on, how it runs and what it lets through;
- * a tap opens the editor, the switch at its end turns it on or off by hand. On `primaryContainer` while it is on.
- * Screen readers hear the row as one item, with the switch apart.
+ * A profile's row: its symbol in a circle (the group's category color; inverted on the profile on now), its name,
+ * "On now" while it is on, how it runs and what it lets through; a tap opens the editor, the switch at its end turns it
+ * on or off by hand. On `primaryContainer` while it is on. Screen readers hear the row as one item, with the switch
+ * apart.
  */
 @Composable
 private fun FocusProfileRow(
@@ -173,11 +178,14 @@ private fun FocusProfileRow(
         colors = rowColors,
         modifier = Modifier.cardSemantics(item.isOn) { toggle(haptics, !item.isOn, onToggle) },
         leadingContent = {
-            FocusBadge(
-                icon = item.icon,
-                size = MaterialTheme.sizes.leadingIconContainer,
-                container = if (item.isOn) colors.onPrimaryContainer else colors.secondaryContainer,
-                content = if (item.isOn) colors.primaryContainer else colors.onSecondaryContainer,
+            CategoryIconBadge(
+                icon = painterResource(item.icon.symbol()),
+                colors =
+                    if (item.isOn) {
+                        CategoryColors(colors.onPrimaryContainer, colors.primaryContainer)
+                    } else {
+                        settingsGroupIconColors()
+                    },
             )
         },
         supportingContent = {
@@ -246,23 +254,11 @@ private fun FocusTemplatesGroup(onOpenProfile: (id: Long, template: FocusTemplat
     SettingsGroup(title = stringResource(R.string.settings_focus_templates)) {
         FocusTemplate.entries.forEach { template ->
             item(key = template) { shapes ->
-                val colors = MaterialTheme.colorScheme
                 SettingsRow(
                     title = stringResource(template.title()),
                     shapes = shapes,
-                    // Each template's symbol on its shape, as its profile shows it (board 31f).
-                    icon = UiR.drawable.ic_add.takeIf { template.icon() == null },
-                    leading =
-                        template.icon()?.let { icon ->
-                            {
-                                FocusBadge(
-                                    icon,
-                                    MaterialTheme.sizes.leadingIconContainer,
-                                    colors.secondaryContainer,
-                                    colors.onSecondaryContainer,
-                                )
-                            }
-                        },
+                    // Each template's symbol, as its profile shows it (board 31f), in the group's circle.
+                    icon = template.icon()?.symbol() ?: UiR.drawable.ic_add,
                     supportingContent = { Text(stringResource(template.summary())) },
                     onClick = { onOpenProfile(0, template) },
                     opensPage = true,

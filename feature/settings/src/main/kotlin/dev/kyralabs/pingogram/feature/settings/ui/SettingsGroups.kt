@@ -5,46 +5,36 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
-import dev.kyralabs.pingogram.core.ui.theme.VividAvatarPalette
+import dev.kyralabs.pingogram.core.ui.component.CategoryIconBadge
+import dev.kyralabs.pingogram.core.ui.theme.CategoryColors
+import dev.kyralabs.pingogram.core.ui.theme.CategoryHue
 import dev.kyralabs.pingogram.core.ui.theme.growInVertically
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.shrinkOutVertically
-import dev.kyralabs.pingogram.core.ui.theme.sizes
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The groups of rows on every settings screen (docs/DESIGN_SYSTEM.md §6, "Settings rows"): Material 3 Expressive
 // segmented lists, each row its own container on `surface` (`surfaceContainer` with AMOLED black, settingsRowColors),
 // its corners from its place in the group (ListItemDefaults.segmentedShapes), ListItemDefaults.SegmentedGap from its
-// neighbours, its leading icon in a tonal circle of the group's container role (SettingsIconTone).
+// neighbours, its leading icon in a circle of the group's category color (SettingsItemIcon).
 
 /**
  * The rows of a [SettingsGroup], collected in order by its builder like a lazy list's items: each [item] is composed
@@ -72,8 +62,9 @@ internal class SettingsGroupItem(
  * any, as a heading ([SettingsSectionHeader]), then the [items], each in a container of its own,
  * `ListItemDefaults.SegmentedGap` apart, with large outer corners at the ends of the group and small ones between rows
  * (`ListItemDefaults.segmentedShapes`), and a [footer] note below them ([SettingsFooter]). [rowsModifier] applies to
- * the rows alone, e.g. `Modifier.selectableGroup()` for radio rows. The rows' leading icons sit in circles of
- * [iconTone], one container role for the whole group (`docs/DESIGN_SYSTEM.md` §2.2).
+ * the rows alone, e.g. `Modifier.selectableGroup()` for radio rows. The rows' leading icons sit in circles of one
+ * category color for the whole group (`docs/DESIGN_SYSTEM.md` §13.10): [category] where the group has its own (Settings
+ * home's), else the page's next one down the page ([settingsGroupCategory]), so neighbouring groups differ.
  */
 @Composable
 internal fun SettingsGroup(
@@ -81,7 +72,7 @@ internal fun SettingsGroup(
     title: String? = null,
     footer: String? = null,
     rowsModifier: Modifier = Modifier,
-    iconTone: SettingsIconTone = SettingsIconTone.Primary,
+    category: CategoryHue? = null,
     items: SettingsGroupScope.() -> Unit,
 ) {
     val rows = SettingsGroupScope().apply(items).items
@@ -90,20 +81,19 @@ internal fun SettingsGroup(
     val motion = MaterialTheme.motionScheme
     val enter = remember(motion) { growInVertically(motion) }
     val exit = remember(motion) { shrinkOutVertically(motion) }
+    val categories = MaterialTheme.pingogramColors.categories
+    val colors = category?.let { categories[it] } ?: categories[settingsGroupCategory(title)]
     Column(modifier) {
         if (title != null) SettingsSectionHeader(title)
-        CompositionLocalProvider(LocalSettingsIconTone provides iconTone) {
+        CompositionLocalProvider(LocalSettingsIconColors provides colors) {
             Column(rowsModifier, verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-                val seed = title?.length ?: 0
                 entries.forEach { entry ->
                     key(entry.key) {
-                        CompositionLocalProvider(LocalSettingsRowPlace provides SettingsRowPlace(entry.index, seed)) {
-                            if (entry.key is RowIndex) {
+                        if (entry.key is RowIndex) {
+                            entry.item.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
+                        } else {
+                            AnimatedVisibility(visibleState = entry.visibility, enter = enter, exit = exit) {
                                 entry.item.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
-                            } else {
-                                AnimatedVisibility(visibleState = entry.visibility, enter = enter, exit = exit) {
-                                    entry.item.content(ListItemDefaults.segmentedShapes(entry.index, entry.count))
-                                }
                             }
                         }
                     }
@@ -198,8 +188,8 @@ internal fun SettingsSegment(
 }
 
 /**
- * A row of a [SettingsGroup]: a [SegmentedListItem] with an outlined [icon] (a Material Symbols drawable) in a tonal
- * circle ([SettingsItemIcon]; [iconTone] for this row alone, the group's otherwise), [title] in the list item's
+ * A row of a [SettingsGroup]: a [SegmentedListItem] with an outlined [icon] (a Material Symbols drawable) in a circle
+ * ([SettingsItemIcon]; [iconTone] for this row alone, the group's category color otherwise), [title] in the list item's
  * `bodyLarge`, [supportingContent] and [trailingContent]. With [onClick] it is clickable, and its shape morphs to the
  * list item's pressed shape on the motion scheme's fast spatial spring (the list item's own); without, it only shows.
  * Either way screen readers read it as one item. With [selected] as well (a page row of Settings home beside the open
@@ -228,7 +218,7 @@ internal fun SettingsRow(
     val trailingContent = trailingContent ?: if (opensPage) ({ PageChevron() }) else null
     val leadingContent: (@Composable () -> Unit)? =
         icon?.let {
-            { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled, selected = selected == true) }
+            { SettingsItemIcon(it, iconTone ?: SettingsIconTone.Category, enabled, selected = selected == true) }
         } ?: leading
     if (onClick != null && selected != null) {
         SegmentedListItem(
@@ -330,62 +320,40 @@ internal fun settingsRowContainerColor(): Color =
     if (isAmoledBlack()) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surface
 
 /**
- * The container role of a group's row icons (`docs/DESIGN_SYSTEM.md` §2.2, owner decision D7): one per group, as
- * Android 16's Settings colors its icons, rather than one per row; [Error] for a destructive row.
+ * The colors of a row's icon circle (`docs/DESIGN_SYSTEM.md` §13.10): its group's [Category] color, or [Error]'s
+ * `errorContainer` for a destructive row.
  */
-internal enum class SettingsIconTone { Primary, Secondary, Tertiary, Error }
+internal enum class SettingsIconTone { Category, Error }
 
-private val LocalSettingsIconTone = staticCompositionLocalOf { SettingsIconTone.Primary }
+/** The category color of the group being composed, which [SettingsGroup] provides. */
+private val LocalSettingsIconColors = staticCompositionLocalOf<CategoryColors?> { null }
 
 /**
- * A row's leading icon, a Material Symbols drawable, in a tonal circle of [tone]'s container role (`primaryContainer`
- * and `onPrimaryContainer`…) as wide as a list item's leading avatar, so rows keep their heights; the row's text names
- * it for screen readers. A disabled row's icon fades like its text. On a [selected] row, whose container is
- * `secondaryContainer`, the circle is `primary` and the icon `onPrimary` whatever the tone, so it stays visible
- * (`docs/DESIGN_SYSTEM.md` §2.2).
+ * A row's leading icon, a Material Symbols drawable, in a circle ([CategoryIconBadge]) of its group's category color,
+ * or `errorContainer` for an [SettingsIconTone.Error] row, as wide as a list item's leading avatar, so rows keep their
+ * heights; the row's text names it for screen readers. A disabled row's icon fades like its text. On a [selected] row,
+ * whose container is `secondaryContainer`, the circle is `primary` and the icon `onPrimary` whatever the group's color,
+ * so it stays visible (`docs/DESIGN_SYSTEM.md` §2.2).
  */
 @Composable
 internal fun SettingsItemIcon(
     @DrawableRes icon: Int,
-    tone: SettingsIconTone = LocalSettingsIconTone.current,
+    tone: SettingsIconTone = SettingsIconTone.Category,
     enabled: Boolean = true,
     selected: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
-    // A vivid badge shape (docs/DESIGN_SYSTEM.md §13.10), but for a destructive row's and a selected row's circle.
-    val vivid = tone != SettingsIconTone.Error && !selected
-    val place = LocalSettingsRowPlace.current
-    val (container, content) =
+    val badge =
         when {
-            selected -> colors.primary to colors.onPrimary
-            vivid -> MaterialTheme.pingogramColors.vividAvatars.at(place.index + place.seed)
-            else -> tone.colors(colors)
+            selected -> CategoryColors(colors.primary, colors.onPrimary)
+            tone == SettingsIconTone.Error -> CategoryColors(colors.errorContainer, colors.onErrorContainer)
+            else -> settingsGroupIconColors()
         }
-    val shape = if (vivid) settingsBadgeShape(place.index) else CircleShape
-    Box(
-        modifier =
-            Modifier
-                .size(MaterialTheme.sizes.leadingIconContainer)
-                .background(if (enabled) container else colors.onSurface.copy(alpha = DISABLED_CONTAINER), shape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            tint = if (enabled) content else colors.onSurface.copy(alpha = DISABLED_CONTENT),
-        )
-    }
+    CategoryIconBadge(icon = painterResource(icon), colors = badge, enabled = enabled)
 }
 
-/** This tone's container role and the content role on it. */
-private fun SettingsIconTone.colors(colors: ColorScheme): Pair<Color, Color> =
-    when (this) {
-        SettingsIconTone.Primary -> colors.primaryContainer to colors.onPrimaryContainer
-        SettingsIconTone.Secondary -> colors.secondaryContainer to colors.onSecondaryContainer
-        SettingsIconTone.Tertiary -> colors.tertiaryContainer to colors.onTertiaryContainer
-        SettingsIconTone.Error -> colors.errorContainer to colors.onErrorContainer
-    }
-
-/** Material's disabled container and content opacities (`docs/DESIGN_SYSTEM.md` §2.2). */
-private const val DISABLED_CONTAINER = 0.12f
-private const val DISABLED_CONTENT = 0.38f
+/** The category color of the group being composed, for a row that draws its own circle (a Focus profile's). */
+@Composable
+@ReadOnlyComposable
+internal fun settingsGroupIconColors(): CategoryColors =
+    LocalSettingsIconColors.current ?: MaterialTheme.pingogramColors.categories[0]
