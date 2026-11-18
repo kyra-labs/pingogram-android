@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
+import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
@@ -218,6 +219,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.SnippetRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
@@ -550,6 +552,9 @@ interface RepositoryModule {
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository
+
+    @Binds
+    fun snippetRepository(repository: FileSnippetRepository): SnippetRepository
 
     @Binds
     fun keywordHitRepository(repository: TdlibKeywordHitRepository): KeywordHitRepository

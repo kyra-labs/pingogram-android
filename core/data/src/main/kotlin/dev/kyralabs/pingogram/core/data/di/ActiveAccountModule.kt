@@ -92,6 +92,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
+import dev.kyralabs.pingogram.core.domain.repository.SnippetRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerMakerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
@@ -442,6 +443,9 @@ object ActiveAccountModule {
 
     @Provides
     fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()
+
+    @Provides
+    fun snippetRepository(accounts: Accounts): SnippetRepository = accounts.active.snippetRepository()
 
     @Provides
     fun keywordHitRepository(accounts: Accounts): KeywordHitRepository = accounts.active.keywordHitRepository()

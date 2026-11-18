@@ -680,6 +680,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   question before deleting in its saved state). A card's long press opens that bookmark's sheet over the page
   (`BookmarkSheetViewModel`, keyed by its chat as the conversation's; `BookmarksViewModel.editing`, the chat in its
   saved state), and its search filters on the device (`BookmarkSearch`).
+- **Snippets** (`REQUIREMENTS.md` FR-X2, kept on this phone only): `core:domain`'s `SnippetRepository`
+  (`FileSnippetRepository`, `core:data`, account-scoped as bookmarks are: `snippets.txt` in the account's TDLib
+  directory, deleted at logout, the demo's in memory) keeps up to `Snippet.MAX_SNIPPETS` snippets (`Snippet`: a name,
+  `Snippet.isValidName` and unique in any letter case, and a text) in the user's order.
 - **Keyword alerts** (the owner's board 30, kept on this phone only): `core:domain`'s `KeywordAlertsRepository`
   (`DataStoreKeywordAlertsRepository`, the settings file: the words, where to look, the two switches) and
   `KeywordMatcher`, which finds the words in a text as whole words or phrases, in any letter case and with or without
