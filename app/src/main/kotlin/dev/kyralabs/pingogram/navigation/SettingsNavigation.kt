@@ -27,6 +27,6 @@ internal fun NavGraphBuilder.settings(navController: NavHostController) {
         onTwoStepVerificationDone = { navController.popBackStackAfterTwoStepVerification(it) },
         onScanQrCode = scanQrCode,
     )
-    // Recent calls, from Settings home and the Contacts tab (LocalRecentCallsLauncher, provided by PingogramApp).
+    // Recent calls, from the Contacts tab (LocalRecentCallsLauncher, provided by PingogramApp).
     recentCallsScreen(onBack = { navController.popBackStack() })
 }
