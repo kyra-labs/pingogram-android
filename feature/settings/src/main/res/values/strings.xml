@@ -41,7 +41,7 @@
     <string name="settings_about">About</string>
     <string name="settings_about_summary">Version, source code, license</string>
     <string name="settings_privacy_security">Privacy and security</string>
-    <string name="settings_privacy_security_summary">Who can see you, blocked users, active sessions</string>
+    <string name="settings_privacy_security_summary">Who can see you, blocked users, devices</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_summary">Messages, groups, channels, exceptions</string>
     <string name="settings_log_out">Log out</string>
@@ -252,22 +252,14 @@
     <string name="settings_about_check_updates">Check for updates</string>
     <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
 
-    <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>
     <string name="settings_storage_files">Downloaded files</string>
     <!-- %1$s is a size such as "1.5 GB", %2$s a file count such as "3,456 files". -->
-    <string name="settings_storage_files_size">%1$s · %2$s</string>
-    <plurals name="settings_storage_file_count">
-        <item quantity="one">%1$s file</item>
-        <item quantity="other">%1$s files</item>
-    </plurals>
     <string name="settings_storage_database">Database</string>
     <!-- %1$s is a size such as "85 MB". -->
-    <string name="settings_storage_database_size">%1$s · chats, messages and settings</string>
     <string name="settings_section_cache">Cache</string>
     <string name="settings_clear_cache">Clear cache</string>
-    <string name="settings_clear_cache_summary">Remove downloaded photos, videos and files from this device</string>
     <!-- Spoken by screen readers for the progress indicator while the cache is cleared. -->
     <string name="settings_clearing_cache">Clearing cache</string>
     <string name="settings_clear_cache_dialog_title">Clear cache?</string>
@@ -320,7 +312,7 @@
         <item quantity="one">%1$s blocked</item>
         <item quantity="other">%1$s blocked</item>
     </plurals>
-    <string name="settings_active_sessions">Active sessions</string>
+    <string name="settings_active_sessions">Devices</string>
     <!-- %1$s is a number such as "3", formatted for the language. -->
     <plurals name="settings_active_sessions_count">
         <item quantity="one">%1$s session, this device</item>
@@ -849,7 +841,7 @@
     <string name="settings_qr_login_busy">Logging in…</string>
     <string name="settings_qr_login_done">Device linked</string>
     <string name="settings_qr_login_new_session">New session</string>
-    <string name="settings_qr_login_done_note">You can log it out any time in Active sessions.</string>
+    <string name="settings_qr_login_done_note">You can log it out any time in Devices.</string>
     <string name="settings_qr_login_finish">Done</string>
     <string name="settings_my_qr_title">Your QR code</string>
     <string name="settings_my_qr_loading">Loading your QR code</string>

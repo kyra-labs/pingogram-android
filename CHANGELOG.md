@@ -64,6 +64,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The folder tabs' settings (what the tabs show, the Edit folders button and the Feed tab) moved to Chat folders.
 - Settings home has no More group: Devices is under Alerts and privacy, Language under App, and Recent calls opens
   from the Contacts tab.
+- Privacy and security starts with Security; "Active sessions" is called Devices everywhere, and "Delete cloud
+  drafts" moved here from Data and storage, whose storage card now holds the storage used and Clear cache.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

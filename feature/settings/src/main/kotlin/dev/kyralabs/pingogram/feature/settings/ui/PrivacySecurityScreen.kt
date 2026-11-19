@@ -30,6 +30,9 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsEvent
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsViewModel
 import dev.kyralabs.pingogram.feature.settings.ui.passkeys.passkeysItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
@@ -53,6 +56,7 @@ internal fun PrivacySecurityRoute(
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
+    draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
@@ -62,7 +66,9 @@ internal fun PrivacySecurityRoute(
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
     val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
+    val drafts by draftsViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    DataOptionsSnackbars(draftsViewModel, snackbarHostState)
     SwitchErrors(
         snackbarHostState,
         secretChatPreviewsViewModel.errors,
@@ -101,11 +107,16 @@ internal fun PrivacySecurityRoute(
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
+        drafts = drafts,
+        onDraftsEvent = draftsViewModel::onEvent,
     )
 }
 
 /**
- * Privacy and security (`REQUIREMENTS.md` FR-S1):
+ * Privacy and security (`REQUIREMENTS.md` FR-S1), its groups in the owner's order of 2026-11-19 below the privacy
+ * checkup:
+ * - Security: whether 2-step verification is on, passkeys, whether the passcode lock is on, locked chats, blocked
+ *   users and devices with their counts, and connected websites, each opening its page;
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), and "Suggest frequent contacts"
@@ -115,12 +126,10 @@ internal fun PrivacySecurityRoute(
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
  *   code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles and info
  *   pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
- * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
- *   the passcode lock is on, each opening its page;
- * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
- *   may stay unused, each opening its page.
+ * - Account: the login email, the self-destruct timer of new chats, "Delete cloud drafts" ([drafts], after a
+ *   destructive confirmation) and "Delete account" with how long the account may stay unused.
  */
-@Suppress("LongParameterList") // The page's state and events, and contacts sync's.
+@Suppress("LongParameterList") // The page's state and events, its switches' and the cloud drafts'.
 @Composable
 internal fun PrivacySecurityScreen(
     state: PrivacySecurityUiState,
@@ -141,6 +150,8 @@ internal fun PrivacySecurityScreen(
     onIdsShownChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
+    drafts: DataOptionsUiState = DataOptionsUiState(),
+    onDraftsEvent: (DataOptionsEvent) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
@@ -161,8 +172,9 @@ internal fun PrivacySecurityScreen(
                 // One child of the page with the section below it, so the gap it holds goes with it.
                 Column {
                     PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
-                    PrivacySection(state, onOpen)
+                    SecuritySection(state, onOpen)
                 }
+                PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(
@@ -173,15 +185,27 @@ internal fun PrivacySecurityScreen(
                     directShare = directShare,
                     onDirectShareChange = onDirectShareChange,
                 )
-                SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,
                     autoDeleteSeconds = state.defaultAutoDeleteSeconds,
                     accountTtlDays = state.accountTtlDays,
                     onOpen = onOpen,
+                    beforeDeleteAccount = {
+                        item(key = DELETE_DRAFTS) { shapes ->
+                            DeleteDraftsItem(drafts.isDeletingDrafts, shapes) {
+                                onDraftsEvent(DataOptionsEvent.DeleteDrafts)
+                            }
+                        }
+                    },
                 )
             }
         }
+    }
+    if (drafts.isDeleteDraftsDialogOpen) {
+        DeleteDraftsDialog(
+            onConfirm = { onDraftsEvent(DataOptionsEvent.ConfirmDeleteDrafts) },
+            onDismiss = { onDraftsEvent(DataOptionsEvent.DismissDeleteDrafts) },
+        )
     }
 }
 
@@ -231,6 +255,9 @@ private fun PrivacySection(
 /** The key of the "Messages" row among the privacy settings' rows. */
 private const val NEW_CHATS = "newChats"
 
+/** The key of "Delete cloud drafts" among the Account group's rows. */
+private const val DELETE_DRAFTS = "deleteDrafts"
+
 /** A privacy setting and its main choice. */
 @Composable
 private fun PrivacySettingItem(
@@ -255,6 +282,29 @@ private fun SecuritySection(
 ) {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     SettingsGroup(title = stringResource(R.string.settings_section_security)) {
+        item { shapes ->
+            TwoStepVerificationItem(
+                summary = state.twoStepVerification,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.TwoStepVerification) },
+            )
+        }
+        passkeysItem { onOpen(PrivacySecurityPage.Passkeys) }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_passcode_lock),
+                summary =
+                    if (state.passcodeLock) {
+                        stringResource(R.string.settings_passcode_lock_on)
+                    } else {
+                        stringResource(R.string.settings_passcode_lock_off)
+                    },
+                icon = R.drawable.ic_pin_filled,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
+            )
+        }
+        lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
         item { shapes ->
             BlockedUsersItem(state.blockedCount, numbers, shapes) { onOpen(PrivacySecurityPage.BlockedUsers) }
         }
@@ -281,29 +331,6 @@ private fun SecuritySection(
                 onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
         }
-        passkeysItem { onOpen(PrivacySecurityPage.Passkeys) }
-        item { shapes ->
-            TwoStepVerificationItem(
-                summary = state.twoStepVerification,
-                shapes = shapes,
-                onClick = { onOpen(PrivacySecurityPage.TwoStepVerification) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_passcode_lock),
-                summary =
-                    if (state.passcodeLock) {
-                        stringResource(R.string.settings_passcode_lock_on)
-                    } else {
-                        stringResource(R.string.settings_passcode_lock_off)
-                    },
-                icon = R.drawable.ic_pin_filled,
-                shapes = shapes,
-                onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
-            )
-        }
-        lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
     }
 }
 
