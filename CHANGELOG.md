@@ -27,6 +27,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
 - In the Feed, a long press on a post forwards it, copies its link, bookmarks it on this phone, or marks it as read
   (or its channel as unread).
+- The Feed shows a channel's sponsored message after its newest post, labelled and as Telegram sends it, with
+  "About this ad" and reporting as in the channel.
 - The Feed's filter shows all channels or only those you choose, and only unread posts if you like; "Mark all as
   read" reads them in their channels, asking first when that is 20 posts or more.
 - Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
