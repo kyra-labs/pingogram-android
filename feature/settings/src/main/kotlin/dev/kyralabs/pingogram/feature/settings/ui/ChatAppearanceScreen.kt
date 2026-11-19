@@ -155,7 +155,7 @@ private fun ChatAppearanceContent(
 
 /** Message text size: "Message text size" over the size in percent ("110%"), and a slider through its steps. */
 @Composable
-internal fun TextSizeSegment(
+private fun TextSizeSegment(
     scale: Float,
     shapes: ListItemShapes,
     onChange: (Float) -> Unit,

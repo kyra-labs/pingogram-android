@@ -173,7 +173,10 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   only), Language (per-app language API), About (version, licenses, GitHub link).
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
-  (standard/medium/high per M3).
+  (standard/medium/high per M3), and how chats look (group bubbles; Chat appearance with the message text size,
+  bubble corners and wallpaper). How chats behave is on its own page, Settings → Chats (owner decision 2026-11-19):
+  double-tap to react, snippets, which Enter sends, voice messages (transcription, raise to listen, skip silence), and
+  the chat list's swipes and chats shown first.
 - FR-S2a Must: Pingogram's look (`docs/DESIGN_SYSTEM.md` §13, `docs/adr/0035-experimental-ui.md`): first an opt-in
   "Experimental UI" (owner decision 2026-11-07), the app's only look since the owner's decision of 2026-11-08, with no
   switch.
@@ -223,7 +226,7 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   `TextClassifier` finds a date or time in its text, and "Open in maps" for an address; the calendar opens with the
   event filled in (`CalendarContract` insert intent) and the user saves it there. No permission, no network.
 - FR-X4 Should: **Skip silence and playback speed.** Voice and round video messages can skip their silences (the
-  player's own skip-silence), a switch in Settings → Appearance → Chats beside raise to listen, remembered for the app;
+  player's own skip-silence), a switch in Settings → Chats → Voice messages beside raise to listen, remembered for the app;
   the switch stays in Settings only, as the speed chip is a single tap with no menu to hold it. While one is in the
   player, a speed chip beside its time (on a round video message, at its circle's bottom) cycles 1× → 1.5× → 2×, at
   once and remembered for the app for whatever plays next; music plays at 1×.

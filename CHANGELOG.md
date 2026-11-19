@@ -19,7 +19,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Backups can write themselves: Backup & restore → Back up automatically, Off, Daily or Weekly (Weekly once you pick a
   folder). They run while the phone charges or its battery isn't low, use the password of your last Back up now, and
   keep the newest 3 files in the folder.
-- Snippets: save texts you often write in Settings → Appearance → Chats → Snippets, each with a one-word name, and
+- Snippets: save texts you often write in Settings → Chats → Snippets, each with a one-word name, and
   reorder, edit or delete them there. They stay on this phone.
 - In a chat, type / and the start of a snippet's name to insert its text, or pick one with "Insert snippet" in the
   message field's menu; it is never sent until you tap Send. In chats with bots, their commands are suggested first.
@@ -40,7 +40,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   "About this ad" and reporting as in the channel.
 - The Feed's filter shows all channels or only those you choose, and only unread posts if you like; "Mark all as
   read" reads them in their channels, asking first when that is 20 posts or more.
-- Voice messages can skip their silences: turn on "Skip silence" in Settings → Appearance → Chats.
+- Voice messages can skip their silences: turn on "Skip silence" in Settings → Chats.
 - Voice and round video messages play faster: while one plays, its speed chip goes from 1× to 1.5× and 2×, and the
   speed is remembered for the next ones.
 - A message's actions offer "Add to calendar" for a date or time in its text, opening your calendar with the event
@@ -59,6 +59,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "Use proxy" is a card at the top of the Proxy page.
 - Settings' icons are filled and their circles brighter, with the icon in a deep shade of the circle's color, in dark
   theme too; row titles are a little bolder, and every switch shows a × while it is off.
+- Settings has a Chats page, after Appearance: sending, voice messages, Swipe actions and Chats shown first moved there
+  from Appearance, which keeps how things look. The message text size is set on Chat appearance only.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

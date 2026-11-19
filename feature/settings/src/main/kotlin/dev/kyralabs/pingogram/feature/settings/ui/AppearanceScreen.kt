@@ -28,7 +28,6 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -45,22 +44,14 @@ import java.text.NumberFormat
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
- * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react, [onOpenSwipeActions]
- * Swipe actions, [onOpenShownFirst] Chats shown first, [onOpenTranscription] voice message transcription,
- * [onOpenSnippets] Snippets; [onBack] leaves.
+ * [onOpenChatAppearance] the Chat appearance page; [onBack] leaves.
  */
-@Suppress("LongParameterList") // The six pages it opens, back, the modifier and the view model.
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
     onOpenChatAppearance: () -> Unit,
-    onOpenQuickReaction: () -> Unit,
-    onOpenSwipeActions: () -> Unit,
-    onOpenShownFirst: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenTranscription: () -> Unit = {},
-    onOpenSnippets: () -> Unit = {},
     viewModel: AppearanceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,11 +85,6 @@ internal fun AppearanceRoute(
         onEvent = viewModel::onEvent,
         onOpenColorTheme = onOpenColorTheme,
         onOpenChatAppearance = onOpenChatAppearance,
-        onOpenQuickReaction = onOpenQuickReaction,
-        onOpenSwipeActions = onOpenSwipeActions,
-        onOpenShownFirst = onOpenShownFirst,
-        onOpenTranscription = onOpenTranscription,
-        onOpenSnippets = onOpenSnippets,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -110,9 +96,7 @@ internal fun AppearanceRoute(
 /**
  * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §13.10): [AppearanceContent], with "Reset" at the top
  * bar's end. The color themes' row opens the Theme page ([onOpenColorTheme]), the wallpaper's colors first where
- * [wallpaperSchemes] has them; "Chat list" opens Swipe actions ([onOpenSwipeActions]); "Chats" opens Chat appearance
- * ([onOpenChatAppearance]), Double-tap to react ([onOpenQuickReaction]), Chats shown first ([onOpenShownFirst]) and
- * voice message transcription ([onOpenTranscription]).
+ * [wallpaperSchemes] has them; "Chats" opens Chat appearance ([onOpenChatAppearance]).
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -124,11 +108,6 @@ internal fun AppearanceScreen(
     modifier: Modifier = Modifier,
     onOpenColorTheme: () -> Unit = {},
     onOpenChatAppearance: () -> Unit = {},
-    onOpenQuickReaction: () -> Unit = {},
-    onOpenSwipeActions: () -> Unit = {},
-    onOpenShownFirst: () -> Unit = {},
-    onOpenTranscription: () -> Unit = {},
-    onOpenSnippets: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     systemContrast: Contrast? = null,
     wallpaperSchemes: WallpaperSchemes? = null,
@@ -150,18 +129,8 @@ internal fun AppearanceScreen(
             }
 
             is AppearanceUiState.Content -> {
-                val chats = ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList, state.skipSilence)
-                val pages =
-                    AppearancePages(
-                        onOpenColorTheme,
-                        onOpenChatAppearance,
-                        onOpenQuickReaction,
-                        onOpenSwipeActions,
-                        onOpenShownFirst,
-                        onOpenTranscription,
-                        onOpenSnippets,
-                    )
-                AppearanceContent(state.settings, chats, onEvent, pages, wallpaperSchemes, systemContrast)
+                val pages = AppearancePages(onOpenColorTheme, onOpenChatAppearance)
+                AppearanceContent(state.settings, state.chatList, onEvent, pages, wallpaperSchemes, systemContrast)
             }
         }
     }
@@ -179,11 +148,6 @@ private fun AppearanceLoading() {
 internal class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
-    val onOpenQuickReaction: () -> Unit,
-    val onOpenSwipeActions: () -> Unit,
-    val onOpenShownFirst: () -> Unit,
-    val onOpenTranscription: () -> Unit = {},
-    val onOpenSnippets: () -> Unit = {},
 )
 
 @PingogramPreviews

@@ -304,15 +304,23 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `the skip silence row is a switch, off at first, whose tap turns it on`() {
+    fun `the page holds only looks, with the text size on Chat appearance and behavior on the Chats page`() {
         setScreen()
 
-        switchRow(R.string.settings_skip_silence)
-            .performScrollTo()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.Off))
-            .assert(hasText(string(R.string.settings_skip_silence_summary)))
-            .performClick()
-
-        assertEquals(listOf(AppearanceEvent.SetSkipSilence(true)), events)
+        node(R.string.settings_chat_type_icons).performScrollTo().assertExists()
+        node(R.string.settings_group_bubbles).performScrollTo().assertExists()
+        for (moved in listOf(
+            R.string.settings_chat_text_size,
+            R.string.settings_double_tap,
+            R.string.settings_snippets,
+            R.string.settings_enter_sends_hardware,
+            R.string.settings_transcription,
+            R.string.settings_raise_to_listen,
+            R.string.settings_skip_silence,
+            R.string.settings_swipe_actions,
+            R.string.shown_first_title,
+        )) {
+            node(moved).assertDoesNotExist()
+        }
     }
 }
