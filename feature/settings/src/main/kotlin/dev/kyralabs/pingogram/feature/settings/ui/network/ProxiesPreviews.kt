@@ -3,11 +3,13 @@ package dev.kyralabs.pingogram.feature.settings.ui.network
 import androidx.compose.runtime.Composable
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ProxyPreviewStates as States
 
 // The previews of the Proxy page, one per state.
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun ProxiesPreview() = Proxies(States.proxies)
 
