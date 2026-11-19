@@ -17,13 +17,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The one registry of Settings home's entries (docs/DESIGN_SYSTEM.md §13.9): its groups and
 // what settings search finds.
 
-/** Where an entry of Settings home leads: a settings page, or Recent calls, a page of another feature. */
+/** Where an entry of Settings home leads: a settings page, or a page of another feature. */
 internal sealed interface HomeDestination {
     data class Page(
         val page: SettingsPage,
     ) : HomeDestination
-
-    data object RecentCalls : HomeDestination
 
     /** The Bookmarks page (`:feature:chat`, `LocalBookmarksLauncher`), a tool of On this phone. */
     data object Bookmarks : HomeDestination
@@ -119,8 +117,9 @@ internal val OnThisPhoneGroup: HomeGroup =
 
 /**
  * Settings home's groups. Every page Settings home opens is in one of them: "On this phone" (shown once a tool there
- * has a row), "Make it yours", "Alerts and privacy", "More", and "App" for the rest. Owner decision to confirm
- * (2026-11-07): the grouping; owner decision 2026-11-15: "On this phone" first.
+ * has a row), "Make it yours", "Alerts and privacy", and "App" for the rest. Owner decisions: "On this phone" first
+ * (2026-11-15); no "More" group, Devices with the alerts and privacy, Language in App, and Recent calls only on the
+ * Contacts tab (2026-11-19).
  */
 internal val HomeGroups: List<HomeGroup> =
     listOf(
@@ -171,6 +170,12 @@ internal val HomeGroups: List<HomeGroup> =
                     R.drawable.ic_shield_filled,
                 ),
                 page(
+                    SettingsPage.ActiveSessions,
+                    R.string.settings_home_devices,
+                    R.string.settings_home_devices_summary,
+                    R.drawable.ic_devices_filled,
+                ),
+                page(
                     SettingsPage.DataStorage,
                     R.string.settings_data_storage,
                     R.string.settings_data_storage_summary,
@@ -180,32 +185,14 @@ internal val HomeGroups: List<HomeGroup> =
             category = CategoryHue.Orange,
         ),
         HomeGroup(
-            R.string.settings_home_more,
+            R.string.settings_home_app,
             listOf(
-                HomeEntry(
-                    HomeDestination.RecentCalls,
-                    R.string.settings_recent_calls,
-                    R.string.settings_recent_calls_summary,
-                    UiR.drawable.ic_call_log_filled,
-                ),
-                page(
-                    SettingsPage.ActiveSessions,
-                    R.string.settings_home_devices,
-                    R.string.settings_home_devices_summary,
-                    R.drawable.ic_devices_filled,
-                ),
                 page(
                     SettingsPage.Language,
                     R.string.settings_language,
                     R.string.settings_language_summary,
                     R.drawable.ic_language,
                 ),
-            ),
-            category = CategoryHue.Blue,
-        ),
-        HomeGroup(
-            R.string.settings_home_app,
-            listOf(
                 page(
                     SettingsPage.PowerSaving,
                     R.string.settings_power_saving,
@@ -225,7 +212,7 @@ internal val HomeGroups: List<HomeGroup> =
 
 /**
  * The entries of [entries] whose title or summary holds every word of [query], ignoring case and accents, in their
- * order; none for a blank query. [available] leaves out what this window cannot open (Recent calls without its page).
+ * order; none for a blank query. [available] leaves out what this window cannot open (Bookmarks without its page).
  */
 internal fun searchEntries(
     entries: List<HomeEntry>,

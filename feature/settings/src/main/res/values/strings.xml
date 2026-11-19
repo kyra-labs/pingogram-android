@@ -29,8 +29,6 @@
     <string name="settings_profile_saved">Profile saved</string>
 
     <!-- Settings home -->
-    <string name="settings_recent_calls">Recent calls</string>
-    <string name="settings_recent_calls_summary">Missed, incoming and outgoing calls</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
     <string name="settings_chats">Chats</string>
@@ -1547,7 +1545,6 @@
     <string name="reminders_sort_chat">By chat</string>
     <string name="reminders_empty_title">No reminders yet</string>
     <string name="reminders_empty_body">Long-press any message and choose Remind me. It comes back when you need it, even if the chat is muted. Stays on this phone. Not sent to Telegram.</string>
-    <string name="settings_home_more">More</string>
     <string name="settings_home_app">App</string>
     <string name="settings_home_stickers_emoji">Stickers and emoji</string>
     <string name="settings_home_devices">Devices</string>
