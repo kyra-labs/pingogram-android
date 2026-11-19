@@ -172,6 +172,13 @@ The owner's decision of 2026-11-17 (`REQUIREMENTS.md` §5.10, ADR 0039):
 - [x] Skip silence in voice and round video messages (FR-X4)
 - [ ] Channel feed (FR-X5)
 
+## After v2.4.0
+
+The owner's decision of 2026-11-19:
+
+- [ ] Arrow keys and Enter between the Channel feed's cards (FR-X5): a hardware keyboard moves between the cards
+  and Enter opens the post in its channel
+
 ## Backlog (unscheduled)
 
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
