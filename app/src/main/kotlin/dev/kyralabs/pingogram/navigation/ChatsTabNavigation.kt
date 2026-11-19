@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.navigation.ForwardRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
@@ -57,6 +58,9 @@ internal fun NavGraphBuilder.chatsTab(
                 onChatShown = { entry.savedStateHandle.chatShown() },
                 onOpenScheduledMessages = navController::navigateToScheduledMessages,
                 onOpenTopic = navController::navigateToTopic,
+                onForward = { chatId, messageIds ->
+                    navController.navigate(ForwardRoute(chatId, messageIds)) { launchSingleTop = true }
+                },
             )
         }
     }

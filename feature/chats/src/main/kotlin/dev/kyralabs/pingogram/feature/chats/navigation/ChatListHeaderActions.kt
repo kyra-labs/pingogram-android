@@ -37,4 +37,19 @@ class ChatListHeaderActions(
 ) {
     /** Search shows, docked or as its own destination: the search button is away. */
     val isSearchOpen: Boolean get() = searchOpen.value
+
+    /** The same actions, the Feed tab doing [open] instead: on two panes, the feed docks in the list pane. */
+    fun withOpenFeed(open: () -> Unit): ChatListHeaderActions =
+        ChatListHeaderActions(
+            search = search,
+            searchOpen = searchOpen,
+            openSearch = openSearch,
+            openAccount = openAccount,
+            accountMenu = accountMenu,
+            openCatchUp = openCatchUp,
+            openMentions = openMentions,
+            openFocus = openFocus,
+            openFeed = open,
+            openBackup = openBackup,
+        )
 }
