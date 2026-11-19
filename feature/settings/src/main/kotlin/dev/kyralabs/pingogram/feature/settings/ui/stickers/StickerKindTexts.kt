@@ -36,7 +36,7 @@ internal class StickerKindTexts(
 
 private val StickerTexts =
     StickerKindTexts(
-        page = R.string.settings_stickers,
+        page = R.string.settings_home_stickers_emoji,
         loading = R.string.settings_stickers_loading,
         trending = R.string.settings_stickers_trending,
         archived = R.string.settings_stickers_archived,

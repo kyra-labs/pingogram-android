@@ -66,6 +66,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   from the Contacts tab.
 - Privacy and security starts with Security; "Active sessions" is called Devices everywhere, and "Delete cloud
   drafts" moved here from Data and storage, whose storage card now holds the storage used and Clear cache.
+- Settings search finds Snippets, Voice message transcription, Login email, Passkeys, Personal channel and Your color.
+  Notifications' last group is "Other alerts", and the Stickers page is titled "Stickers and emoji".
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

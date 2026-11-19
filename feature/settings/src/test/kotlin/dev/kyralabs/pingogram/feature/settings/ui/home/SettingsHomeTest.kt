@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsSubPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -371,6 +372,26 @@ class SettingsHomeTest {
             listOf(HomeDestination.Page(SettingsPage.Chats), HomeDestination.SubPage(SettingsSubPage.SwipeActions)),
             found,
         )
+    }
+
+    @Test
+    fun `search finds snippets, transcription, the login email, passkeys, the personal channel and the color`() {
+        val resources = RuntimeEnvironment.getApplication().resources
+        val expected =
+            mapOf(
+                SettingsSubPage.Snippets to R.string.settings_chats,
+                SettingsSubPage.Transcription to R.string.settings_chats,
+                SettingsSubPage.LoginEmail to R.string.settings_privacy_security,
+                SettingsSubPage.Passkeys to R.string.settings_privacy_security,
+                SettingsSubPage.PersonalChannel to R.string.settings_edit_profile_button,
+                SettingsSubPage.ProfileColor to R.string.settings_edit_profile_button,
+            )
+        for ((subPage, parent) in expected) {
+            val entry = SearchEntries.single { it.destination == HomeDestination.SubPage(subPage) }
+            assertEquals(string(parent), resources.getString(entry.summary))
+            val found = searchEntries(SearchEntries, resources.getString(entry.title), resources, Locale.US)
+            assertTrue("$subPage", entry in found)
+        }
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -172,5 +174,17 @@ class NotificationSettingsScreenTest {
         composeRule.onNodeWithText(string(R.string.settings_notifications_reset)).performScrollTo().performClick()
 
         assertEquals(listOf(NotificationSettingsEvent.Reset), events)
+    }
+
+    @Test
+    fun `Reactions, Keyword alerts and Contact joined are under Other alerts`() {
+        setScreen()
+
+        val header = composeRule.onNodeWithText(string(R.string.settings_notifications_section_other_alerts))
+        header.performScrollTo().assertExists()
+        val headerTop = header.getUnclippedBoundsInRoot().top
+        val reactionsTop =
+            composeRule.onNodeWithText(string(R.string.settings_reactions)).getUnclippedBoundsInRoot().top
+        assertTrue(reactionsTop > headerTop)
     }
 }

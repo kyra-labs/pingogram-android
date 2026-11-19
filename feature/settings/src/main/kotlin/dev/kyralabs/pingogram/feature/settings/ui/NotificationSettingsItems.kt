@@ -210,8 +210,9 @@ private const val SOUND = "sound"
 private const val EXCEPTIONS = "exceptions"
 
 /**
- * "Reactions", the row that opens whom the account hears of reactions and poll votes from, "Keyword alerts" (board
- * 30), and "Contact joined Telegram" as a switch row once TDLib has said whether it is on ([contactJoined]).
+ * "Other alerts" (owner decision 2026-11-19): "Reactions", the row that opens whom the account hears of reactions and
+ * poll votes from, "Keyword alerts" (board 30), and "Contact joined Telegram" as a switch row once TDLib has said
+ * whether it is on ([contactJoined]).
  */
 @Composable
 internal fun ReactionsGroup(
@@ -219,7 +220,7 @@ internal fun ReactionsGroup(
     onOpen: (NotificationSettingsPage) -> Unit,
     onContactJoinedChange: (Boolean) -> Unit,
 ) {
-    SettingsGroup {
+    SettingsGroup(title = stringResource(R.string.settings_notifications_section_other_alerts)) {
         item { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_reactions),

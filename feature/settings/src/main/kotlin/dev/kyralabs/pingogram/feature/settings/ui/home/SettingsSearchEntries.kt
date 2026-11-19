@@ -11,23 +11,25 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * user's QR code, then the pages above them ([SubPageEntries]).
  */
 internal val SearchEntries: List<HomeEntry> by lazy {
-    HomeGroups.flatMap { it.entries } +
-        listOf(
-            page(
-                SettingsPage.EditProfile,
-                R.string.settings_edit_profile_button,
-                R.string.settings_home_edit_profile_summary,
-                UiR.drawable.ic_edit_filled,
-            ),
-            page(
-                SettingsPage.MyQrCode,
-                R.string.settings_my_qr_title,
-                R.string.settings_home_qr_summary,
-                UiR.drawable.ic_qr_code,
-            ),
-        ) +
-        SubPageEntries
+    HomeGroups.flatMap { it.entries } + AccountEntries + SubPageEntries
 }
+
+/** Edit profile and the user's QR code, which the account card opens rather than a group. */
+private val AccountEntries: List<HomeEntry> =
+    listOf(
+        page(
+            SettingsPage.EditProfile,
+            R.string.settings_edit_profile_button,
+            R.string.settings_home_edit_profile_summary,
+            UiR.drawable.ic_edit_filled,
+        ),
+        page(
+            SettingsPage.MyQrCode,
+            R.string.settings_my_qr_title,
+            R.string.settings_home_qr_summary,
+            UiR.drawable.ic_qr_code,
+        ),
+    )
 
 /**
  * The pages above Settings home's pages that search finds, one per [SettingsSubPage]: each with its own title, its
@@ -41,9 +43,9 @@ internal val SubPageEntries: List<HomeEntry> by lazy {
     }
 }
 
-/** The entry of Settings home that opens [page]. */
+/** The entry of Settings home, or of the account card, that opens [page]. */
 private fun parentEntry(page: SettingsPage): HomeEntry =
-    HomeGroups.flatMap { it.entries }.first { it.destination == HomeDestination.Page(page) }
+    (HomeGroups.flatMap { it.entries } + AccountEntries).first { it.destination == HomeDestination.Page(page) }
 
 @StringRes
 private fun subPageTitle(subPage: SettingsSubPage): Int =
@@ -53,6 +55,8 @@ private fun subPageTitle(subPage: SettingsSubPage): Int =
         SettingsSubPage.DoubleTapReaction -> R.string.settings_double_tap
         SettingsSubPage.SwipeActions -> R.string.settings_swipe_actions
         SettingsSubPage.ChatsShownFirst -> R.string.shown_first_title
+        SettingsSubPage.Snippets -> R.string.settings_snippets
+        SettingsSubPage.Transcription -> R.string.settings_transcription
         SettingsSubPage.TrendingStickers -> R.string.settings_stickers_trending
         SettingsSubPage.ArchivedStickers -> R.string.settings_stickers_archived
         SettingsSubPage.CustomEmoji -> R.string.settings_emoji
@@ -81,4 +85,7 @@ private fun subPageTitle(subPage: SettingsSubPage): Int =
         SettingsSubPage.LockedChats -> R.string.locked_chats_title
         SettingsSubPage.AutoDelete -> R.string.settings_auto_delete
         SettingsSubPage.DeleteAccount -> R.string.settings_delete_account
+        SettingsSubPage.LoginEmail -> R.string.settings_login_email
+        SettingsSubPage.PersonalChannel -> R.string.settings_personal_channel
+        SettingsSubPage.ProfileColor -> R.string.settings_profile_color
     }
