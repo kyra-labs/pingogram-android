@@ -347,6 +347,13 @@ data class NotificationExceptionsRoute(
 @Serializable
 data object ReactionNotificationsRoute
 
+/**
+ * Raise to listen and "Pause when lowered" (owner decision 2026-11-19), its master switch at the top, pushed above
+ * [SettingsChatsRoute].
+ */
+@Serializable
+data object RaiseToListenRoute
+
 /** The quick reaction and where a double tap adds it, pushed above [SettingsChatsRoute]. */
 @Serializable
 data object QuickReactionRoute

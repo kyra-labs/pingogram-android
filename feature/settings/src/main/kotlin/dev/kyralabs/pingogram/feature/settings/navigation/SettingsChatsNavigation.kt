@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
+import dev.kyralabs.pingogram.core.navigation.RaiseToListenRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SnippetsRoute
 import dev.kyralabs.pingogram.core.navigation.SwipeActionsRoute
@@ -16,6 +17,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceS
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenRoute as RaiseToListenScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.snippets.SnippetsRoute as SnippetsScreenRoute
@@ -48,7 +50,7 @@ private fun NavGraphBuilder.appearancePages(
 
 /**
  * The Chats page and the pages it opens with [onOpen]: Double-tap to react, Snippets, voice message transcription,
- * Swipe actions and Chats shown first.
+ * Raise to listen, Swipe actions and Chats shown first.
  */
 private fun NavGraphBuilder.chatPages(
     onOpen: (route: Any) -> Unit,
@@ -63,11 +65,13 @@ private fun NavGraphBuilder.chatPages(
                     onOpenTranscription = { onOpen(TranscriptionSettingsRoute) },
                     onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
                     onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
+                    onOpenRaiseToListen = { onOpen(RaiseToListenRoute) },
                 ),
             onBack = onBack,
         )
     }
     settingsPage<QuickReactionRoute> { QuickReactionScreenRoute(onBack = onBack) }
+    settingsPage<RaiseToListenRoute> { RaiseToListenScreenRoute(onBack = onBack) }
     settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
     settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
     settingsPage<TranscriptionSettingsRoute> { TranscriptionSettingsScreenRoute(onBack = onBack) }

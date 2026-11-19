@@ -115,6 +115,7 @@ enum class SettingsSubPage(
     ChatsShownFirst(SettingsPage.Chats),
     Snippets(SettingsPage.Chats),
     Transcription(SettingsPage.Chats),
+    RaiseToListen(SettingsPage.Chats),
     TrendingStickers(SettingsPage.Stickers),
     ArchivedStickers(SettingsPage.Stickers),
     CustomEmoji(SettingsPage.Stickers),

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
@@ -20,6 +21,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsPreviewSt
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageUiState
+import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenScreen
+import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenUiState
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusChatPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusPreviewStates
@@ -134,6 +137,14 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun chats() = check { ChatsPageScreen(ChatsPageUiState.Content(), {}, {}) }
+
+    @Test
+    fun raiseToListenOn() =
+        check { RaiseToListenScreen(RaiseToListenUiState.Content(RaiseToListenSettings(enabled = true)), {}, {}) }
+
+    @Test
+    fun raiseToListenOff() =
+        check { RaiseToListenScreen(RaiseToListenUiState.Content(RaiseToListenSettings(enabled = false)), {}, {}) }
 
     @Test
     fun chatAppearance() =

@@ -256,7 +256,8 @@ internal fun RadioItem(
  * A setting that is on or off, a row of its group ([shapes]): the whole row toggles its switch ([CheckSwitch], a check
  * in its thumb while on) with a `ToggleOn` or `ToggleOff` haptic, and screen readers hear it as a switch. The
  * clickable list item rather than its toggleable variant, which screen readers would call a checkbox and which would
- * show the row as selected while on.
+ * show the row as selected while on. Not [enabled] (a setting that matters only while another is on), it stays in
+ * place at Material's disabled alpha, not tappable, and screen readers hear it as disabled.
  */
 @Composable
 internal fun SwitchItem(
@@ -265,6 +266,7 @@ internal fun SwitchItem(
     checked: Boolean,
     shapes: ListItemShapes,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -274,12 +276,13 @@ internal fun SwitchItem(
             onCheckedChange(!checked)
         },
         shapes = shapes,
+        enabled = enabled,
         modifier =
             modifier.semantics {
                 role = Role.Switch
                 toggleableState = ToggleableState(checked)
             },
-        trailingContent = { CheckSwitch(checked = checked) },
+        trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
         supportingContent = { Text(summary) },
         colors = settingsRowColors(),
     ) {
