@@ -11,18 +11,23 @@ import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.ConnectedWebsitesRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
+import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
 import dev.kyralabs.pingogram.core.navigation.PasskeysRoute
+import dev.kyralabs.pingogram.core.navigation.PersonalChannelRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
+import dev.kyralabs.pingogram.core.navigation.ProfileColorRoute
 import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
 import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
+import dev.kyralabs.pingogram.core.navigation.SnippetsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import dev.kyralabs.pingogram.core.navigation.SwipeActionsRoute
+import dev.kyralabs.pingogram.core.navigation.TranscriptionSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSubPage
 
@@ -35,6 +40,8 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.DoubleTapReaction -> QuickReactionRoute
             SettingsSubPage.SwipeActions -> SwipeActionsRoute
             SettingsSubPage.ChatsShownFirst -> ChatsShownFirstRoute
+            SettingsSubPage.Snippets -> SnippetsRoute
+            SettingsSubPage.Transcription -> TranscriptionSettingsRoute
             SettingsSubPage.TrendingStickers -> StickerSetListRoute(archived = false, emoji = false)
             SettingsSubPage.ArchivedStickers -> StickerSetListRoute(archived = true, emoji = false)
             SettingsSubPage.CustomEmoji -> StickersRoute(emoji = true)
@@ -63,6 +70,9 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.LockedChats -> LockedChatsRoute
             SettingsSubPage.AutoDelete -> AutoDeleteRoute
             SettingsSubPage.DeleteAccount -> DeleteAccountRoute
+            SettingsSubPage.LoginEmail -> LoginEmailRoute
+            SettingsSubPage.PersonalChannel -> PersonalChannelRoute
+            SettingsSubPage.ProfileColor -> ProfileColorRoute
         }
 
 private fun privacy(setting: PrivacySetting) = PrivacySettingRoute(setting.name)

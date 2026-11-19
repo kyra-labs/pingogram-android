@@ -691,6 +691,7 @@
     <string name="settings_notifications_exceptions">Exceptions</string>
     <string name="settings_notifications_exceptions_summary">Chats with settings of their own</string>
     <string name="settings_notifications_section_background">Background</string>
+    <string name="settings_notifications_section_other_alerts">Other alerts</string>
     <string name="settings_notifications_section_accounts">Accounts</string>
     <string name="settings_notifications_all_accounts">Notifications from all accounts</string>
     <string name="settings_notifications_all_accounts_summary">Turn off to get notifications only from the account you are using. Calls to every account still ring.</string>
@@ -1060,7 +1061,6 @@
     <string name="settings_chat_folder_icon_palette">Art</string>
 
     <!-- Settings → Stickers (REQUIREMENTS.md FR-C5). -->
-    <string name="settings_stickers">Stickers</string>
     <string name="settings_stickers_summary">Your sticker sets, trending and archived sets</string>
     <string name="settings_stickers_loading">Loading sticker sets</string>
     <string name="settings_stickers_trending">Trending stickers</string>
@@ -1652,7 +1652,8 @@
     <string name="settings_focus_profiles">Profiles</string>
     <string name="settings_focus_profiles_footer">Focus changes notifications only. Chats it holds back still notify, silently, and keep their place in the chat list.</string>
     <string name="settings_focus_new_profile">New profile</string>
-    <string name="settings_focus_edit">Edit profile</string>
+    <string name="settings_focus_edit">Edit Focus profile</string>
+    <string name="settings_focus_new_title">New Focus profile</string>
     <string name="settings_focus_on_now">On now</string>
     <string name="settings_focus_state_on">On</string>
     <string name="settings_focus_state_off">Off</string>
@@ -1693,8 +1694,7 @@
     <string name="settings_focus_while_on">While Focus is on</string>
     <string name="settings_focus_in_chat_list">Show Focus in the chat list header</string>
     <string name="settings_focus_in_chat_list_summary">Tap it to switch or turn off</string>
-    <string name="settings_focus_status">Tell people you\'re focusing</string>
-    <string name="settings_focus_status_summary">Telegram has no status for it, so Focus stays on this phone</string>
+    <string name="settings_focus_status_footer">Telegram has no status that tells people you\'re focusing, so Focus stays on this phone.</string>
     <string name="settings_focus_name">Name</string>
     <string name="settings_focus_name_required">Give the profile a name.</string>
     <string name="settings_focus_icon">Icon</string>

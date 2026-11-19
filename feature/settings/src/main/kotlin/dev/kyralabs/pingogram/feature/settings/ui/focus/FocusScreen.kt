@@ -269,8 +269,8 @@ private fun FocusTemplatesGroup(onOpenProfile: (id: Long, template: FocusTemplat
 }
 
 /**
- * "While Focus is on": whether the chat list's header shows the profile on now, as a switch row, then a disabled row:
- * Telegram has no status that tells people the user is focusing.
+ * "While Focus is on": whether the chat list's header shows the profile on now, as a switch row, and in its footer why
+ * people are not told (owner decision 2026-11-19, in place of a row that was always disabled).
  */
 @Composable
 private fun WhileOnGroup(
@@ -278,7 +278,10 @@ private fun WhileOnGroup(
     onShowsInChatListChange: (Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
-    SettingsGroup(title = stringResource(R.string.settings_focus_while_on)) {
+    SettingsGroup(
+        title = stringResource(R.string.settings_focus_while_on),
+        footer = stringResource(R.string.settings_focus_status_footer),
+    ) {
         item { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_focus_in_chat_list),
@@ -295,15 +298,6 @@ private fun WhileOnGroup(
                         role = Role.Switch
                         toggleableState = ToggleableState(showsInChatList)
                     },
-            )
-        }
-        item { shapes ->
-            SettingsRow(
-                title = stringResource(R.string.settings_focus_status),
-                shapes = shapes,
-                icon = UiR.drawable.ic_public,
-                supportingContent = { Text(stringResource(R.string.settings_focus_status_summary)) },
-                enabled = false,
             )
         }
     }

@@ -113,6 +113,8 @@ enum class SettingsSubPage(
     DoubleTapReaction(SettingsPage.Chats),
     SwipeActions(SettingsPage.Chats),
     ChatsShownFirst(SettingsPage.Chats),
+    Snippets(SettingsPage.Chats),
+    Transcription(SettingsPage.Chats),
     TrendingStickers(SettingsPage.Stickers),
     ArchivedStickers(SettingsPage.Stickers),
     CustomEmoji(SettingsPage.Stickers),
@@ -141,6 +143,9 @@ enum class SettingsSubPage(
     LockedChats(SettingsPage.PrivacySecurity),
     AutoDelete(SettingsPage.PrivacySecurity),
     DeleteAccount(SettingsPage.PrivacySecurity),
+    LoginEmail(SettingsPage.PrivacySecurity),
+    PersonalChannel(SettingsPage.EditProfile),
+    ProfileColor(SettingsPage.EditProfile),
 }
 
 /**

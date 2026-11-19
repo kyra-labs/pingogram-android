@@ -90,7 +90,7 @@ internal fun FocusEditScreen(
 ) {
     SettingsPageScaffold(
         title =
-            stringResource(if (state.isNew) R.string.settings_focus_new_profile else R.string.settings_focus_edit),
+            stringResource(if (state.isNew) R.string.settings_focus_new_title else R.string.settings_focus_edit),
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
