@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -233,7 +232,7 @@ private fun GroupBubblesSegment(
     onSelect: (GroupBubbles) -> Unit,
 ) {
     SettingsSegment(shapes) {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = shapes,
             supportingContent = { Text(stringResource(selected.summaryRes())) },
             colors = nestedItemColors(),

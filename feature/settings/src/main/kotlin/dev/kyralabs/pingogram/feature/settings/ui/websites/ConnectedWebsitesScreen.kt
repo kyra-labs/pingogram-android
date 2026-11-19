@@ -9,7 +9,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +37,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsIconTone
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsItemIcon
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -189,7 +189,7 @@ private fun WebsiteRow(
     shapes: ListItemShapes,
     onDisconnect: () -> Unit,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
         leadingContent = { SettingsItemIcon(UiR.drawable.ic_public) },
         trailingContent = {

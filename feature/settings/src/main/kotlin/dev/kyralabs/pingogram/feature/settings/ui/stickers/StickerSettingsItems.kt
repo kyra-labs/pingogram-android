@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -15,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.repository.StickerSuggestions
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.ChoiceRow
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
@@ -44,7 +44,7 @@ internal fun LazyListScope.stickerSettings(
     item(key = SUGGESTIONS, contentType = SUGGESTIONS) {
         Box(Modifier.settingsListRow(this, style)) {
             SettingsSegment(ListItemDefaults.segmentedShapes(0, 2)) {
-                SegmentedListItem(
+                SettingsListItem(
                     shapes = ListItemDefaults.shapes(),
                     supportingContent = { Text(stringResource(settings.suggestions.summaryRes())) },
                     colors = nestedItemColors(),

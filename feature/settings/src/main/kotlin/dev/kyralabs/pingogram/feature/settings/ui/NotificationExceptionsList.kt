@@ -18,7 +18,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -110,7 +109,7 @@ private fun ExceptionRow(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onClick,
         shapes = shapes,
         modifier = modifier,

@@ -37,6 +37,15 @@ internal fun settingsTopBarExpandedHeight(): Dp {
 }
 
 /**
+ * How far in from the bar's edge its back button and actions sit, so they start and end on the window margin
+ * (`docs/DESIGN_SYSTEM.md` §13.10, "Top bar"): the compact margin, less the `spacing.extraSmall` Material's top app bar
+ * keeps its slots from its edges (the bar itself moves in with wider windows' margins).
+ */
+@Composable
+@ReadOnlyComposable
+internal fun barEdgeInset(): Dp = MaterialTheme.spacing.windowMarginCompact - MaterialTheme.spacing.extraSmall
+
+/**
  * How far apart a page's groups sit: `spacing.large` (`docs/DESIGN_SYSTEM.md` §13.10).
  */
 @Composable

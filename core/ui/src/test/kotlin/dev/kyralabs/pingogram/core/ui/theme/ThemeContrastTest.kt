@@ -78,7 +78,8 @@ class ThemeContrastTest {
     @EnumSource(ThemePalette::class)
     fun `category icons keep 3 to 1 on their circles in every contrast level and look`(palette: ThemePalette) {
         forEachScheme(palette) { look, scheme ->
-            val categories = categoryPalette(scheme)
+            val contrast = Contrast.entries.first { look.endsWith(it.name) }
+            val categories = categoryPalette(scheme, dark = !look.startsWith("light"), contrast)
             assertTrue(categories.size == CategoryHue.entries.size, "$look: ${categories.size} categories")
             for (hue in CategoryHue.entries) {
                 val colors = categories[hue]

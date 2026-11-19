@@ -117,7 +117,7 @@ internal fun AboutScreen(
                 SettingsRow(
                     title = stringResource(R.string.settings_about_app_name),
                     shapes = shapes,
-                    icon = R.drawable.ic_info,
+                    icon = R.drawable.ic_info_filled,
                     supportingContent = { Text(stringResource(R.string.settings_about_version, state.versionName)) },
                 )
             }
@@ -139,7 +139,7 @@ internal fun AboutScreen(
                 SettingsRow(
                     title = stringResource(R.string.settings_about_license),
                     shapes = shapes,
-                    icon = R.drawable.ic_license,
+                    icon = R.drawable.ic_license_filled,
                     supportingContent = { Text(stringResource(R.string.settings_about_license_summary)) },
                 )
             }
@@ -147,7 +147,7 @@ internal fun AboutScreen(
                 SettingsRow(
                     title = stringResource(R.string.settings_about_licenses),
                     shapes = shapes,
-                    icon = UiR.drawable.ic_library_books,
+                    icon = UiR.drawable.ic_library_books_filled,
                     supportingContent = { Text(stringResource(R.string.settings_about_licenses_summary)) },
                     onClick = onOpenLicenses,
                     opensPage = true,
@@ -171,7 +171,7 @@ private fun SettingsGroupScope.privacyPolicyItem(onClick: () -> Unit) =
         SettingsRow(
             title = stringResource(R.string.settings_about_privacy_policy),
             shapes = shapes,
-            icon = R.drawable.ic_shield,
+            icon = R.drawable.ic_shield_filled,
             supportingContent = { Text(stringResource(R.string.settings_about_privacy_policy_summary)) },
             trailingContent = {
                 // Says that the row leaves the app; the row's text names it.
@@ -203,7 +203,7 @@ private fun SettingsGroupScope.sendFeedbackItem(onClick: () -> Unit) =
         SettingsRow(
             title = stringResource(R.string.settings_about_feedback),
             shapes = shapes,
-            icon = UiR.drawable.ic_bug_report,
+            icon = UiR.drawable.ic_bug_report_filled,
             supportingContent = { Text(stringResource(R.string.settings_about_feedback_summary)) },
             onClick = onClick,
             opensPage = true,

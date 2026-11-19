@@ -55,6 +55,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings has a calmer look: every icon sits in a circle, all the icons of a group share one soft color, and back is
   a round button.
 - "Use proxy" is a card at the top of the Proxy page.
+- Settings' icons are filled and their circles brighter, with the icon in a deep shade of the circle's color, in dark
+  theme too; row titles are a little bolder, and every switch shows a × while it is off.
 
 ### Fixed
 - The app no longer crashes while the chat list shows a forum that has a topic without messages.

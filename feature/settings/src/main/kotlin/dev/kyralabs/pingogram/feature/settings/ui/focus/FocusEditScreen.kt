@@ -135,7 +135,7 @@ private fun FocusDeleteRow(
             SettingsRow(
                 title = stringResource(R.string.settings_focus_delete),
                 shapes = shapes,
-                icon = UiR.drawable.ic_delete,
+                icon = UiR.drawable.ic_delete_filled,
                 iconTone = SettingsIconTone.Error,
                 colors = destructiveItemColors(),
                 onClick = { onEvent(FocusEditEvent.Delete) },

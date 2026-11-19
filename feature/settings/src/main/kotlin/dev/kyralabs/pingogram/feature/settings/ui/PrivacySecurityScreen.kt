@@ -267,7 +267,7 @@ private fun SecuritySection(
                         state.sessionCount,
                         numbers.format(state.sessionCount),
                     ),
-                icon = R.drawable.ic_devices,
+                icon = R.drawable.ic_devices_filled,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.ActiveSessions) },
             )
@@ -298,7 +298,7 @@ private fun SecuritySection(
                     } else {
                         stringResource(R.string.settings_passcode_lock_off)
                     },
-                icon = R.drawable.ic_pin,
+                icon = R.drawable.ic_pin_filled,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
             )

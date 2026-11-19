@@ -9,7 +9,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -44,6 +43,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PickerSearchField
 import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -158,7 +158,7 @@ private fun ExceptionRow(
     onRemove: () -> Unit,
 ) {
     val removeLabel = stringResource(R.string.settings_privacy_exceptions_remove_label, name.bidiIsolated())
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
         colors = settingsRowColors(),
         leadingContent = {

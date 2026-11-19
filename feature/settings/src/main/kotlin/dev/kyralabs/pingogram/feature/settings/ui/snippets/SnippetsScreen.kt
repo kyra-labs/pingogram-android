@@ -21,7 +21,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -62,6 +61,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialog
 import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsBody
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageFrame
@@ -273,7 +273,7 @@ private fun SnippetRow(
 ) {
     val moveUp = stringResource(R.string.settings_snippets_move_up)
     val moveDown = stringResource(R.string.settings_snippets_move_down)
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onClick,
         shapes = if (dragged) shapes.copy(shape = shapes.draggedShape) else shapes,
         modifier =

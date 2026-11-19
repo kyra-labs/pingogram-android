@@ -12,7 +12,7 @@ internal fun SettingsGroupScope.lockedChatsItem(onClick: () -> Unit) =
         PageItem(
             title = stringResource(R.string.locked_chats_title),
             summary = stringResource(R.string.settings_locked_chats_summary),
-            icon = UiR.drawable.ic_lock,
+            icon = UiR.drawable.ic_lock_filled,
             shapes = shapes,
             onClick = onClick,
         )

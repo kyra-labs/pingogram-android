@@ -17,7 +17,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -176,7 +175,7 @@ private fun BlockedSenderRow(
     modifier: Modifier = Modifier,
 ) {
     val name = item.name.resolve()
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
         modifier = modifier,
         leadingContent = {
