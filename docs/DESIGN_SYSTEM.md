@@ -749,10 +749,14 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - Spacing scale 4/8/12/16/24/32 dp (Material's 2026 spacing system is built on the same 8 dp base); margins
   16 dp compact, 24 dp medium+, applied on every screen. Feature code reads them as tokens from
   `MaterialTheme.spacing` (`extraSmall`…`extraExtraLarge`, `windowMarginCompact`, `windowMarginMedium`), never as
-  `dp` literals; `windowMargin()` (`core:ui`) picks the margin for the window, read once per screen. The chat list's
-  title, connection pill and folder tabs keep it, so on medium+ windows they line up with the rows' content (rows sit
-  `spacing.small` in from the sheet, their content the list item's padding further in). The conversation keeps its
-  12 dp bubble inset at every width (Density, below).
+  `dp` literals; `windowMargin()` (`core:ui`) picks the margin for the window, read once per screen. Visible content
+  starts and ends on the margin line (owner decision 2026-11-19): the chat list's title, connection pill, folder tabs'
+  first chip and stories' first avatar keep it, so on medium+ windows they line up with the rows' content (rows sit
+  `spacing.small` in from the sheet, their content the list item's padding further in, as cards' content does).
+  Top bars mirror their edges: the last trailing action's visible container ends on the margin as the title or back
+  starts on it (`TabHeader`'s 48 dp circles, the conversation's, the archive's and the feed's bars, a plain back's
+  arrow already being on it). Blocks of a tab's header (title, subtitle, buttons, the sheet below) sit one
+  `spacing.medium` apart. The conversation keeps its 12 dp bubble inset at every width (Density, below).
 - Breakpoints (Material's name since May 2026 for window size classes), via `currentWindowAdaptiveInfoV2()`, which
   reports large and extra-large widths:
   - **Compact** (< 600 dp): single pane + floating navigation bar (§6.1).
