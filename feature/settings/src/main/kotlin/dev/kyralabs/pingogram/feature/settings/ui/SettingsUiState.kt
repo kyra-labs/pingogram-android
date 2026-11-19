@@ -70,6 +70,9 @@ data class OtherAccountUiModel(
 enum class SettingsPage {
     EditProfile,
     Appearance,
+
+    /** How chats behave: sending, voice messages and the chat list's gestures (owner decision 2026-11-19). */
+    Chats,
     ChatFolders,
     Stickers,
     Notifications,
@@ -107,9 +110,9 @@ enum class SettingsSubPage(
 ) {
     ColorTheme(SettingsPage.Appearance),
     ChatAppearance(SettingsPage.Appearance),
-    DoubleTapReaction(SettingsPage.Appearance),
-    SwipeActions(SettingsPage.Appearance),
-    ChatsShownFirst(SettingsPage.Appearance),
+    DoubleTapReaction(SettingsPage.Chats),
+    SwipeActions(SettingsPage.Chats),
+    ChatsShownFirst(SettingsPage.Chats),
     TrendingStickers(SettingsPage.Stickers),
     ArchivedStickers(SettingsPage.Stickers),
     CustomEmoji(SettingsPage.Stickers),

@@ -289,6 +289,7 @@ class SettingsHomeTest {
         val standard =
             listOf(
                 SettingsPage.Appearance,
+                SettingsPage.Chats,
                 SettingsPage.ChatFolders,
                 SettingsPage.Stickers,
                 SettingsPage.Notifications,
@@ -310,6 +311,35 @@ class SettingsHomeTest {
         val above = found.drop(1).map { (it.destination as HomeDestination.SubPage).subPage.parent }.toSet()
         assertEquals(setOf(SettingsPage.PrivacySecurity), above)
         assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "  ", resources, Locale.US))
+    }
+
+    @Test
+    fun `Chats follows Appearance in Make it yours`() {
+        val pages = HomeGroups[1].entries.map { (it.destination as HomeDestination.Page).page }
+        assertEquals(SettingsPage.Chats, pages[pages.indexOf(SettingsPage.Appearance) + 1])
+    }
+
+    @Test
+    fun `search finds the pages that moved to Chats under it, and those that stayed under Appearance`() {
+        val resources = RuntimeEnvironment.getApplication().resources
+        val chats = string(R.string.settings_chats)
+        val appearance = string(R.string.settings_appearance)
+        for ((subPage, parent) in listOf(
+            SettingsSubPage.DoubleTapReaction to chats,
+            SettingsSubPage.SwipeActions to chats,
+            SettingsSubPage.ChatsShownFirst to chats,
+            SettingsSubPage.ChatAppearance to appearance,
+            SettingsSubPage.ColorTheme to appearance,
+        )) {
+            val entry = SearchEntries.single { it.destination == HomeDestination.SubPage(subPage) }
+            assertEquals(parent, resources.getString(entry.summary))
+        }
+        val found = searchEntries(SearchEntries, "swipe", resources, Locale.US).map { it.destination }
+        // The Chats row, whose summary names swipes, then the page above it.
+        assertEquals(
+            listOf(HomeDestination.Page(SettingsPage.Chats), HomeDestination.SubPage(SettingsSubPage.SwipeActions)),
+            found,
+        )
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

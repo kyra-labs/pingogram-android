@@ -135,6 +135,12 @@ internal val HomeGroups: List<HomeGroup> =
                     UiR.drawable.ic_palette_filled,
                 ),
                 page(
+                    SettingsPage.Chats,
+                    R.string.settings_chats,
+                    R.string.settings_chats_summary,
+                    UiR.drawable.ic_chat_filled,
+                ),
+                page(
                     SettingsPage.ChatFolders,
                     R.string.settings_chat_folders,
                     R.string.settings_chat_folders_summary,

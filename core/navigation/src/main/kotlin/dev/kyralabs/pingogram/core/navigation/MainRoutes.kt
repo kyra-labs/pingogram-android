@@ -111,6 +111,13 @@ data class ChatFolderInviteRoute(
 data object AppearanceRoute
 
 /**
+ * How chats behave (`REQUIREMENTS.md` FR-S2): sending, voice messages and the chat list's gestures and order,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object SettingsChatsRoute
+
+/**
  * The color theme (`REQUIREMENTS.md` FR-S2, `docs/adr/0016-color-themes.md`): the wallpaper's colors or one of the
  * generated themes, `:feature:settings`, pushed above Appearance.
  */
@@ -340,23 +347,26 @@ data class NotificationExceptionsRoute(
 @Serializable
 data object ReactionNotificationsRoute
 
-/** The quick reaction and where a double tap adds it, pushed above [AppearanceRoute]. */
+/** The quick reaction and where a double tap adds it, pushed above [SettingsChatsRoute]. */
 @Serializable
 data object QuickReactionRoute
 
-/** Voice message transcription on the device: its switch and languages, pushed above [AppearanceRoute]. */
+/** Voice message transcription on the device: its switch and languages, pushed above [SettingsChatsRoute]. */
 @Serializable
 data object TranscriptionSettingsRoute
 
-/** The chats the forward and share sheets show first, pushed above [AppearanceRoute]. */
+/** The chats the forward and share sheets show first, pushed above [SettingsChatsRoute]. */
 @Serializable
 data object ChatsShownFirstRoute
 
-/** The texts the composer inserts by "/" and their name (`REQUIREMENTS.md` FR-X2), pushed above [AppearanceRoute]. */
+/**
+ * The texts the composer inserts by "/" and their name (`REQUIREMENTS.md` FR-X2), pushed above
+ * [SettingsChatsRoute].
+ */
 @Serializable
 data object SnippetsRoute
 
-/** What swiping a chat row does toward each side, pushed above [AppearanceRoute]. */
+/** What swiping a chat row does toward each side, pushed above [SettingsChatsRoute]. */
 @Serializable
 data object SwipeActionsRoute
 

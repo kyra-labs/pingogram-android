@@ -1,0 +1,185 @@
+package dev.kyralabs.pingogram.feature.settings.ui.chats
+
+import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
+import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
+import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
+
+/**
+ * "Messages": the rows of Double-tap to react and of Snippets ([pages]), and which Enter sends on a keyboard and on
+ * the screen keyboard.
+ */
+@Composable
+internal fun MessagesGroup(
+    sendKeys: SendKeys,
+    onEvent: (ChatsPageEvent) -> Unit,
+    pages: ChatsPagePages,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_chat_section_messages)) {
+        item { shapes ->
+            PageRow(
+                R.string.settings_double_tap,
+                R.string.settings_double_tap_summary,
+                shapes,
+                pages.onOpenQuickReaction,
+            )
+        }
+        item { shapes ->
+            PageRow(R.string.settings_snippets, R.string.settings_snippets_summary, shapes, pages.onOpenSnippets)
+        }
+        item { shapes -> HardwareEnterItem(sendKeys, shapes, onEvent) }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_enter_sends_on_screen),
+                summary = stringResource(R.string.settings_enter_sends_on_screen_summary),
+                checked = sendKeys.onScreenKeyboard,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetSendKeys(sendKeys.copy(onScreenKeyboard = it))) },
+            )
+        }
+    }
+}
+
+/**
+ * "Voice messages": the row of voice message transcription ([pages]), raise to listen with "Pause when lowered" below
+ * it while it is on, and skipping voice messages' silences.
+ */
+@Composable
+internal fun VoiceMessagesGroup(
+    raiseToListen: RaiseToListenSettings,
+    skipSilence: Boolean,
+    onEvent: (ChatsPageEvent) -> Unit,
+    pages: ChatsPagePages,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_voice_messages)) {
+        item { shapes ->
+            PageRow(
+                R.string.settings_transcription,
+                R.string.settings_transcription_summary,
+                shapes,
+                pages.onOpenTranscription,
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_raise_to_listen),
+                summary = stringResource(R.string.settings_raise_to_listen_summary),
+                checked = raiseToListen.enabled,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetRaiseToListen(it)) },
+            )
+        }
+        if (raiseToListen.enabled) {
+            // Keyed, so it grows in and shrinks away as raise to listen is turned on and off
+            // (docs/DESIGN_SYSTEM.md §5.1).
+            item(key = PAUSE_WHEN_LOWERED) { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_pause_when_lowered),
+                    summary = stringResource(R.string.settings_pause_when_lowered_summary),
+                    checked = raiseToListen.pauseWhenLowered,
+                    shapes = shapes,
+                    onCheckedChange = { onEvent(ChatsPageEvent.SetPauseWhenLowered(it)) },
+                )
+            }
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_skip_silence),
+                summary = stringResource(R.string.settings_skip_silence_summary),
+                checked = skipSilence,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetSkipSilence(it)) },
+            )
+        }
+    }
+}
+
+/** "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first. */
+@Composable
+internal fun ChatListBehaviorGroup(
+    chatList: ChatListSettings,
+    pages: ChatsPagePages,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_swipe_actions),
+                shapes = shapes,
+                supportingContent = { Text(swipeActionsSummary(chatList)) },
+                onClick = pages.onOpenSwipeActions,
+                opensPage = true,
+            )
+        }
+        item { shapes ->
+            PageRow(R.string.shown_first_title, R.string.shown_first_summary, shapes, pages.onOpenShownFirst)
+        }
+    }
+}
+
+/** A row that opens another page: its title over its summary, ending in a chevron. */
+@Composable
+private fun PageRow(
+    title: Int,
+    summary: Int,
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+) {
+    SettingsRow(
+        title = stringResource(title),
+        shapes = shapes,
+        supportingContent = { Text(stringResource(summary)) },
+        onClick = onClick,
+        opensPage = true,
+    )
+}
+
+/** "Send with Enter on a keyboard", its summary saying which keys send and which start a line. */
+@Composable
+private fun HardwareEnterItem(
+    sendKeys: SendKeys,
+    shapes: ListItemShapes,
+    onEvent: (ChatsPageEvent) -> Unit,
+) {
+    SwitchItem(
+        title = stringResource(R.string.settings_enter_sends_hardware),
+        summary =
+            stringResource(
+                if (sendKeys.hardwareKeyboard) {
+                    R.string.settings_enter_sends_hardware_on
+                } else {
+                    R.string.settings_enter_sends_hardware_off
+                },
+            ),
+        checked = sendKeys.hardwareKeyboard,
+        shapes = shapes,
+        onCheckedChange = { onEvent(ChatsPageEvent.SetSendKeys(sendKeys.copy(hardwareKeyboard = it))) },
+    )
+}
+
+/** "Right: Read · Left: Archive", the sides as the layout's direction puts them. */
+@Composable
+private fun swipeActionsSummary(chatList: ChatListSettings): String {
+    if (chatList.swipeChangesFolder) return stringResource(R.string.settings_swipe_actions_summary_folders)
+    return stringResource(
+        if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
+            R.string.settings_swipe_actions_summary
+        } else {
+            R.string.settings_swipe_actions_summary_rtl
+        },
+        stringResource(chatList.startSwipe.shortLabelRes()),
+        stringResource(chatList.endSwipe.shortLabelRes()),
+    )
+}
+
+/** The key of the row that shows only while raise to listen is on. */
+private const val PAUSE_WHEN_LOWERED = "pauseWhenLowered"
