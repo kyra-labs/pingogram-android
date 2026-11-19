@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroupScope
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.autoDeleteText
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -16,8 +17,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * Privacy and security's "Account" group, each row opening its page with [onOpen]: "Login email" with Telegram's
  * pattern of it ([loginEmailPattern], only where the account has one, as Telegram lets change it only then),
- * "Auto-delete messages" with the timer of new chats ([autoDeleteSeconds]), and "Delete account" with how long the
- * account may stay unused before Telegram deletes it ([accountTtlDays]).
+ * "Auto-delete messages" with the timer of new chats ([autoDeleteSeconds]), the rows of [beforeDeleteAccount] ("Delete
+ * cloud drafts"), and "Delete account" with how long the account may stay unused before Telegram deletes it
+ * ([accountTtlDays]).
  */
 @Composable
 internal fun AccountGroup(
@@ -25,6 +27,7 @@ internal fun AccountGroup(
     autoDeleteSeconds: Int,
     accountTtlDays: Int,
     onOpen: (PrivacySecurityPage) -> Unit,
+    beforeDeleteAccount: SettingsGroupScope.() -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_account)) {
         if (loginEmailPattern != null) {
@@ -48,6 +51,7 @@ internal fun AccountGroup(
                 onClick = { onOpen(PrivacySecurityPage.AutoDelete) },
             )
         }
+        beforeDeleteAccount()
         item(key = PrivacySecurityPage.DeleteAccount) { shapes ->
             PageItem(
                 title = stringResource(R.string.settings_delete_account),

@@ -5,8 +5,10 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -82,11 +84,29 @@ class DataStorageScreenTest {
     ) = composeRule.onNode(hasText(string(id)) and hasAnyAncestor(isDialog()))
 
     @Test
-    fun `shows the sizes and the file count`() {
+    fun `the storage card holds the storage used and Clear cache, with no rows repeating them`() {
         setScreen(SettingsPreviewData.storage)
 
-        composeRule.onNodeWithText("1.5 GB · 3,456 files").assertExists()
-        composeRule.onNodeWithText("85 MB · chats, messages and settings").assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_storage_used_on_device)).assertExists()
+        composeRule.onAllNodesWithText(string(R.string.settings_clear_cache)).assertCountEquals(1)
+        // "Cache" shows only while the storage used is read.
+        composeRule.onNodeWithText(string(R.string.settings_section_cache)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the groups follow the storage card in the owner's order, Cache last while the storage used loads`() {
+        setScreen(SettingsPreviewData.storageError.copy(photosInOriginalQuality = false))
+        val headers =
+            listOf(
+                R.string.settings_section_auto_download,
+                R.string.settings_section_sending,
+                R.string.settings_section_network,
+                R.string.settings_section_cache,
+            )
+
+        val tops = headers.map { composeRule.onNodeWithText(string(it)).getUnclippedBoundsInRoot().top }
+
+        assertEquals(tops.sorted(), tops)
     }
 
     @Test
@@ -112,22 +132,15 @@ class DataStorageScreenTest {
     }
 
     @Test
-    fun `clear cache asks for confirmation, from the storage card and from the Cache group`() {
+    fun `the storage card's clear cache asks for confirmation`() {
         setScreen(SettingsPreviewData.storage)
-        val clearCache = composeRule.onAllNodesWithText(string(R.string.settings_clear_cache))
 
-        clearCache
-            .onFirst()
-            .performScrollTo()
-            .assertHasClickAction()
-            .performClick()
-        clearCache
-            .onLast()
-            .performScrollTo()
+        composeRule
+            .onNodeWithText(string(R.string.settings_clear_cache))
             .assertHasClickAction()
             .performClick()
 
-        assertEquals(listOf(DataStorageEvent.ClearCache, DataStorageEvent.ClearCache), events)
+        assertEquals(listOf(DataStorageEvent.ClearCache), events)
     }
 
     @Test
@@ -165,12 +178,11 @@ class DataStorageScreenTest {
     }
 
     @Test
-    fun `clear cache is disabled with progress while clearing`() {
+    fun `the storage card's clear cache is disabled and says so while clearing`() {
         setScreen(SettingsPreviewData.storage.copy(isClearingCache = true))
 
-        // The Cache group's row; the storage card's button asks first too.
-        composeRule.onAllNodesWithText(string(R.string.settings_clear_cache)).onLast().assertIsNotEnabled()
-        composeRule.onNode(hasContentDescription(string(R.string.settings_clearing_cache))).assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_clearing_cache)).assertIsNotEnabled()
+        composeRule.onNodeWithText(string(R.string.settings_clear_cache)).assertDoesNotExist()
     }
 
     @Test

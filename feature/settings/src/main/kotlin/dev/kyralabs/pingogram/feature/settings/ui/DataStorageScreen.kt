@@ -46,8 +46,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Data and storage page: hoists [DataStorageViewModel], [CallDataSavingViewModel] and [DataOptionsViewModel] and
- * shows their results in snackbars: how much clearing the cache freed, the reset automatic download, the deleted
- * drafts, or why something failed. A network's automatic download row calls [onOpenAutoDownload]; [onBack] leaves the
+ * shows their results in snackbars: how much clearing the cache freed, the reset automatic download, or why something
+ * failed. A network's automatic download row calls [onOpenAutoDownload]; [onBack] leaves the
  * page.
  */
 @Suppress("LongParameterList") // The pages it opens, back, and its three hoisted view models.
@@ -119,12 +119,13 @@ internal fun DataStorageRoute(
 }
 
 /**
- * Data and storage (`REQUIREMENTS.md` FR-S1): what downloads by itself on mobile data, Wi-Fi and roaming, each a row
- * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
- * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
- * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs; and the proxy in use, a row that
- * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) and "Prefer IPv6" below it; when
- * calls use less data ([callDataSaving], [CallsGroup]); and "Delete cloud drafts" after "Clear cache" ([options]).
+ * Data and storage (`REQUIREMENTS.md` FR-S1), in the owner's order of 2026-11-19: the storage card, how much space
+ * Pingogram's downloaded files and databases take as TDLib reports it, whose "Clear cache" deletes the downloaded files
+ * after a destructive confirmation ([ClearCacheDialog]); what downloads by itself on mobile data, Wi-Fi and roaming,
+ * each a row that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; sending; when calls use
+ * less data ([callDataSaving], [CallsGroup]); the proxy in use, a row that opens the proxies ([onOpenProxies]), with
+ * network usage ([onOpenNetworkUsage]) and "Prefer IPv6" ([options]) below it; and "Cache" while the storage used is
+ * still being read.
  */
 @Suppress("LongParameterList") // The page's state and events, the three pages it opens, back, and its scaffold's parts.
 @Composable
@@ -156,50 +157,52 @@ internal fun DataStorageScreen(
         val autoDownload = state.autoDownload
         if (autoDownload != null) {
             Column {
-                StorageCardSlot(usage, gapBelow = true) { onEvent(DataStorageEvent.ClearCache) }
+                StorageCardSlot(usage, gapBelow = true, state.isClearingCache) { onEvent(DataStorageEvent.ClearCache) }
                 AutoDownloadGroup(autoDownload, state.isDataSaverOn, onOpenAutoDownload) {
                     onEvent(DataStorageEvent.ResetAutoDownload)
                 }
             }
         } else {
-            StorageCardSlot(usage, gapBelow = false) { onEvent(DataStorageEvent.ClearCache) }
+            StorageCardSlot(usage, gapBelow = false, state.isClearingCache) { onEvent(DataStorageEvent.ClearCache) }
         }
         state.photosInOriginalQuality?.let { original ->
             SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }
         }
+        CallsGroup(callDataSaving, onCallDataSavingChange)
         NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage, options.prefersIpv6) {
             onOptionsEvent(DataOptionsEvent.SetPrefersIpv6(it))
         }
-        CallsGroup(callDataSaving, onCallDataSavingChange)
-        SettingsGroup(
-            title = stringResource(R.string.settings_section_storage_usage),
-        ) {
-            when (usage) {
-                StorageUsageState.Loading -> {
-                    item { shapes ->
-                        SettingsSegment(shapes) {
-                            SettingsLoading(stringResource(R.string.settings_storage_usage_loading))
-                        }
-                    }
-                }
+        if (usage !is StorageUsageState.Content) CacheGroup(usage) { onEvent(DataStorageEvent.Retry) }
+    }
+    if (state.isClearCacheDialogOpen) {
+        ClearCacheDialog(
+            onConfirm = { onEvent(DataStorageEvent.ConfirmClearCache) },
+            onDismiss = { onEvent(DataStorageEvent.DismissClearCache) },
+        )
+    }
+}
 
-                is StorageUsageState.Content -> {
-                    item { shapes -> FilesItem(usage.usage, shapes) }
-                    item { shapes -> DatabaseItem(usage.usage, shapes) }
-                }
-
-                is StorageUsageState.Error -> {
-                    item { shapes ->
-                        SettingsSegment(shapes) {
-                            SettingsError(usage.error, onRetry = { onEvent(DataStorageEvent.Retry) })
-                        }
-                    }
+/**
+ * "Cache" while the storage used is not read yet (owner decision 2026-11-19): the statistics loading, or why they could
+ * not be read with "Retry". Once they are, the storage card at the top shows them and clears the cache, and the group
+ * goes.
+ */
+@Composable
+private fun CacheGroup(
+    usage: StorageUsageState,
+    onRetry: () -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
+        item { shapes ->
+            SettingsSegment(shapes) {
+                if (usage is StorageUsageState.Error) {
+                    SettingsError(usage.error, onRetry = onRetry)
+                } else {
+                    SettingsLoading(stringResource(R.string.settings_storage_usage_loading))
                 }
             }
         }
-        CacheGroup(state, options, onEvent, onOptionsEvent)
     }
-    CacheDialogs(state, options, onEvent, onOptionsEvent)
 }
 
 /**
@@ -232,52 +235,6 @@ private fun SendingGroup(
             )
         }
     }
-}
-
-/** The downloaded files: their size and how many there are. */
-@Composable
-private fun FilesItem(
-    usage: StorageUsage,
-    shapes: ListItemShapes,
-) {
-    val context = LocalContext.current
-    val count = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(usage.fileCount)
-    SettingsRow(
-        title = stringResource(R.string.settings_storage_files),
-        shapes = shapes,
-        icon = UiR.drawable.ic_folder_filled,
-        supportingContent = {
-            Text(
-                stringResource(
-                    R.string.settings_storage_files_size,
-                    Formatter.formatShortFileSize(context, usage.filesSize),
-                    pluralStringResource(R.plurals.settings_storage_file_count, usage.fileCount, count),
-                ),
-            )
-        },
-    )
-}
-
-/** The databases and their size. */
-@Composable
-private fun DatabaseItem(
-    usage: StorageUsage,
-    shapes: ListItemShapes,
-) {
-    val context = LocalContext.current
-    SettingsRow(
-        title = stringResource(R.string.settings_storage_database),
-        shapes = shapes,
-        icon = R.drawable.ic_database_filled,
-        supportingContent = {
-            Text(
-                stringResource(
-                    R.string.settings_storage_database_size,
-                    Formatter.formatShortFileSize(context, usage.databaseSize),
-                ),
-            )
-        },
-    )
 }
 
 @PingogramPreviews

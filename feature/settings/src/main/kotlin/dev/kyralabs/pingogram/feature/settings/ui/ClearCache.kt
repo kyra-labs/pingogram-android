@@ -22,32 +22,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsViewModel
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// "Clear cache" on the Data and storage page and its confirmation.
-
-/** "Clear cache"; disabled with progress while clearing. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-internal fun ClearCacheItem(
-    isClearing: Boolean,
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    val clearing = stringResource(R.string.settings_clearing_cache)
-    SettingsRow(
-        title = stringResource(R.string.settings_clear_cache),
-        shapes = shapes,
-        icon = UiR.drawable.ic_delete_filled,
-        supportingContent = { Text(stringResource(R.string.settings_clear_cache_summary)) },
-        trailingContent =
-            if (isClearing) {
-                { LoadingIndicator(Modifier.semantics { contentDescription = clearing }) }
-            } else {
-                null
-            },
-        onClick = onClick,
-        enabled = !isClearing,
-    )
-}
+// The confirmations of the storage card's "Clear cache" and of "Delete cloud drafts" (Privacy and security), and
+// "Delete cloud drafts" itself.
 
 /** The destructive confirmation ([DestructiveDialog]): the files must download again. */
 @Composable
@@ -115,54 +91,6 @@ internal fun DeleteDraftsDialog(
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )
-}
-
-/** "Cache": "Clear cache" and "Delete cloud drafts", each asking first ([CacheDialogs]). */
-@Composable
-internal fun CacheGroup(
-    state: DataStorageUiState,
-    options: DataOptionsUiState,
-    onEvent: (DataStorageEvent) -> Unit,
-    onOptionsEvent: (DataOptionsEvent) -> Unit,
-) {
-    SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
-        item { shapes ->
-            ClearCacheItem(
-                isClearing = state.isClearingCache,
-                shapes = shapes,
-                onClick = { onEvent(DataStorageEvent.ClearCache) },
-            )
-        }
-        item { shapes ->
-            DeleteDraftsItem(
-                isDeleting = options.isDeletingDrafts,
-                shapes = shapes,
-                onClick = { onOptionsEvent(DataOptionsEvent.DeleteDrafts) },
-            )
-        }
-    }
-}
-
-/** The questions before clearing the cache and before deleting the cloud drafts, while either is open. */
-@Composable
-internal fun CacheDialogs(
-    state: DataStorageUiState,
-    options: DataOptionsUiState,
-    onEvent: (DataStorageEvent) -> Unit,
-    onOptionsEvent: (DataOptionsEvent) -> Unit,
-) {
-    if (state.isClearCacheDialogOpen) {
-        ClearCacheDialog(
-            onConfirm = { onEvent(DataStorageEvent.ConfirmClearCache) },
-            onDismiss = { onEvent(DataStorageEvent.DismissClearCache) },
-        )
-    }
-    if (options.isDeleteDraftsDialogOpen) {
-        DeleteDraftsDialog(
-            onConfirm = { onOptionsEvent(DataOptionsEvent.ConfirmDeleteDrafts) },
-            onDismiss = { onOptionsEvent(DataOptionsEvent.DismissDeleteDrafts) },
-        )
-    }
 }
 
 /** Shows what [viewModel] did in snackbars of [snackbarHostState]: the deleted drafts, or why something failed. */

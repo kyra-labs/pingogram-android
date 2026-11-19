@@ -130,12 +130,13 @@ private fun CheckupCard(
 /**
  * The storage Pingogram takes on the device: the total in a big condensed figure over "used on this device", a bar
  * of its parts (the downloaded files in `primary`, the databases in `tertiary`), their sizes beside their colors, and
- * "Clear cache" ([onClearCache], which asks first). On the rows' container with `extraLarge` corners; the bar is one
- * item for screen readers, saying the parts' sizes.
+ * "Clear cache" ([onClearCache], which asks first), disabled and saying so while [isClearing]. On the rows' container
+ * with `extraLarge` corners; the bar is one item for screen readers, saying the parts' sizes.
  */
 @Composable
 internal fun StorageCard(
     usage: StorageUsage,
+    isClearing: Boolean,
     onClearCache: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -175,8 +176,15 @@ internal fun StorageCard(
                 )
             }
             StorageParts(parts)
-            Button(onClick = onClearCache, modifier = Modifier.fillMaxWidth(), shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.settings_clear_cache))
+            Button(
+                onClick = onClearCache,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isClearing,
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(
+                    stringResource(if (isClearing) R.string.settings_clearing_cache else R.string.settings_clear_cache),
+                )
             }
         }
     }
@@ -265,6 +273,7 @@ private const val MIN_PART_SHARE = 50L
 internal fun StorageCardSlot(
     usage: StorageUsageState,
     gapBelow: Boolean,
+    isClearing: Boolean,
     onClearCache: () -> Unit,
 ) {
     val last = remember { LastUsage() }
@@ -272,7 +281,7 @@ internal fun StorageCardSlot(
     GrowingVisibility(visible = usage is StorageUsageState.Content) {
         last.value?.let { shown ->
             Box(if (gapBelow) Modifier.padding(bottom = settingsGroupSpacing()) else Modifier) {
-                StorageCard(shown, onClearCache)
+                StorageCard(shown, isClearing, onClearCache)
             }
         }
     }
