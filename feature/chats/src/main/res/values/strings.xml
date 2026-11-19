@@ -370,7 +370,8 @@
     <string name="feed_action_mark_read">Mark as read</string>
     <!-- Telegram marks a whole chat unread, never one post: this marks the post's channel. -->
     <string name="feed_action_mark_channel_unread">Mark channel as unread</string>
-    <!-- The feed's search (REQUIREMENTS.md FR-X5): its field, and what it shows before a query. -->
+    <!-- The feed's search (REQUIREMENTS.md FR-X5): its top bar button, its field, and what it shows before a query. -->
+    <string name="feed_search">Search posts</string>
     <string name="feed_search_placeholder">Search posts in your channels</string>
     <string name="feed_search_close">Close search</string>
     <string name="feed_search_hint_title">Search your channels</string>

@@ -24,8 +24,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5), pushed above the Chats tab from its Feed tab: hoists its
- * [FeedViewModel]; a card opens its channel at the post through [onOpenPost], a post's "Forward" opens the forward
- * sheet through [onForward], and [onBack] returns to the chats. A copied link goes on the clipboard (Android 13 and
+ * [FeedViewModel] and its search's [FeedSearchViewModel]; a card or a post found opens its channel at the post
+ * through [onOpenPost], a post's "Forward" opens the forward sheet through [onForward], and [onBack] returns to the
+ * chats. A copied link goes on the clipboard (Android 13 and
  * later confirm it themselves; before, a snackbar does), and bookmarks and failures show as snackbars. Coming back
  * from a channel, or pulling the list down, reads the posts on screen again ([FeedViewModel.refreshing]).
  */
@@ -37,10 +38,12 @@ internal fun FeedRoute(
     modifier: Modifier = Modifier,
     openPostKey: String? = null,
     viewModel: FeedViewModel = hiltViewModel(),
+    searchViewModel: FeedSearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val reactionChoice by viewModel.reactionChoice.collectAsStateWithLifecycle()
+    val search by searchViewModel.uiState.collectAsStateWithLifecycle()
     val snackbars = remember { SnackbarHostState() }
     FeedEffects(viewModel.effects, snackbars, onOpenPost, onForward)
     FeedScreen(
@@ -52,6 +55,8 @@ internal fun FeedRoute(
         openPostKey = openPostKey,
         isRefreshing = refreshing,
         reactionChoice = reactionChoice,
+        search = search,
+        onSearchEvent = searchViewModel::onEvent,
     )
 }
 
