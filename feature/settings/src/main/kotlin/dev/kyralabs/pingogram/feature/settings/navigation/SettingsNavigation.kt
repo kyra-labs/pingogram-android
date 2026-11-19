@@ -128,58 +128,6 @@ fun NavGraphBuilder.settingsScreen(
     }
 }
 
-/**
- * Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance, Double-tap to react, Swipe
- * actions, Chats shown first, voice message transcription and Snippets.
- */
-private fun NavGraphBuilder.appearancePages(
-    onOpen: (route: Any) -> Unit,
-    onBack: () -> Unit,
-) {
-    settingsPage<AppearanceRoute> {
-        AppearanceScreenRoute(
-            onOpenColorTheme = { onOpen(ColorThemeRoute) },
-            onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
-            onOpenQuickReaction = { onOpen(QuickReactionRoute) },
-            onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
-            onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
-            onBack = onBack,
-            onOpenTranscription = { onOpen(TranscriptionSettingsRoute) },
-            onOpenSnippets = { onOpen(SnippetsRoute) },
-        )
-    }
-    settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
-    settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
-}
-
-/**
- * The Chats page and the pages it opens with [onOpen]: Double-tap to react, Snippets, voice message transcription,
- * Swipe actions and Chats shown first.
- */
-private fun NavGraphBuilder.chatPages(
-    onOpen: (route: Any) -> Unit,
-    onBack: () -> Unit,
-) {
-    settingsPage<SettingsChatsRoute> {
-        ChatsPageRoute(
-            pages =
-                ChatsPagePages(
-                    onOpenQuickReaction = { onOpen(QuickReactionRoute) },
-                    onOpenSnippets = { onOpen(SnippetsRoute) },
-                    onOpenTranscription = { onOpen(TranscriptionSettingsRoute) },
-                    onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
-                    onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
-                ),
-            onBack = onBack,
-        )
-    }
-    settingsPage<QuickReactionRoute> { QuickReactionScreenRoute(onBack = onBack) }
-    settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
-    settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
-    settingsPage<TranscriptionSettingsRoute> { TranscriptionSettingsScreenRoute(onBack = onBack) }
-    settingsPage<SnippetsRoute> { SnippetsScreenRoute(onBack = onBack) }
-}
-
 /** Chat folders and the folder editor above it. */
 private fun NavGraphBuilder.folderPages(
     onOpen: (route: Any) -> Unit,
@@ -257,8 +205,7 @@ fun NavGraphBuilder.settingsPages(
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     accountPages(onOpen, onBack, onProfileSaved)
-    appearancePages(onOpen, onBack)
-    chatPages(onOpen, onBack)
+    appearanceAndChatPages(onOpen, onBack)
     folderPages(onOpen, onBack)
     stickerPages(onOpen, onBack)
     settingsPage<NotificationSettingsRoute> {
