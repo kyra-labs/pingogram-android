@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.settings.ui.backup
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.BackupFileInfo
 import dev.kyralabs.pingogram.core.domain.model.BackupFolder
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
+import dev.kyralabs.pingogram.core.testing.FakeAutomaticBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
@@ -25,11 +27,13 @@ import java.time.Instant
 
 /**
  * The Backup & restore page: the kept folder and its newest backup, a picked folder kept, "Back up now" through the
- * password dialog (setting it at the folder's first backup), and what a backup that fails says.
+ * password dialog (setting it at the folder's first backup), what a backup that fails says, and how often backups
+ * write themselves.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BackupViewModelTest {
     private val folders = FakeBackupFolderRepository()
+    private val automatic = FakeAutomaticBackupRepository()
 
     @BeforeEach
     fun setUp() {
@@ -42,7 +46,7 @@ class BackupViewModelTest {
     }
 
     private fun TestScope.viewModel(): BackupViewModel =
-        BackupViewModel(folders, FakeBackupRepository(), FakeDeviceAccountsRepository()).also {
+        BackupViewModel(folders, FakeBackupRepository(), FakeDeviceAccountsRepository(), automatic).also {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { it.uiState.collect {} }
             runCurrent()
         }
@@ -154,6 +158,36 @@ class BackupViewModelTest {
 
             assertEquals(listOf(BackupEffect.ShowError(DomainError.FileUnavailable)), effects)
             assertEquals(BackupUiState.Content(folderName = "backups"), viewModel.content())
+        }
+
+    @Test
+    fun `how often backups write themselves shows, and a choice is saved`() =
+        runTest {
+            automatic.frequency.value = BackupFrequency.Weekly
+            val viewModel = viewModel()
+            assertEquals(BackupFrequency.Weekly, viewModel.content().automatic)
+            assertEquals(false, viewModel.content().automaticReady)
+
+            automatic.isReady.value = true
+            viewModel.onEvent(BackupEvent.SetAutomatic(BackupFrequency.Daily))
+            runCurrent()
+
+            assertEquals(BackupFrequency.Daily, viewModel.content().automatic)
+            assertEquals(true, viewModel.content().automaticReady)
+        }
+
+    @Test
+    fun `a choice that cannot be saved says why`() =
+        runTest {
+            automatic.failure = DomainError.Unknown(0, "full")
+            val viewModel = viewModel()
+            val effects = effects(viewModel)
+
+            viewModel.onEvent(BackupEvent.SetAutomatic(BackupFrequency.Daily))
+            runCurrent()
+
+            assertEquals(listOf(BackupEffect.ShowError(DomainError.Unknown(0, "full"))), effects)
+            assertEquals(BackupFrequency.Off, viewModel.content().automatic)
         }
 
     private companion object {

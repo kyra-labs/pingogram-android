@@ -1793,6 +1793,14 @@
     <!-- Under "Back up now": %1$s is the last backup's date ("18 Nov 2026"), %2$s its size ("18 KB"). -->
     <string name="backup_last">%1$s · %2$s</string>
     <string name="backup_none_yet">No backup yet</string>
+    <string name="backup_automatic">Back up automatically</string>
+    <string name="backup_automatic_off">Off</string>
+    <string name="backup_automatic_daily">Daily</string>
+    <string name="backup_automatic_weekly">Weekly</string>
+    <string name="backup_automatic_summary">While charging or the battery isn\'t low, with your backup password. Keeps the newest 3.</string>
+    <string name="backup_automatic_summary_off">Only when you tap Back up now</string>
+    <string name="backup_automatic_waiting">Starts after your next Back up now, which sets the password it uses</string>
+    <string name="backup_automatic_no_folder">Choose a backup folder first</string>
     <string name="backup_footer">Settings, and each account\'s bookmarks, reminders, keyword alerts and snippets. Messages and chats come back from Telegram when you sign in.</string>
     <!-- A snackbar once a backup is written: %1$s is the folder's name. -->
     <string name="backup_done">Backed up to %1$s</string>
