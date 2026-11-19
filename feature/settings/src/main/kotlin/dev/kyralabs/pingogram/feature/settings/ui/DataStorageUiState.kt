@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.StorageUsage
  * @property isClearCacheDialogOpen the confirmation to clear the cache is open.
  * @property isClearingCache clearing the cache was confirmed and runs.
  * @property proxy the proxy Pingogram connects through; null when it connects directly (or the proxies are unknown).
+ * @property switchProxy the saved proxy the Proxy row's switch turns on (the one used last, else the first added);
+ *   null while none is saved, when the row has no switch.
  * @property photosInOriginalQuality picked photos and videos go without compression by default; null until read.
  */
 @Immutable
@@ -25,6 +27,7 @@ data class DataStorageUiState(
     val isClearCacheDialogOpen: Boolean = false,
     val isClearingCache: Boolean = false,
     val proxy: SavedProxy? = null,
+    val switchProxy: SavedProxy? = null,
     val photosInOriginalQuality: Boolean? = null,
 )
 
@@ -60,6 +63,11 @@ sealed interface DataStorageEvent {
     /** "Send photos in original quality" turned on or off. */
     data class SetPhotosInOriginalQuality(
         val enabled: Boolean,
+    ) : DataStorageEvent
+
+    /** "Use proxy", the Proxy row's switch, turned on or off. */
+    data class SetProxyOn(
+        val on: Boolean,
     ) : DataStorageEvent
 }
 

@@ -35,6 +35,8 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsHeroSwitch
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsInfoFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
@@ -82,10 +84,11 @@ internal fun TranscriptionSettingsRoute(
 
 /**
  * Voice message transcription (`docs/DESIGN_SYSTEM.md` §6 "Voice message transcription", the owner's board 28d):
- * "Transcribe voice messages automatically" (others' voice and round video messages), what the recognizer is and
- * keeps (a privacy note, the shield), "Languages on this phone" (ready, downloading, or which Android can download,
- * disabled) and "Android language settings", with a footer on Android 13 and Telegram's own transcription. Where the
- * device cannot transcribe, it says why instead.
+ * "Transcribe automatically" as the page's master switch (others' voice and round video messages; owner decision
+ * 2026-11-19), what the recognizer is and keeps (a privacy note, the shield), "Languages on this phone" (ready,
+ * downloading, or which Android can download, disabled) and "Android language settings", both of which matter whether
+ * or not it is on, and an info footer on Android 13 and Telegram's own transcription. Where the device cannot
+ * transcribe, it says why instead.
  */
 @Composable
 internal fun TranscriptionSettingsScreen(
@@ -124,9 +127,15 @@ internal fun TranscriptionSettingsScreen(
             }
 
             is TranscriptionSettingsUiState.Content -> {
-                Automatic(state.automatic, onEvent)
+                SettingsHeroSwitch(
+                    title = stringResource(R.string.settings_transcription_automatic),
+                    summary = stringResource(R.string.settings_transcription_automatic_summary),
+                    checked = state.automatic,
+                    onCheckedChange = { onEvent(TranscriptionSettingsEvent.SetAutomatic(it)) },
+                )
                 Privacy()
                 Languages(state, onEvent)
+                SettingsInfoFooter(stringResource(R.string.settings_transcription_footer))
             }
         }
     }
@@ -137,25 +146,6 @@ private fun Loading() {
     val loading = stringResource(R.string.settings_transcription_loading)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading })
-    }
-}
-
-/** "Voice and round video messages": the switch of automatic transcription. */
-@Composable
-private fun Automatic(
-    automatic: Boolean,
-    onEvent: (TranscriptionSettingsEvent) -> Unit,
-) {
-    SettingsGroup(title = stringResource(R.string.settings_transcription_section_messages)) {
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_transcription_automatic),
-                summary = stringResource(R.string.settings_transcription_automatic_summary),
-                checked = automatic,
-                shapes = shapes,
-                onCheckedChange = { onEvent(TranscriptionSettingsEvent.SetAutomatic(it)) },
-            )
-        }
     }
 }
 
@@ -181,10 +171,7 @@ private fun Languages(
     onEvent: (TranscriptionSettingsEvent) -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0]
-    SettingsGroup(
-        title = stringResource(R.string.settings_transcription_section_languages),
-        footer = stringResource(R.string.settings_transcription_footer),
-    ) {
+    SettingsGroup(title = stringResource(R.string.settings_transcription_section_languages)) {
         val languages = state.languages
         if (languages == null) {
             item(key = LOADING) { shapes ->

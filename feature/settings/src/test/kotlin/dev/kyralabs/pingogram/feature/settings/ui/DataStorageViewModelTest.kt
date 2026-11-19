@@ -421,4 +421,42 @@ class DataStorageViewModelTest {
             client.on(TdApi.GetProxies::class, TdResult.Success(TdApi.AddedProxies(emptyArray())))
             assertEquals(null, viewModel().uiState.value.proxy)
         }
+
+    @Test
+    fun `the Proxy row's switch turns the proxy used last on, and every proxy off`() =
+        runTest {
+            answerUsage(filesSize = 0)
+            val proxy = TdApi.Proxy("proxy.example", 1080, TdApi.ProxyTypeSocks5("", ""))
+            client.on(
+                TdApi.GetProxies::class,
+                TdResult.Success(
+                    TdApi.AddedProxies(
+                        arrayOf(
+                            TdApi.AddedProxy(3, 100, false, "Home", proxy),
+                            TdApi.AddedProxy(4, 0, false, "Work", proxy),
+                        ),
+                    ),
+                ),
+            )
+            client.on(TdApi.EnableProxy::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            assertEquals(
+                3,
+                viewModel.uiState.value.switchProxy
+                    ?.id,
+            )
+
+            send(viewModel, DataStorageEvent.SetProxyOn(true))
+
+            assertEquals(3, client.sentOf<TdApi.EnableProxy>().single().proxyId)
+        }
+
+    @Test
+    fun `without a saved proxy the Proxy row has no switch`() =
+        runTest {
+            answerUsage(filesSize = 0)
+            client.on(TdApi.GetProxies::class, TdResult.Success(TdApi.AddedProxies(emptyArray())))
+
+            assertEquals(null, viewModel().uiState.value.switchProxy)
+        }
 }

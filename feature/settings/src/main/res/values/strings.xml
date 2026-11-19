@@ -1632,8 +1632,7 @@
     <string name="settings_transcription">Voice message transcription</string>
     <string name="settings_transcription_summary">Text of voice and round video messages, made on this phone</string>
     <string name="settings_transcription_loading">Loading transcription settings</string>
-    <string name="settings_transcription_section_messages">Voice and round video messages</string>
-    <string name="settings_transcription_automatic">Transcribe voice messages automatically</string>
+    <string name="settings_transcription_automatic">Transcribe automatically</string>
     <string name="settings_transcription_automatic_summary">Text appears under every voice and round video message you receive</string>
     <string name="settings_transcription_privacy_title">Uses Android’s own speech recognition, on this phone</string>
     <string name="settings_transcription_privacy">Pingogram bundles no model, asks for no new permission and sends nothing anywhere. Works offline.</string>

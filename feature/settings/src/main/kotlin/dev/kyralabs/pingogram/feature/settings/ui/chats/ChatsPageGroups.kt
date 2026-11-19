@@ -8,7 +8,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
-import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -52,25 +51,38 @@ internal fun MessagesGroup(
 }
 
 /**
- * "Voice messages": the row of voice message transcription ([pages]), raise to listen as a split row
- * ([SettingsSplitRow]: its text opens its page, where "Pause when lowered" is, and its switch turns it on or off), and
- * skipping voice messages' silences.
+ * "Voice messages" ([state]): voice message transcription, a split row ([SettingsSplitRow]) whose switch is
+ * "Transcribe automatically" (a plain row that opens its page where the phone cannot transcribe); raise to listen, a
+ * split row whose text opens its page, where "Pause when lowered" is; and skipping voice messages' silences.
  */
 @Composable
 internal fun VoiceMessagesGroup(
-    raiseToListen: RaiseToListenSettings,
-    skipSilence: Boolean,
+    state: ChatsPageUiState.Content,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
+    val raiseToListen = state.raiseToListen
+    val transcribeAutomatically = state.transcribeAutomatically
     SettingsGroup(title = stringResource(R.string.settings_section_voice_messages)) {
         item { shapes ->
-            PageRow(
-                R.string.settings_transcription,
-                R.string.settings_transcription_summary,
-                shapes,
-                pages.onOpenTranscription,
-            )
+            if (transcribeAutomatically != null) {
+                SettingsSplitRow(
+                    title = stringResource(R.string.settings_transcription),
+                    summary = stringResource(R.string.settings_transcription_summary),
+                    checked = transcribeAutomatically,
+                    shapes = shapes,
+                    onOpen = pages.onOpenTranscription,
+                    onCheckedChange = { onEvent(ChatsPageEvent.SetTranscribeAutomatically(it)) },
+                    switchLabel = stringResource(R.string.settings_transcription_automatic),
+                )
+            } else {
+                PageRow(
+                    R.string.settings_transcription,
+                    R.string.settings_transcription_summary,
+                    shapes,
+                    pages.onOpenTranscription,
+                )
+            }
         }
         item { shapes ->
             SettingsSplitRow(
@@ -86,7 +98,7 @@ internal fun VoiceMessagesGroup(
             SwitchItem(
                 title = stringResource(R.string.settings_skip_silence),
                 summary = stringResource(R.string.settings_skip_silence_summary),
-                checked = skipSilence,
+                checked = state.skipSilence,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetSkipSilence(it)) },
             )

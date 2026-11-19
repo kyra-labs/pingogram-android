@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
+import dev.kyralabs.pingogram.feature.settings.ui.SplitEnd
 import dev.kyralabs.pingogram.feature.settings.ui.settingsGroupIconColors
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import kotlinx.coroutines.launch
@@ -148,8 +149,8 @@ internal fun FocusScreen(
 /**
  * A profile's row: its symbol in a circle (the group's category color; inverted on the profile on now), its name,
  * "On now" while it is on, how it runs and what it lets through; a tap opens the editor, the switch at its end turns it
- * on or off by hand. On `primaryContainer` while it is on. Screen readers hear the row as one item, with the switch
- * apart.
+ * on or off by hand, after a chevron and a divider as a split row's ([SplitEnd], owner decision 2026-11-19). On
+ * `primaryContainer` while it is on. Screen readers hear the row as one item, with the switch apart.
  */
 @Composable
 private fun FocusProfileRow(
@@ -195,11 +196,13 @@ private fun FocusProfileRow(
             }
         },
         trailingContent = {
-            CheckSwitch(
-                checked = item.isOn,
-                onCheckedChange = { checked -> toggle(haptics, checked, onToggle) },
-                modifier = Modifier.clearAndSetSemantics {},
-            )
+            SplitEnd {
+                CheckSwitch(
+                    checked = item.isOn,
+                    onCheckedChange = { checked -> toggle(haptics, checked, onToggle) },
+                    modifier = Modifier.clearAndSetSemantics {},
+                )
+            }
         },
     ) {
         ProfileTitle(item.name, item.isOn)

@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsEvent
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsViewModel
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkGroup
+import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyRowActions
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -169,7 +170,12 @@ internal fun DataStorageScreen(
             SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }
         }
         CallsGroup(callDataSaving, onCallDataSavingChange)
-        NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage, options.prefersIpv6) {
+        val proxyActions =
+            ProxyRowActions(
+                onOpen = onOpenProxies,
+                onSwitch = state.switchProxy?.let { { on -> onEvent(DataStorageEvent.SetProxyOn(on)) } },
+            )
+        NetworkGroup(state.proxy, proxyActions, onOpenNetworkUsage, options.prefersIpv6) {
             onOptionsEvent(DataOptionsEvent.SetPrefersIpv6(it))
         }
         if (usage !is StorageUsageState.Content) CacheGroup(usage) { onEvent(DataStorageEvent.Retry) }
