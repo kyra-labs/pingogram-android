@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.ui.NavigationLabelWidths
 import dev.kyralabs.pingogram.widget.ConversationWidgetUpdater
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -121,6 +122,15 @@ class PingogramApplication :
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
+
+    /**
+     * Never called on a device. Robolectric calls it as each test ends: the work this application started on
+     * [applicationScope] stops with it, rather than running on into the next test against a torn-down context.
+     */
+    override fun onTerminate() {
+        if (::applicationScope.isInitialized) applicationScope.cancel()
+        super.onTerminate()
+    }
 
     override fun onCreate() {
         // Keeps the last crash on the device for "Send feedback", which the user shares themselves; first, so a crash
