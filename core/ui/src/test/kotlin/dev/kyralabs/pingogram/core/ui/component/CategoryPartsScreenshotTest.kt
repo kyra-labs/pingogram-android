@@ -30,8 +30,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The settings pages' shared parts (`docs/DESIGN_SYSTEM.md` §13.10): the round back button and the six category
- * colors' icon circles, one disabled, on the page's and the rows' colors, in light, dark, AMOLED black, high contrast,
+ * The settings pages' shared parts (`docs/DESIGN_SYSTEM.md` §13.10): the round back button, the six category
+ * colors' icon circles, one disabled, and switches on and off, enabled and disabled, on the page's and the rows' colors, in light, dark, AMOLED black, high contrast,
  * right to left, and with the pink, teal and monochrome themes, which the colors are harmonized toward.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -94,27 +94,38 @@ class CategoryPartsScreenshotTest {
 @Composable
 private fun Parts(background: Color) {
     val spacing = MaterialTheme.spacing
-    val categories = MaterialTheme.pingogramColors.categories
     Surface(color = background) {
-        Row(
-            Modifier.padding(spacing.large),
-            horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-        ) {
-            RoundBackButton(label = "Back", onClick = {})
-            CategoryHue.entries.forEachIndexed { index, hue ->
-                CategoryIconBadge(painterResource(Icons[index]), categories[hue])
+        Column(Modifier.padding(spacing.large), verticalArrangement = Arrangement.spacedBy(spacing.small)) {
+            CategoryRow()
+            Row(horizontalArrangement = Arrangement.spacedBy(spacing.large)) {
+                CheckSwitch(checked = true)
+                CheckSwitch(checked = false)
+                CheckSwitch(checked = true, enabled = false)
+                CheckSwitch(checked = false, enabled = false)
             }
-            CategoryIconBadge(painterResource(R.drawable.ic_lock), categories[CategoryHue.Pink], enabled = false)
         }
+    }
+}
+
+/** The back button, then the six circles with their filled symbols, and a disabled one. */
+@Composable
+private fun CategoryRow() {
+    val categories = MaterialTheme.pingogramColors.categories
+    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
+        RoundBackButton(label = "Back", onClick = {})
+        CategoryHue.entries.forEachIndexed { index, hue ->
+            CategoryIconBadge(painterResource(Icons[index]), categories[hue])
+        }
+        CategoryIconBadge(painterResource(R.drawable.ic_person_filled), categories[CategoryHue.Pink], enabled = false)
     }
 }
 
 private val Icons =
     listOf(
-        R.drawable.ic_notifications,
+        R.drawable.ic_chat_filled,
         R.drawable.ic_bookmark_filled,
-        R.drawable.ic_alarm,
-        R.drawable.ic_palette,
-        R.drawable.ic_folder,
-        R.drawable.ic_info,
+        R.drawable.ic_call_filled,
+        R.drawable.ic_image_filled,
+        R.drawable.ic_settings_filled,
+        R.drawable.ic_description_filled,
     )

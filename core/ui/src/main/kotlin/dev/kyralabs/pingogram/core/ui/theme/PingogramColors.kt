@@ -99,7 +99,7 @@ data class BubbleColors(
 internal fun pingogramColors(
     colorScheme: ColorScheme,
     dark: Boolean,
-    categories: CategoryPalette = categoryPalette(colorScheme),
+    categories: CategoryPalette = categoryPalette(colorScheme, dark),
 ): PingogramColors {
     val green = harmonize(if (dark) OnlineDark else OnlineLight, colorScheme.primary)
     return PingogramColors(
