@@ -55,6 +55,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "Use proxy" is a card at the top of the Proxy page.
 
 ### Fixed
+- The app no longer crashes while the chat list shows a forum that has a topic without messages.
 - With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer
   carries one account's place over to the other.
 - Transcribing a voice or round video message no longer fails again and again with "Couldn't transcribe this
