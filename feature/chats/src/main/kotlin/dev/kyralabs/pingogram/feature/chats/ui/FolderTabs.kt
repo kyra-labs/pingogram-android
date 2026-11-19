@@ -119,8 +119,13 @@ internal fun FolderTabs(
         // The floating navigation bar's elevation, so the two floating bars match.
         shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
     ) {
-        // spacing.extraSmall around the chips' 48 dp touch targets: their 40 dp containers 8 dp inside the bar.
-        Row(Modifier.padding(MaterialTheme.spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
+        // The chips' 40 dp containers 8 dp inside the bar, which sits spacing.small in, so the first starts on the
+        // window margin (docs/DESIGN_SYSTEM.md §7); spacing.extraSmall above and below their 48 dp touch targets.
+        Row(
+            modifier =
+                Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             // The Channel feed's tab starts the row, outside the scrolling folders: it opens a view, not a list.
             if (feedTab != null && LocalChatSwipes.current.feedTab) {
                 FeedTabButton(feedTab, onOpen = onOpenFeed, enabled = enabled)

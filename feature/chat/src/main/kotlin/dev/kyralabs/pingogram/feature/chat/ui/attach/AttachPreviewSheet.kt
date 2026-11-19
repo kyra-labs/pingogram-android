@@ -29,8 +29,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
@@ -65,6 +63,7 @@ import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.PingogramBottomSheet
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -276,7 +275,7 @@ private fun ReplaceRow(
 }
 
 /**
- * "Send without compression": a switch row (`Role.Switch`, a check in the thumb) whose summary says the photos and
+ * "Send without compression": a switch row (`Role.Switch`, a [CheckSwitch]) whose summary says the photos and
  * videos then go as files at their size, without their location or camera details.
  */
 @Composable
@@ -287,18 +286,7 @@ private fun OriginalQualityRow(
     val haptics = LocalHapticFeedback.current
     ListItem(
         supportingContent = { Text(stringResource(R.string.attach_original_summary)) },
-        trailingContent = {
-            Switch(
-                checked = original,
-                onCheckedChange = null,
-                thumbContent =
-                    if (original) {
-                        { Icon(painterResource(UiR.drawable.ic_check), null, Modifier.size(SwitchDefaults.IconSize)) }
-                    } else {
-                        null
-                    },
-            )
-        },
+        trailingContent = { CheckSwitch(checked = original) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier =
             Modifier

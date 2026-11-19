@@ -192,7 +192,7 @@ private fun ContactsTopBar(
                     }
                 }
                 onOpenRecentCalls?.let {
-                    TopBarAction(UiR.drawable.ic_history, stringResource(R.string.contacts_recent_calls), it)
+                    TopBarAction(UiR.drawable.ic_call_log, stringResource(R.string.contacts_recent_calls), it)
                 }
             },
         )

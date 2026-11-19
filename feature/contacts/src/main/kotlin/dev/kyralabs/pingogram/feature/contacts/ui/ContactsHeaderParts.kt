@@ -128,7 +128,9 @@ internal fun ContactActionGroup(
                 .collapsingWith(headerState)
                 .fillMaxWidth()
                 .padding(horizontal = windowMargin())
-                .padding(bottom = MaterialTheme.spacing.large)
+                // spacing.medium between the header's blocks (docs/DESIGN_SYSTEM.md §7): the buttons' 40 dp
+                // containers sit spacing.extraSmall inside their 48 dp targets.
+                .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.small)
                 .semantics { paneTitle = description },
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {

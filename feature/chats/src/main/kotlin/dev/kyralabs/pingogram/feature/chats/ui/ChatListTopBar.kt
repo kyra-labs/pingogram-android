@@ -9,6 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -244,6 +245,10 @@ internal fun ArchiveTopBar(
                 scrolledContainerColor = Color.Transparent,
             ),
         expandedHeight = MaterialTheme.sizes.denseTopAppBar,
+        // The settings action's 48 dp circle ends on the window margin, past the bar's own spacing.extraSmall, as
+        // back's arrow (a plain icon button) starts on it (docs/DESIGN_SYSTEM.md §7).
+        contentPadding =
+            PaddingValues(end = MaterialTheme.spacing.windowMarginCompact - MaterialTheme.spacing.extraSmall),
         scrollBehavior = scrollBehavior,
     )
 }
