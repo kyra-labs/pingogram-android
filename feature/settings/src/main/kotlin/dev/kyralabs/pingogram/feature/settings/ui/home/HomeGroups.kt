@@ -11,7 +11,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.ui.component.CategoryIconBadge
 import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
-import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.theme.CategoryColors
 import dev.kyralabs.pingogram.core.ui.theme.CategoryHue
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -27,8 +26,7 @@ import java.util.Locale
  * Settings home's groups ([HomeGroups], `docs/DESIGN_SYSTEM.md` §13.9): each under its
  * `titleSmallEmphasized` `primary` header, segmented rows ([HomeEntryRow]) with their icons in circles of the group's
  * own category color, and its footer where it has one.
- * Recent calls and Bookmarks are left out where the app does not provide their pages, and a group without a row is
- * not shown.
+ * Bookmarks is left out where the app does not provide its page, and a group without a row is not shown.
  */
 @Composable
 internal fun SettingsHomeGroups(
@@ -37,15 +35,11 @@ internal fun SettingsHomeGroups(
     selection: SettingsPageSelection?,
     groups: List<HomeGroup> = HomeGroups,
 ) {
-    val hasRecentCalls = LocalRecentCallsLauncher.current != null
     val hasBookmarks = LocalBookmarksLauncher.current != null
     val rowState = HomeRowState(summaries, selection)
     groups.forEach { group ->
         val entries =
-            group.entries.filter {
-                (hasRecentCalls || it.destination != HomeDestination.RecentCalls) &&
-                    (hasBookmarks || it.destination != HomeDestination.Bookmarks)
-            }
+            group.entries.filter { hasBookmarks || it.destination != HomeDestination.Bookmarks }
         if (entries.isEmpty()) return@forEach
         SettingsGroup(
             title = stringResource(group.title),

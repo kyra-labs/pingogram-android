@@ -15,7 +15,6 @@ import androidx.compose.ui.test.performTextInput
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
@@ -65,10 +64,7 @@ class SettingsHomeTest {
     ) {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
-                CompositionLocalProvider(
-                    LocalPhoneNumbersHidden provides phoneNumbersHidden,
-                    LocalRecentCallsLauncher provides {},
-                ) {
+                CompositionLocalProvider(LocalPhoneNumbersHidden provides phoneNumbersHidden) {
                     SettingsScreen(
                         state = state,
                         onEvent = { events += it },
@@ -311,6 +307,36 @@ class SettingsHomeTest {
         val above = found.drop(1).map { (it.destination as HomeDestination.SubPage).subPage.parent }.toSet()
         assertEquals(setOf(SettingsPage.PrivacySecurity), above)
         assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "  ", resources, Locale.US))
+    }
+
+    @Test
+    fun `the groups after On this phone hold their pages in order, with no More group`() {
+        val pages =
+            HomeGroups.drop(1).map { group ->
+                string(group.title) to group.entries.map { (it.destination as HomeDestination.Page).page }
+            }
+        assertEquals(
+            listOf(
+                string(R.string.settings_home_make_it_yours) to
+                    listOf(SettingsPage.Appearance, SettingsPage.Chats, SettingsPage.ChatFolders, SettingsPage.Stickers),
+                string(R.string.settings_home_alerts_privacy) to
+                    listOf(
+                        SettingsPage.Notifications,
+                        SettingsPage.PrivacySecurity,
+                        SettingsPage.ActiveSessions,
+                        SettingsPage.DataStorage,
+                    ),
+                string(R.string.settings_home_app) to
+                    listOf(SettingsPage.Language, SettingsPage.PowerSaving, SettingsPage.About),
+            ),
+            pages,
+        )
+    }
+
+    @Test
+    fun `search no longer finds Recent calls, which the Contacts tab opens`() {
+        val resources = RuntimeEnvironment.getApplication().resources
+        assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "recent calls", resources, Locale.US))
     }
 
     @Test

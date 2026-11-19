@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.BottomFade
 import dev.kyralabs.pingogram.core.ui.component.LocalBookmarksLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
-import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.TabHeader
 import dev.kyralabs.pingogram.core.ui.component.TabHeaderTitle
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
@@ -215,18 +214,16 @@ private fun SettingsHomeTopBar(
     }
 }
 
-/** Opens where an entry of the home leads: a page, a page above one ([onOpenSubPage]), Recent calls. */
+/** Opens where an entry of the home leads: a page, a page above one ([onOpenSubPage]), Bookmarks. */
 @Composable
 private fun homeOpener(
     onOpenPage: (SettingsPage) -> Unit,
     onOpenSubPage: (SettingsSubPage) -> Unit,
 ): (HomeDestination) -> Unit {
-    val onOpenRecentCalls = LocalRecentCallsLauncher.current
     val onOpenBookmarks = LocalBookmarksLauncher.current
     return { destination ->
         when (destination) {
             is HomeDestination.Page -> onOpenPage(destination.page)
-            HomeDestination.RecentCalls -> onOpenRecentCalls?.invoke()
             HomeDestination.Bookmarks -> onOpenBookmarks?.invoke()
             is HomeDestination.SubPage -> onOpenSubPage(destination.subPage)
         }
