@@ -38,6 +38,7 @@ internal fun FeedRoute(
     viewModel: FeedViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val snackbars = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -97,6 +98,7 @@ internal fun FeedRoute(
         modifier = modifier,
         snackbars = snackbars,
         openPostKey = openPostKey,
+        isRefreshing = refreshing,
     )
 }
 
