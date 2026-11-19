@@ -63,23 +63,46 @@ class KeepConnectedController internal constructor(
                 keepConnectedRepository.keepConnected,
                 authSteps.map { it.toSession() }.distinctUntilChanged(),
                 foreground.distinctUntilChanged(),
-            ) { enabled, session, inForeground -> Triple(enabled, session, inForeground) }
+            ) { enabled, session, inForeground -> decide(enabled, session, inForeground) }
+                // Only a new decision acts: the app coming and going while it is off stops nothing again.
                 .distinctUntilChanged()
-                .collect { (enabled, session, inForeground) ->
-                    service.setStartsAfterBoot(enabled)
-                    when {
-                        !enabled || session == Session.SignedOut -> service.stop()
-
-                        session == Session.LoggedIn && inForeground -> service.start()
-
-                        // In the background, or TDLib still starting: it keeps running if it runs, and starts later.
-                        else -> Unit
+                .collect { decision ->
+                    service.setStartsAfterBoot(decision.startsAfterBoot)
+                    when (decision.action) {
+                        Action.Stop -> service.stop()
+                        Action.Start -> service.start()
+                        Action.Keep -> Unit
                     }
                 }
         }
     }
 
     private enum class Session { Unknown, LoggedIn, SignedOut }
+
+    private enum class Action { Start, Stop, Keep }
+
+    /** What the service and the boot receiver should do now. */
+    private data class Decision(
+        val startsAfterBoot: Boolean,
+        val action: Action,
+    )
+
+    private fun decide(
+        enabled: Boolean,
+        session: Session,
+        inForeground: Boolean,
+    ) = Decision(
+        startsAfterBoot = enabled,
+        action =
+            when {
+                !enabled || session == Session.SignedOut -> Action.Stop
+
+                session == Session.LoggedIn && inForeground -> Action.Start
+
+                // In the background, or TDLib still starting: it keeps running if it runs, and starts later.
+                else -> Action.Keep
+            },
+    )
 
     private fun AuthStep.toSession(): Session =
         when (this) {
