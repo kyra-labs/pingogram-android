@@ -318,7 +318,12 @@ class SettingsHomeTest {
         assertEquals(
             listOf(
                 string(R.string.settings_home_make_it_yours) to
-                    listOf(SettingsPage.Appearance, SettingsPage.Chats, SettingsPage.ChatFolders, SettingsPage.Stickers),
+                    listOf(
+                        SettingsPage.Appearance,
+                        SettingsPage.Chats,
+                        SettingsPage.ChatFolders,
+                        SettingsPage.Stickers,
+                    ),
                 string(R.string.settings_home_alerts_privacy) to
                     listOf(
                         SettingsPage.Notifications,
