@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.ProfileColorRoute
 import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
+import dev.kyralabs.pingogram.core.navigation.RaiseToListenRoute
 import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
 import dev.kyralabs.pingogram.core.navigation.SnippetsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
@@ -42,6 +43,7 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.ChatsShownFirst -> ChatsShownFirstRoute
             SettingsSubPage.Snippets -> SnippetsRoute
             SettingsSubPage.Transcription -> TranscriptionSettingsRoute
+            SettingsSubPage.RaiseToListen -> RaiseToListenRoute
             SettingsSubPage.TrendingStickers -> StickerSetListRoute(archived = false, emoji = false)
             SettingsSubPage.ArchivedStickers -> StickerSetListRoute(archived = true, emoji = false)
             SettingsSubPage.CustomEmoji -> StickersRoute(emoji = true)

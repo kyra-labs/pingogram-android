@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
@@ -65,6 +66,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExce
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorPreviewData
 import dev.kyralabs.pingogram.feature.settings.ui.profilecolor.ProfileColorScreen
+import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenScreen
+import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenUiState
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstPreviewStates
@@ -134,6 +137,14 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun chats() = check { ChatsPageScreen(ChatsPageUiState.Content(), {}, {}) }
+
+    @Test
+    fun raiseToListenOn() =
+        check { RaiseToListenScreen(RaiseToListenUiState.Content(RaiseToListenSettings(enabled = true)), {}, {}) }
+
+    @Test
+    fun raiseToListenOff() =
+        check { RaiseToListenScreen(RaiseToListenUiState.Content(RaiseToListenSettings(enabled = false)), {}, {}) }
 
     @Test
     fun chatAppearance() =

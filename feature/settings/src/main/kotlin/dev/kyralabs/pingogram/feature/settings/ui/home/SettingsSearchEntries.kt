@@ -57,6 +57,7 @@ private fun subPageTitle(subPage: SettingsSubPage): Int =
         SettingsSubPage.ChatsShownFirst -> R.string.shown_first_title
         SettingsSubPage.Snippets -> R.string.settings_snippets
         SettingsSubPage.Transcription -> R.string.settings_transcription
+        SettingsSubPage.RaiseToListen -> R.string.settings_raise_to_listen
         SettingsSubPage.TrendingStickers -> R.string.settings_stickers_trending
         SettingsSubPage.ArchivedStickers -> R.string.settings_stickers_archived
         SettingsSubPage.CustomEmoji -> R.string.settings_emoji

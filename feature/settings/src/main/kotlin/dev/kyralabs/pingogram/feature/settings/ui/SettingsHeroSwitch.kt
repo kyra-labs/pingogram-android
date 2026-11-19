@@ -33,16 +33,17 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 /**
  * A page's master switch, the one that turns the page's feature on or off, as a card at the top of the page
  * (`docs/DESIGN_SYSTEM.md` §13.10, "Master switch"): [title] in `titleMediumEmphasized` over [summary] in `bodyMedium`
- * and a [CheckSwitch] at the end, on `primaryContainer` / `onPrimaryContainer` with full corners and `spacing.large`
- * inside. The whole card toggles it, with a `ToggleOn` or `ToggleOff` haptic, and screen readers hear it as one switch.
+ * where it has one, and a [CheckSwitch] at the end, on `primaryContainer` / `onPrimaryContainer` with full corners and
+ * `spacing.large` inside. The whole card toggles it, with a `ToggleOn` or `ToggleOff` haptic, and screen readers hear
+ * it as one switch.
  */
 @Composable
 internal fun SettingsHeroSwitch(
     title: String,
-    summary: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    summary: String? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val colors = MaterialTheme.colorScheme
@@ -63,7 +64,7 @@ internal fun SettingsHeroSwitch(
         CompositionLocalProvider(LocalContentColor provides colors.onPrimaryContainer) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMediumEmphasized)
-                Text(summary, style = MaterialTheme.typography.bodyMedium)
+                if (summary != null) Text(summary, style = MaterialTheme.typography.bodyMedium)
             }
         }
         CheckSwitch(checked = checked)
