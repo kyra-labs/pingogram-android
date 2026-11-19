@@ -51,9 +51,16 @@ class FeedScreenTest {
     private fun setFeed(
         state: FeedUiState,
         openPostKey: String? = null,
+        reactionChoice: FeedReactionChoice? = null,
     ) = composeRule.setContent {
         PingogramTheme(dynamicColor = false) {
-            FeedScreen(state = state, onEvent = { events += it }, onBack = { backs++ }, openPostKey = openPostKey)
+            FeedScreen(
+                state = state,
+                onEvent = { events += it },
+                onBack = { backs++ },
+                openPostKey = openPostKey,
+                reactionChoice = reactionChoice,
+            )
         }
     }
 
@@ -248,6 +255,26 @@ class FeedScreenTest {
         assertEquals(
             FeedEvent.Refresh(listOf(FeedPreviewData.text.key), pulled = false),
             events.filterIsInstance<FeedEvent.Refresh>().single(),
+        )
+    }
+
+    @Test
+    fun `a long press asks for the post's reactions, and the bar above it reacts`() {
+        val key = FeedPreviewData.text.key
+        setFeed(
+            posts(unread = listOf(FeedPreviewData.text)),
+            reactionChoice = FeedReactionChoice(key, persistentListOf("❤", "🎉")),
+        )
+
+        composeRule.onNodeWithText("Kotlin Weekly", useUnmergedTree = true).performTouchInput { longClick() }
+        composeRule.onNodeWithText("🎉").assertIsDisplayed().performClick()
+
+        assertEquals(
+            listOf(FeedEvent.ShowReactions(key), FeedEvent.React(key, "🎉")),
+            events.filter {
+                it is FeedEvent.ShowReactions ||
+                    it is FeedEvent.React
+            },
         )
     }
 

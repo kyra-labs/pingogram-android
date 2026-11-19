@@ -39,6 +39,17 @@ sealed interface FeedEvent {
         val pulled: Boolean,
     ) : FeedEvent
 
+    /** Post [key]'s menu opened: the reactions it takes are read for the bar above it. */
+    data class ShowReactions(
+        val key: String,
+    ) : FeedEvent
+
+    /** Reaction [emoji] tapped in post [key]'s bar: it is added, or taken away if the user had it. */
+    data class React(
+        val key: String,
+        val emoji: String,
+    ) : FeedEvent
+
     /** The filter sheet's "Mark all as read": every unread post of the [chosen] channels (null for all) is read. */
     data class MarkAllAsRead(
         val chosen: ImmutableSet<Long>?,

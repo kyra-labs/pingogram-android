@@ -355,6 +355,21 @@ class FeedViewModelTest {
             assertEquals(listOf(false, true, false), refreshing)
         }
 
+    @Test
+    fun `a post's emoji reactions are read for its bar, and a tap reacts, then reads the post again`() =
+        runTest {
+            feed(post(1, 12))
+            val viewModel = viewModel()
+
+            send(viewModel, FeedEvent.ShowReactions("1:12"))
+            assertEquals(FeedReactionChoice("1:12", persistentListOf("👍", "🔥")), viewModel.reactionChoice.value)
+
+            send(viewModel, FeedEvent.React("1:12", "🔥"))
+
+            assertEquals(listOf("+🔥"), links.reactions)
+            assertEquals(listOf(mapOf(1L to listOf(12L))), repository.refreshed)
+        }
+
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */
     private class FakeChannelFeedRepository : ChannelFeedRepository {
         override val feed = MutableStateFlow(ChannelFeed(persistentListOf(), 0))

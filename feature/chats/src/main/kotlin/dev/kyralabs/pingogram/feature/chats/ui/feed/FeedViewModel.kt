@@ -133,6 +133,8 @@ class FeedViewModel internal constructor(
             is FeedEvent.Act -> act(event)
             is FeedEvent.MarkAllAsRead -> markAllAsRead(event.chosen)
             is FeedEvent.Refresh -> refresh(event)
+            is FeedEvent.ShowReactions -> shownPost(event.key)?.let(reactions::show)
+            is FeedEvent.React -> shownPost(event.key)?.let { reactions.react(it, event.emoji) }
             is FeedAdEvent -> sponsored.onEvent(event)
         }
     }
@@ -141,6 +143,18 @@ class FeedViewModel internal constructor(
 
     /** A pull to refresh is under way: the indicator shows. */
     val refreshing: StateFlow<Boolean> = mutableRefreshing.asStateFlow()
+
+    private val reactions = FeedReactions(actions, repository, viewModelScope) { effectChannel.trySend(it) }
+
+    /** The reactions of the post whose menu is open, for the bar above it; null until they are read. */
+    val reactionChoice: StateFlow<FeedReactionChoice?> = reactions.choice
+
+    private fun shownPost(key: String): FeedPost? =
+        (uiState.value.content as? FeedContent.Posts)?.let {
+            (it.unread + it.read).firstOrNull { post ->
+                post.key == key
+            }
+        }
 
     /** Reads the posts of cards [FeedEvent.Refresh.keys] again, one call per channel; nothing if none is shown. */
     private fun refresh(event: FeedEvent.Refresh) {

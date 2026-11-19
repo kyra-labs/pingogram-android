@@ -32,8 +32,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   outlined while its channel shows.
 - The Feed keeps older posts current: their reactions, views and edits update, deleted posts go, and it checks the
   posts on screen again when you come back to it or pull down to refresh.
-- In the Feed, a long press on a post forwards it, copies its link, bookmarks it on this phone, or marks it as read
-  (or its channel as unread).
+- In the Feed, a long press on a post shows its reactions above it to react with, and forwards it, copies its link,
+  bookmarks it on this phone, or marks it as read (or its channel as unread).
 - The Feed shows a channel's sponsored message after its newest post, labelled and as Telegram sends it, with
   "About this ad" and reporting as in the channel.
 - The Feed's filter shows all channels or only those you choose, and only unread posts if you like; "Mark all as
