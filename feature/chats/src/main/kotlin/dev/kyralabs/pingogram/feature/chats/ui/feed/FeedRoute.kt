@@ -25,8 +25,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The Channel feed (`REQUIREMENTS.md` FR-X5), pushed above the Chats tab from its Feed tab: hoists its
  * [FeedViewModel]; a card opens its channel at the post through [onOpenPost], a post's "Forward" opens the forward
  * sheet through [onForward], and [onBack] returns to the chats. A copied link goes on the clipboard (Android 13 and
- * later confirm it themselves; before, a snackbar does), and bookmarks and failures show as snackbars. TDLib keeps the
- * posts current, so coming back from a channel reads nothing again.
+ * later confirm it themselves; before, a snackbar does), and bookmarks and failures show as snackbars. Coming back
+ * from a channel, or pulling the list down, reads the posts on screen again ([FeedViewModel.refreshing]).
  */
 @Composable
 internal fun FeedRoute(
