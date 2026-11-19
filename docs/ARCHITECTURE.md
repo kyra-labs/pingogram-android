@@ -871,7 +871,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`updateChatLastMessage`), reading the posts since whenever it is newer than the newest read. A post is unread while
   newer than its channel's `last_read_inbox_message_id`; `view` marks posts read with `viewMessages`
   (`messageSourceOther`, `force_read`), which also reports a channel's sponsored message seen, as td_api.tl has no
-  `viewSponsoredMessage`.
+  `viewSponsoredMessage`. The channels are never opened, so the posts held (`ChannelFeedPosts`) take whatever updates
+  TDLib sends for them anyway (`updateMessageInteractionInfo`, `updateMessageContent`, `updateMessageEdited`, and a
+  permanent `updateDeleteMessages`), and `refresh` reads given posts again with one `getMessages` per channel,
+  dropping those TDLib no longer returns; the feed asks for it, never a timer.
 - **Replies and links** (FR-C5, FR-C6): what a message being sent or a draft replies to is `core:domain`'s
   `ReplyTarget` (a message of the chat, or of another chat, with the `TextQuote` it quotes), which every send of
   `MessageRepository`, `AttachmentRepository`, `VoiceNoteRepository` and `InlineBotRepository`, `ChatDraft` and the

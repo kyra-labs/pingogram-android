@@ -6,8 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5): the followed channels' newest posts as one timeline. Nothing is stored
- * beyond what TDLib keeps, and nothing polls: TDLib keeps each channel's last post and read state current, and a
- * channel's newer posts are read when its last post changes.
+ * beyond what TDLib keeps, and nothing polls: TDLib keeps each channel's last post and read state current, a
+ * channel's newer posts are read when its last post changes, and the posts read follow whatever updates TDLib sends
+ * for them (reactions and views, edits, deletions). The channels are never opened, so TDLib may send none: [refresh]
+ * reads posts again when asked (owner decision 2026-11-19).
  *
  * Failures are `DomainError.Network` (no answer in time), `DomainError.FloodWait` and others as TDLib reports them.
  */
@@ -23,6 +25,13 @@ interface ChannelFeedRepository {
      * channel that cannot be read keeps what it had; it fails only when no channel could be read.
      */
     suspend fun load(): Outcome<Unit>
+
+    /**
+     * Reads posts again, [posts] being their ids by channel, one `getMessages` per channel: a post TDLib returns takes
+     * its place as it is now, and one it no longer returns leaves the feed. A channel that cannot be read keeps what it
+     * had; it fails only when none could be read.
+     */
+    suspend fun refresh(posts: Map<Long, List<Long>>): Outcome<Unit>
 
     /**
      * Tells TDLib that posts [messageIds] of channel [chatId] were seen in the feed, though the channel is not open:

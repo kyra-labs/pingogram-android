@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChannelFeed
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.isUnreadPost
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -10,10 +11,13 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chatPosition
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -48,6 +52,12 @@ class TdlibChannelFeedRepositoryTest {
                 TdResult.Success(TdApi.Messages(page.size, page))
             }
             on(TdApi.ViewMessages::class) { TdResult.Success(TdApi.Ok()) }
+            on(TdApi.GetMessages::class) { request ->
+                if (request.chatId in failing) return@on TdResult.Failure(TdError(500, "Request aborted"))
+                val history = histories[request.chatId].orEmpty()
+                val found = request.messageIds.map { id -> history.firstOrNull { it.id == id } }.toTypedArray()
+                TdResult.Success(TdApi.Messages(found.count { it != null }, found))
+            }
         }
 
     private fun TestScope.repository() =
@@ -84,6 +94,73 @@ class TdlibChannelFeedRepositoryTest {
     }
 
     private fun ChannelFeed.ids() = posts.map { it.chat.id to it.message.id }
+
+    /** The feed, collected as the screen does, so that it follows TDLib's updates. */
+    private fun TestScope.collected(repository: TdlibChannelFeedRepository): () -> ChannelFeed {
+        var latest = ChannelFeed(persistentListOf(), 0)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { repository.feed.collect { latest = it } }
+        runCurrent()
+        return { latest }
+    }
+
+    private fun ChannelFeed.post(id: Long) = posts.single { it.message.id == id }.message
+
+    @Test
+    fun `a post follows TDLib's updates of its views, edit and content while the feed is collected`() =
+        runTest {
+            val repository = repository()
+            channel(1, 12, 11)
+            repository.load()
+            val feed = collected(repository)
+
+            client.emit(TdApi.UpdateMessageInteractionInfo(1, 11, TdApi.MessageInteractionInfo(42, 0, null, null)))
+            client.emit(TdApi.UpdateMessageEdited(1, 11, 500, null))
+            client.emit(
+                TdApi.UpdateMessageContent(
+                    1,
+                    12,
+                    TdApi.MessageText(TdApi.FormattedText("Edited", emptyArray()), null, null),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(42, feed().post(11).interactionInfo?.viewCount)
+            assertEquals(500L, feed().post(11).editDate)
+            assertEquals("Edited", (feed().post(12).content as MessageContent.Text).text.text)
+        }
+
+    @Test
+    fun `a deleted post leaves the feed, one TDLib only unloaded stays`() =
+        runTest {
+            val repository = repository()
+            channel(1, 12, 11, 10)
+            repository.load()
+            val feed = collected(repository)
+
+            client.emit(TdApi.UpdateDeleteMessages(1, longArrayOf(11), true, false))
+            client.emit(TdApi.UpdateDeleteMessages(1, longArrayOf(10), false, true))
+            runCurrent()
+
+            assertEquals(listOf(1L to 12L, 1L to 10L), feed().ids())
+        }
+
+    @Test
+    fun `refreshing reads posts again by channel, and those TDLib no longer returns leave the feed`() =
+        runTest {
+            val repository = repository()
+            channel(1, 12, 11)
+            channel(2, 25)
+            repository.load()
+            val feed = collected(repository)
+            histories[1] = listOf(post(1, 12).apply { editDate = 700 })
+
+            assertTrue(repository.refresh(mapOf(1L to listOf(12L, 11L), 2L to listOf(25L))) is Outcome.Success)
+            runCurrent()
+
+            assertEquals(listOf(2L to 25L, 1L to 12L), feed().ids())
+            assertEquals(700L, feed().post(12).editDate)
+            assertEquals(listOf(1L, 2L), client.sentOf<TdApi.GetMessages>().map { it.chatId })
+        }
 
     @Test
     fun `before anything is read the feed holds each channel's last post, and no group`() =

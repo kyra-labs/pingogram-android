@@ -18,12 +18,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.drinkless.tdlib.TdApi
@@ -36,6 +36,11 @@ import javax.inject.Inject
  * is newer than the newest read, the posts since are read then. Read states are the channels' own
  * (`last_read_inbox_message_id`, [isUnreadPost][dev.kyralabs.pingogram.core.domain.model.isUnreadPost]).
  *
+ * - **Updates**: while the feed is collected, the posts it shows take the updates TDLib sends anyway
+ *   (`updateMessageInteractionInfo`, `updateMessageContent`, `updateMessageEdited`), and a permanent
+ *   `updateDeleteMessages` (not `from_cache`) takes them away.
+ * - **Refreshing** ([refresh]): `getMessages` a channel; a post it no longer returns leaves the feed.
+ *
  * - **Reading**: [PAGE] posts a channel (TDLib may answer a first call with fewer, so it asks once more from the
  *   oldest), at most [PARALLEL_READS] channels at once.
  * - **Seeing**: `viewMessages` with `messageSourceOther` and `force_read`, which marks posts read in a closed channel.
@@ -47,24 +52,30 @@ class TdlibChannelFeedRepository
         private val client: TdlibClient,
         private val chatRepository: ChatRepository,
     ) : ChannelFeedRepository {
-        /** The posts read for each channel, by chat id, newest first. */
-        private val read = MutableStateFlow<Map<Long, List<Message>>>(emptyMap())
+        private val held = ChannelFeedPosts()
 
         private val channels: Flow<List<Chat>> =
             chatRepository.chatList(ChatListType.Main).map { it.filter(Chat::isChannel) }
 
         override val feed: Flow<ChannelFeed> =
-            channels
-                .onEach(::readSinceRead)
-                .combine(read) { channels, read ->
-                    val posts =
-                        channels.flatMap { channel ->
-                            (read[channel.id].orEmpty() + listOfNotNull(channel.lastMessage))
-                                .distinctBy { it.id }
-                                .map { FoundMessage(it, channel) }
-                        }
-                    ChannelFeed(posts.sortedWith(NEWEST_FIRST).take(MAX_POSTS).toImmutableList(), channels.size)
-                }
+            channelFlow {
+                launch { client.updates.collect(held::apply) }
+                channels
+                    .onEach { held.channels = it }
+                    .onEach(::readSinceRead)
+                    .combine(held.read, ::Pair)
+                    .combine(held.gone) { (channels, read), gone ->
+                        val posts =
+                            channels.flatMap { channel ->
+                                val hidden = gone[channel.id].orEmpty()
+                                (read[channel.id].orEmpty() + listOfNotNull(channel.lastMessage))
+                                    .distinctBy { it.id }
+                                    .filterNot { it.id in hidden }
+                                    .map { FoundMessage(it, channel) }
+                            }
+                        ChannelFeed(posts.sortedWith(NEWEST_FIRST).take(MAX_POSTS).toImmutableList(), channels.size)
+                    }.collect(::send)
+            }
 
         override suspend fun load(): Outcome<Unit> {
             val channels = channels.first()
@@ -77,8 +88,23 @@ class TdlibChannelFeedRepository
                         .awaitAll()
                 }
             val loaded = results.mapNotNull { (id, posts) -> (posts as? Outcome.Success)?.let { id to it.value } }
-            read.update { it + loaded }
+            held.updateRead { it + loaded }
             return if (loaded.isEmpty()) results.first().second.map {} else Outcome.Success(Unit)
+        }
+
+        override suspend fun refresh(posts: Map<Long, List<Long>>): Outcome<Unit> {
+            if (posts.isEmpty()) return Outcome.Success(Unit)
+            val results =
+                posts.map { (chatId, ids) ->
+                    client.request(TdApi.GetMessages(chatId, ids.toLongArray())).map { found ->
+                        // TDLib answers in the order asked, null where a message is gone.
+                        val missing = ids.filterIndexed { index, _ -> found.messages.getOrNull(index) == null }
+                        val messages = found.messages.filterNotNull().map { it.toMessage() }
+                        held.drop(chatId, missing)
+                        held.put(chatId, messages)
+                    }
+                }
+            return results.firstOrNull { it is Outcome.Success } ?: results.first()
         }
 
         override suspend fun view(
@@ -93,7 +119,7 @@ class TdlibChannelFeedRepository
         private suspend fun readSinceRead(channels: List<Chat>) {
             channels.filter(::hasUnreadNewPosts).forEach { channel ->
                 (newest(channel.id) as? Outcome.Success)?.value?.let { posts ->
-                    read.update { read ->
+                    held.updateRead { read ->
                         val known = read[channel.id].orEmpty()
                         read + (channel.id to (posts + known).distinctBy(Message::id).take(PAGE))
                     }
@@ -103,7 +129,7 @@ class TdlibChannelFeedRepository
 
         /** Whether [channel] was read before and its last post is newer than every post read. */
         private fun hasUnreadNewPosts(channel: Chat): Boolean {
-            val known = read.value[channel.id]
+            val known = held.read.value[channel.id]
             val last = channel.lastMessage
             return known != null && last != null && known.none { it.id >= last.id }
         }
