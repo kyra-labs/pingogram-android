@@ -165,12 +165,12 @@ The owner's decision of 2026-11-08: these items from the Settings pages' redesig
 
 The owner's decision of 2026-11-17 (`REQUIREMENTS.md` §5.10, ADR 0039):
 
-- [ ] Backup and restore (ADR 0039)
+- [x] Backup and restore (ADR 0039)
 - [x] Mentions & replies page (FR-X1)
 - [x] Snippets (FR-X2)
 - [x] Add to calendar, open in maps (FR-X3)
 - [x] Skip silence in voice and round video messages (FR-X4)
-- [ ] Channel feed (FR-X5)
+- [x] Channel feed (FR-X5)
 
 ## After v2.4.0
 
@@ -184,5 +184,8 @@ The owner's decision of 2026-11-19:
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
 reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion, composing rich messages
 (the rich text editor, owner 2026-11-11: Pingogram shows them, `docs/audit/feature-gaps-telegram-2026.md`).
+
+- [ ] Reaction notifications, once TDLib handles reaction pushes (owner decision 2026-11-19; `docs/TDLIB.md`,
+  "Reaction and poll-vote notifications")
 
 Features other clients have, with verdicts and priorities: `docs/audit/feature-gaps-octogram.md` (2026-10-24).
