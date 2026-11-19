@@ -81,8 +81,11 @@ class FakeSearchRepository : SearchRepository {
         query: String,
         offset: String?,
         filter: MessageSearchFilter,
+        inChannels: Boolean,
     ): Outcome<FoundMessages> {
-        val call = "messages:$query:$offset" + if (filter == MessageSearchFilter.All) "" else ":$filter"
+        val call =
+            "messages:$query:$offset" + (if (filter == MessageSearchFilter.All) "" else ":$filter") +
+                if (inChannels) ":channels" else ""
         return record(call) {
             when (val page = onSearchMessages(query, offset)) {
                 is Outcome.Success -> Outcome.Success(page.value.copy(totalCount = totalCounts[filter]))
