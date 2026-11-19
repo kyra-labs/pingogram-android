@@ -236,6 +236,12 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
     channel's newest post), looking and acting as in the channel: its label and buttons, its view reported when shown
     and its click when tapped, never dimmed, shrunk or left out.
   - "Mark all as read" asks first when it would mark 20 or more posts.
+  Owner decisions of 2026-11-19:
+  - Older posts stay current without opening the channels and without timers or polling: the feed takes whatever
+    updates TDLib sends for its posts (reactions and views, edits, deletions), reads a post again (`getMessages`)
+    right after the user reacts to it from the feed, and reads the posts on screen again, one call per channel,
+    whenever the feed comes back into view or is pulled to refresh. A post `getMessages` no longer returns leaves the
+    feed. A long press offers the reactions bar above the lifted card.
 - FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,

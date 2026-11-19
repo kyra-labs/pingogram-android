@@ -350,6 +350,13 @@ class FeedViewModelTest {
             return nextLoad?.also { nextLoad = null }?.await() ?: result
         }
 
+        val refreshed = mutableListOf<Map<Long, List<Long>>>()
+
+        override suspend fun refresh(posts: Map<Long, List<Long>>): Outcome<Unit> {
+            refreshed += posts
+            return Outcome.Success(Unit)
+        }
+
         override suspend fun view(
             chatId: Long,
             messageIds: List<Long>,
