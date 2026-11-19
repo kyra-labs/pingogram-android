@@ -205,14 +205,14 @@ internal object BackupFile {
  * The key of a backup: [key] made from the user's password with [salt] and [rounds] ([BackupCipher.key]), which the
  * file's header keeps, so the password alone opens it again.
  */
-internal class BackupKey(
+class BackupKey(
     val key: SecretKey,
     val salt: ByteArray,
     val rounds: Int,
 ) {
     companion object {
         /** A new key for [password], with a new salt and the rounds this app uses. Slow: off the main thread. */
-        fun of(password: String): BackupKey {
+        internal fun of(password: String): BackupKey {
             val salt = BackupCipher.newSalt()
             return BackupKey(BackupCipher.key(password, salt, BackupCipher.ROUNDS), salt, BackupCipher.ROUNDS)
         }

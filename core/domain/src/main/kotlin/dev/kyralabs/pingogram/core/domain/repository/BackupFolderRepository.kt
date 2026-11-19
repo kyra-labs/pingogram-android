@@ -24,7 +24,8 @@ interface BackupFolderRepository {
 
     /**
      * Writes a backup encrypted with [password] into the kept folder as "Pingogram backup YYYY-MM-DD.pgbackup" and
-     * answers it; fails with `DomainError.FileUnavailable` without a folder, or if the file cannot be written (nothing
+     * answers it, then keeps the password's key for automatic backups ([AutomaticBackupRepository]), never the
+     * password; fails with `DomainError.FileUnavailable` without a folder, or if the file cannot be written (nothing
      * half-written is left).
      */
     suspend fun backUp(password: String): Outcome<BackupFileInfo>

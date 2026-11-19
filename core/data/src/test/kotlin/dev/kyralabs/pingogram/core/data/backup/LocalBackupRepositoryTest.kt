@@ -142,6 +142,24 @@ class LocalBackupRepositoryTest {
         }
 
     @Test
+    fun `a backup written with a password's key is opened by that password`() =
+        runTest {
+            val repository = repository(Account(USER).withData())
+            val key = BackupKey.of(PASSWORD)
+
+            val automatic = ByteArrayOutputStream().also { repository.write(it, key) }.toByteArray()
+
+            val opened = repository.open(automatic.inputStream(), PASSWORD) as BackupOpening.Opened
+            assertEquals(
+                setOf(USER),
+                opened.backup.accounts
+                    .map { it.userId }
+                    .toSet(),
+            )
+            assertEquals(BackupOpening.WrongPassword, repository.open(automatic.inputStream(), "guess"))
+        }
+
+    @Test
     fun `another password does not open it`() =
         runTest {
             val repository = repository(Account(USER).withData())

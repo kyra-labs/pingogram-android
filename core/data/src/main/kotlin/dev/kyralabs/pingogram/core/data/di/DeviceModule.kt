@@ -7,8 +7,11 @@ import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.account.AccountsSignedInUsers
 import dev.kyralabs.pingogram.core.data.account.SignedInUsers
 import dev.kyralabs.pingogram.core.data.backup.AndroidBackupDocuments
+import dev.kyralabs.pingogram.core.data.backup.AndroidBackupKeyStore
 import dev.kyralabs.pingogram.core.data.backup.BackupDocuments
+import dev.kyralabs.pingogram.core.data.backup.BackupKeyStore
 import dev.kyralabs.pingogram.core.data.backup.DocumentBackupFolderRepository
+import dev.kyralabs.pingogram.core.data.backup.KeystoreAutomaticBackupRepository
 import dev.kyralabs.pingogram.core.data.backup.LocalBackupRepository
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
@@ -31,6 +34,7 @@ import dev.kyralabs.pingogram.core.data.transcription.AndroidVoiceTranscriber
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.AutomaticBackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
@@ -77,6 +81,12 @@ interface DeviceModule {
 
     @Binds
     fun backupFolderRepository(repository: DocumentBackupFolderRepository): BackupFolderRepository
+
+    @Binds
+    fun backupKeyStore(keys: AndroidBackupKeyStore): BackupKeyStore
+
+    @Binds
+    fun automaticBackupRepository(repository: KeystoreAutomaticBackupRepository): AutomaticBackupRepository
 
     /** The demo is the device's: it shows instead of the accounts while it is on (docs/adr/0034). */
     @Binds

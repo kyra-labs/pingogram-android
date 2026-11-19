@@ -55,6 +55,12 @@ class LocalBackupRepository
         override suspend fun write(
             output: OutputStream,
             password: String,
+        ): Outcome<BackupHeader> = withContext(io) { write(output, BackupKey.of(password)) }
+
+        /** Writes a backup into [output] with [key], made from a password: automatic backups' kept one. */
+        internal suspend fun write(
+            output: OutputStream,
+            key: BackupKey,
         ): Outcome<BackupHeader> =
             withContext(io) {
                 val sections = accounts.accounts.first().mapNotNull { backupOf(it.repositories) }
@@ -74,7 +80,7 @@ class LocalBackupRepository
                         .put(SETTINGS, settings.backedUpSettings().toSettingsJson())
                         .put(ACCOUNTS, JSONArray(sections.map { it.toJson() }))
                 try {
-                    BackupFile.write(output, header, BackupKey.of(password), body.toString())
+                    BackupFile.write(output, header, key, body.toString())
                     Outcome.Success(header)
                 } catch (error: IOException) {
                     Outcome.Failure(DomainError.Unknown(code = 0, message = "Backup not written: ${error.message}"))

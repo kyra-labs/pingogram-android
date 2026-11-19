@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.io.OutputStream
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,8 +30,8 @@ import javax.inject.Singleton
 /**
  * [BackupFolderRepository] on [documents], the Storage Access Framework: the folder's tree URI kept in [settings], its
  * grant kept for good once picked (and given back when another one is), its backups the files whose name ends with
- * ".pgbackup", the newest first. Written and read through [backups], on the [io] dispatcher. Nothing about the folder
- * or its files is logged.
+ * ".pgbackup", the newest first. Written and read through [backups], on the [io] dispatcher; a backup the user writes
+ * keeps its password's key in [keys] for automatic backups. Nothing about the folder or its files is logged.
  */
 @Singleton
 class DocumentBackupFolderRepository
@@ -39,6 +40,7 @@ class DocumentBackupFolderRepository
         private val documents: BackupDocuments,
         private val backups: BackupRepository,
         private val settings: BackupSettingsRepository,
+        private val keys: BackupKeyStore,
         private val clock: WallClock,
         @param:Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : BackupFolderRepository {
@@ -67,14 +69,18 @@ class DocumentBackupFolderRepository
             }
 
         override suspend fun backUp(password: String): Outcome<BackupFileInfo> =
+            backUp { backups.write(it, password) }.also { written ->
+                // Its key, kept for automatic backups; never the password.
+                if (written is Outcome.Success) withContext(io) { keys.keep(BackupKey.of(password)) }
+            }
+
+        /** Writes a dated backup into the kept folder with [write]; a file that fails is deleted. */
+        internal suspend fun backUp(write: suspend (OutputStream) -> Outcome<BackupHeader>): Outcome<BackupFileInfo> =
             withContext(io) {
                 val treeUri = settings.folderUri.first()
                 val date = clock.now().atZone(clock.zone()).toLocalDate()
                 val document = treeUri?.let { guardedOrNull { documents.create(it, "$NAME $date$EXTENSION") } }
-                val written =
-                    document?.let { file ->
-                        guardedOrNull { documents.openOutput(file).use { backups.write(it, password) } }
-                    }
+                val written = document?.let { file -> guardedOrNull { documents.openOutput(file).use { write(it) } } }
                 val info = document?.takeIf { written is Outcome.Success }?.let { guardedOrNull { documents.file(it) } }
                 if (document != null && info == null) guarded { documents.delete(document) }
                 changes.update { it + 1 }
@@ -99,6 +105,15 @@ class DocumentBackupFolderRepository
                 guardedOrNull { documents.openInput(document).use { backups.open(it, password) } }
                     ?: BackupOpening.NotABackup
             }
+
+        /** Deletes the kept folder's backups but the newest [kept]; what cannot be deleted stays. */
+        internal suspend fun prune(kept: Int) {
+            withContext(io) {
+                val treeUri = settings.folderUri.first() ?: return@withContext
+                read(treeUri)?.backups?.drop(kept)?.forEach { guarded { documents.delete(it.document) } }
+                changes.update { it + 1 }
+            }
+        }
 
         /** Folder [treeUri] with its backups; null when it is gone or its grant was taken back. */
         private fun read(treeUri: String): BackupFolder? =
