@@ -27,7 +27,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   you, unread ones first; each opens its chat at the message.
 - Feed: with two or more channels, a Feed tab starts the folder tabs and opens the newest posts from the channels you
   follow as one list, unread ones first. A post counts as read once you have seen it for a second, as in the
-  channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
+  channel, and "Open in channel" opens it there. Hide the tab in Settings → Chat folders → "Show Feed tab".
 - On tablets and other wide windows, the Feed opens in the chat list's place, and a post opens its channel beside it,
   outlined while its channel shows.
 - Search in the Feed finds posts in your channels, only in the channels the Feed's filter shows while it is on, and
@@ -61,6 +61,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   theme too; row titles are a little bolder, and every switch shows a × while it is off.
 - Settings has a Chats page, after Appearance: sending, voice messages, Swipe actions and Chats shown first moved there
   from Appearance, which keeps how things look. The message text size is set on Chat appearance only.
+- The folder tabs' settings (what the tabs show, the Edit folders button and the Feed tab) moved to Chat folders.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

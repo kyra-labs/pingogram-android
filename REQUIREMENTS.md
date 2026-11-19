@@ -232,7 +232,7 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   once and remembered for the app for whatever plays next; music plays at 1×.
 - FR-X5 Should: **Channel feed.** The user's channels as one timeline, newest posts first, each post with its channel
   and "Open in channel", laid out as the owner's design board shows. Owner decisions of 2026-11-18:
-  - A "Feed" folder tab shows once the user follows 2 or more channels; Appearance → Chat list → "Show Feed tab" (on
+  - A "Feed" folder tab shows once the user follows 2 or more channels; Settings → Chat folders → "Show Feed tab" (on
     by default) hides it.
   - A post counts as read once 60% of it is on screen for 1 second, as in the channel, and is marked read there.
   - Each channel's sponsored message shows once per feed session, where the channel would show it (after that
