@@ -217,7 +217,7 @@ private fun SendingGroup(
             SettingsRow(
                 title = stringResource(R.string.settings_photos_original),
                 shapes = shapes,
-                icon = UiR.drawable.ic_image,
+                icon = UiR.drawable.ic_image_filled,
                 supportingContent = { Text(stringResource(R.string.settings_photos_original_summary)) },
                 trailingContent = { CheckSwitch(checked = original) },
                 onClick = {
@@ -245,7 +245,7 @@ private fun FilesItem(
     SettingsRow(
         title = stringResource(R.string.settings_storage_files),
         shapes = shapes,
-        icon = UiR.drawable.ic_folder,
+        icon = UiR.drawable.ic_folder_filled,
         supportingContent = {
             Text(
                 stringResource(
@@ -268,7 +268,7 @@ private fun DatabaseItem(
     SettingsRow(
         title = stringResource(R.string.settings_storage_database),
         shapes = shapes,
-        icon = R.drawable.ic_database,
+        icon = R.drawable.ic_database_filled,
         supportingContent = {
             Text(
                 stringResource(

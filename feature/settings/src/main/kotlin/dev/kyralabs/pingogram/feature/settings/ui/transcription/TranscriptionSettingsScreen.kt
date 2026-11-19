@@ -112,7 +112,7 @@ internal fun TranscriptionSettingsScreen(
                         SettingsRow(
                             title = stringResource(R.string.settings_transcription_unavailable),
                             shapes = shapes,
-                            icon = R.drawable.ic_info,
+                            icon = R.drawable.ic_info_filled,
                             supportingContent = {
                                 Text(
                                     stringResource(R.string.settings_transcription_unavailable_summary),
@@ -167,7 +167,7 @@ private fun Privacy() {
             SettingsRow(
                 title = stringResource(R.string.settings_transcription_privacy_title),
                 shapes = shapes,
-                icon = R.drawable.ic_shield,
+                icon = R.drawable.ic_shield_filled,
                 supportingContent = { Text(stringResource(R.string.settings_transcription_privacy)) },
             )
         }
@@ -219,7 +219,7 @@ private fun Languages(
             SettingsRow(
                 title = stringResource(R.string.settings_transcription_language_settings),
                 shapes = shapes,
-                icon = UiR.drawable.ic_settings,
+                icon = UiR.drawable.ic_settings_filled,
                 supportingContent = { Text(stringResource(R.string.settings_transcription_language_settings_summary)) },
                 trailingContent = { Icon(painterResource(R.drawable.ic_open_in_new), contentDescription = null) },
                 onClick = { onEvent(TranscriptionSettingsEvent.OpenLanguageSettings) },

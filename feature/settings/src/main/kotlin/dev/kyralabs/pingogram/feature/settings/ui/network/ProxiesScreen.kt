@@ -13,7 +13,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsHeroSwitch
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -205,7 +205,7 @@ private fun ProxyRow(
 ) {
     val proxy = item.proxy
     val title = proxyTitle(proxy)
-    SegmentedListItem(
+    SettingsListItem(
         selected = proxy.isEnabled,
         onClick = onUse,
         shapes = shapes,

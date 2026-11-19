@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -119,7 +120,13 @@ internal fun SettingsPageFrame(
                 title = title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    if (backButton) RoundBackButton(label = stringResource(R.string.settings_back), onClick = onBack)
+                    if (backButton) {
+                        RoundBackButton(
+                            label = stringResource(R.string.settings_back),
+                            onClick = onBack,
+                            modifier = Modifier.padding(start = barEdgeInset(), end = MaterialTheme.spacing.large),
+                        )
+                    }
                 },
                 actions = actions,
             )
@@ -163,7 +170,13 @@ internal fun SettingsTopBar(
                     .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                     .padding(horizontal = extraMargin),
             navigationIcon = navigationIcon,
-            actions = actions,
+            actions = {
+                Row(
+                    modifier = Modifier.padding(end = barEdgeInset()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions,
+                )
+            },
             collapsedHeight = TopAppBarDefaults.MediumAppBarCollapsedHeight,
             expandedHeight = settingsTopBarExpandedHeight(),
             colors =
@@ -262,8 +275,8 @@ internal fun SettingsContent(
 }
 
 /**
- * A group's [title]: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3), `spacing.small`
- * in from the rows' edge, as its footer ([SettingsFooter]).
+ * A group's [title]: a heading in `titleSmall` and `primary` (`docs/DESIGN_SYSTEM.md` §6, owner decision 2026-11-19),
+ * `spacing.small` in from the rows' edge, as its footer ([SettingsFooter]).
  */
 @Composable
 internal fun SettingsSectionHeader(
@@ -277,7 +290,7 @@ internal fun SettingsSectionHeader(
                 .padding(start = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.small)
                 .semantics { heading() },
         color = MaterialTheme.colorScheme.primary,
-        style = MaterialTheme.typography.titleSmallEmphasized,
+        style = MaterialTheme.typography.titleSmall,
     )
 }
 

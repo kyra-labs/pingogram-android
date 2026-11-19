@@ -43,7 +43,7 @@ internal fun AccountGroup(
             PageItem(
                 title = stringResource(R.string.settings_auto_delete),
                 summary = autoDeleteText(autoDeleteSeconds),
-                icon = UiR.drawable.ic_timer,
+                icon = UiR.drawable.ic_timer_filled,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.AutoDelete) },
             )
@@ -52,7 +52,7 @@ internal fun AccountGroup(
             PageItem(
                 title = stringResource(R.string.settings_delete_account),
                 summary = stringResource(R.string.settings_delete_account_summary, ttlText(accountTtlDays)),
-                icon = UiR.drawable.ic_delete,
+                icon = UiR.drawable.ic_delete_filled,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
             )

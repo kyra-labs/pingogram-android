@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.SnackbarHostState
@@ -218,7 +217,7 @@ private fun StepSlider(
         }
     LaunchedEffect(index) { if (!sliderState.isDragging) sliderState.value = index.toFloat() }
     SettingsSegment(shapes) {
-        SegmentedListItem(shapes = shapes, supportingContent = { Text(value) }, colors = nestedItemColors()) {
+        SettingsListItem(shapes = shapes, supportingContent = { Text(value) }, colors = nestedItemColors()) {
             Text(title)
         }
         Slider(

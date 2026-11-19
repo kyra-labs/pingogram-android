@@ -221,7 +221,7 @@ internal fun SettingsRow(
             { SettingsItemIcon(it, iconTone ?: SettingsIconTone.Category, enabled, selected = selected == true) }
         } ?: leading
     if (onClick != null && selected != null) {
-        SegmentedListItem(
+        SettingsListItem(
             selected = selected,
             onClick = onClick,
             shapes = shapes,
@@ -235,7 +235,7 @@ internal fun SettingsRow(
             Text(title)
         }
     } else if (onClick != null) {
-        SegmentedListItem(
+        SettingsListItem(
             onClick = onClick,
             shapes = shapes,
             modifier = modifier,
@@ -248,7 +248,7 @@ internal fun SettingsRow(
             Text(title)
         }
     } else {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = shapes,
             modifier = modifier,
             enabled = enabled,

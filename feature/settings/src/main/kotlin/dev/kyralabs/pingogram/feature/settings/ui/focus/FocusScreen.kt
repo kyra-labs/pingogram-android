@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +53,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
@@ -172,7 +172,7 @@ private fun FocusProfileRow(
         }
     val how = item.schedule?.let { scheduleText(it) } ?: stringResource(R.string.settings_focus_by_hand)
     val allows = allowsText(item)
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onOpen,
         shapes = shapes,
         colors = rowColors,
@@ -283,7 +283,7 @@ private fun WhileOnGroup(
             SettingsRow(
                 title = stringResource(R.string.settings_focus_in_chat_list),
                 shapes = shapes,
-                icon = UiR.drawable.ic_chat,
+                icon = UiR.drawable.ic_chat_filled,
                 supportingContent = { Text(stringResource(R.string.settings_focus_in_chat_list_summary)) },
                 trailingContent = { CheckSwitch(checked = showsInChatList) },
                 onClick = {

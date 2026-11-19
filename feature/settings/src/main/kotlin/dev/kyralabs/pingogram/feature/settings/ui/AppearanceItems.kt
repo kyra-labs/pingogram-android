@@ -71,7 +71,7 @@ internal fun ContrastItem(
             else -> null
         }
     SettingsSegment(shapes) {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = ListItemDefaults.shapes(),
             supportingContent = note?.let { { Text(it) } },
             colors = nestedItemColors(),
@@ -227,7 +227,7 @@ internal fun RadioItem(
     colors: ListItemColors = settingsRowColors(),
     labelLanguage: String? = null,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         selected = selected,
         onClick = onClick,
         shapes = shapes,
@@ -267,7 +267,7 @@ internal fun SwitchItem(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
-    SegmentedListItem(
+    SettingsListItem(
         onClick = {
             haptics.performToggle(!checked)
             onCheckedChange(!checked)

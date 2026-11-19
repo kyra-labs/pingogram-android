@@ -9,7 +9,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -45,6 +44,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PickerDone
 import dev.kyralabs.pingogram.feature.settings.ui.PickerSearchField
 import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -151,7 +151,7 @@ private fun ShownFirstItem(
     val removeLabel = stringResource(R.string.shown_first_remove_label, chat.title.bidiIsolated())
     val moveUp = stringResource(R.string.settings_chat_folders_move_up)
     val moveDown = stringResource(R.string.settings_chat_folders_move_down)
-    SegmentedListItem(
+    SettingsListItem(
         modifier =
             Modifier.semantics {
                 customActions =

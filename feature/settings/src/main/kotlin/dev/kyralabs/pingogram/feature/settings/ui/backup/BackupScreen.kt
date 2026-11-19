@@ -157,7 +157,7 @@ private fun Folder(
             SettingsRow(
                 title = stringResource(R.string.backup_folder),
                 shapes = shapes,
-                icon = UiR.drawable.ic_folder,
+                icon = UiR.drawable.ic_folder_filled,
                 supportingContent = { Text(folderName ?: stringResource(R.string.backup_folder_none)) },
                 trailingContent = {
                     TextButton(onClick = onPickFolder) {
@@ -199,7 +199,7 @@ private fun BackUpNow(
             SettingsRow(
                 title = stringResource(R.string.backup_now),
                 shapes = shapes,
-                icon = UiR.drawable.ic_history,
+                icon = UiR.drawable.ic_settings_backup_restore,
                 supportingContent = { Text(lastBackup) },
                 trailingContent =
                     if (state.backingUp) {

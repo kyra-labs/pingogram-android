@@ -20,7 +20,6 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +55,7 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsBody
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageFrame
@@ -219,7 +219,7 @@ internal fun AvailableSetRow(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onOpen,
         shapes = shapes,
         modifier = modifier,

@@ -7,7 +7,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
@@ -188,7 +187,7 @@ private fun SizeLimitSegment(
         }
     LaunchedEffect(index) { if (!sliderState.isDragging) sliderState.value = index.toFloat() }
     SettingsSegment(shapes) {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = shapes,
             enabled = enabled,
             supportingContent = { Text(limitText) },

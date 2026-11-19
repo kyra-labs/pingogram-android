@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Rounded "settings_backup_restore" (wght 400, GRAD 0, opsz 24, FILL 0), Apache License 2.0:
+     https://fonts.google.com/icons. Generated from the variable font's glyph at those axes (npm material-symbols
+     0.49.0); the group moves its viewBox (0 -960 960 960) to 0,0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M480 -120Q354 -120 257 -196.5Q160 -273 131 -392Q127 -407 137 -419.5Q147 -432 164 -434Q180 -436 193 -428Q206 -420 211 -404Q235 -314 310 -257Q385 -200 480 -200Q597 -200 678.5 -281.5Q760 -363 760 -480Q760 -597 678.5 -678.5Q597 -760 480 -760Q411 -760 351 -728Q291 -696 250 -640H320Q337 -640 348.5 -628.5Q360 -617 360 -600Q360 -583 348.5 -571.5Q337 -560 320 -560H160Q143 -560 131.5 -571.5Q120 -583 120 -600V-760Q120 -777 131.5 -788.5Q143 -800 160 -800Q177 -800 188.5 -788.5Q200 -777 200 -760V-706Q251 -770 324.5 -805Q398 -840 480 -840Q555 -840 620.5 -811.5Q686 -783 734.5 -734.5Q783 -686 811.5 -620.5Q840 -555 840 -480Q840 -405 811.5 -339.5Q783 -274 734.5 -225.5Q686 -177 620.5 -148.5Q555 -120 480 -120ZM480 -400Q447 -400 423.5 -423.5Q400 -447 400 -480Q400 -513 423.5 -536.5Q447 -560 480 -560Q513 -560 536.5 -536.5Q560 -513 560 -480Q560 -447 536.5 -423.5Q513 -400 480 -400Z" />
+    </group>
+</vector>

@@ -12,7 +12,7 @@ internal fun SettingsGroupScope.passkeysItem(onClick: () -> Unit) =
         PageItem(
             title = stringResource(R.string.settings_passkeys),
             summary = stringResource(R.string.settings_passkeys_summary),
-            icon = UiR.drawable.ic_key,
+            icon = UiR.drawable.ic_key_filled,
             shapes = shapes,
             onClick = onClick,
         )

@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -65,9 +64,9 @@ internal fun CallsGroup(
     SettingsGroup(title = stringResource(R.string.settings_section_calls)) {
         item { shapes ->
             SettingsSegment(shapes) {
-                SegmentedListItem(
+                SettingsListItem(
                     shapes = ListItemDefaults.shapes(),
-                    leadingContent = { SettingsItemIcon(UiR.drawable.ic_call) },
+                    leadingContent = { SettingsItemIcon(UiR.drawable.ic_call_filled) },
                     supportingContent = { Text(stringResource(R.string.settings_call_data_saving_summary)) },
                     colors = nestedItemColors(),
                 ) {

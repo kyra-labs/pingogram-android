@@ -20,7 +20,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -51,6 +50,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsItemIcon
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
@@ -212,7 +212,7 @@ private fun FolderRow(
     val moveUp = stringResource(R.string.settings_chat_folders_move_up)
     val moveDown = stringResource(R.string.settings_chat_folders_move_down)
     val rowShapes = if (dragged) shapes.copy(shape = shapes.draggedShape) else shapes
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onClick,
         shapes = rowShapes,
         modifier =
@@ -263,7 +263,7 @@ private fun RecommendedFolderRow(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
         modifier = modifier,
         leadingContent = { SettingsItemIcon(folderIconDrawable(folder.iconName)) },
@@ -327,9 +327,9 @@ internal val ChatFolderIncludedType.label: Int
 internal val ChatFolderIncludedType.icon: Int
     get() =
         when (this) {
-            ChatFolderIncludedType.Contacts -> UiR.drawable.ic_contacts
+            ChatFolderIncludedType.Contacts -> UiR.drawable.ic_contacts_filled
             ChatFolderIncludedType.NonContacts -> UiR.drawable.ic_person_filled
-            ChatFolderIncludedType.Groups -> UiR.drawable.ic_chat
+            ChatFolderIncludedType.Groups -> UiR.drawable.ic_chat_filled
             ChatFolderIncludedType.Channels -> UiR.drawable.ic_public
             ChatFolderIncludedType.Bots -> UiR.drawable.ic_tag
         }

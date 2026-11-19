@@ -20,7 +20,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -60,6 +59,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
@@ -179,7 +179,7 @@ private fun ReminderItem(
     val delete = { onEvent(RemindersEvent.Delete(row.chatId, row.messageId)) }
     val title = row.chatTitle.ifEmpty { stringResource(R.string.reminders_unknown_chat) }
     ReminderSwipe(shapes.shape, ReminderSwipeLabels(doneLabel, deleteLabel), onDone = done, onDelete = delete) {
-        SegmentedListItem(
+        SettingsListItem(
             onClick = { onEvent(RemindersEvent.Open(row.chatId, row.messageId)) },
             shapes = shapes,
             colors = settingsRowColors(),

@@ -21,7 +21,6 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -50,6 +49,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.DestructiveDialogTexts
 import dev.kyralabs.pingogram.feature.settings.ui.RadioItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroupScope
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
 import dev.kyralabs.pingogram.feature.settings.ui.account.StepProgress
@@ -198,7 +198,7 @@ internal fun FolderChatsGroup(
                             ),
                         ),
                     shapes = shapes,
-                    icon = if (included) UiR.drawable.ic_add else UiR.drawable.ic_visibility_off,
+                    icon = if (included) UiR.drawable.ic_add else UiR.drawable.ic_visibility_off_filled,
                     onClick = { onEvent(ChatFolderEditEvent.OpenPicker(side)) },
                     enabled = !state.isBusy,
                 )
@@ -270,7 +270,7 @@ private fun FolderChatRow(
     busy: Boolean,
     onRemove: () -> Unit,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
         leadingContent = {
             Avatar(photo = chat.photo, name = chat.title, id = chat.chatId, size = MaterialTheme.sizes.avatarSmall)
@@ -374,9 +374,9 @@ internal val ChatFolderExcludedType.label: Int
 internal val ChatFolderExcludedType.icon: Int
     get() =
         when (this) {
-            ChatFolderExcludedType.Muted -> UiR.drawable.ic_notifications_off
+            ChatFolderExcludedType.Muted -> UiR.drawable.ic_notifications_off_filled
             ChatFolderExcludedType.Read -> UiR.drawable.ic_done_all
-            ChatFolderExcludedType.Archived -> UiR.drawable.ic_archive
+            ChatFolderExcludedType.Archived -> UiR.drawable.ic_archive_filled
         }
 
 /** [ifTrue] if [condition], else [ifFalse]: the string of one of two states. */

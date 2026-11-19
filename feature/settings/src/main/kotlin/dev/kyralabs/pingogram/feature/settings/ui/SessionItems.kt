@@ -15,7 +15,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,7 +68,7 @@ internal fun SessionRow(
     }
     if (onClick != null) {
         val terminate = stringResource(R.string.settings_session_terminate)
-        SegmentedListItem(
+        SettingsListItem(
             onClick = onClick,
             // Names what a tap does; the list item's click supplies the action.
             modifier = Modifier.semantics { onClick(label = terminate, action = null) },
@@ -84,7 +83,7 @@ internal fun SessionRow(
             Text(text = session.title.resolve(), style = LocalTextStyle.current.userContent)
         }
     } else {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = shapes,
             leadingContent = leading,
             trailingContent = trailing,
@@ -252,12 +251,12 @@ internal fun ThisDeviceCard(session: SessionItem) {
 @DrawableRes
 internal fun SessionDevice.iconRes(): Int =
     when (this) {
-        SessionDevice.Phone -> UiR.drawable.ic_smartphone
-        SessionDevice.Tablet -> R.drawable.ic_tablet
-        SessionDevice.Desktop -> R.drawable.ic_computer
+        SessionDevice.Phone -> UiR.drawable.ic_smartphone_filled
+        SessionDevice.Tablet -> R.drawable.ic_tablet_filled
+        SessionDevice.Desktop -> R.drawable.ic_computer_filled
         SessionDevice.Browser -> R.drawable.ic_language
-        SessionDevice.GameConsole -> UiR.drawable.ic_sports_esports
-        SessionDevice.Unknown -> R.drawable.ic_devices
+        SessionDevice.GameConsole -> UiR.drawable.ic_sports_esports_filled
+        SessionDevice.Unknown -> R.drawable.ic_devices_filled
     }
 
 // Telegram offers a week, 1, 3 or 6 months of 30 days and a year of 365 days for the inactive session TTL.

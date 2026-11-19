@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,7 +36,7 @@ internal fun PhoneNumberSection(
     val formatted = phoneNumberToShow(formatPhoneNumber(phoneNumber, locale?.country.orEmpty()))
     FieldGroup(title = stringResource(R.string.settings_section_profile_phone)) {
         val label = stringResource(R.string.settings_edit_profile_change_number_label, formatted.bidiIsolated())
-        SegmentedListItem(
+        SettingsListItem(
             shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
             colors = settingsRowColors(),
             trailingContent = {

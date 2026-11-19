@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui.home
 import android.text.format.Formatter
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -18,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.theme.CategoryHue
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageSelection
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
@@ -88,7 +88,7 @@ internal fun HomeEntryRow(
             }
         }
     if (selected != null) {
-        SegmentedListItem(
+        SettingsListItem(
             selected = selected,
             onClick = onClick,
             shapes = shapes,
@@ -98,7 +98,7 @@ internal fun HomeEntryRow(
             colors = settingsRowColors(),
         ) { Text(stringResource(entry.title)) }
     } else {
-        SegmentedListItem(
+        SettingsListItem(
             onClick = onClick,
             shapes = shapes,
             leadingContent = leading,
