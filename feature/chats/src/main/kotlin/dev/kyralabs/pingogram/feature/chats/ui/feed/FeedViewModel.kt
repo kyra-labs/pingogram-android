@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
@@ -131,7 +132,31 @@ class FeedViewModel internal constructor(
             is FeedEvent.SetFilter -> setFilter(event.filter)
             is FeedEvent.Act -> act(event)
             is FeedEvent.MarkAllAsRead -> markAllAsRead(event.chosen)
+            is FeedEvent.Refresh -> refresh(event)
             is FeedAdEvent -> sponsored.onEvent(event)
+        }
+    }
+
+    private val mutableRefreshing = MutableStateFlow(false)
+
+    /** A pull to refresh is under way: the indicator shows. */
+    val refreshing: StateFlow<Boolean> = mutableRefreshing.asStateFlow()
+
+    /** Reads the posts of cards [FeedEvent.Refresh.keys] again, one call per channel; nothing if none is shown. */
+    private fun refresh(event: FeedEvent.Refresh) {
+        val content = uiState.value.content as? FeedContent.Posts ?: return
+        val keys = event.keys.toSet()
+        val posts =
+            (content.unread + content.read)
+                .filter { it.key in keys }
+                .groupBy(FeedPost::chatId)
+                .mapValues { (_, cards) -> cards.flatMap(FeedPost::messageIds) }
+        if (posts.isEmpty()) return
+        viewModelScope.launch {
+            if (event.pulled) mutableRefreshing.value = true
+            val outcome = repository.refresh(posts)
+            mutableRefreshing.value = false
+            if (event.pulled && outcome is Outcome.Failure) effectChannel.trySend(FeedEffect.ShowError(outcome.error))
         }
     }
 

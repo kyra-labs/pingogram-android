@@ -337,6 +337,24 @@ class FeedViewModelTest {
             )
         }
 
+    @Test
+    fun `refreshing reads the shown posts again by channel, the indicator only while pulled`() =
+        runTest {
+            feed(post(1, 12), post(1, 11), post(2, 25))
+            val viewModel = viewModel()
+            val refreshing = mutableListOf<Boolean>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.refreshing.toList(refreshing) }
+
+            send(viewModel, FeedEvent.Refresh(listOf("1:12", "ad:1:9", "2:25", "caughtUp"), pulled = false))
+            send(viewModel, FeedEvent.Refresh(listOf("1:11"), pulled = true))
+
+            assertEquals(
+                listOf(mapOf(1L to listOf(12L), 2L to listOf(25L)), mapOf(1L to listOf(11L))),
+                repository.refreshed,
+            )
+            assertEquals(listOf(false, true, false), refreshing)
+        }
+
     /** A feed set by the test; loading answers [result], or once [nextLoad] when set; seen posts are recorded. */
     private class FakeChannelFeedRepository : ChannelFeedRepository {
         override val feed = MutableStateFlow(ChannelFeed(persistentListOf(), 0))

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
@@ -14,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.lifecycle.Lifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -218,6 +221,34 @@ class FeedScreenTest {
 
         composeRule.onNode(hasText("Astronomy Daily", substring = true) and hasClickAction()).assertIsSelected()
         composeRule.onNode(hasText("Kotlin Weekly", substring = true) and hasClickAction()).assertIsNotSelected()
+    }
+
+    @Test
+    fun `pulling the list reads the posts on screen again`() {
+        setFeed(posts(unread = listOf(FeedPreviewData.text)))
+
+        composeRule.onNode(hasScrollToIndexAction()).performTouchInput { swipeDown(startY = top, endY = bottom) }
+        composeRule.waitForIdle()
+
+        assertEquals(
+            FeedEvent.Refresh(listOf(FeedPreviewData.text.key), pulled = true),
+            events.filterIsInstance<FeedEvent.Refresh>().single(),
+        )
+    }
+
+    @Test
+    fun `coming back into view reads the posts on screen again, not on the first start`() {
+        setFeed(posts(unread = listOf(FeedPreviewData.text)))
+        assertEquals(0, events.filterIsInstance<FeedEvent.Refresh>().size)
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        composeRule.waitForIdle()
+
+        assertEquals(
+            FeedEvent.Refresh(listOf(FeedPreviewData.text.key), pulled = false),
+            events.filterIsInstance<FeedEvent.Refresh>().single(),
+        )
     }
 
     private companion object {

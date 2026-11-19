@@ -30,6 +30,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
 - On tablets and other wide windows, the Feed opens in the chat list's place, and a post opens its channel beside it,
   outlined while its channel shows.
+- The Feed keeps older posts current: their reactions, views and edits update, deleted posts go, and it checks the
+  posts on screen again when you come back to it or pull down to refresh.
 - In the Feed, a long press on a post forwards it, copies its link, bookmarks it on this phone, or marks it as read
   (or its channel as unread).
 - The Feed shows a channel's sponsored message after its newest post, labelled and as Telegram sends it, with
@@ -55,6 +57,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - "Use proxy" is a card at the top of the Proxy page.
 
 ### Fixed
+- The app no longer crashes while the chat list shows a forum that has a topic without messages.
 - With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer
   carries one account's place over to the other.
 - Transcribing a voice or round video message no longer fails again and again with "Couldn't transcribe this

@@ -64,14 +64,14 @@ class TdlibForumTopicRepositoryTest {
 
     private fun topic(
         id: Int,
-        lastMessageId: Long = id * 10L,
+        lastMessageId: Long? = id * 10L,
         isPinned: Boolean = false,
         order: Long = 0,
         unread: Int = 0,
         info: TdApi.ForumTopicInfo = info(id),
     ) = TdApi.ForumTopic(
         info,
-        message(id = lastMessageId, chatId = FORUM).inTopic(TdApi.MessageTopicForum(id)),
+        lastMessageId?.let { message(id = it, chatId = FORUM).inTopic(TdApi.MessageTopicForum(id)) },
         order,
         isPinned,
         unread,
@@ -184,6 +184,20 @@ class TdlibForumTopicRepositoryTest {
             }
             // The loaded topics hold the forum's 123 unread messages: no further page to load.
             assertEquals(1, client.sentOf<TdApi.GetForumTopics>().size)
+        }
+
+    @Test
+    fun `a topic without a last message comes last among the recent ones`() =
+        runTest {
+            client.on(
+                TdApi.GetForumTopics::class,
+                page(topic(5, lastMessageId = 50), topic(4, lastMessageId = null), topic(3, lastMessageId = 70)),
+            )
+
+            repository().recentTopics(FORUM, flowOf(0)).test {
+                assertEquals(null, awaitItem())
+                assertEquals(listOf(3, 5, 4), awaitItem()?.map { it.id })
+            }
         }
 
     @Test
@@ -312,6 +326,7 @@ class TdlibForumTopicRepositoryTest {
                     topic(3, lastMessageId = 20, isPinned = true, order = 9),
                     topic(1, info = info(1, isGeneral = true), lastMessageId = 10),
                     topic(4, lastMessageId = 95),
+                    topic(6, lastMessageId = null),
                 ),
             )
             val repository = repository()
@@ -319,7 +334,7 @@ class TdlibForumTopicRepositoryTest {
 
             assertEquals(Outcome.Success(Unit), repository.loadMore(FORUM))
 
-            assertEquals(listOf(1, 3, 4, 5), topics().topics.map { it.id })
+            assertEquals(listOf(1, 3, 4, 5, 6), topics().topics.map { it.id })
             assertTrue(topics().reachedEnd)
             val request = client.sentOf<TdApi.GetForumTopics>().single()
             assertEquals(
