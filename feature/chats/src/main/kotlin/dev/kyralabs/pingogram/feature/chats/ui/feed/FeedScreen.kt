@@ -78,6 +78,7 @@ internal fun FeedScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbars: SnackbarHostState = remember { SnackbarHostState() },
+    openPostKey: String? = null,
 ) {
     var filtering by rememberSaveable { mutableStateOf(false) }
     if (filtering) {
@@ -104,7 +105,7 @@ internal fun FeedScreen(
                 }
 
                 is FeedContent.Posts -> {
-                    FeedList(content, state.error, state.ads, onEvent, contentPadding)
+                    FeedList(content, state.error, state.ads, onEvent, contentPadding, openPostKey)
                 }
             }
         }
@@ -172,6 +173,7 @@ private fun FeedList(
     ads: ImmutableMap<Long, FeedAd>,
     onEvent: (FeedEvent) -> Unit,
     contentPadding: PaddingValues,
+    openPostKey: String? = null,
 ) {
     val viewport = remember { LayoutBoundsHolder() }
     // Each channel's ad goes after its newest card, the first of the channel in the list.
@@ -182,7 +184,13 @@ private fun FeedList(
                 .mapNotNull { first -> ads[first.chatId]?.let { first.key to it } }
                 .toMap()
         }
-    val style = CardStyle(MaterialTheme.sizes.contentMaxWidth, MaterialTheme.spacing.medium, MaterialTheme.motionScheme)
+    val style =
+        CardStyle(
+            MaterialTheme.sizes.contentMaxWidth,
+            MaterialTheme.spacing.medium,
+            MaterialTheme.motionScheme,
+            openPostKey,
+        )
     LazyColumn(
         modifier = Modifier.fillMaxSize().layoutBounds(viewport),
         contentPadding = contentPadding,
@@ -227,7 +235,12 @@ private fun LazyListScope.posts(
                 } else {
                     Modifier
                 }
-            FeedPostWithMenu(post = post, onEvent = onEvent, modifier = Modifier.card(this, style).then(seen))
+            FeedPostWithMenu(
+                post = post,
+                onEvent = onEvent,
+                modifier = Modifier.card(this, style).then(seen),
+                selected = post.key == style.openPostKey,
+            )
         }
         adAfter[post.key]?.let { ad ->
             item(key = ad.key, contentType = AD) {
@@ -241,11 +254,15 @@ private fun LazyListScope.posts(
     }
 }
 
-/** How the list's entries sit: at most [maxWidth] wide, [margin] in from the sheet's sides, on [motionScheme]. */
+/**
+ * How the list's entries sit: at most [maxWidth] wide, [margin] in from the sheet's sides, on [motionScheme]; the post
+ * keyed [openPostKey], open beside the feed, shows selected.
+ */
 private class CardStyle(
     val maxWidth: Dp,
     val margin: Dp,
     val motionScheme: MotionScheme,
+    val openPostKey: String?,
 )
 
 /** An entry of [scope], new posts sliding in on the spatial spring, at most [CardStyle.maxWidth] wide. */

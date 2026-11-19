@@ -7,7 +7,8 @@ import dev.kyralabs.pingogram.feature.chats.ui.feed.FeedRoute
 /**
  * The Channel feed (`REQUIREMENTS.md` FR-X5) in the Chats tab's list pane, where it docks on two panes
  * (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 7b): [onBack] returns to the chat list, a post opens through
- * [onOpenPost] (in the detail pane beside it), and a post's "Forward" through [onForward].
+ * [onOpenPost] (in the detail pane beside it), and a post's "Forward" through [onForward]. The post of channel
+ * [openChatId] at [openMessageId], open beside it, shows selected.
  */
 @Composable
 fun FeedPane(
@@ -15,6 +16,15 @@ fun FeedPane(
     onOpenPost: (chatId: Long, messageId: Long) -> Unit,
     onForward: (chatId: Long, messageIds: List<Long>) -> Unit,
     modifier: Modifier = Modifier,
+    openChatId: Long? = null,
+    openMessageId: Long? = null,
 ) {
-    FeedRoute(onBack = onBack, onOpenPost = onOpenPost, onForward = onForward, modifier = modifier)
+    val openPostKey = openChatId?.let { chatId -> openMessageId?.let { "$chatId:$it" } }
+    FeedRoute(
+        onBack = onBack,
+        onOpenPost = onOpenPost,
+        onForward = onForward,
+        modifier = modifier,
+        openPostKey = openPostKey,
+    )
 }
