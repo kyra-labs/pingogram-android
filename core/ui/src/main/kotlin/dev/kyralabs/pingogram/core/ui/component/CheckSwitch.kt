@@ -18,9 +18,10 @@ import dev.kyralabs.pingogram.core.ui.R
  * Material's [Switch] with a check in its thumb while on and a close mark while off (`docs/DESIGN_SYSTEM.md` §6,
  * "Settings rows"; owner decision 2026-11-19), in Material's colors: the off thumb `outline` with its mark in
  * `surfaceContainerHighest`. The check is `primary`, the track's color, rather than Material's `onPrimaryContainer`,
- * which is the thumb's own `onPrimary` with high contrast and would vanish. Every switch in the app is one. The marks are decorative: the switch's state says on or
- * off. Usually in a row that toggles it, with [onCheckedChange] null, so the row alone takes the click and screen
- * readers hear the row as the switch. [colors] replace Material's where the switch sits on a container of its own.
+ * which is the thumb's own `onPrimary` with high contrast and would vanish. Every switch in the app is one. The marks
+ * are decorative: the switch's state says on or off. Usually in a row that toggles it, with [onCheckedChange] null, so
+ * the row alone takes the click and screen readers hear the row as the switch. [colors] replace Material's where the
+ * switch sits on a container of its own.
  */
 @Composable
 fun CheckSwitch(

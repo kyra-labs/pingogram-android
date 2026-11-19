@@ -31,8 +31,9 @@ import org.robolectric.annotation.Config
 
 /**
  * The settings pages' shared parts (`docs/DESIGN_SYSTEM.md` §13.10): the round back button, the six category
- * colors' icon circles, one disabled, and switches on and off, enabled and disabled, on the page's and the rows' colors, in light, dark, AMOLED black, high contrast,
- * right to left, and with the pink, teal and monochrome themes, which the colors are harmonized toward.
+ * colors' icon circles, one disabled, and switches on and off, enabled and disabled, on the page's and the rows'
+ * colors, in light, dark, AMOLED black, high contrast, right to left, and with the pink, teal and monochrome themes,
+ * which the colors are harmonized toward.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w411dp-h891dp-xxhdpi")
