@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Badge
@@ -94,6 +95,9 @@ internal fun ChatTopBar(
             containerColor = colors.surfaceContainer,
             scrolledContainerColor = colors.surfaceContainer,
         )
+    // The last action's 40 dp circle ends on the window margin, mirroring back's arrow, which starts on it
+    // (docs/DESIGN_SYSTEM.md §7): the bar keeps spacing.extraSmall, the button's touch target another.
+    val edgePadding = PaddingValues(end = MaterialTheme.spacing.small)
     // The two bars crossfade in place, the same height; a new count changes the selection bar's title, not the bar.
     StateCrossfade(
         targetState = selectedCount,
@@ -115,6 +119,7 @@ internal fun ChatTopBar(
                 },
                 expandedHeight = titleHeight(),
                 colors = barColors,
+                contentPadding = edgePadding,
             )
         } else {
             TopAppBar(
@@ -123,6 +128,7 @@ internal fun ChatTopBar(
                 // The same height in selection mode, so entering it moves nothing.
                 expandedHeight = titleHeight(),
                 colors = barColors,
+                contentPadding = edgePadding,
             )
         }
     }
