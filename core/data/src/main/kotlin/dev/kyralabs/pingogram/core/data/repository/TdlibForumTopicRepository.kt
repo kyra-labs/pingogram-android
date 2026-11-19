@@ -491,19 +491,20 @@ internal data class ForumState(
                 compareByDescending<ForumTopic> { it.isGeneral }
                     .thenByDescending { it.isPinned }
                     .thenBy { if (it.isPinned) ranks[it.id] ?: Int.MIN_VALUE else 0 }
-                    .thenByDescending { if (it.isPinned) it.order else it.lastMessage?.id ?: 0 },
+                    .thenByDescending { if (it.isPinned) it.order else it.lastMessage?.id ?: 0L },
             )
         return ForumTopicList(sorted.toImmutableList(), reachedEnd = next == PageOffsets.END)
     }
 
-    /** The loaded topics, the newest message first. */
+    /**
+     * The loaded topics, the newest message first, those without a last message last. The fallbacks are `0L`, as the
+     * dates and ids are: an `Int` 0 beside a `Long` makes the selector compare a boxed Integer with a Long and throw.
+     */
     fun recent(): List<ForumTopic> =
         topics.values
             .sortedWith(
-                compareByDescending<ForumTopic> { it.lastMessage?.date ?: 0 }.thenByDescending {
-                    it.lastMessage?.id
-                        ?: 0
-                },
+                compareByDescending<ForumTopic> { it.lastMessage?.date ?: 0L }
+                    .thenByDescending { it.lastMessage?.id ?: 0L },
             )
 }
 
