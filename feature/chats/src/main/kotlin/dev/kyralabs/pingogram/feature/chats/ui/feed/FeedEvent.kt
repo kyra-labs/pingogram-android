@@ -55,6 +55,34 @@ sealed interface FeedAdEvent : FeedEvent {
         val id: Long,
         val isMediaClick: Boolean = false,
     ) : FeedAdEvent
+
+    /** Open "About this ad" of ad [id]. */
+    data class ShowInfo(
+        val chatId: Long,
+        val id: Long,
+    ) : FeedAdEvent
+
+    /** Close "About this ad". */
+    data object DismissInfo : FeedAdEvent
+
+    /** Report the ad "About this ad" shows. */
+    data object Report : FeedAdEvent
+
+    /** Report it again with the option at [index] of the report step. */
+    data class ChooseReportOption(
+        val index: Int,
+    ) : FeedAdEvent
+
+    /** Back from the report step to the ad's information. */
+    data object BackToInfo : FeedAdEvent
+}
+
+/** What a report of a sponsored message came to ([FeedEffect.AdNotice]), as the conversation says it. */
+enum class FeedAdNotice {
+    Reported,
+    AdsHidden,
+    PremiumRequired,
+    ReportFailed,
 }
 
 /**
@@ -92,6 +120,11 @@ sealed interface FeedEffect {
     ) : FeedEffect {
         override fun toString() = "OpenUrl(…)"
     }
+
+    /** Says what a report of a sponsored message came to. */
+    data class AdNotice(
+        val notice: FeedAdNotice,
+    ) : FeedEffect
 
     /** Says an action failed with [error]. */
     data class ShowError(
