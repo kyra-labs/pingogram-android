@@ -5,6 +5,8 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -16,9 +18,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.collections.immutable.persistentMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -186,5 +190,49 @@ class NotificationSettingsScreenTest {
         val reactionsTop =
             composeRule.onNodeWithText(string(R.string.settings_reactions)).getUnclippedBoundsInRoot().top
         assertTrue(reactionsTop > headerTop)
+    }
+
+    @Test
+    fun `while a kind's notifications are off its dependent switches stay, dimmed, and sound and exceptions work`() {
+        // The groups' notifications are off in the preview data.
+        setScreen()
+        show(R.string.settings_notifications_scope_groups)
+
+        switchRows(R.string.settings_notifications_notify)[0].assertIsOff().assertIsEnabled()
+        for (dependent in listOf(
+            R.string.settings_notifications_preview,
+            R.string.settings_notifications_mentions,
+            R.string.settings_notifications_pinned,
+        )) {
+            switchRows(dependent)[0].performScrollTo().assertIsNotEnabled()
+        }
+        composeRule.onNodeWithText(string(R.string.settings_notifications_sound)).performScrollTo().assertIsEnabled()
+        composeRule
+            .onNodeWithText(string(R.string.settings_notifications_exceptions))
+            .performScrollTo()
+            .assertIsEnabled()
+    }
+
+    @Test
+    fun `name who posted stays below new stories, dimmed while no story notifies`() {
+        val noStories =
+            SettingsPreviewData.notifications.copy(
+                scopes =
+                    ScopeSettingsState.Content(
+                        persistentMapOf(
+                            NotificationScope.PrivateChats to
+                                ScopeNotificationSettings(
+                                    isMuted = false,
+                                    showPreview = true,
+                                    pinnedMessages = true,
+                                    mentions = true,
+                                    stories = StoryNotifications.None,
+                                ),
+                        ),
+                    ),
+            )
+        setScreen(noStories)
+
+        switchRows(R.string.settings_notifications_story_poster)[0].performScrollTo().assertIsNotEnabled()
     }
 }

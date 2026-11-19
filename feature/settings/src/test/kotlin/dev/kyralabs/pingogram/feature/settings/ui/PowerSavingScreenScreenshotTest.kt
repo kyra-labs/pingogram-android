@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
@@ -28,6 +29,11 @@ class PowerSavingScreenScreenshotTest {
 
     @Test
     fun alwaysLight() = capture("alwaysLight", ThemeMode.Light, SettingsPreviewData.powerSavingOn)
+
+    /** Turned off: the "While on" switches stay, dimmed. */
+    @Test
+    fun offLight() =
+        capture("offLight", ThemeMode.Light, SettingsPreviewData.powerSaving.copy(mode = PowerSavingMode.Off))
 
     @Test
     @Config(fontScale = FONT_SCALE_200)

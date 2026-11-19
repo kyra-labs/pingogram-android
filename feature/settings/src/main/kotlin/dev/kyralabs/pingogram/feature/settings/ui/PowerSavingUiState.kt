@@ -20,6 +20,10 @@ data class PowerSavingUiState(
     val parts: ImmutableSet<PowerSavingPart> = persistentSetOf(),
     val isBatterySaverOn: Boolean = false,
 ) {
+    /** Whether the "While on" switches can change: not while power saving is turned off (owner decision 2026-11-19). */
+    val partsEnabled: Boolean
+        get() = mode != null && mode != PowerSavingMode.Off
+
     /** Whether power saving is on now. */
     val isOn: Boolean
         get() = mode == PowerSavingMode.Always || (mode == PowerSavingMode.WithBatterySaver && isBatterySaverOn)

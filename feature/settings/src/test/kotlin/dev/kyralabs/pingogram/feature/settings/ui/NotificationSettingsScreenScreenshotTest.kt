@@ -107,6 +107,15 @@ class NotificationSettingsScreenScreenshotTest {
             SettingsPreviewData.notifications.withPrivateChats { it.copy(stories = StoryNotifications.None) },
         )
 
+    /** Private chats' notifications off: their previews, new stories and Name who posted stay, dimmed. */
+    @Test
+    fun mutedLight() =
+        capture(
+            "mutedLight",
+            ThemeMode.Light,
+            SettingsPreviewData.notifications.withPrivateChats { it.copy(isMuted = true) },
+        )
+
     private fun captureVariant(variant: ScreenshotVariant) =
         composeRule.captureScreen(
             javaClass,

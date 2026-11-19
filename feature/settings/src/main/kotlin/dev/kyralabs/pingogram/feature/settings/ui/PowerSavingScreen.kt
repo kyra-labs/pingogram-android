@@ -76,7 +76,9 @@ internal fun PowerSavingScreen(
     }
 }
 
-/** "While on": a switch per part, each on by default. */
+/**
+ * "While on": a switch per part, each on by default, dimmed while "Turn on" is Off ([PowerSavingUiState.partsEnabled]).
+ */
 @Composable
 private fun PowerSavingPartsGroup(
     state: PowerSavingUiState,
@@ -93,6 +95,7 @@ private fun PowerSavingPartsGroup(
                     summary = stringResource(part.summary()),
                     checked = part in state.parts,
                     shapes = shapes,
+                    enabled = state.partsEnabled,
                     onCheckedChange = { onEvent(PowerSavingEvent.SetPart(part, it)) },
                 )
             }

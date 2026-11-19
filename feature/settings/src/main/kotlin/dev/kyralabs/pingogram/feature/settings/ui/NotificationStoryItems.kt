@@ -13,8 +13,9 @@ import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The private chats' story notifications (`docs/audit/feature-gaps-octogram.md` P3): "New stories" over what the choice
- * does, then Automatic, All and None as a [ChoiceRow]; while any notify, "Name who posted" as a switch. Each calls
- * [change] with [settings] changed, as the scope's other switches do.
+ * does, then Automatic, All and None as a [ChoiceRow], dimmed while the private chats' notifications are off; then
+ * "Name who posted" as a switch, dimmed too while no story notifies (owner decision 2026-11-19: dimmed in place rather
+ * than hidden). Each calls [change] with [settings] changed, as the scope's other switches do.
  */
 internal fun SettingsGroupScope.storyItems(
     settings: ScopeNotificationSettings,
@@ -24,6 +25,7 @@ internal fun SettingsGroupScope.storyItems(
         SettingsSegment(shapes) {
             SettingsListItem(
                 shapes = ListItemDefaults.shapes(),
+                enabled = settings.dependentsEnabled,
                 supportingContent = { Text(stringResource(settings.stories.summaryRes())) },
                 colors = nestedItemColors(),
             ) {
@@ -34,6 +36,7 @@ internal fun SettingsGroupScope.storyItems(
                 selected = settings.stories,
                 label = { stringResource(it.labelRes()) },
                 onSelect = { change(settings.copy(stories = it)) },
+                enabled = settings.dependentsEnabled,
                 contentPadding =
                     PaddingValues(
                         start = MaterialTheme.spacing.large,
@@ -43,16 +46,15 @@ internal fun SettingsGroupScope.storyItems(
             )
         }
     }
-    if (settings.stories != StoryNotifications.None) {
-        item(key = STORY_POSTER) { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_notifications_story_poster),
-                summary = stringResource(R.string.settings_notifications_story_poster_summary),
-                checked = settings.showStoryPoster,
-                shapes = shapes,
-                onCheckedChange = { change(settings.copy(showStoryPoster = it)) },
-            )
-        }
+    item(key = STORY_POSTER) { shapes ->
+        SwitchItem(
+            title = stringResource(R.string.settings_notifications_story_poster),
+            summary = stringResource(R.string.settings_notifications_story_poster_summary),
+            checked = settings.showStoryPoster,
+            shapes = shapes,
+            enabled = settings.storyPosterEnabled,
+            onCheckedChange = { change(settings.copy(showStoryPoster = it)) },
+        )
     }
 }
 
