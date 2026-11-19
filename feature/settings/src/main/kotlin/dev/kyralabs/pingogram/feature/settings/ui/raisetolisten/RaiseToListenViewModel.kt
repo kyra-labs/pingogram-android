@@ -75,7 +75,10 @@ class RaiseToListenViewModel
             viewModelScope.launch {
                 val saved =
                     when (event) {
-                        is RaiseToListenEvent.SetEnabled -> playbackSettingsRepository.setRaiseToListen(event.enabled)
+                        is RaiseToListenEvent.SetEnabled -> {
+                            playbackSettingsRepository.setRaiseToListen(event.enabled)
+                        }
+
                         is RaiseToListenEvent.SetPauseWhenLowered -> {
                             playbackSettingsRepository.setPauseWhenLowered(event.enabled)
                         }
