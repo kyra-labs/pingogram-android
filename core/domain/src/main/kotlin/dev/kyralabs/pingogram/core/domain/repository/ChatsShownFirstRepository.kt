@@ -5,7 +5,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The chats the forward and share sheets show first, after Saved Messages (Settings → Appearance → Chats → "Chats shown
+ * The chats the forward and share sheets show first, after Saved Messages (Settings → Chats → Chat list → "Chats shown
  * first"): at most [MAX], in the user's order, kept on this device.
  */
 interface ChatsShownFirstRepository {

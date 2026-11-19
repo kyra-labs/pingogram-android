@@ -4,7 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionSettings
 import kotlinx.coroutines.flow.Flow
 
-/** Voice message transcription's settings (Settings → Appearance → Chats), kept on this device across logouts. */
+/** Voice message transcription's settings (Settings → Chats → Voice messages), kept on this device across logouts. */
 interface TranscriptionSettingsRepository {
     /** The settings, then every change. Never fails: settings that cannot be read are the defaults. */
     val settings: Flow<TranscriptionSettings>
