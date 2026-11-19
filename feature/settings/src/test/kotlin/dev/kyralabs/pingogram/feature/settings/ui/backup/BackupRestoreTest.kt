@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.Snippet
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.testing.FakeAutomaticBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
@@ -63,7 +64,7 @@ class BackupRestoreTest {
     }
 
     private fun TestScope.viewModel(): BackupViewModel =
-        BackupViewModel(folders, backups, accounts).also {
+        BackupViewModel(folders, backups, accounts, FakeAutomaticBackupRepository()).also {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { it.uiState.collect {} }
             runCurrent()
         }

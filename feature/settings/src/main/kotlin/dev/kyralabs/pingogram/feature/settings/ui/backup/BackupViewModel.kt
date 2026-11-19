@@ -23,8 +23,8 @@ import javax.inject.Inject
 /**
  * The Backup & restore page (`docs/adr/0039-local-backup-and-restore.md`): the kept folder and its newest backup from
  * [folders], the folder Android's picker answers kept in its place, "Back up now" through the password dialog, how
- * often backups write themselves ([automatic]), and restoring a backup ([BackupRestoreFlow]). Passwords go to the backup and nowhere else; they are not kept, not even
- * in the saved state.
+ * often backups write themselves ([automatic]), and restoring a backup ([BackupRestoreFlow]). Passwords go to the
+ * backup and nowhere else; they are not kept, not even in the saved state.
  */
 @HiltViewModel
 class BackupViewModel
