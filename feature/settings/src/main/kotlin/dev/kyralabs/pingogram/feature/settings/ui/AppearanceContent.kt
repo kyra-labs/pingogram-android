@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -57,20 +58,20 @@ import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.persistentListOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The Appearance page's groups (docs/DESIGN_SYSTEM.md §13.10, the owner's board "Appearance"): a live preview, the
-// theme modes as cards, the colors as a row of chips, and the chats' text size and group bubbles on the page itself.
+// The Appearance page's groups (docs/DESIGN_SYSTEM.md §13.10, owner decision 2026-11-19): only how the app and its
+// chats look; how chats behave is on the Chats page.
 
 /**
  * The page's groups: the sample conversation ([ChatPreview]), "Light and dark" with the three
  * modes as cards ([ThemeModeCards]) and AMOLED black, "Colors" with every color theme as a chip in a row that scrolls
- * sideways ([ColorThemeRow]) and the contrast, "Chat list", and "Chats" headed by the text size and the group bubbles,
- * then its other rows.
+ * sideways ([ColorThemeRow]) and the contrast, "Chat list" ([ChatListGroup]), and "Chats" with the group bubbles and
+ * the Chat appearance row, whose page holds the message text size.
  */
-@Suppress("LongParameterList") // The settings, the chats' settings, the events, the pages and what the device offers.
+@Suppress("LongParameterList") // The settings, the chat list's, the events, the pages and what the device offers.
 @Composable
 internal fun AppearanceContent(
     settings: AppearanceSettings,
-    chats: ChatsSettings,
+    chatList: ChatListSettings,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
     wallpaperSchemes: WallpaperSchemes?,
@@ -114,14 +115,12 @@ internal fun AppearanceContent(
             )
         }
     }
-    ChatListGroup(chats.chatList, onEvent, pages.onOpenSwipeActions)
-    ChatsGroup(settings.chat, chats, onEvent, pages) {
-        item { shapes ->
-            TextSizeSegment(settings.chat.textScale, shapes) { onEvent(AppearanceEvent.SetChatTextScale(it)) }
-        }
+    ChatListGroup(chatList, onEvent)
+    SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
         item { shapes ->
             GroupBubblesSegment(settings.chat.groupBubbles, shapes) { onEvent(AppearanceEvent.SetGroupBubbles(it)) }
         }
+        item { shapes -> ChatAppearanceItem(settings.chat, shapes, pages.onOpenChatAppearance) }
     }
 }
 

@@ -4,8 +4,8 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import kotlinx.coroutines.flow.Flow
 
 /**
- * How voice messages play (Settings → Appearance → Chats): raise to listen and skipping silences, and how fast voice
- * and round video messages play, kept on this device across logouts, like the Appearance settings.
+ * How voice messages play (Settings → Chats → Voice messages): raise to listen and skipping silences, and how fast
+ * voice and round video messages play, kept on this device across logouts, like the Appearance settings.
  */
 interface PlaybackSettingsRepository {
     /** Raise to listen's settings, then every change. Never fails: settings that cannot be read are the defaults. */

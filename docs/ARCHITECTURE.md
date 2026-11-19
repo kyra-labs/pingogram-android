@@ -149,11 +149,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
   `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
-  `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Appearance → Chats and
+  `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Settings → Chats and
   handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`;
   `DataStoreDoubleTapSettingsRepository` for `DoubleTapSettingsRepository`, on which messages a double tap adds the
   quick reaction, which is the account's: `QuickReactionRepository`, `TdlibQuickReactionRepository` in `core:data`, a
-  `TdlibUpdateCache` of `updateDefaultReactionType`, set with `setDefaultReactionType`; both chosen in Appearance →
+  `TdlibUpdateCache` of `updateDefaultReactionType`, set with `setDefaultReactionType`; both chosen in Settings →
   Chats → Double-tap to react (`QuickReactionRoute`, `QuickReactionViewModel`) and handed to the conversation's
   bubbles by `feature:chat`'s `DoubleTapViewModel` through `LocalDoubleTapReaction`, the reaction itself going through
   `ChatEvent.ToggleReaction` as a tapped badge's does). Preferences rather than Proto
@@ -635,7 +635,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `StoryRingsViewModel` puts them on the user's own ring (`StoryRing.upload`, board 10c) and `StoryUploadSheet` shows
   them, with "Stop posting". `TdlibTransferRepository` counts those still sending as uploads, so the background
   transfers' service keeps posting them with the app in the background, and its "Cancel" stops them too.
-- **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
+- **Chat list swipes** (Settings → Chats → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
   chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
   (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
   sets and `feature:chats`' `ChatSwipesViewModel` hands to the chat list through `LocalChatSwipes`. While the list
@@ -1542,7 +1542,7 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
   proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go
   1.5 s after the last voice message, so the next one stays at the ear. Its settings are `core:domain`'s
-  `PlaybackSettingsRepository` (`DataStorePlaybackSettingsRepository`), which Appearance → Chats sets.
+  `PlaybackSettingsRepository` (`DataStorePlaybackSettingsRepository`), which Settings → Chats sets.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
   and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).

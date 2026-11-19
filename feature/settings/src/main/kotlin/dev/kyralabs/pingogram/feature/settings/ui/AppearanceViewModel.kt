@@ -10,15 +10,11 @@ import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
-import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
-import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,17 +30,10 @@ import javax.inject.Inject
 sealed interface AppearanceUiState {
     data object Loading : AppearanceUiState
 
-    /**
-     * The [settings], which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear
-     * ([raiseToListen]) and whether they skip their silences ([skipSilence]), and whether the chat list shows story
-     * rings ([chatList]).
-     */
+    /** The [settings], and how the chat list looks: its story rings, folder tabs and chat type icons ([chatList]). */
     data class Content(
         val settings: AppearanceSettings,
-        val sendKeys: SendKeys = SendKeys(),
-        val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
         val chatList: ChatListSettings = ChatListSettings(),
-        val skipSilence: Boolean = false,
     ) : AppearanceUiState
 }
 
@@ -60,26 +49,6 @@ sealed interface AppearanceEvent {
 
     data class SetContrast(
         val contrast: Contrast,
-    ) : AppearanceEvent
-
-    /** "Enter sends" turned on or off for a hardware or the on-screen keyboard. */
-    data class SetSendKeys(
-        val keys: SendKeys,
-    ) : AppearanceEvent
-
-    /** "Raise to listen" turned on or off. */
-    data class SetRaiseToListen(
-        val enabled: Boolean,
-    ) : AppearanceEvent
-
-    /** "Pause when lowered" turned on or off. */
-    data class SetPauseWhenLowered(
-        val enabled: Boolean,
-    ) : AppearanceEvent
-
-    /** "Skip silence" turned on or off. */
-    data class SetSkipSilence(
-        val enabled: Boolean,
     ) : AppearanceEvent
 
     /** "Show stories" turned on or off. */
@@ -112,11 +81,6 @@ sealed interface AppearanceEvent {
         val option: ColorThemeOption,
     ) : AppearanceEvent
 
-    /** The message text size set on the slider. */
-    data class SetChatTextScale(
-        val scale: Float,
-    ) : AppearanceEvent
-
     /** How group bubbles are colored (`docs/DESIGN_SYSTEM.md` §13.6). */
     data class SetGroupBubbles(
         val bubbles: GroupBubbles,
@@ -144,29 +108,21 @@ sealed interface AppearanceEffect {
  * The Appearance page (`REQUIREMENTS.md` FR-S2): the saved settings, and saving each change. The page shows what is
  * saved, which the app's theme follows too, so a change shows on the page and in the theme at once, and a change that
  * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chat list"
- * group holds whether story rings show and whether the folder tabs end in "Edit folders"
- * ([ChatListSettingsRepository]), and its "Chats" group the composer's send key ([ComposerSettingsRepository]) and
- * raise to listen and skipping silences ([PlaybackSettingsRepository]).
+ * group holds how the chat list looks ([ChatListSettingsRepository]); how chats behave is the Chats page's.
  */
 @HiltViewModel
 class AppearanceViewModel
     @Inject
     constructor(
         private val appearanceRepository: AppearanceRepository,
-        private val composerSettingsRepository: ComposerSettingsRepository,
-        private val playbackSettingsRepository: PlaybackSettingsRepository,
         private val chatListSettingsRepository: ChatListSettingsRepository,
     ) : ViewModel() {
         val uiState: StateFlow<AppearanceUiState> =
-            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, ChatListSettings, Boolean, AppearanceUiState>(
+            combine<AppearanceSettings, ChatListSettings, AppearanceUiState>(
                 appearanceRepository.appearance,
-                composerSettingsRepository.sendKeys,
-                playbackSettingsRepository.raiseToListen,
                 chatListSettingsRepository.settings,
-                playbackSettingsRepository.skipSilence,
-            ) { settings, keys, raise, chatList, skipSilence ->
-                AppearanceUiState.Content(settings, keys, raise, chatList, skipSilence)
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
+            ) { settings, chatList -> AppearanceUiState.Content(settings, chatList) }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
 
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
         val effects: Flow<AppearanceEffect> = effectChannel.receiveAsFlow()
@@ -176,7 +132,7 @@ class AppearanceViewModel
 
         fun onEvent(event: AppearanceEvent) {
             viewModelScope.launch {
-                val saved = saveLook(event) ?: saveBehavior(event)
+                val saved = saveLook(event) ?: saveChatList(event)
                 saved?.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }
             }
         }
@@ -189,7 +145,6 @@ class AppearanceViewModel
                 is AppearanceEvent.SetThemeMode -> appearanceRepository.setThemeMode(event.themeMode)
                 is AppearanceEvent.SetAmoled -> appearanceRepository.setAmoled(event.enabled)
                 is AppearanceEvent.SetContrast -> appearanceRepository.setContrast(event.contrast)
-                is AppearanceEvent.SetChatTextScale -> appearanceRepository.setChatTextScale(event.scale)
                 is AppearanceEvent.SetGroupBubbles -> appearanceRepository.setGroupBubbles(event.bubbles)
                 is AppearanceEvent.SetColorTheme -> saveColorTheme(event.option)
                 else -> null
@@ -201,25 +156,9 @@ class AppearanceViewModel
                 is ColorThemeOption.Palette -> appearanceRepository.setPalette(option.palette)
             }
 
-        /** Saves an [event] about how chats, the composer and voice messages behave. */
-        private suspend fun saveBehavior(event: AppearanceEvent): Outcome<Unit>? =
+        /** Saves an [event] about how the chat list looks. */
+        private suspend fun saveChatList(event: AppearanceEvent): Outcome<Unit>? =
             when (event) {
-                is AppearanceEvent.SetSendKeys -> {
-                    composerSettingsRepository.setSendKeys(event.keys)
-                }
-
-                is AppearanceEvent.SetRaiseToListen -> {
-                    playbackSettingsRepository.setRaiseToListen(event.enabled)
-                }
-
-                is AppearanceEvent.SetPauseWhenLowered -> {
-                    playbackSettingsRepository.setPauseWhenLowered(event.enabled)
-                }
-
-                is AppearanceEvent.SetSkipSilence -> {
-                    playbackSettingsRepository.setSkipSilence(event.enabled)
-                }
-
                 is AppearanceEvent.SetShowStories -> {
                     chatListSettingsRepository.setShowStories(event.show)
                 }

@@ -30,10 +30,7 @@ internal fun NavGraphBuilder.appearanceAndChatPages(
     chatPages(onOpen, onBack)
 }
 
-/**
- * Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance, Double-tap to react, Swipe
- * actions, Chats shown first, voice message transcription and Snippets.
- */
+/** Appearance and the pages it opens with [onOpen]: the Theme page and Chat appearance. */
 private fun NavGraphBuilder.appearancePages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
@@ -42,12 +39,7 @@ private fun NavGraphBuilder.appearancePages(
         AppearanceScreenRoute(
             onOpenColorTheme = { onOpen(ColorThemeRoute) },
             onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
-            onOpenQuickReaction = { onOpen(QuickReactionRoute) },
-            onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
-            onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
             onBack = onBack,
-            onOpenTranscription = { onOpen(TranscriptionSettingsRoute) },
-            onOpenSnippets = { onOpen(SnippetsRoute) },
         )
     }
     settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }

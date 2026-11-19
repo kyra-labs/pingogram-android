@@ -17,22 +17,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
-import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
-import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -42,182 +38,29 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.systemContrastOrNull
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: [leading] rows (the text size and group bubbles, `docs/DESIGN_SYSTEM.md` §13.10), the
- * rows of the Chat appearance page, of Double-tap to react, of Chats shown first, of voice message transcription and
- * of Snippets ([pages]), which Enter sends on a hardware and on the on-screen keyboard, raise to listen, and skipping
- * voice messages' silences.
- */
-@Composable
-internal fun ChatsGroup(
-    chat: ChatAppearance,
-    chats: ChatsSettings,
-    onEvent: (AppearanceEvent) -> Unit,
-    pages: AppearancePages,
-    leading: SettingsGroupScope.() -> Unit = {},
-) {
-    SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
-        leading()
-        item { shapes -> ChatAppearanceItem(chat, shapes, pages.onOpenChatAppearance) }
-        item { shapes ->
-            SettingsRow(
-                title = stringResource(R.string.settings_double_tap),
-                shapes = shapes,
-                supportingContent = { Text(stringResource(R.string.settings_double_tap_summary)) },
-                onClick = pages.onOpenQuickReaction,
-            )
-        }
-        item { shapes ->
-            SettingsRow(
-                title = stringResource(R.string.shown_first_title),
-                shapes = shapes,
-                supportingContent = { Text(stringResource(R.string.shown_first_summary)) },
-                onClick = pages.onOpenShownFirst,
-            )
-        }
-        item { shapes -> TranscriptionItem(shapes, pages.onOpenTranscription) }
-        item { shapes -> SnippetsItem(shapes, pages.onOpenSnippets) }
-        item { shapes -> HardwareEnterItem(chats.sendKeys, shapes, onEvent) }
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_enter_sends_on_screen),
-                summary = stringResource(R.string.settings_enter_sends_on_screen_summary),
-                checked = chats.sendKeys.onScreenKeyboard,
-                shapes = shapes,
-                onCheckedChange = {
-                    onEvent(AppearanceEvent.SetSendKeys(chats.sendKeys.copy(onScreenKeyboard = it)))
-                },
-            )
-        }
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_raise_to_listen),
-                summary = stringResource(R.string.settings_raise_to_listen_summary),
-                checked = chats.raiseToListen.enabled,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetRaiseToListen(it)) },
-            )
-        }
-        if (chats.raiseToListen.enabled) {
-            // Keyed, so it grows in and shrinks away as raise to listen is turned on and off
-            // (docs/DESIGN_SYSTEM.md §5.1).
-            item(key = PAUSE_WHEN_LOWERED) { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_pause_when_lowered),
-                    summary = stringResource(R.string.settings_pause_when_lowered_summary),
-                    checked = chats.raiseToListen.pauseWhenLowered,
-                    shapes = shapes,
-                    onCheckedChange = { onEvent(AppearanceEvent.SetPauseWhenLowered(it)) },
-                )
-            }
-        }
-        item { shapes -> SkipSilenceItem(chats.skipSilence, shapes, onEvent) }
-    }
-}
-
-/** "Skip silence": voice messages play on past their pauses. */
-@Composable
-private fun SkipSilenceItem(
-    checked: Boolean,
-    shapes: ListItemShapes,
-    onEvent: (AppearanceEvent) -> Unit,
-) {
-    SwitchItem(
-        title = stringResource(R.string.settings_skip_silence),
-        summary = stringResource(R.string.settings_skip_silence_summary),
-        checked = checked,
-        shapes = shapes,
-        onCheckedChange = { onEvent(AppearanceEvent.SetSkipSilence(it)) },
-    )
-}
-
-/** "Snippets", which opens their page. */
-@Composable
-private fun SnippetsItem(
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    SettingsRow(
-        title = stringResource(R.string.settings_snippets),
-        shapes = shapes,
-        supportingContent = { Text(stringResource(R.string.settings_snippets_summary)) },
-        onClick = onClick,
-    )
-}
-
-/** "Voice message transcription", which opens its page. */
-@Composable
-private fun TranscriptionItem(
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    SettingsRow(
-        title = stringResource(R.string.settings_transcription),
-        shapes = shapes,
-        supportingContent = { Text(stringResource(R.string.settings_transcription_summary)) },
-        onClick = onClick,
-        opensPage = true,
-    )
-}
-
-/** "Send with Enter on a keyboard", its summary saying which keys send and which start a line. */
-@Composable
-private fun HardwareEnterItem(
-    sendKeys: SendKeys,
-    shapes: ListItemShapes,
-    onEvent: (AppearanceEvent) -> Unit,
-) {
-    SwitchItem(
-        title = stringResource(R.string.settings_enter_sends_hardware),
-        summary =
-            stringResource(
-                if (sendKeys.hardwareKeyboard) {
-                    R.string.settings_enter_sends_hardware_on
-                } else {
-                    R.string.settings_enter_sends_hardware_off
-                },
-            ),
-        checked = sendKeys.hardwareKeyboard,
-        shapes = shapes,
-        onCheckedChange = { onEvent(AppearanceEvent.SetSendKeys(sendKeys.copy(hardwareKeyboard = it))) },
-    )
-}
-
-/**
- * The settings of the "Chat list" and "Chats" groups beside the appearance: which Enter sends a message, raise to
- * listen, whether voice messages skip their silences, and the chat list's own.
- */
-internal class ChatsSettings(
-    val sendKeys: SendKeys,
-    val raiseToListen: RaiseToListenSettings,
-    val chatList: ChatListSettings = ChatListSettings(),
-    val skipSilence: Boolean = false,
-)
-
-/**
- * The "Chat list" group: a row that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its
- * summary, "Show stories", whether the story rings show above the chats (they load only then), "Edit folders
- * button", whether the folder tabs end in "Edit folders" (owner decision 2026-11-07), "Chat type icons", and "Folder
- * tabs", what each tab shows (owner decision 2026-11-08).
+ * The "Chat list" group, how the list looks: "Chat type icons", the symbols before a group's or channel's name
+ * (`docs/DESIGN_SYSTEM.md` §13.3), "Show stories", whether the story rings show above the chats (they load only then),
+ * "Edit folders button", whether the folder tabs end in "Edit folders" (owner decision 2026-11-07), and "Folder tabs",
+ * what each tab shows (owner decision 2026-11-08).
  */
 @Composable
 internal fun ChatListGroup(
     chatList: ChatListSettings,
     onEvent: (AppearanceEvent) -> Unit,
-    onOpenSwipeActions: () -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
         item { shapes ->
-            SettingsRow(
-                title = stringResource(R.string.settings_swipe_actions),
+            SwitchItem(
+                title = stringResource(R.string.settings_chat_type_icons),
+                summary = stringResource(R.string.settings_chat_type_icons_summary),
+                checked = chatList.showChatTypeIcons,
                 shapes = shapes,
-                supportingContent = { Text(swipeActionsSummary(chatList)) },
-                onClick = onOpenSwipeActions,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
             )
         }
         item { shapes ->
@@ -246,16 +89,6 @@ internal fun ChatListGroup(
                 checked = chatList.showFeedTab,
                 shapes = shapes,
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowFeedTab(it)) },
-            )
-        }
-        // The symbols before a group's or channel's name (docs/DESIGN_SYSTEM.md §13.3).
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_chat_type_icons),
-                summary = stringResource(R.string.settings_chat_type_icons_summary),
-                checked = chatList.showChatTypeIcons,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetShowChatTypeIcons(it)) },
             )
         }
         item { shapes ->
@@ -310,24 +143,9 @@ private fun FolderTabStyle.labelRes(): Int =
         FolderTabStyle.Icon -> R.string.settings_folder_tabs_icon
     }
 
-/** "Right: Read · Left: Archive", the sides as the layout's direction puts them. */
-@Composable
-private fun swipeActionsSummary(chatList: ChatListSettings): String {
-    if (chatList.swipeChangesFolder) return stringResource(R.string.settings_swipe_actions_summary_folders)
-    return stringResource(
-        if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
-            R.string.settings_swipe_actions_summary
-        } else {
-            R.string.settings_swipe_actions_summary_rtl
-        },
-        stringResource(chatList.startSwipe.shortLabelRes()),
-        stringResource(chatList.endSwipe.shortLabelRes()),
-    )
-}
-
 /** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
 @Composable
-private fun ChatAppearanceItem(
+internal fun ChatAppearanceItem(
     chat: ChatAppearance,
     shapes: ListItemShapes,
     onClick: () -> Unit,
@@ -353,6 +171,3 @@ private fun ChatAppearanceItem(
         onClick = onClick,
     )
 }
-
-/** The key of the row that shows only while raise to listen is on. */
-private const val PAUSE_WHEN_LOWERED = "pauseWhenLowered"
