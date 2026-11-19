@@ -440,7 +440,11 @@ class DataStorageViewModelTest {
             )
             client.on(TdApi.EnableProxy::class, TdResult.Success(TdApi.Ok()))
             val viewModel = viewModel()
-            assertEquals(3, viewModel.uiState.value.switchProxy?.id)
+            assertEquals(
+                3,
+                viewModel.uiState.value.switchProxy
+                    ?.id,
+            )
 
             send(viewModel, DataStorageEvent.SetProxyOn(true))
 

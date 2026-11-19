@@ -123,9 +123,18 @@ class ChatsPageViewModel
 
         private suspend fun save(event: ChatsPageEvent): Outcome<Unit> =
             when (event) {
-                is ChatsPageEvent.SetSendKeys -> composerSettingsRepository.setSendKeys(event.keys)
-                is ChatsPageEvent.SetRaiseToListen -> playbackSettingsRepository.setRaiseToListen(event.enabled)
-                is ChatsPageEvent.SetSkipSilence -> playbackSettingsRepository.setSkipSilence(event.enabled)
+                is ChatsPageEvent.SetSendKeys -> {
+                    composerSettingsRepository.setSendKeys(event.keys)
+                }
+
+                is ChatsPageEvent.SetRaiseToListen -> {
+                    playbackSettingsRepository.setRaiseToListen(event.enabled)
+                }
+
+                is ChatsPageEvent.SetSkipSilence -> {
+                    playbackSettingsRepository.setSkipSilence(event.enabled)
+                }
+
                 is ChatsPageEvent.SetTranscribeAutomatically -> {
                     transcriptionSettingsRepository.setAutomatic(event.enabled)
                 }

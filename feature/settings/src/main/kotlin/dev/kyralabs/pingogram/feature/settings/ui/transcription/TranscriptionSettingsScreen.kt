@@ -35,8 +35,8 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
-import dev.kyralabs.pingogram.feature.settings.ui.SettingsInfoFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsHeroSwitch
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsInfoFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
