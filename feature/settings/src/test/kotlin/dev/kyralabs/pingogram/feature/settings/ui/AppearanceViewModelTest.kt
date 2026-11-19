@@ -7,7 +7,6 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.GroupBubbles
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
-import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import kotlinx.coroutines.Dispatchers
@@ -239,32 +238,6 @@ class AppearanceViewModelTest {
         }
 
     @Test
-    fun `the Edit folders button shows at first, and turning it off saves and shows`() =
-        runTest {
-            repository.save(AppearanceSettings())
-            val viewModel = viewModel()
-            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
-
-            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
-
-            assertFalse(chatListSettings.settings.value.showEditFoldersButton)
-            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
-        }
-
-    @Test
-    fun `the Feed tab shows at first, and turning it off saves and shows`() =
-        runTest {
-            repository.save(AppearanceSettings())
-            val viewModel = viewModel()
-            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showFeedTab)
-
-            send(viewModel, AppearanceEvent.SetShowFeedTab(false))
-
-            assertFalse(chatListSettings.settings.value.showFeedTab)
-            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showFeedTab)
-        }
-
-    @Test
     fun `chat type icons show at first, and turning them off saves and shows`() =
         runTest {
             repository.save(AppearanceSettings())
@@ -275,32 +248,5 @@ class AppearanceViewModelTest {
 
             assertFalse(chatListSettings.settings.value.showChatTypeIcons)
             assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showChatTypeIcons)
-        }
-
-    @Test
-    fun `folder tabs show names at first, and picking icons saves and shows`() =
-        runTest {
-            repository.save(AppearanceSettings())
-            val viewModel = viewModel()
-            assertEquals(FolderTabStyle.Text, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
-
-            send(viewModel, AppearanceEvent.SetFolderTabStyle(FolderTabStyle.Icon))
-
-            assertEquals(FolderTabStyle.Icon, chatListSettings.settings.value.folderTabStyle)
-            assertEquals(FolderTabStyle.Icon, (viewModel.state as AppearanceUiState.Content).chatList.folderTabStyle)
-        }
-
-    @Test
-    fun `an Edit folders button that cannot be hidden stays, with a snackbar`() =
-        runTest {
-            repository.save(AppearanceSettings())
-            chatListSettings.failure = DomainError.Unknown(0, "Disk full")
-            val viewModel = viewModel()
-            val effects = effectsOf(viewModel)
-
-            send(viewModel, AppearanceEvent.SetShowEditFoldersButton(false))
-
-            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showEditFoldersButton)
-            assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }

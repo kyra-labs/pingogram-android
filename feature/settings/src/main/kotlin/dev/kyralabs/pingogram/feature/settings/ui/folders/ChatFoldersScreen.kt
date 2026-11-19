@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -38,6 +39,7 @@ internal fun ChatFoldersRoute(
     viewModel: ChatFoldersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val tabs by viewModel.tabs.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
@@ -52,6 +54,7 @@ internal fun ChatFoldersRoute(
     }
     ChatFoldersScreen(
         state = state,
+        tabs = tabs,
         onEvent = viewModel::onEvent,
         onOpenFolder = onOpenFolder,
         onBack = onBack,
@@ -63,7 +66,8 @@ internal fun ChatFoldersRoute(
 /**
  * Chat folders (`REQUIREMENTS.md` FR-L3): "New folder", the user's folders as the chat list's tabs show them, each with
  * its icon, name and what it includes, moved by dragging its handle or after a long press (screen readers: "Move up",
- * "Move down"), opened by a tap; then the folders Telegram suggests, each with "Add".
+ * "Move down"), opened by a tap; "Folder tabs" with what the tabs show, the Edit folders button and the Feed tab
+ * ([tabs], owner decision 2026-11-19); then the folders Telegram suggests, each with "Add".
  */
 @Suppress("LongParameterList") // A page's state, its events, its two ways out, and its hoisted states.
 @Composable
@@ -75,6 +79,7 @@ internal fun ChatFoldersScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    tabs: ChatListSettings? = ChatListSettings(),
 ) {
     SettingsPageFrame(
         title = stringResource(R.string.settings_chat_folders),
@@ -100,7 +105,7 @@ internal fun ChatFoldersScreen(
                 }
 
                 is ChatFoldersUiState.Content -> {
-                    ChatFoldersList(state, onEvent, onOpenFolder, listState, contentPadding)
+                    ChatFoldersList(state, onEvent, onOpenFolder, listState, contentPadding, tabs)
                 }
             }
         }

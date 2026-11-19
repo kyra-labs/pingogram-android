@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.folders
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -70,6 +71,21 @@ sealed interface ChatFoldersEvent {
     /** Create the suggested folder [key]. */
     data class AddRecommended(
         val key: Int,
+    ) : ChatFoldersEvent
+
+    /** A "Folder tabs" style picked. */
+    data class SetFolderTabStyle(
+        val style: FolderTabStyle,
+    ) : ChatFoldersEvent
+
+    /** "Edit folders button" turned on or off. */
+    data class SetShowEditFoldersButton(
+        val show: Boolean,
+    ) : ChatFoldersEvent
+
+    /** "Show Feed tab" turned on or off. */
+    data class SetShowFeedTab(
+        val show: Boolean,
     ) : ChatFoldersEvent
 }
 

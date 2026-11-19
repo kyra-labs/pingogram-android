@@ -14,7 +14,6 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,7 +29,7 @@ import javax.inject.Inject
 sealed interface AppearanceUiState {
     data object Loading : AppearanceUiState
 
-    /** The [settings], and how the chat list looks: its story rings, folder tabs and chat type icons ([chatList]). */
+    /** The [settings], and how the chat list looks: its story rings and chat type icons ([chatList]). */
     data class Content(
         val settings: AppearanceSettings,
         val chatList: ChatListSettings = ChatListSettings(),
@@ -56,24 +55,9 @@ sealed interface AppearanceEvent {
         val show: Boolean,
     ) : AppearanceEvent
 
-    /** "Edit folders button" turned on or off. */
-    data class SetShowEditFoldersButton(
-        val show: Boolean,
-    ) : AppearanceEvent
-
-    /** "Show Feed tab" turned on or off. */
-    data class SetShowFeedTab(
-        val show: Boolean,
-    ) : AppearanceEvent
-
     /** "Chat type icons" turned on or off. */
     data class SetShowChatTypeIcons(
         val show: Boolean,
-    ) : AppearanceEvent
-
-    /** A "Folder tabs" style picked. */
-    data class SetFolderTabStyle(
-        val style: FolderTabStyle,
     ) : AppearanceEvent
 
     /** A color theme picked from the row of chips. */
@@ -163,22 +147,8 @@ class AppearanceViewModel
                     chatListSettingsRepository.setShowStories(event.show)
                 }
 
-                is AppearanceEvent.SetShowEditFoldersButton -> {
-                    chatListSettingsRepository.setShowEditFoldersButton(
-                        event.show,
-                    )
-                }
-
-                is AppearanceEvent.SetShowFeedTab -> {
-                    chatListSettingsRepository.setShowFeedTab(event.show)
-                }
-
                 is AppearanceEvent.SetShowChatTypeIcons -> {
                     chatListSettingsRepository.setShowChatTypeIcons(event.show)
-                }
-
-                is AppearanceEvent.SetFolderTabStyle -> {
-                    chatListSettingsRepository.setFolderTabStyle(event.style)
                 }
 
                 else -> {

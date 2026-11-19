@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.zIndex
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.ui.component.ListReorderState
 import dev.kyralabs.pingogram.core.ui.component.dragAfterLongPress
 import dev.kyralabs.pingogram.core.ui.component.dragHandle
@@ -60,7 +61,7 @@ import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The list of the Chat folders page: "New folder", the user's folders in their order (dragged into another one by a
-// handle or a long press), then the folders Telegram suggests.
+// handle or a long press), the folder tabs' settings, then the folders Telegram suggests.
 
 /** The page's rows; [onOpenFolder] opens a folder's editor, or a new folder's with null. */
 @Composable
@@ -70,6 +71,7 @@ internal fun ChatFoldersList(
     onOpenFolder: (Int?) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    tabs: ChatListSettings? = null,
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val spacing = MaterialTheme.spacing
@@ -106,6 +108,7 @@ internal fun ChatFoldersList(
         } else {
             folders(reorder, byId, style, onEvent, onOpenFolder)
         }
+        if (tabs != null) folderTabs(tabs, style, onEvent)
         recommended(state, style, onEvent)
     }
 }

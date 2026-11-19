@@ -264,6 +264,7 @@ internal fun SwitchItem(
     summary: String,
     checked: Boolean,
     shapes: ListItemShapes,
+    modifier: Modifier = Modifier,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -274,7 +275,7 @@ internal fun SwitchItem(
         },
         shapes = shapes,
         modifier =
-            Modifier.semantics {
+            modifier.semantics {
                 role = Role.Switch
                 toggleableState = ToggleableState(checked)
             },

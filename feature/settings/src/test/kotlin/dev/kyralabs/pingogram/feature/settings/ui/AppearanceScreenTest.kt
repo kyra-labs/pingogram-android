@@ -278,33 +278,7 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `the Edit folders button row is a switch, on at first, whose tap turns the button off`() {
-        setScreen()
-
-        switchRow(R.string.settings_edit_folders_button)
-            .performScrollTo()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
-            .assert(hasText(string(R.string.settings_edit_folders_button_summary)))
-            .performClick()
-
-        assertEquals(listOf(AppearanceEvent.SetShowEditFoldersButton(false)), events)
-    }
-
-    @Test
-    fun `the Show Feed tab row is a switch, on at first, whose tap hides the tab`() {
-        setScreen()
-
-        switchRow(R.string.settings_show_feed_tab)
-            .performScrollTo()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
-            .assert(hasText(string(R.string.settings_show_feed_tab_summary)))
-            .performClick()
-
-        assertEquals(listOf(AppearanceEvent.SetShowFeedTab(false)), events)
-    }
-
-    @Test
-    fun `the page holds only looks, with the text size on Chat appearance and behavior on the Chats page`() {
+    fun `the page holds only looks, with the text size on Chat appearance and the folder tabs on Chat folders`() {
         setScreen()
 
         node(R.string.settings_chat_type_icons).performScrollTo().assertExists()
@@ -319,6 +293,9 @@ class AppearanceScreenTest {
             R.string.settings_skip_silence,
             R.string.settings_swipe_actions,
             R.string.shown_first_title,
+            R.string.settings_folder_tabs,
+            R.string.settings_edit_folders_button,
+            R.string.settings_show_feed_tab,
         )) {
             node(moved).assertDoesNotExist()
         }
