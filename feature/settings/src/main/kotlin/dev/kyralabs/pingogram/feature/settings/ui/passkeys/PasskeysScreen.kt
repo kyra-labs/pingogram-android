@@ -9,7 +9,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +43,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsError
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsItemIcon
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -261,9 +261,9 @@ private fun PasskeyRow(
     shapes: ListItemShapes,
     onRemove: () -> Unit,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         shapes = shapes,
-        leadingContent = { SettingsItemIcon(UiR.drawable.ic_key) },
+        leadingContent = { SettingsItemIcon(UiR.drawable.ic_key_filled) },
         trailingContent = {
             if (isRemoving) {
                 val removing = stringResource(R.string.settings_passkey_removing, passkey.name)
@@ -290,7 +290,7 @@ private fun PasskeyRow(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun NoPasskeys(shapes: ListItemShapes) {
-    SegmentedListItem(shapes = shapes, colors = settingsRowColors()) {
+    SettingsListItem(shapes = shapes, colors = settingsRowColors()) {
         Text(
             text = stringResource(R.string.settings_passkeys_none),
             modifier = Modifier.fillMaxWidth().padding(vertical = MaterialTheme.spacing.extraSmall),
@@ -331,7 +331,7 @@ private fun Protection(
                             count,
                             numbers.format(count),
                         ),
-                    icon = R.drawable.ic_devices,
+                    icon = R.drawable.ic_devices_filled,
                     shapes = shapes,
                     onClick = { onOpen(PasskeysLink.ActiveSessions) },
                 )
@@ -339,7 +339,7 @@ private fun Protection(
                 SettingsRow(
                     title = stringResource(R.string.settings_active_sessions),
                     shapes = shapes,
-                    icon = R.drawable.ic_devices,
+                    icon = R.drawable.ic_devices_filled,
                     onClick = { onOpen(PasskeysLink.ActiveSessions) },
                     opensPage = true,
                 )

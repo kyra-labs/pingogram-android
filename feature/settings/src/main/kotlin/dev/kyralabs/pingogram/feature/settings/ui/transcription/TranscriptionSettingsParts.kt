@@ -11,9 +11,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /** The symbol of a speech language's row: ready, downloading, or not on the device. */
 internal fun LanguageState.icon(): Int =
     when (this) {
-        LanguageState.Ready -> UiR.drawable.ic_check_circle
+        LanguageState.Ready -> UiR.drawable.ic_check_circle_filled
         LanguageState.Downloading -> UiR.drawable.ic_download
-        LanguageState.NotOnDevice -> R.drawable.ic_block
+        LanguageState.NotOnDevice -> R.drawable.ic_block_filled
     }
 
 @StringRes

@@ -20,7 +20,6 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
@@ -53,6 +52,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
 import dev.kyralabs.pingogram.feature.settings.ui.settingsListRow
@@ -164,7 +164,7 @@ private fun LazyListScope.lists(
                     } else {
                         stringResource(R.string.settings_stickers_archived_summary)
                     },
-                icon = UiR.drawable.ic_archive,
+                icon = UiR.drawable.ic_archive_filled,
                 shapes = ListItemDefaults.segmentedShapes(1, rows),
                 onClick = { pages.onOpenList(true) },
             )
@@ -196,7 +196,7 @@ private fun LazyListScope.emojiRow(
             PageItem(
                 title = stringResource(R.string.settings_emoji),
                 summary = stringResource(R.string.settings_emoji_summary),
-                icon = UiR.drawable.ic_mood,
+                icon = UiR.drawable.ic_mood_filled,
                 shapes = ListItemDefaults.segmentedShapes(2, rows),
                 onClick = onOpenEmoji,
             )
@@ -271,7 +271,7 @@ private fun InstalledSetRow(
         )
     val rowShapes = if (dragged) shapes.copy(shape = shapes.draggedShape) else shapes
     Box(modifier) {
-        SegmentedListItem(
+        SettingsListItem(
             onClick = { menuOpen = true },
             shapes = rowShapes,
             modifier =

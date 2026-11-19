@@ -23,7 +23,7 @@ internal fun BlockedUsersItem(
             } else {
                 pluralStringResource(R.plurals.settings_blocked_users_count, count, numbers.format(count))
             },
-        icon = R.drawable.ic_block,
+        icon = R.drawable.ic_block_filled,
         shapes = shapes,
         onClick = onClick,
     )

@@ -36,7 +36,7 @@ internal fun ClearCacheItem(
     SettingsRow(
         title = stringResource(R.string.settings_clear_cache),
         shapes = shapes,
-        icon = UiR.drawable.ic_delete,
+        icon = UiR.drawable.ic_delete_filled,
         supportingContent = { Text(stringResource(R.string.settings_clear_cache_summary)) },
         trailingContent =
             if (isClearing) {
@@ -83,7 +83,7 @@ internal fun DeleteDraftsItem(
     SettingsRow(
         title = stringResource(R.string.settings_delete_drafts),
         shapes = shapes,
-        icon = UiR.drawable.ic_edit,
+        icon = UiR.drawable.ic_edit_filled,
         supportingContent = { Text(stringResource(R.string.settings_delete_drafts_summary)) },
         trailingContent =
             if (isDeleting) {

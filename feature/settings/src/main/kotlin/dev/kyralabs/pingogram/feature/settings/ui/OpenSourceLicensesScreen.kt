@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -183,7 +182,7 @@ private fun LibraryRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedListItem(
+    SettingsListItem(
         onClick = onClick,
         shapes = shapes,
         modifier = modifier,

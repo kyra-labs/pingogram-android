@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -96,7 +95,7 @@ private fun BirthdateRow(
         } else {
             R.string.settings_edit_profile_birthday_change
         }
-    SegmentedListItem(
+    SettingsListItem(
         shapes = ListItemDefaults.segmentedShapes(index = 0, count = count),
         colors = settingsRowColors(),
         trailingContent = {

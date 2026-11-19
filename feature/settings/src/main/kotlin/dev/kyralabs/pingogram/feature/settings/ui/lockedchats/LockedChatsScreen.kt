@@ -9,7 +9,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -43,6 +42,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PickerDone
 import dev.kyralabs.pingogram.feature.settings.ui.PickerSearchField
 import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
@@ -131,7 +131,7 @@ internal fun LockedChatsScreen(
                             SettingsRow(
                                 title = stringResource(R.string.settings_passcode_lock),
                                 shapes = shapes,
-                                icon = R.drawable.ic_pin,
+                                icon = R.drawable.ic_pin_filled,
                                 supportingContent = { Text(stringResource(R.string.locked_chats_needs_passcode)) },
                                 onClick = onOpenPasscodeLock,
                             )
@@ -210,7 +210,7 @@ private fun LockedChatItem(
         Text(chat.title, style = LocalTextStyle.current.userContent, maxLines = 2)
     }
     if (onOpen != null) {
-        SegmentedListItem(
+        SettingsListItem(
             onClick = onOpen,
             shapes = shapes,
             colors = settingsRowColors(),
@@ -220,7 +220,7 @@ private fun LockedChatItem(
             content = title,
         )
     } else {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = shapes,
             colors = settingsRowColors(),
             leadingContent = leading,

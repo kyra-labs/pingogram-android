@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui.backup
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -12,6 +11,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.ChoiceRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroupScope
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
 import dev.kyralabs.pingogram.feature.settings.ui.nestedItemColors
 import kotlinx.collections.immutable.toImmutableList
@@ -26,7 +26,7 @@ internal fun SettingsGroupScope.automaticBackupItem(
     onEvent: (BackupEvent) -> Unit,
 ) = item(key = AUTOMATIC) { shapes ->
     SettingsSegment(shapes) {
-        SegmentedListItem(
+        SettingsListItem(
             shapes = ListItemDefaults.shapes(),
             supportingContent = { Text(stringResource(state.automaticSummary())) },
             colors = nestedItemColors(),

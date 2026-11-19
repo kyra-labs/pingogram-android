@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
@@ -23,7 +22,7 @@ internal fun SettingsGroupScope.storyItems(
 ) {
     item(key = STORIES) { shapes ->
         SettingsSegment(shapes) {
-            SegmentedListItem(
+            SettingsListItem(
                 shapes = ListItemDefaults.shapes(),
                 supportingContent = { Text(stringResource(settings.stories.summaryRes())) },
                 colors = nestedItemColors(),

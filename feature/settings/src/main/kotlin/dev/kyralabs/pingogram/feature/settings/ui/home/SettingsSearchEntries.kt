@@ -17,7 +17,7 @@ internal val SearchEntries: List<HomeEntry> by lazy {
                 SettingsPage.EditProfile,
                 R.string.settings_edit_profile_button,
                 R.string.settings_home_edit_profile_summary,
-                R.drawable.ic_edit,
+                UiR.drawable.ic_edit_filled,
             ),
             page(
                 SettingsPage.MyQrCode,
