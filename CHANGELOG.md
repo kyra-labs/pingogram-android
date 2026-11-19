@@ -62,6 +62,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings has a Chats page, after Appearance: sending, voice messages, Swipe actions and Chats shown first moved there
   from Appearance, which keeps how things look. The message text size is set on Chat appearance only.
 - The folder tabs' settings (what the tabs show, the Edit folders button and the Feed tab) moved to Chat folders.
+- Settings home has no More group: Devices is under Alerts and privacy, Language under App, and Recent calls opens
+  from the Contacts tab.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and
