@@ -29,7 +29,8 @@ import javax.inject.Inject
  * The Data and storage page (`REQUIREMENTS.md` FR-S1): what downloads by itself on each kind of network
  * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram
  * takes, loaded when the page opens, and clearing the cache of downloaded files after a confirmation, which shows how
- * much it freed and loads the usage again; and the proxy in use ([ProxyRepository]), which its page changes.
+ * much it freed and loads the usage again; and the proxy in use ([ProxyRepository]), which its page and the Proxy row's
+ * switch change.
  * Resetting the automatic download puts every network's defaults back.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; clearing in progress does not, as
@@ -43,7 +44,7 @@ class DataStorageViewModel
         private val storageRepository: StorageRepository,
         private val autoDownloadRepository: AutoDownloadRepository,
         networkRepository: NetworkRepository,
-        proxyRepository: ProxyRepository,
+        private val proxyRepository: ProxyRepository,
         private val composerSettings: ComposerSettingsRepository,
     ) : ViewModel() {
         private val mutableUiState =
@@ -67,8 +68,12 @@ class DataStorageViewModel
             }
             viewModelScope.launch {
                 proxyRepository.proxies.collect { outcome ->
-                    val proxy = (outcome as? Outcome.Success)?.value?.firstOrNull { it.isEnabled }
-                    mutableUiState.update { it.copy(proxy = proxy) }
+                    val saved = (outcome as? Outcome.Success)?.value.orEmpty()
+                    // The one used last, as the proxies' page turns them back on; else the first one added.
+                    val last =
+                        saved.maxByOrNull { it.lastUsedDate }?.takeIf { it.lastUsedDate > 0 } ?: saved.firstOrNull()
+                    val enabled = saved.firstOrNull { it.isEnabled }
+                    mutableUiState.update { it.copy(proxy = enabled, switchProxy = last) }
                 }
             }
             viewModelScope.launch {
@@ -99,6 +104,10 @@ class DataStorageViewModel
 
                 DataStorageEvent.ResetAutoDownload -> {
                     resetAutoDownload()
+                }
+
+                is DataStorageEvent.SetProxyOn -> {
+                    setProxyOn(event.on)
                 }
 
                 is DataStorageEvent.SetPhotosInOriginalQuality -> {
@@ -169,6 +178,17 @@ class DataStorageViewModel
                         }
                     }
                 }
+            }
+        }
+
+        /** Turns the proxy used last on, or every proxy off, as the proxies' page's "Use proxy" does. */
+        private fun setProxyOn(on: Boolean) {
+            val state = uiState.value
+            if (on == (state.proxy != null)) return
+            val last = state.switchProxy ?: return
+            viewModelScope.launch {
+                val changed = if (on) proxyRepository.enable(last.id) else proxyRepository.disable()
+                if (changed is Outcome.Failure) effectChannel.trySend(DataStorageEffect.ShowError(changed.error))
             }
         }
 

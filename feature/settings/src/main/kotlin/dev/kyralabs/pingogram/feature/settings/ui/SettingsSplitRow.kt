@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -39,9 +41,10 @@ import dev.kyralabs.pingogram.feature.settings.R
 
 /**
  * A setting that is on or off and has a page of its own (`docs/DESIGN_SYSTEM.md` §13.10 "Split row", owner decision
- * 2026-11-19): [title] over [summary] at the start, then a chevron, a 1 dp divider in `outlineVariant` and a
- * [CheckSwitch]. Two touch targets: the text opens the page ([onOpen]; screen readers hear "open [title]"), the switch
- * toggles the setting in place with a `ToggleOn` or `ToggleOff` haptic, read as a switch named [switchLabel].
+ * 2026-11-19): its [icon] where it has one and [title] over [summary] at the start, then a chevron, a 1 dp divider in
+ * `outlineVariant` and a [CheckSwitch]. Two touch targets: the text opens the page ([onOpen]; screen readers hear
+ * "open [title]"), the switch toggles the setting in place with a `ToggleOn` or `ToggleOff` haptic, read as a switch
+ * named [switchLabel].
  */
 @Composable
 internal fun SettingsSplitRow(
@@ -52,6 +55,7 @@ internal fun SettingsSplitRow(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     summary: String? = null,
+    @DrawableRes icon: Int? = null,
     switchLabel: String = title,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -78,6 +82,7 @@ internal fun SettingsSplitRow(
             SettingsListItem(
                 modifier = Modifier.clearAndSetSemantics {},
                 shapes = shapes,
+                leadingContent = icon?.let { { SettingsItemIcon(it) } },
                 trailingContent = { PageChevron() },
                 supportingContent = summary?.let { { Text(it) } },
                 colors = nestedItemColors(),
@@ -101,6 +106,24 @@ internal fun SettingsSplitRow(
         ) {
             CheckSwitch(checked = checked)
         }
+    }
+}
+
+/**
+ * A split row's end for a row that draws its own switch (a Focus profile's): the chevron, then the 1 dp divider in
+ * `outlineVariant`, then [switch].
+ */
+@Composable
+internal fun SplitEnd(switch: @Composable () -> Unit) {
+    val spacing = MaterialTheme.spacing
+    Row(
+        modifier = Modifier.height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PageChevron()
+        VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        switch()
     }
 }
 

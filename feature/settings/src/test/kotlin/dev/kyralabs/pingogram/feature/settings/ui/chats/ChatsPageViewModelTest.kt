@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -29,6 +31,8 @@ class ChatsPageViewModelTest {
     private val composerSettings = FakeComposerSettingsRepository()
     private val playbackSettings = FakePlaybackSettingsRepository()
     private val chatListSettings = FakeChatListSettingsRepository()
+    private val transcriptionSettings = FakeTranscriptionSettingsRepository()
+    private val transcriber = FakeVoiceTranscriber()
 
     @BeforeEach
     fun setUp() {
@@ -41,7 +45,8 @@ class ChatsPageViewModelTest {
     }
 
     private fun TestScope.viewModel() =
-        ChatsPageViewModel(composerSettings, playbackSettings, chatListSettings).also { runCurrent() }
+        ChatsPageViewModel(composerSettings, playbackSettings, chatListSettings, transcriptionSettings, transcriber)
+            .also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: ChatsPageViewModel): List<ChatsPageEffect> {
         val effects = mutableListOf<ChatsPageEffect>()
@@ -62,7 +67,7 @@ class ChatsPageViewModelTest {
     @Test
     fun `shows the saved settings with their defaults`() =
         runTest {
-            assertEquals(ChatsPageUiState.Content(), viewModel().content)
+            assertEquals(ChatsPageUiState.Content(transcribeAutomatically = false), viewModel().content)
         }
 
     @Test
@@ -146,5 +151,24 @@ class ChatsPageViewModelTest {
 
             assertEquals(SendKeys(hardwareKeyboard = false), viewModel.content.sendKeys)
             assertTrue(viewModel.content.skipSilence)
+        }
+
+    @Test
+    fun `the transcription row's switch saves and shows automatic transcription`() =
+        runTest {
+            val viewModel = viewModel()
+
+            send(viewModel, ChatsPageEvent.SetTranscribeAutomatically(true))
+
+            assertEquals(true, viewModel.content.transcribeAutomatically)
+            assertTrue(transcriptionSettings.settings.value.automatic)
+        }
+
+    @Test
+    fun `a phone that cannot transcribe gets no switch on the transcription row`() =
+        runTest {
+            transcriber.isAvailable = false
+
+            assertEquals(null, viewModel().content.transcribeAutomatically)
         }
 }

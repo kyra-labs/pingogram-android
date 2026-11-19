@@ -18,15 +18,17 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsSplitRow
 
 /**
- * "Network": the proxy in use, a row that opens the proxies ([onOpenProxies]), network usage, and "Prefer IPv6" as a
- * switch row once it is read ([prefersIpv6]).
+ * "Network": the proxy in use, a row that opens the proxies ([ProxyRowActions.onOpen]), with "Use proxy" as its switch
+ * once a proxy is saved ([SettingsSplitRow], owner decision 2026-11-19), network usage, and "Prefer IPv6" as a switch
+ * row once it is read ([prefersIpv6]).
  */
 @Composable
 internal fun NetworkGroup(
     proxy: SavedProxy?,
-    onOpenProxies: () -> Unit,
+    proxyActions: ProxyRowActions,
     onOpenNetworkUsage: () -> Unit,
     prefersIpv6: Boolean? = null,
     onPrefersIpv6Change: (Boolean) -> Unit = {},
@@ -34,13 +36,27 @@ internal fun NetworkGroup(
     val haptics = LocalHapticFeedback.current
     SettingsGroup(title = stringResource(R.string.settings_section_network)) {
         item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_proxy),
-                summary = proxySummary(proxy),
-                icon = R.drawable.ic_vpn_lock,
-                shapes = shapes,
-                onClick = onOpenProxies,
-            )
+            val onSwitch = proxyActions.onSwitch
+            if (onSwitch != null) {
+                SettingsSplitRow(
+                    title = stringResource(R.string.settings_proxy),
+                    summary = proxySummary(proxy),
+                    checked = proxy != null,
+                    shapes = shapes,
+                    onOpen = proxyActions.onOpen,
+                    onCheckedChange = onSwitch,
+                    icon = R.drawable.ic_vpn_lock,
+                    switchLabel = stringResource(R.string.settings_proxy_use),
+                )
+            } else {
+                PageItem(
+                    title = stringResource(R.string.settings_proxy),
+                    summary = proxySummary(proxy),
+                    icon = R.drawable.ic_vpn_lock,
+                    shapes = shapes,
+                    onClick = proxyActions.onOpen,
+                )
+            }
         }
         item { shapes ->
             PageItem(
@@ -82,3 +98,9 @@ private fun proxySummary(proxy: SavedProxy?): String =
     } else {
         stringResource(R.string.settings_proxy_summary_on, proxyTitle(proxy).bidiIsolated())
     }
+
+/** What the Proxy row does: open the proxies' page, and turn "Use proxy" on or off ([onSwitch]; null, none saved). */
+internal class ProxyRowActions(
+    val onOpen: () -> Unit,
+    val onSwitch: ((Boolean) -> Unit)? = null,
+)

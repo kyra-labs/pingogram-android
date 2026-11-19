@@ -8,11 +8,14 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
+import dev.kyralabs.pingogram.core.domain.model.TranscriptionSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
+import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,14 +33,16 @@ sealed interface ChatsPageUiState {
 
     /**
      * Which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear ([raiseToListen]),
-     * whether they skip their silences ([skipSilence]), and the chat list's swipes, which the Swipe actions row sums
-     * up ([chatList]).
+     * whether they skip their silences ([skipSilence]), the chat list's swipes, which the Swipe actions row sums up
+     * ([chatList]), and whether voice messages are transcribed as they show ([transcribeAutomatically]; null where
+     * the phone cannot transcribe).
      */
     data class Content(
         val sendKeys: SendKeys = SendKeys(),
         val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
         val skipSilence: Boolean = false,
         val chatList: ChatListSettings = ChatListSettings(),
+        val transcribeAutomatically: Boolean? = null,
     ) : ChatsPageUiState
 }
 
@@ -57,6 +62,11 @@ sealed interface ChatsPageEvent {
     data class SetSkipSilence(
         val enabled: Boolean,
     ) : ChatsPageEvent
+
+    /** "Transcribe automatically", the transcription row's switch, turned on or off. */
+    data class SetTranscribeAutomatically(
+        val enabled: Boolean,
+    ) : ChatsPageEvent
 }
 
 /** One-off side effects of [ChatsPageViewModel], handled once by its route. */
@@ -70,7 +80,8 @@ sealed interface ChatsPageEffect {
 /**
  * The Chats page (`REQUIREMENTS.md` FR-S2, owner decision 2026-11-19): how chats behave, apart from how they look.
  * It shows what is saved, so a change that cannot be saved does not show, and says so in a snackbar. The settings keep
- * the keys they had on Appearance ([ComposerSettingsRepository], [PlaybackSettingsRepository]).
+ * the keys they had on Appearance ([ComposerSettingsRepository], [PlaybackSettingsRepository],
+ * [TranscriptionSettingsRepository], whose switch the transcription page shares where [VoiceTranscriber] can work).
  */
 @HiltViewModel
 class ChatsPageViewModel
@@ -79,15 +90,26 @@ class ChatsPageViewModel
         private val composerSettingsRepository: ComposerSettingsRepository,
         private val playbackSettingsRepository: PlaybackSettingsRepository,
         chatListSettingsRepository: ChatListSettingsRepository,
+        private val transcriptionSettingsRepository: TranscriptionSettingsRepository,
+        private val transcriber: VoiceTranscriber,
     ) : ViewModel() {
         val uiState: StateFlow<ChatsPageUiState> =
-            combine<SendKeys, RaiseToListenSettings, Boolean, ChatListSettings, ChatsPageUiState>(
+            combine<
+                SendKeys,
+                RaiseToListenSettings,
+                Boolean,
+                ChatListSettings,
+                TranscriptionSettings,
+                ChatsPageUiState,
+            >(
                 composerSettingsRepository.sendKeys,
                 playbackSettingsRepository.raiseToListen,
                 playbackSettingsRepository.skipSilence,
                 chatListSettingsRepository.settings,
-            ) { keys, raise, skipSilence, chatList ->
-                ChatsPageUiState.Content(keys, raise, skipSilence, chatList)
+                transcriptionSettingsRepository.settings,
+            ) { keys, raise, skipSilence, chatList, transcription ->
+                val automatic = transcription.automatic.takeIf { transcriber.isAvailable }
+                ChatsPageUiState.Content(keys, raise, skipSilence, chatList, automatic)
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
         private val effectChannel = Channel<ChatsPageEffect>(Channel.BUFFERED)
@@ -104,5 +126,8 @@ class ChatsPageViewModel
                 is ChatsPageEvent.SetSendKeys -> composerSettingsRepository.setSendKeys(event.keys)
                 is ChatsPageEvent.SetRaiseToListen -> playbackSettingsRepository.setRaiseToListen(event.enabled)
                 is ChatsPageEvent.SetSkipSilence -> playbackSettingsRepository.setSkipSilence(event.enabled)
+                is ChatsPageEvent.SetTranscribeAutomatically -> {
+                    transcriptionSettingsRepository.setAutomatic(event.enabled)
+                }
             }
     }

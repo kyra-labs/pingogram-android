@@ -59,7 +59,7 @@ class ChatsPageScreenshotTest {
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
-    private val defaults = ChatsPageUiState.Content()
+    private val defaults = ChatsPageUiState.Content(transcribeAutomatically = false)
 
     private val changed =
         ChatsPageUiState.Content(
