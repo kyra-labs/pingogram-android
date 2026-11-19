@@ -2157,7 +2157,8 @@ its folder or its password.
   start does not move its next run) while they are on and ready, and cancels it otherwise; the worker writes only
   while the phone charges or its battery is not low, and else tries again later.
 - **The page** (`feature:settings` `backup/`, `BackupViewModel`, `BackupRoute` from Settings home's "On this phone"):
-  the folder and "Back up now", which asks for the password in a dialog (set at the folder's first backup), and
+  the folder and "Back up now", which asks for the password in a dialog (set at the folder's first backup), "Back up
+  automatically" (`AutomaticBackupRepository.frequency`, `automaticBackupItem`), and
   "Restore from file" (`ACTION_OPEN_DOCUMENT`, or `BackupRoute(restore)` from the chat list's card), which
   `BackupRestoreFlow` takes through the password and a summary of what the backup holds to the restore; passwords go
   to the backup and are never kept or saved in the state, nor is the opened backup.

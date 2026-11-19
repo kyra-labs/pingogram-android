@@ -180,7 +180,10 @@ private fun Folder(
     }
 }
 
-/** "Back up now", with the last backup's date and size, or a loading indicator while one is written. */
+/**
+ * "Back up now", with the last backup's date and size, or a loading indicator while one is written, then "Back up
+ * automatically" ([automaticBackupItem]).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BackUpNow(
@@ -208,6 +211,7 @@ private fun BackUpNow(
                 enabled = state.canBackUp,
             )
         }
+        automaticBackupItem(state, onEvent)
     }
 }
 

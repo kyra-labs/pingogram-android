@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.backup
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.BackupFileInfo
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
 import kotlinx.collections.immutable.ImmutableList
 import java.time.Instant
 
@@ -13,8 +14,9 @@ sealed interface BackupUiState {
 
     /**
      * The kept folder's [folderName] (null while none is kept), its newest backup ([lastBackup], null for none),
-     * whether a backup is being written ([backingUp]), the password dialog while it asks ([password]), and where a
-     * restore is ([restore], null while none is under way).
+     * whether a backup is being written ([backingUp]), the password dialog while it asks ([password]), where a
+     * restore is ([restore], null while none is under way), and how often backups write themselves ([automatic]; Off
+     * without a folder) with whether they can yet ([automaticReady]: after a backup with a password).
      */
     data class Content(
         val folderName: String? = null,
@@ -22,6 +24,8 @@ sealed interface BackupUiState {
         val backingUp: Boolean = false,
         val password: PasswordDialog? = null,
         val restore: RestoreStep? = null,
+        val automatic: BackupFrequency = BackupFrequency.Off,
+        val automaticReady: Boolean = false,
     ) : BackupUiState {
         /** "Back up now" works once a folder is kept and while nothing is being written. */
         val canBackUp: Boolean get() = folderName != null && !backingUp
@@ -50,6 +54,11 @@ sealed interface BackupEvent {
     ) : BackupEvent
 
     data object DismissPassword : BackupEvent
+
+    /** "Back up automatically": Off, Daily or Weekly. */
+    data class SetAutomatic(
+        val frequency: BackupFrequency,
+    ) : BackupEvent
 
     /** Restores backup [document]: picked with Android's file picker, or named by the chat list's restore card. */
     data class RestoreFile(

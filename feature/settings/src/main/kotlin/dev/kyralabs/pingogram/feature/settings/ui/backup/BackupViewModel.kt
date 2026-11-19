@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.BackupFrequency
+import dev.kyralabs.pingogram.core.domain.repository.AutomaticBackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
@@ -20,8 +22,8 @@ import javax.inject.Inject
 
 /**
  * The Backup & restore page (`docs/adr/0039-local-backup-and-restore.md`): the kept folder and its newest backup from
- * [folders], the folder Android's picker answers kept in its place, "Back up now" through the password dialog, and
- * restoring a backup ([BackupRestoreFlow]). Passwords go to the backup and nowhere else; they are not kept, not even
+ * [folders], the folder Android's picker answers kept in its place, "Back up now" through the password dialog, how
+ * often backups write themselves ([automatic]), and restoring a backup ([BackupRestoreFlow]). Passwords go to the backup and nowhere else; they are not kept, not even
  * in the saved state.
  */
 @HiltViewModel
@@ -31,6 +33,7 @@ class BackupViewModel
         private val folders: BackupFolderRepository,
         backups: BackupRepository,
         accounts: DeviceAccountsRepository,
+        private val automatic: AutomaticBackupRepository,
     ) : ViewModel() {
         private val password = MutableStateFlow<PasswordDialog?>(null)
         private val backingUp = MutableStateFlow(false)
@@ -41,13 +44,21 @@ class BackupViewModel
         private val restore = BackupRestoreFlow(folders, backups, accounts, viewModelScope, effectChannel::send)
 
         val uiState: StateFlow<BackupUiState> =
-            combine(folders.folder, password, backingUp, restore.step) { folder, password, backingUp, restore ->
+            combine(
+                folders.folder,
+                password,
+                backingUp,
+                restore.step,
+                combine(automatic.frequency, automatic.isReady, ::Pair),
+            ) { folder, password, backingUp, restore, (frequency, ready) ->
                 BackupUiState.Content(
                     folderName = folder?.name,
                     lastBackup = folder?.backups?.firstOrNull(),
                     backingUp = backingUp,
                     password = password,
                     restore = restore,
+                    automatic = frequency,
+                    automaticReady = ready,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BackupUiState.Loading)
 
@@ -57,6 +68,7 @@ class BackupViewModel
                 BackupEvent.BackUp -> askPassword()
                 is BackupEvent.ConfirmPassword -> backUp(event.password)
                 BackupEvent.DismissPassword -> password.value = null
+                is BackupEvent.SetAutomatic -> setAutomatic(event.frequency)
                 is BackupEvent.RestoreFile -> restore.start(event.document)
                 is BackupEvent.OpenBackup -> restore.open(event.password)
                 BackupEvent.ConfirmRestore -> restore.restore()
@@ -68,6 +80,13 @@ class BackupViewModel
             viewModelScope.launch {
                 val kept = folders.keep(treeUri)
                 if (kept is Outcome.Failure) effectChannel.send(BackupEffect.ShowError(kept.error))
+            }
+        }
+
+        private fun setAutomatic(frequency: BackupFrequency) {
+            viewModelScope.launch {
+                val saved = automatic.setFrequency(frequency)
+                if (saved is Outcome.Failure) effectChannel.send(BackupEffect.ShowError(saved.error))
             }
         }
 
