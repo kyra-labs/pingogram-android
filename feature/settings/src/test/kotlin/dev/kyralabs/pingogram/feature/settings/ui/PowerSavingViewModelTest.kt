@@ -108,4 +108,21 @@ class PowerSavingViewModelTest {
             assertEquals(PowerSavingMode.WithBatterySaver, viewModel.uiState.value.mode)
             assertEquals(listOf(PowerSavingEffect.ShowError(DomainError.Unknown(0, "Disk full"))), effects)
         }
+
+    @Test
+    fun `the parts can change while power saving may turn on, and dim while it is turned off`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.uiState.value.partsEnabled)
+
+            viewModel.onEvent(PowerSavingEvent.SetMode(PowerSavingMode.Off))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.partsEnabled)
+            // Their choices stay for when it is turned on again.
+            assertEquals(PowerSavingPart.entries.toSet(), viewModel.uiState.value.parts)
+
+            viewModel.onEvent(PowerSavingEvent.SetMode(PowerSavingMode.Always))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.partsEnabled)
+        }
 }

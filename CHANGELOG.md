@@ -71,6 +71,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Raise to listen has a page of its own with "Pause when lowered"; on the Chats page its switch still turns it on or
   off, and a tap on its name opens the page. Voice message transcription and Proxy work the same way, and
   "Transcribe automatically" is a card at the top of its page.
+- Settings that only matter while another is on stay in place, dimmed, while it is off: a chat type's notification
+  options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

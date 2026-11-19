@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.feature.settings.R
 
 // The rows of the Notifications page: the defaults of a kind of chats, "Keep
@@ -69,8 +70,10 @@ internal fun ScopeGroup(
 }
 
 /**
- * The switches of [scope]'s group: notifications on or off, message previews, mentions (groups) and pinned messages
- * (groups and channels), each calling [change] with [settings] changed.
+ * The switches of [scope]'s group: notifications on or off, then message previews, mentions (groups) and pinned
+ * messages (groups and channels), which stay in place dimmed while notifications are off
+ * ([ScopeNotificationSettings.dependentsEnabled], owner decision 2026-11-19); each calls [change] with [settings]
+ * changed.
  */
 private fun SettingsGroupScope.scopeSwitches(
     scope: NotificationScope,
@@ -92,6 +95,7 @@ private fun SettingsGroupScope.scopeSwitches(
             summary = stringResource(R.string.settings_notifications_preview_summary),
             checked = settings.showPreview,
             shapes = shapes,
+            enabled = settings.dependentsEnabled,
             onCheckedChange = { change(settings.copy(showPreview = it)) },
         )
     }
@@ -102,6 +106,7 @@ private fun SettingsGroupScope.scopeSwitches(
                 summary = stringResource(R.string.settings_notifications_mentions_summary),
                 checked = settings.mentions,
                 shapes = shapes,
+                enabled = settings.dependentsEnabled,
                 onCheckedChange = { change(settings.copy(mentions = it)) },
             )
         }
@@ -113,6 +118,7 @@ private fun SettingsGroupScope.scopeSwitches(
                 summary = stringResource(R.string.settings_notifications_pinned_summary),
                 checked = settings.pinnedMessages,
                 shapes = shapes,
+                enabled = settings.dependentsEnabled,
                 onCheckedChange = { change(settings.copy(pinnedMessages = it)) },
             )
         }
@@ -250,3 +256,13 @@ internal fun ReactionsGroup(
         }
     }
 }
+
+/**
+ * Whether a kind of chats' settings that matter only while its notifications are on can change: message previews,
+ * mentions, pinned messages and new stories. They dim while it is off; sound and exceptions stay.
+ */
+internal val ScopeNotificationSettings.dependentsEnabled: Boolean get() = !isMuted
+
+/** Whether "Name who posted" can change: only while new stories notify, and the kind's notifications are on. */
+internal val ScopeNotificationSettings.storyPosterEnabled: Boolean
+    get() = dependentsEnabled && stories != StoryNotifications.None

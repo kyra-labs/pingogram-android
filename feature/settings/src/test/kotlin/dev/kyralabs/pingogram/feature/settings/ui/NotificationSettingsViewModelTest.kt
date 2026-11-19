@@ -493,4 +493,25 @@ class NotificationSettingsViewModelTest {
             return Outcome.Success(Unit)
         }
     }
+
+    @Test
+    fun `turning a kind's notifications off dims its dependent settings, and no stories dims the poster's name`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.settings.getValue(NotificationScope.PrivateChats).dependentsEnabled)
+
+            send(
+                viewModel,
+                NotificationSettingsEvent.ChangeScope(NotificationScope.PrivateChats, settings(isMuted = true)),
+            )
+            val muted = viewModel.settings.getValue(NotificationScope.PrivateChats)
+            assertFalse(muted.dependentsEnabled)
+            assertFalse(muted.storyPosterEnabled)
+
+            val noStories = settings().copy(stories = StoryNotifications.None)
+            send(viewModel, NotificationSettingsEvent.ChangeScope(NotificationScope.PrivateChats, noStories))
+            val unmuted = viewModel.settings.getValue(NotificationScope.PrivateChats)
+            assertTrue(unmuted.dependentsEnabled)
+            assertFalse(unmuted.storyPosterEnabled)
+        }
 }
