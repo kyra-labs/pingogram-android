@@ -90,18 +90,14 @@ class ChatsPageViewModelTest {
         }
 
     @Test
-    fun `raise to listen is on at first, and each of its switches saves and shows`() =
+    fun `raise to listen is on at first, and the split row's switch saves and shows`() =
         runTest {
             val viewModel = viewModel()
             assertEquals(RaiseToListenSettings(), viewModel.content.raiseToListen)
 
-            send(viewModel, ChatsPageEvent.SetPauseWhenLowered(true))
             send(viewModel, ChatsPageEvent.SetRaiseToListen(false))
 
-            assertEquals(
-                RaiseToListenSettings(enabled = false, pauseWhenLowered = true),
-                viewModel.content.raiseToListen,
-            )
+            assertEquals(RaiseToListenSettings(enabled = false), viewModel.content.raiseToListen)
         }
 
     @Test

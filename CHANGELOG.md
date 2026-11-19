@@ -68,6 +68,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   drafts" moved here from Data and storage, whose storage card now holds the storage used and Clear cache.
 - Settings search finds Snippets, Voice message transcription, Login email, Passkeys, Personal channel and Your color.
   Notifications' last group is "Other alerts", and the Stickers page is titled "Stickers and emoji".
+- Raise to listen has a page of its own with "Pause when lowered"; on the Chats page its switch still turns it on or
+  off, and a tap on its name opens the page.
 
 ### Fixed
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and

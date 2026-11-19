@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsSplitRow
 import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 
@@ -51,8 +52,9 @@ internal fun MessagesGroup(
 }
 
 /**
- * "Voice messages": the row of voice message transcription ([pages]), raise to listen with "Pause when lowered" below
- * it while it is on, and skipping voice messages' silences.
+ * "Voice messages": the row of voice message transcription ([pages]), raise to listen as a split row
+ * ([SettingsSplitRow]: its text opens its page, where "Pause when lowered" is, and its switch turns it on or off), and
+ * skipping voice messages' silences.
  */
 @Composable
 internal fun VoiceMessagesGroup(
@@ -71,26 +73,14 @@ internal fun VoiceMessagesGroup(
             )
         }
         item { shapes ->
-            SwitchItem(
+            SettingsSplitRow(
                 title = stringResource(R.string.settings_raise_to_listen),
                 summary = stringResource(R.string.settings_raise_to_listen_summary),
                 checked = raiseToListen.enabled,
                 shapes = shapes,
+                onOpen = pages.onOpenRaiseToListen,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetRaiseToListen(it)) },
             )
-        }
-        if (raiseToListen.enabled) {
-            // Keyed, so it grows in and shrinks away as raise to listen is turned on and off
-            // (docs/DESIGN_SYSTEM.md §5.1).
-            item(key = PAUSE_WHEN_LOWERED) { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_pause_when_lowered),
-                    summary = stringResource(R.string.settings_pause_when_lowered_summary),
-                    checked = raiseToListen.pauseWhenLowered,
-                    shapes = shapes,
-                    onCheckedChange = { onEvent(ChatsPageEvent.SetPauseWhenLowered(it)) },
-                )
-            }
         }
         item { shapes ->
             SwitchItem(
@@ -180,6 +170,3 @@ private fun swipeActionsSummary(chatList: ChatListSettings): String {
         stringResource(chatList.endSwipe.shortLabelRes()),
     )
 }
-
-/** The key of the row that shows only while raise to listen is on. */
-private const val PAUSE_WHEN_LOWERED = "pauseWhenLowered"

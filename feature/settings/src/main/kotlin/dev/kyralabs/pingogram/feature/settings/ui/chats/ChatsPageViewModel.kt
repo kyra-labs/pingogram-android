@@ -53,11 +53,6 @@ sealed interface ChatsPageEvent {
         val enabled: Boolean,
     ) : ChatsPageEvent
 
-    /** "Pause when lowered" turned on or off. */
-    data class SetPauseWhenLowered(
-        val enabled: Boolean,
-    ) : ChatsPageEvent
-
     /** "Skip silence" turned on or off. */
     data class SetSkipSilence(
         val enabled: Boolean,
@@ -108,7 +103,6 @@ class ChatsPageViewModel
             when (event) {
                 is ChatsPageEvent.SetSendKeys -> composerSettingsRepository.setSendKeys(event.keys)
                 is ChatsPageEvent.SetRaiseToListen -> playbackSettingsRepository.setRaiseToListen(event.enabled)
-                is ChatsPageEvent.SetPauseWhenLowered -> playbackSettingsRepository.setPauseWhenLowered(event.enabled)
                 is ChatsPageEvent.SetSkipSilence -> playbackSettingsRepository.setSkipSilence(event.enabled)
             }
     }

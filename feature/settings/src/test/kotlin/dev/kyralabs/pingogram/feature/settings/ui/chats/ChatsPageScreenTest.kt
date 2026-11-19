@@ -3,11 +3,15 @@ package dev.kyralabs.pingogram.feature.settings.ui.chats
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -53,6 +57,7 @@ class ChatsPageScreenTest {
                             onOpenTranscription = { opened += "transcription" },
                             onOpenSwipeActions = { opened += "swipeActions" },
                             onOpenShownFirst = { opened += "shownFirst" },
+                            onOpenRaiseToListen = { opened += "raiseToListen" },
                         ),
                 )
             }
@@ -72,6 +77,16 @@ class ChatsPageScreenTest {
     ) = composeRule.onNode(
         hasText(string(title)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch),
     )
+
+    private fun open(
+        @StringRes title: Int,
+    ) = RuntimeEnvironment.getApplication().getString(R.string.settings_split_row_open, string(title))
+
+    /** A clickable node whose click is labelled [label] for screen readers. */
+    private fun hasClickLabel(label: String) =
+        SemanticsMatcher("has click label \"$label\"") {
+            it.config.getOrNull(SemanticsActions.OnClick)?.label == label
+        }
 
     private fun toggleState(state: ToggleableState) =
         SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, state)
@@ -123,12 +138,21 @@ class ChatsPageScreenTest {
     }
 
     @Test
-    fun `pause when lowered shows below raise to listen only while it is on`() {
+    fun `raise to listen is a split row whose text opens its page and whose switch toggles it`() {
         setScreen(ChatsPageUiState.Content(raiseToListen = RaiseToListenSettings(enabled = false)))
         node(R.string.settings_pause_when_lowered).assertDoesNotExist()
 
-        switchRow(R.string.settings_raise_to_listen).performScrollTo().performClick()
+        composeRule
+            .onNode(hasClickLabel(open(R.string.settings_raise_to_listen)))
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .performClick()
+        composeRule
+            .onNode(hasContentDescription(string(R.string.settings_raise_to_listen)) and isToggleable())
+            .assert(toggleState(ToggleableState.Off))
+            .performClick()
 
+        assertEquals(listOf("raiseToListen"), opened)
         assertEquals(listOf(ChatsPageEvent.SetRaiseToListen(true)), events)
     }
 
