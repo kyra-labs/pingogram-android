@@ -667,6 +667,7 @@ class FakeSearchRepository : SearchRepository {
         query: String,
         offset: String?,
         filter: MessageSearchFilter,
+        inChannels: Boolean,
     ): Outcome<FoundMessages> = unused()
 
     override suspend fun publicPostSearchLimits(query: String): Outcome<PublicPostSearchLimits> = unused()

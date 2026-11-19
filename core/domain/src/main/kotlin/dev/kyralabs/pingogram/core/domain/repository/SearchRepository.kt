@@ -58,12 +58,14 @@ interface SearchRepository {
      * A page of the messages in all chats (secret chats aside, which only the device could search) that match [query]
      * and [filter], newest first: the first page for a null [offset], then the page after the one whose
      * [FoundMessages.nextOffset] is passed. With a filter other than [MessageSearchFilter.All], a blank query finds
-     * every message of that kind.
+     * every message of that kind. With [inChannels], only channels' posts (TDLib's channel chat type filter), as the
+     * Channel feed's search finds them.
      */
     suspend fun searchMessages(
         query: String,
         offset: String?,
         filter: MessageSearchFilter = MessageSearchFilter.All,
+        inChannels: Boolean = false,
     ): Outcome<FoundMessages>
 
     /**

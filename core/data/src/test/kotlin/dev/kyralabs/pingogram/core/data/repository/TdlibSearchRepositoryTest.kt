@@ -319,6 +319,22 @@ class TdlibSearchRepositoryTest {
         }
 
     @Test
+    fun `channels' posts are searched with TDLib's channel chat type filter`() =
+        runTest {
+            client.on(TdApi.SearchMessages::class) {
+                TdResult.Success(TdApi.FoundMessages(1, arrayOf(message(id = 7, chatId = 1)), ""))
+            }
+
+            val posts = repository().searchMessages("cat", offset = null, inChannels = true).page()
+
+            assertEquals(listOf(7L), posts.messages.map { it.message.id })
+            val search = client.sentOf<TdApi.SearchMessages>().single()
+            assertTrue(search.chatTypeFilter is TdApi.SearchMessagesChatTypeFilterChannel)
+            assertNull(search.filter)
+            assertEquals("cat", search.query)
+        }
+
+    @Test
     fun `a blank query finds every photo and video, or every link, but no messages without a filter`() =
         runTest {
             client.on(TdApi.SearchMessages::class) {

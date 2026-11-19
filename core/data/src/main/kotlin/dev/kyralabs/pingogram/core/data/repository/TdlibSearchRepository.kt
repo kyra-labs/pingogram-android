@@ -156,14 +156,16 @@ class TdlibSearchRepository
             query: String,
             offset: String?,
             filter: MessageSearchFilter,
+            inChannels: Boolean,
         ): Outcome<FoundMessages> {
             val text = query.trim()
             val tdFilter = filter.toTdApi()
             if (text.isEmpty() && tdFilter == null) {
                 return Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, null))
             }
+            val chatType = if (inChannels) TdApi.SearchMessagesChatTypeFilterChannel() else null
             val request =
-                TdApi.SearchMessages(null, text, offset.orEmpty(), MESSAGE_PAGE_SIZE, tdFilter, null, 0, 0)
+                TdApi.SearchMessages(null, text, offset.orEmpty(), MESSAGE_PAGE_SIZE, tdFilter, chatType, 0, 0)
             return when (val found = client.request(request).orNothing(::noMessages)) {
                 is Outcome.Success -> Outcome.Success(chatRepository.foundMessages(found.value))
                 is Outcome.Failure -> found
