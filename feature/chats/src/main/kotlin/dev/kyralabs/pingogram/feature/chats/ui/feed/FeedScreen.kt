@@ -154,6 +154,9 @@ private fun FeedTopBar(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
             ),
+        // The filter's 40 dp container ends on the window margin, as back's arrow starts on it (docs/DESIGN_SYSTEM.md
+        // §7): the bar keeps spacing.extraSmall, the button's touch target another.
+        contentPadding = PaddingValues(end = MaterialTheme.spacing.small),
     )
 }
 

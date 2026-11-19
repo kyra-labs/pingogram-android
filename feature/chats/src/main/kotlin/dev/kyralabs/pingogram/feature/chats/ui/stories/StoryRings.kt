@@ -84,7 +84,9 @@ internal fun StoryRingsRow(
     LazyRow(
         modifier = modifier,
         state = listState,
-        contentPadding = PaddingValues(horizontal = spacing.small, vertical = spacing.small),
+        // The first avatar on the window margin, in line with the chat rows' (its ring, spacing.extraSmall wider,
+        // just outside it), and spacing.medium below the folder bar (docs/DESIGN_SYSTEM.md §7).
+        contentPadding = PaddingValues(start = spacing.extraSmall, end = spacing.extraSmall, bottom = spacing.small),
         horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
     ) {
         items(rings, key = { it.chatId }, contentType = { STORY_RING }) { ring ->
