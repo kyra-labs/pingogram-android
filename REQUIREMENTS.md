@@ -242,6 +242,9 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
     right after the user reacts to it from the feed, and reads the posts on screen again, one call per channel,
     whenever the feed comes back into view or is pulled to refresh. A post `getMessages` no longer returns leaves the
     feed. A long press offers the reactions bar above the lifted card.
+  - The feed's search button searches posts in the user's channels (`searchMessages` with the channel chat type
+    filter), leaving out channels the feed's channel filter leaves out while it is on; results show as global search's
+    message rows, and a tap opens the post in its channel, as a card does.
 - FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,

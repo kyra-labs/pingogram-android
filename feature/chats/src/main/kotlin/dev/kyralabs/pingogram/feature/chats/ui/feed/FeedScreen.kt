@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -70,6 +72,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * small [TopAppBar] with back ([onBack]), "Feed" and how many posts are unread, and below it on a rounded `surface`
  * sheet ([ContentSheet]) the new posts as cards ([FeedPostCard]), then "Earlier · read" (or, once all are read, "You're
  * all caught up") and the read ones. An unread card 60% on screen for a second is reported seen ([FeedEvent.Seen]).
+ * Search swaps the top bar for a search field and the cards for the posts found in the channels ([search],
+ * [FeedSearchResults]), which open as a card does; back closes it.
  */
 @Composable
 internal fun FeedScreen(
@@ -81,53 +85,95 @@ internal fun FeedScreen(
     openPostKey: String? = null,
     isRefreshing: Boolean = false,
     reactionChoice: FeedReactionChoice? = null,
+    search: FeedSearchUiState = FeedSearchUiState(),
+    onSearchEvent: (FeedSearchEvent) -> Unit = {},
 ) {
     var filtering by rememberSaveable { mutableStateOf(false) }
     if (filtering) {
         FeedFilterSheet(state.channels, state.filter, onEvent, onDismiss = { filtering = false })
     }
     state.adSheet?.let { sheet -> FeedAdSheet(sheet, onEvent) }
+    var searching by rememberSaveable { mutableStateOf(false) }
+    val query = rememberTextFieldState()
+    val closeSearch = {
+        query.clearText()
+        searching = false
+    }
+    FeedSearchEffects(searching, query, state.filter.chosen, onSearchEvent, onClose = closeSearch)
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },
         // The top bar's container; the list sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { FeedTopBar(state, onBack, onFilter = { filtering = true }) },
+        topBar = {
+            if (searching) {
+                FeedSearchBar(query, onClose = closeSearch)
+            } else {
+                FeedTopBar(state, onBack, onSearch = { searching = true }, onFilter = { filtering = true })
+            }
+        },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            val body = Modifier.fillMaxSize().padding(contentPadding)
-            when (val content = state.content) {
-                FeedContent.Loading -> {
-                    FeedSkeleton(contentPadding)
-                }
-
-                FeedContent.NoNewPosts -> {
-                    val error = state.error
-                    if (error == null) NoNewPosts(onEvent, onBack, body) else FeedFailed(error, onEvent, body)
-                }
-
-                is FeedContent.Posts -> {
-                    FeedList(
-                        content,
-                        state.error,
-                        state.ads,
-                        onEvent,
-                        contentPadding,
-                        openPostKey,
-                        isRefreshing,
-                        reactionChoice,
-                    )
-                }
+            if (searching) {
+                FeedSearchResults(
+                    search,
+                    onSearchEvent,
+                    { chatId, id -> onEvent(FeedEvent.Open(chatId, id)) },
+                    contentPadding,
+                )
+            } else {
+                FeedBody(state, onEvent, onBack, contentPadding, openPostKey, isRefreshing, reactionChoice)
             }
         }
     }
 }
 
-/** Back, then "Feed" in `titleLargeEmphasized` over "8 unread · 14 channels" ("8 unread" at large font scales). */
+/** The feed's cards, or while there are none, the skeleton, "No new posts" or why they failed to load. */
+@Composable
+private fun FeedBody(
+    state: FeedUiState,
+    onEvent: (FeedEvent) -> Unit,
+    onBack: () -> Unit,
+    contentPadding: PaddingValues,
+    openPostKey: String? = null,
+    isRefreshing: Boolean = false,
+    reactionChoice: FeedReactionChoice? = null,
+) {
+    val body = Modifier.fillMaxSize().padding(contentPadding)
+    when (val content = state.content) {
+        FeedContent.Loading -> {
+            FeedSkeleton(contentPadding)
+        }
+
+        FeedContent.NoNewPosts -> {
+            val error = state.error
+            if (error == null) NoNewPosts(onEvent, onBack, body) else FeedFailed(error, onEvent, body)
+        }
+
+        is FeedContent.Posts -> {
+            FeedList(
+                content,
+                state.error,
+                state.ads,
+                onEvent,
+                contentPadding,
+                openPostKey,
+                isRefreshing,
+                reactionChoice,
+            )
+        }
+    }
+}
+
+/**
+ * Back, then "Feed" in `titleLargeEmphasized` over "8 unread · 14 channels" ("8 unread" at large font scales), then
+ * search ([onSearch]) and the filter ([onFilter]).
+ */
 @Composable
 private fun FeedTopBar(
     state: FeedUiState,
     onBack: () -> Unit,
+    onSearch: () -> Unit,
     onFilter: () -> Unit,
 ) {
     TopAppBar(
@@ -154,6 +200,9 @@ private fun FeedTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onSearch, shapes = IconButtonDefaults.shapes()) {
+                Icon(painterResource(UiR.drawable.ic_search), stringResource(R.string.feed_search))
+            }
             // The board's tonal square: the filter on a tonal button with medium corners.
             FilledTonalIconButton(onClick = onFilter, shape = MaterialTheme.shapes.medium) {
                 Icon(painterResource(UiR.drawable.ic_filter_list), stringResource(R.string.feed_filter))
