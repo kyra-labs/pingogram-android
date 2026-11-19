@@ -61,6 +61,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   theme too; row titles are a little bolder, and every switch shows a × while it is off.
 
 ### Fixed
+- Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and
+  end on the same margin as titles and rows.
 - The app no longer crashes while the chat list shows a forum that has a topic without messages.
 - With two accounts in the same chat, each reopens it where that account left it; switching accounts no longer
   carries one account's place over to the other.

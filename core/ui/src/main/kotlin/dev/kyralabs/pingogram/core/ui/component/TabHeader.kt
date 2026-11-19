@@ -44,7 +44,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  * - [subtitleExtraHeight] makes the expanded bar taller for what the [subtitle] shows below its line (the Chats tab's
  *   Focus pill).
  * - [navigationIcon] at the start (selection mode's close) and [actions] at the end: 48 dp tonal circles
- *   ([tabHeaderActionSize]), `spacing.small` apart.
+ *   ([tabHeaderActionSize]), `spacing.small` apart, the last ending on the window margin as the title starts on it.
  *
  * It keeps the window margin ([windowMargin]), so its title lines up with the rows' content on wide windows, and is at
  * most `contentMaxWidth` wide, centred. [title] gets the style of the row it fills; [TabHeaderTitle] is the plain one.
@@ -78,8 +78,13 @@ fun TabHeader(
             subtitle = subtitle,
             navigationIcon = navigationIcon,
             actions = {
-                // The 48 dp circles have no touch target around them: they keep `spacing.small` apart.
+                // The 48 dp circles have no touch target around them: they keep `spacing.small` apart, and the last
+                // ends on the compact window margin, mirroring the title, past the bar's own `spacing.extraSmall`.
                 Row(
+                    modifier =
+                        Modifier.padding(
+                            end = MaterialTheme.spacing.windowMarginCompact - MaterialTheme.spacing.extraSmall,
+                        ),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                     verticalAlignment = Alignment.CenterVertically,
                     content = actions,
