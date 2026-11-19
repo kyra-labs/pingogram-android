@@ -30,10 +30,14 @@ import dev.kyralabs.pingogram.ui.NavigationLabelWidths
 import dev.kyralabs.pingogram.widget.ConversationWidgetUpdater
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 @HiltAndroidApp
 class PingogramApplication :
@@ -125,10 +129,18 @@ class PingogramApplication :
 
     /**
      * Never called on a device. Robolectric calls it as each test ends: the work this application started on
-     * [applicationScope] stops with it, rather than running on into the next test against a torn-down context.
+     * [applicationScope] stops with it, rather than running on into the next test against a torn-down context. It is
+     * cancelled and then waited for (at most [TERMINATE_TIMEOUT]), as cancelling cannot stop a call already under way
+     * that does not suspend, such as a repository registering with Android as it is made.
      */
     override fun onTerminate() {
-        if (::applicationScope.isInitialized) applicationScope.cancel()
+        if (::applicationScope.isInitialized) {
+            runBlocking {
+                withTimeoutOrNull(
+                    TERMINATE_TIMEOUT,
+                ) { applicationScope.coroutineContext.job.cancelAndJoin() }
+            }
+        }
         super.onTerminate()
     }
 
@@ -219,3 +231,6 @@ class PingogramApplication :
     /** Called by Coil, once, when the first image is shown. */
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
 }
+
+/** How long [PingogramApplication.onTerminate] waits for the work it cancels: a test's last calls, never hanging it. */
+private val TERMINATE_TIMEOUT = 5.seconds
