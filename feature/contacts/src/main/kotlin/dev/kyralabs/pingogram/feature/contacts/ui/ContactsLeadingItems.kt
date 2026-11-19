@@ -105,10 +105,11 @@ internal fun SyncOffer(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = colors.surfaceContainerHigh),
     ) {
-        // From 150% font the buttons go under the text, which needs the room.
+        // From 150% font the buttons go under the text, which needs the room. The badge starts spacing.small inside
+        // the card, which sits spacing.small in: on the window margin, as the contacts' avatars (§7).
         if (LocalDensity.current.fontScale < LARGE_FONT_SCALE) {
             Row(
-                modifier = Modifier.padding(start = spacing.medium, top = spacing.medium, bottom = spacing.medium),
+                modifier = Modifier.padding(start = spacing.small, top = spacing.medium, bottom = spacing.medium),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 FlowerBadge()
@@ -116,7 +117,7 @@ internal fun SyncOffer(
                 SyncOfferButtons(onTurnOn, onDismiss)
             }
         } else {
-            Column(Modifier.padding(start = spacing.medium, top = spacing.medium, bottom = spacing.small)) {
+            Column(Modifier.padding(start = spacing.small, top = spacing.medium, bottom = spacing.small)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     FlowerBadge()
                     SyncOfferText(Modifier.weight(1f).padding(horizontal = spacing.medium))
