@@ -6,8 +6,10 @@ import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatFolderRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
+import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,7 @@ import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatFoldersViewModelTest {
     private val client = FakeTdlibClient()
+    private val chatListSettings = FakeChatListSettingsRepository()
 
     @BeforeEach
     fun setUp() {
@@ -82,7 +86,7 @@ class ChatFoldersViewModelTest {
         val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
         client.emit(TdApiFixtures.updateChatFolders(*folders, mainChatListPosition = mainChatListPosition))
         runCurrent()
-        return ChatFoldersViewModel(chats, TdlibChatFolderRepository(client))
+        return ChatFoldersViewModel(chats, TdlibChatFolderRepository(client), chatListSettings)
     }
 
     private fun answerFolders() {
@@ -227,5 +231,53 @@ class ChatFoldersViewModelTest {
                 assertEquals(ChatFoldersEffect.ShowError(DomainError.TooManyChatFolders), awaitItem())
             }
             assertTrue(!(viewModel.uiState.value as ChatFoldersUiState.Content).recommended.single().isAdding)
+        }
+
+    @Test
+    fun `the folder tabs show names, the Edit folders button and the Feed tab at first, as before the move`() =
+        runTest {
+            answerFolders()
+            val viewModel = viewModel()
+            runCurrent()
+
+            val tabs = requireNotNull(viewModel.tabs.value)
+            assertEquals(FolderTabStyle.Text, tabs.folderTabStyle)
+            assertTrue(tabs.showEditFoldersButton)
+            assertTrue(tabs.showFeedTab)
+        }
+
+    @Test
+    fun `each folder tabs' setting saves and shows`() =
+        runTest {
+            answerFolders()
+            val viewModel = viewModel()
+            runCurrent()
+
+            viewModel.onEvent(ChatFoldersEvent.SetFolderTabStyle(FolderTabStyle.Icon))
+            viewModel.onEvent(ChatFoldersEvent.SetShowEditFoldersButton(false))
+            viewModel.onEvent(ChatFoldersEvent.SetShowFeedTab(false))
+            runCurrent()
+
+            val tabs = requireNotNull(viewModel.tabs.value)
+            assertEquals(FolderTabStyle.Icon, tabs.folderTabStyle)
+            assertFalse(tabs.showEditFoldersButton)
+            assertFalse(tabs.showFeedTab)
+            assertEquals(tabs, chatListSettings.settings.value)
+        }
+
+    @Test
+    fun `a folder tabs' setting that cannot be saved stays, with a snackbar`() =
+        runTest {
+            answerFolders()
+            chatListSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            runCurrent()
+
+            viewModel.effects.test {
+                viewModel.onEvent(ChatFoldersEvent.SetShowEditFoldersButton(false))
+                runCurrent()
+                assertEquals(ChatFoldersEffect.ShowError(DomainError.Unknown(0, "Disk full")), awaitItem())
+            }
+            assertTrue(requireNotNull(viewModel.tabs.value).showEditFoldersButton)
         }
 }

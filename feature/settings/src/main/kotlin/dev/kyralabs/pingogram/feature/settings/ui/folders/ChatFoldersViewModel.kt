@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderSettings
 import dev.kyralabs.pingogram.core.domain.model.RecommendedChatFolder
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
@@ -18,11 +20,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,7 +38,7 @@ import javax.inject.Inject
  *
  * A new order shows at once and goes to Telegram with the main list kept where it is; refused, the folders return to
  * Telegram's order with a snackbar. A suggested folder is created as Telegram suggests it, and the suggestions are
- * asked for again.
+ * asked for again. The folder tabs' settings are this phone's ([ChatListSettingsRepository]).
  */
 @HiltViewModel
 class ChatFoldersViewModel
@@ -42,9 +46,14 @@ class ChatFoldersViewModel
     constructor(
         private val chatRepository: ChatRepository,
         private val folderRepository: ChatFolderRepository,
+        private val chatListSettingsRepository: ChatListSettingsRepository,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<ChatFoldersUiState>(ChatFoldersUiState.Loading)
         val uiState: StateFlow<ChatFoldersUiState> = mutableUiState.asStateFlow()
+
+        /** The folder tabs' settings (the "Folder tabs" group), kept on this phone; null until read. */
+        val tabs: StateFlow<ChatListSettings?> =
+            chatListSettingsRepository.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
         private val effectChannel = Channel<ChatFoldersEffect>(Channel.BUFFERED)
         val effects: Flow<ChatFoldersEffect> = effectChannel.receiveAsFlow()
@@ -78,6 +87,17 @@ class ChatFoldersViewModel
                 is ChatFoldersEvent.Reorder -> reorder(event.folderIds)
                 is ChatFoldersEvent.Move -> move(event.id, event.up)
                 is ChatFoldersEvent.AddRecommended -> addRecommended(event.key)
+                is ChatFoldersEvent.SetFolderTabStyle -> saveTabs { setFolderTabStyle(event.style) }
+                is ChatFoldersEvent.SetShowEditFoldersButton -> saveTabs { setShowEditFoldersButton(event.show) }
+                is ChatFoldersEvent.SetShowFeedTab -> saveTabs { setShowFeedTab(event.show) }
+            }
+        }
+
+        /** Saves a folder tabs' setting, showing in a snackbar why it could not be saved. */
+        private fun saveTabs(write: suspend ChatListSettingsRepository.() -> Outcome<Unit>) {
+            viewModelScope.launch {
+                val outcome = chatListSettingsRepository.write()
+                if (outcome is Outcome.Failure) showError(outcome.error)
             }
         }
 

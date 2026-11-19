@@ -28,7 +28,6 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
-import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -44,9 +43,8 @@ import java.text.NumberFormat
 
 /**
  * The "Chat list" group, how the list looks: "Chat type icons", the symbols before a group's or channel's name
- * (`docs/DESIGN_SYSTEM.md` §13.3), "Show stories", whether the story rings show above the chats (they load only then),
- * "Edit folders button", whether the folder tabs end in "Edit folders" (owner decision 2026-11-07), and "Folder tabs",
- * what each tab shows (owner decision 2026-11-08).
+ * (`docs/DESIGN_SYSTEM.md` §13.3), and "Show stories", whether the story rings show above the chats (they load only
+ * then). The folder tabs' settings are on Chat folders.
  */
 @Composable
 internal fun ChatListGroup(
@@ -72,76 +70,8 @@ internal fun ChatListGroup(
                 onCheckedChange = { onEvent(AppearanceEvent.SetShowStories(it)) },
             )
         }
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_edit_folders_button),
-                summary = stringResource(R.string.settings_edit_folders_button_summary),
-                checked = chatList.showEditFoldersButton,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetShowEditFoldersButton(it)) },
-            )
-        }
-        // The Channel feed's tab, first in the folder row (docs/DESIGN_SYSTEM.md §6 "Channel feed").
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_show_feed_tab),
-                summary = stringResource(R.string.settings_show_feed_tab_summary),
-                checked = chatList.showFeedTab,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetShowFeedTab(it)) },
-            )
-        }
-        item { shapes ->
-            FolderTabStyleItem(
-                style = chatList.folderTabStyle,
-                shapes = shapes,
-                onSelect = { onEvent(AppearanceEvent.SetFolderTabStyle(it)) },
-            )
-        }
     }
 }
-
-/**
- * "Folder tabs": what each folder tab above the chat list shows, its name, its icon and name, or its icon alone, as
- * [ChoiceRow]'s connected buttons in a segment of their own, as the contrast's.
- */
-@Composable
-private fun FolderTabStyleItem(
-    style: FolderTabStyle,
-    shapes: ListItemShapes,
-    onSelect: (FolderTabStyle) -> Unit,
-) {
-    SettingsSegment(shapes) {
-        SettingsListItem(
-            shapes = ListItemDefaults.shapes(),
-            supportingContent = { Text(stringResource(R.string.settings_folder_tabs_summary)) },
-            colors = nestedItemColors(),
-        ) {
-            Text(stringResource(R.string.settings_folder_tabs))
-        }
-        ChoiceRow(
-            options = FolderTabStyles,
-            selected = style,
-            label = { stringResource(it.labelRes()) },
-            onSelect = onSelect,
-            contentPadding =
-                PaddingValues(
-                    start = MaterialTheme.spacing.large,
-                    end = MaterialTheme.spacing.large,
-                    bottom = MaterialTheme.spacing.large,
-                ),
-        )
-    }
-}
-
-private val FolderTabStyles = FolderTabStyle.entries.toImmutableList()
-
-private fun FolderTabStyle.labelRes(): Int =
-    when (this) {
-        FolderTabStyle.Text -> R.string.settings_folder_tabs_text
-        FolderTabStyle.IconAndText -> R.string.settings_folder_tabs_icon_and_text
-        FolderTabStyle.Icon -> R.string.settings_folder_tabs_icon
-    }
 
 /** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
 @Composable

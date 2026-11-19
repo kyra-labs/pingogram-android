@@ -963,6 +963,7 @@
     <string name="settings_chat_folders_new">New folder</string>
     <string name="settings_chat_folders_none">No folders yet. Create one, or add one Telegram suggests.</string>
     <string name="settings_chat_folders_section_recommended">Suggested folders</string>
+    <string name="settings_chat_folders_section_tabs">Folder tabs</string>
     <string name="settings_chat_folders_add">Add</string>
     <!-- The screen reader's label of a suggested folder's button. %1$s is the folder's name. -->
     <string name="settings_chat_folders_add_named">Add %1$s</string>
