@@ -61,7 +61,8 @@ fun PingogramTheme(
             target = targetScheme,
             animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
         )
-    val categories = remember(targetScheme) { categoryPalette(targetScheme) }
+    val categories =
+        remember(targetScheme, dark, effectiveContrast) { categoryPalette(targetScheme, dark, effectiveContrast) }
     val pingogramColors = remember(colorScheme, dark, categories) { pingogramColors(colorScheme, dark, categories) }
     val settings =
         remember(dynamicColor, palette, contrast, amoled, dark, chat) {

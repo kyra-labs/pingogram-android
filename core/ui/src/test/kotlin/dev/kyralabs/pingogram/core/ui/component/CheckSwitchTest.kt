@@ -22,7 +22,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 /**
- * [CheckSwitch] shows a check in its thumb exactly while on, [performToggle] buzzes the toggle's haptic, and
+ * [CheckSwitch] shows a check in its thumb while on and a close mark while off, [performToggle] buzzes the toggle's
+ * haptic, and
  * [isAmoledBlack] says whether the theme's surfaces are true black.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -42,15 +43,17 @@ class CheckSwitchTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun `the thumb shows a check while on and none while off`() {
+    fun `the thumb shows a check while on and a close mark while off`() {
         var checked by mutableStateOf(true)
         composeRule.setContent { PingogramTheme(dynamicColor = false) { CheckSwitch(checked = checked) } }
         composeRule.onNodeWithTag(CHECK_SWITCH_CHECK_TAG, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag(CHECK_SWITCH_CLOSE_TAG, useUnmergedTree = true).assertDoesNotExist()
 
         checked = false
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag(CHECK_SWITCH_CHECK_TAG, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithTag(CHECK_SWITCH_CLOSE_TAG, useUnmergedTree = true).assertExists()
     }
 
     @Test
