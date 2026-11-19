@@ -129,7 +129,8 @@ internal fun ContactSyncCard(
         modifier = modifier.padding(horizontal = spacing.small, vertical = spacing.extraSmall),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
-        Column(Modifier.padding(start = spacing.large, top = spacing.large, end = spacing.large)) {
+        // Its content on the window margin, the card sitting spacing.small in (docs/DESIGN_SYSTEM.md §7).
+        Column(Modifier.padding(start = spacing.small, top = spacing.large, end = spacing.small)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_contacts),
