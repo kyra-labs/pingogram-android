@@ -18,6 +18,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageScreen
+import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageUiState
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusChatPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.focus.FocusPreviewStates
@@ -129,6 +131,9 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun appearance() = check { AppearanceScreen(AppearanceUiState.Content(AppearanceSettings()), {}, {}) }
+
+    @Test
+    fun chats() = check { ChatsPageScreen(ChatsPageUiState.Content(), {}, {}) }
 
     @Test
     fun chatAppearance() =
