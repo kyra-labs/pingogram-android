@@ -142,6 +142,33 @@ class KeepConnectedControllerTest {
             assertEquals(0 to 1, service.starts to service.stops)
         }
 
+    @Test
+    fun `while it is off, the app coming and going stops the service only once`() =
+        runTest {
+            started()
+            loggedIn()
+
+            set(inForeground = true)
+            set(inForeground = false)
+            set(inForeground = true)
+
+            assertEquals(0 to 1, service.starts to service.stops)
+        }
+
+    @Test
+    fun `back in the foreground after the background, it starts again`() =
+        runTest {
+            setting.keepConnected.value = true
+            foreground.value = true
+            started()
+            loggedIn()
+
+            set(inForeground = false)
+            set(inForeground = true)
+
+            assertEquals(2 to 0, service.starts to service.stops)
+        }
+
     private class RecordingServiceControl : KeepConnectedServiceControl {
         var starts = 0
         var stops = 0
