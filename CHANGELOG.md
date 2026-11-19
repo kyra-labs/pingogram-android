@@ -28,7 +28,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Feed: with two or more channels, a Feed tab starts the folder tabs and opens the newest posts from the channels you
   follow as one list, unread ones first. A post counts as read once you have seen it for a second, as in the
   channel, and "Open in channel" opens it there. Hide the tab in Settings → Appearance → Chat list → "Show Feed tab".
-- On tablets and other wide windows, the Feed opens in the chat list's place, and a post opens its channel beside it.
+- On tablets and other wide windows, the Feed opens in the chat list's place, and a post opens its channel beside it,
+  outlined while its channel shows.
 - In the Feed, a long press on a post forwards it, copies its link, bookmarks it on this phone, or marks it as read
   (or its channel as unread).
 - The Feed shows a channel's sponsored message after its newest post, labelled and as Telegram sends it, with

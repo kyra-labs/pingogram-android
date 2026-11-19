@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chats.ui.feed
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -43,12 +45,14 @@ class FeedScreenTest {
     private val events = mutableListOf<FeedEvent>()
     private var backs = 0
 
-    private fun setFeed(state: FeedUiState) =
-        composeRule.setContent {
-            PingogramTheme(dynamicColor = false) {
-                FeedScreen(state = state, onEvent = { events += it }, onBack = { backs++ })
-            }
+    private fun setFeed(
+        state: FeedUiState,
+        openPostKey: String? = null,
+    ) = composeRule.setContent {
+        PingogramTheme(dynamicColor = false) {
+            FeedScreen(state = state, onEvent = { events += it }, onBack = { backs++ }, openPostKey = openPostKey)
         }
+    }
 
     private fun posts(
         unread: List<FeedPost>,
@@ -203,6 +207,17 @@ class FeedScreenTest {
             events.filterIsInstance<FeedAdEvent>().filterNot { it is FeedAdEvent.Viewed },
         )
         assertEquals(true, events.contains(FeedAdEvent.Viewed(ad.chatId, ad.id)))
+    }
+
+    @Test
+    fun `the post open beside the feed is selected, the others not`() {
+        setFeed(
+            posts(unread = listOf(FeedPreviewData.text, FeedPreviewData.photo)),
+            openPostKey = FeedPreviewData.photo.key,
+        )
+
+        composeRule.onNode(hasText("Astronomy Daily", substring = true) and hasClickAction()).assertIsSelected()
+        composeRule.onNode(hasText("Kotlin Weekly", substring = true) and hasClickAction()).assertIsNotSelected()
     }
 
     private companion object {

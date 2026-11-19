@@ -106,6 +106,8 @@ import androidx.compose.ui.unit.dp
  *   the size of Material's leading avatar in a list item, so rows keep their heights.
  * @property keyImageOutline the outline around a secret chat's key image, which sets its square off from its frame
  *   whatever the colors of its edge pixels.
+ * @property selectedCardOutline the `primary` outline of the card whose content shows in the pane beside its list, e.g.
+ *   the Channel feed's post whose channel is open beside it (`docs/DESIGN_SYSTEM.md` §6 "Channel feed").
  * @property pinnedIndicator the width of the pinned messages bar's segments, one per pinned message, that show which
  *   one the bar shows.
  * @property pollBar the thickness of the bar under a poll's answer that shows its share of the votes, as Material's
@@ -186,6 +188,7 @@ data class PingogramSizes(
     val panelStickerCover: Dp = 28.dp,
     val leadingIconContainer: Dp = 40.dp,
     val keyImageOutline: Dp = 2.dp,
+    val selectedCardOutline: Dp = 2.dp,
     val pinnedIndicator: Dp = 3.dp,
     val pollBar: Dp = 4.dp,
     val sliderInactiveTrackInset: Dp = 8.dp,

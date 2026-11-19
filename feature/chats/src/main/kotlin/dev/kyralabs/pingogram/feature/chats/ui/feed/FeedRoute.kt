@@ -34,6 +34,7 @@ internal fun FeedRoute(
     onOpenPost: (chatId: Long, messageId: Long) -> Unit,
     onForward: (chatId: Long, messageIds: List<Long>) -> Unit,
     modifier: Modifier = Modifier,
+    openPostKey: String? = null,
     viewModel: FeedViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,7 +90,14 @@ internal fun FeedRoute(
             if (message.isNotEmpty()) snackbars.showSnackbar(message)
         }
     }
-    FeedScreen(state = state, onEvent = viewModel::onEvent, onBack = onBack, modifier = modifier, snackbars = snackbars)
+    FeedScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        modifier = modifier,
+        snackbars = snackbars,
+        openPostKey = openPostKey,
+    )
 }
 
 /** What a report of a sponsored message came to, as the conversation says it. */

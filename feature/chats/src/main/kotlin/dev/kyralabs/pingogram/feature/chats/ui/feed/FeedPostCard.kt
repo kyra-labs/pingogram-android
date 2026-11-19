@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import dev.kyralabs.pingogram.core.ui.component.Avatar
@@ -55,13 +57,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Unread and read differ by three signals, never color alone: an unread post on `surfaceContainerHigh` with its name in
  * the emphasized weight and a `primary` dot before "New · 9:41 AM"; a read one on `surfaceContainerLow` with an
  * `outlineVariant` edge. The container and edge cross-fade on the effects spring as a post turns read, and nothing
- * moves.
+ * moves. While its channel is open beside the feed ([selected], two panes), its edge is a `primary` outline
+ * (`selectedCardOutline`), and screen readers hear it selected.
  */
 @Composable
 internal fun FeedPostCard(
     post: FeedPost,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
@@ -74,16 +78,20 @@ internal fun FeedPostCard(
         )
     val edge =
         animateColorAsState(
-            if (post.isUnread) colors.outlineVariant.copy(alpha = 0f) else colors.outlineVariant,
+            when {
+                selected -> colors.primary
+                post.isUnread -> colors.outlineVariant.copy(alpha = 0f)
+                else -> colors.outlineVariant
+            },
             effects,
             label = "feedPostEdge",
         )
     val shape = MaterialTheme.shapes.extraLarge
-    val edgeWidth = CardDefaults.outlinedCardBorder().width
+    val edgeWidth = if (selected) MaterialTheme.sizes.selectedCardOutline else CardDefaults.outlinedCardBorder().width
     Card(
         onClick = onOpen,
         modifier =
-            modifier.drawWithCache {
+            modifier.semantics { this.selected = selected }.drawWithCache {
                 val stroke = edgeWidth.toPx()
                 val fill = shape.createOutline(size, layoutDirection, this)
                 // The edge lies inside the card, as a border's does: its outline is inset by half its width.

@@ -216,6 +216,8 @@ internal fun ChatsListDetail(
                                             keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
                                         },
                                         onForward = onForward,
+                                        openChatId = shownChatId,
+                                        openMessageId = shownChatId?.let(opener.place::messageIn),
                                     )
                                 },
                             ) {

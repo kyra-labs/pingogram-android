@@ -51,6 +51,7 @@ internal fun FeedPostWithMenu(
     post: FeedPost,
     onEvent: (FeedEvent) -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     var open by remember { mutableStateOf(false) }
     val actions = post.menuActions()
@@ -66,6 +67,7 @@ internal fun FeedPostWithMenu(
     Box(modifier) {
         FeedPostCard(
             post = post,
+            selected = selected,
             onOpen = { onEvent(FeedEvent.Open(post.chatId, post.messageIds.first())) },
             modifier =
                 Modifier
