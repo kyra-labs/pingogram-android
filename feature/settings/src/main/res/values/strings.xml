@@ -1319,7 +1319,7 @@
     <string name="settings_reactions_nobody">Nobody</string>
     <string name="settings_reactions_preview">Show the reaction</string>
     <string name="settings_reactions_preview_summary">Notifications say who reacted and with which emoji</string>
-    <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet.</string>
+    <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet: the library it’s built on doesn’t receive them.</string>
     <string name="settings_double_tap">Double-tap to react</string>
     <string name="settings_double_tap_summary">Your quick reaction, and on which messages a double tap adds it</string>
     <string name="settings_double_tap_loading">Loading reactions</string>

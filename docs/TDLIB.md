@@ -177,6 +177,23 @@ signed-in accounts' user ids as `other_user_ids` and keeps the `pushReceiverId` 
 whose id `getPushReceiverId(payload)` returns, asked of any account's client, or to every account when none matches
 (before the registrations of a new process came back); the token is deleted only when the last account logs out.
 
+### Reaction and poll-vote notifications
+
+The pinned version cannot notify of reactions or poll votes, which is why Pingogram shows none (owner decision
+2026-11-19: on hold until TDLib handles Telegram's reaction pushes; `setReactionNotificationSettings` still serves the
+account's other apps):
+
+- No notification for them: `NotificationType` is only `notificationTypeNewMessage`, `…NewSecretChat`, `…NewCall` and
+  `…NewPushMessage`, and `NotificationGroupType` only messages, mentions, secret chat and calls, so
+  `updateNotificationGroup` never carries a reaction or a vote.
+- No push for them: no `PushMessageContent` is a reaction, a story reaction or a poll vote, and TDLib refuses
+  Telegram's reaction pushes (`REACT_*`), so in `gms` nothing reaches the app while it is not connected.
+- Only while connected (`foss` with Keep connected, `gms` while the app runs): `updateMessageUnreadReactions` (the
+  chat, the message and each `unreadReaction`: its type, sender and `is_big`) and `updateMessageContainsUnreadPollVotes`
+  (a count, not who voted). These are the unread badges' updates; nothing shows that the account's Everyone /
+  My contacts / Nobody choice (`reactionNotificationSettings`) filters them.
+- Nothing at all for reactions to the user's stories.
+
 ## Authorization state machine
 
 ```
