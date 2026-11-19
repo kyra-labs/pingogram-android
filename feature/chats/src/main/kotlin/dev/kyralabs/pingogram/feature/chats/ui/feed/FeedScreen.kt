@@ -80,6 +80,7 @@ internal fun FeedScreen(
     snackbars: SnackbarHostState = remember { SnackbarHostState() },
     openPostKey: String? = null,
     isRefreshing: Boolean = false,
+    reactionChoice: FeedReactionChoice? = null,
 ) {
     var filtering by rememberSaveable { mutableStateOf(false) }
     if (filtering) {
@@ -106,7 +107,16 @@ internal fun FeedScreen(
                 }
 
                 is FeedContent.Posts -> {
-                    FeedList(content, state.error, state.ads, onEvent, contentPadding, openPostKey, isRefreshing)
+                    FeedList(
+                        content,
+                        state.error,
+                        state.ads,
+                        onEvent,
+                        contentPadding,
+                        openPostKey,
+                        isRefreshing,
+                        reactionChoice,
+                    )
                 }
             }
         }
@@ -176,6 +186,7 @@ private fun FeedList(
     contentPadding: PaddingValues,
     openPostKey: String? = null,
     isRefreshing: Boolean = false,
+    reactionChoice: FeedReactionChoice? = null,
 ) {
     val viewport = remember { LayoutBoundsHolder() }
     // Each channel's ad goes after its newest card, the first of the channel in the list.
@@ -192,6 +203,7 @@ private fun FeedList(
             MaterialTheme.spacing.medium,
             MaterialTheme.motionScheme,
             openPostKey,
+            reactionChoice,
         )
     RefreshingFeedList(
         isRefreshing = isRefreshing,
@@ -242,6 +254,7 @@ private fun LazyListScope.posts(
                 onEvent = onEvent,
                 modifier = Modifier.card(this, style).then(seen),
                 selected = post.key == style.openPostKey,
+                reactions = style.reactionChoice?.takeIf { it.key == post.key }?.emojis,
             )
         }
         adAfter[post.key]?.let { ad ->
@@ -265,6 +278,7 @@ private class CardStyle(
     val margin: Dp,
     val motionScheme: MotionScheme,
     val openPostKey: String?,
+    val reactionChoice: FeedReactionChoice?,
 )
 
 /** An entry of [scope], new posts sliding in on the spatial spring, at most [CardStyle.maxWidth] wide. */

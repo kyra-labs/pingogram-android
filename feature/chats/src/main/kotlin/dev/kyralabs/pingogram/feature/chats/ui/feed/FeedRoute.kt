@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
+import kotlinx.coroutines.flow.Flow
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -39,15 +40,40 @@ internal fun FeedRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val reactionChoice by viewModel.reactionChoice.collectAsStateWithLifecycle()
     val snackbars = remember { SnackbarHostState() }
+    FeedEffects(viewModel.effects, snackbars, onOpenPost, onForward)
+    FeedScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        modifier = modifier,
+        snackbars = snackbars,
+        openPostKey = openPostKey,
+        isRefreshing = refreshing,
+        reactionChoice = reactionChoice,
+    )
+}
+
+/**
+ * Handles the feed's one-off [effects]: a post or the forward sheet opens through [onOpenPost] or [onForward], a link
+ * goes on the clipboard, a sponsor's link opens, and notices and failures show in [snackbars].
+ */
+@Composable
+private fun FeedEffects(
+    effects: Flow<FeedEffect>,
+    snackbars: SnackbarHostState,
+    onOpenPost: (chatId: Long, messageId: Long) -> Unit,
+    onForward: (chatId: Long, messageIds: List<Long>) -> Unit,
+) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val showDetails = isDebuggable()
     val uriHandler = LocalUriHandler.current
     val currentOnOpenPost by rememberUpdatedState(onOpenPost)
     val currentOnForward by rememberUpdatedState(onForward)
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
+    LaunchedEffect(effects) {
+        effects.collect { effect ->
             val message =
                 when (effect) {
                     is FeedEffect.OpenPost -> {
@@ -91,15 +117,6 @@ internal fun FeedRoute(
             if (message.isNotEmpty()) snackbars.showSnackbar(message)
         }
     }
-    FeedScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        onBack = onBack,
-        modifier = modifier,
-        snackbars = snackbars,
-        openPostKey = openPostKey,
-        isRefreshing = refreshing,
-    )
 }
 
 /** What a report of a sponsored message came to, as the conversation says it. */

@@ -36,13 +36,16 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.awaitLongPress
 import dev.kyralabs.pingogram.feature.chats.ui.consumeUntilUp
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A feed card with its menu (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 6): a long press (the `LongPress`
- * haptic) or a right click lifts the card, its shadow and scale rising on the spatial spring, and opens an expressive
- * menu below it: Open in channel, Forward, Copy link, Bookmark, and "Mark as read" while the post is unread or "Mark
- * channel as unread" once read. Screen readers get the same items as the card's custom actions. A press that stops
+ * haptic) or a right click lifts the card, its shadow and scale rising on the spatial spring, shows the post's
+ * [reactions] above it once they are read ([FeedReactionBar]), and opens an expressive menu below it: Open in
+ * channel, Forward, Copy link, Bookmark, and "Mark as read" while the post is unread or "Mark channel as unread" once
+ * read. Screen readers get the same items as the card's custom actions. A press that stops
  * the list's fling only stops it, as the folder tabs' does.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -52,6 +55,7 @@ internal fun FeedPostWithMenu(
     onEvent: (FeedEvent) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    reactions: ImmutableList<String>? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     val actions = post.menuActions()
@@ -77,8 +81,10 @@ internal fun FeedPostWithMenu(
                         scaleX = 1f + raised * (LIFT_SCALE - 1f)
                         scaleY = scaleX
                         this.shape = shape
-                    }.opensMenuOnLongPress(LocalHapticFeedback.current) { open = true }
-                    .semantics {
+                    }.opensMenuOnLongPress(LocalHapticFeedback.current) {
+                        open = true
+                        currentOnEvent(FeedEvent.ShowReactions(post.key))
+                    }.semantics {
                         customActions =
                             actions.mapIndexed { index, action ->
                                 CustomAccessibilityAction(labels[index]) {
@@ -88,19 +94,66 @@ internal fun FeedPostWithMenu(
                             }
                     },
         )
-        DropdownMenuPopup(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
-                actions.forEachIndexed { index, action ->
-                    DropdownMenuItem(
-                        onClick = {
-                            open = false
-                            onEvent(FeedEvent.Act(post.key, action))
-                        },
-                        text = { Text(labels[index]) },
-                        shape = MenuDefaults.itemShape(index, actions.size).shape,
-                        leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
-                    )
-                }
+        if (open && !reactions.isNullOrEmpty()) {
+            PostReactions(post, reactions, onDismiss = { open = false }) { emoji ->
+                onEvent(FeedEvent.React(post.key, emoji))
+            }
+        }
+        PostMenu(
+            open,
+            actions,
+            labels,
+            onDismiss = { open = false },
+        ) { action -> onEvent(FeedEvent.Act(post.key, action)) }
+    }
+}
+
+/** The [reactions] bar above [post]'s card, the user's own chosen; a tap closes it ([onDismiss]) and reacts. */
+@Composable
+private fun PostReactions(
+    post: FeedPost,
+    reactions: ImmutableList<String>,
+    onDismiss: () -> Unit,
+    onReact: (String) -> Unit,
+) {
+    val chosen =
+        post.reactions
+            .filter { it.isChosen }
+            .mapNotNull { it.emoji }
+            .toImmutableSet()
+    FeedReactionBar(
+        emojis = reactions,
+        chosen = chosen,
+        onReact = { emoji ->
+            onDismiss()
+            onReact(emoji)
+        },
+        onDismiss = onDismiss,
+    )
+}
+
+/** The menu below the card while [open]: one group of [actions], labelled [labels]; an item closes it ([onDismiss]). */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PostMenu(
+    open: Boolean,
+    actions: List<FeedPostAction>,
+    labels: List<String>,
+    onDismiss: () -> Unit,
+    onAct: (FeedPostAction) -> Unit,
+) {
+    DropdownMenuPopup(expanded = open, onDismissRequest = onDismiss) {
+        DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
+            actions.forEachIndexed { index, action ->
+                DropdownMenuItem(
+                    onClick = {
+                        onDismiss()
+                        onAct(action)
+                    },
+                    text = { Text(labels[index]) },
+                    shape = MenuDefaults.itemShape(index, actions.size).shape,
+                    leadingIcon = { Icon(painterResource(action.icon), contentDescription = null) },
+                )
             }
         }
     }

@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
+import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SponsoredMessages
 import dev.kyralabs.pingogram.core.domain.model.SponsoredReportResult
@@ -53,6 +54,31 @@ class FeedCardActions
                 .messageLink(post.chatId, post.messageIds.first(), forAlbum = true, inThread = false)
                 .map { it.link }
 
+        /** The emoji reactions [post] takes, the most used first, at most [REACTION_BAR]. */
+        suspend fun reactions(post: FeedPost): Outcome<List<String>> =
+            messageActions.availableReactions(post.chatId, post.messageIds.first()).map { available ->
+                (available.top + available.recent + available.popular)
+                    .filterIsInstance<ReactionType.Emoji>()
+                    .map(ReactionType.Emoji::emoji)
+                    .distinct()
+                    .take(REACTION_BAR)
+            }
+
+        /** Adds reaction [emoji] to [post], or takes it away if the user [chose] it already. */
+        suspend fun react(
+            post: FeedPost,
+            emoji: String,
+            chose: Boolean,
+        ): Outcome<Unit> {
+            val id = post.messageIds.first()
+            val reaction = ReactionType.Emoji(emoji)
+            return if (chose) {
+                messageActions.removeReaction(post.chatId, id, reaction)
+            } else {
+                messageActions.addReaction(post.chatId, id, reaction)
+            }
+        }
+
         /** Bookmarks [post], keeping the tags and note of an earlier bookmark of it, with what it says now. */
         suspend fun bookmark(post: FeedPost): Outcome<Unit> {
             val messageId = post.messageIds.first()
@@ -76,3 +102,6 @@ class FeedCardActions
         /** Marks [post]'s channel as unread in the chat list. */
         suspend fun markChannelUnread(post: FeedPost): Outcome<Unit> = chats.markAsUnread(post.chatId)
     }
+
+/** How many reactions the bar above a lifted card offers. */
+private const val REACTION_BAR = 7

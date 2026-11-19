@@ -13,13 +13,23 @@ import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
 
 /**
- * The message actions the feed uses: only links, "https://t.me/c/<chat>/<message>" or [linkFailure]. Every other
- * action fails, as the feed never asks for it.
+ * The message actions the feed uses: links, "https://t.me/c/<chat>/<message>" or [linkFailure], and reactions
+ * ([available], recorded in [reactions]). Every other action fails, as the feed never asks for it.
  */
 class FakeMessageLinks : MessageActionRepository {
     var linkFailure: DomainError? = null
+
+    /** What the posts take: two emoji and a custom emoji, which the bar leaves out. */
+    var available =
+        AvailableReactions(
+            persistentListOf(ReactionType.Emoji("👍"), ReactionType.CustomEmoji(5), ReactionType.Emoji("🔥")),
+        )
+
+    /** Each reaction added ("+👍") or taken away ("-👍"). */
+    val reactions = mutableListOf<String>()
 
     override suspend fun messageLink(
         chatId: Long,
@@ -38,7 +48,7 @@ class FakeMessageLinks : MessageActionRepository {
     override suspend fun availableReactions(
         chatId: Long,
         messageId: Long,
-    ): Outcome<AvailableReactions> = unused()
+    ): Outcome<AvailableReactions> = Outcome.Success(available)
 
     override suspend fun customEmojiStickers(customEmojiIds: List<Long>): Outcome<ImmutableMap<Long, Sticker>> =
         unused()
@@ -47,13 +57,19 @@ class FakeMessageLinks : MessageActionRepository {
         chatId: Long,
         messageId: Long,
         reaction: ReactionType,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> {
+        reactions += "+${(reaction as ReactionType.Emoji).emoji}"
+        return Outcome.Success(Unit)
+    }
 
     override suspend fun removeReaction(
         chatId: Long,
         messageId: Long,
         reaction: ReactionType,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> {
+        reactions += "-${(reaction as ReactionType.Emoji).emoji}"
+        return Outcome.Success(Unit)
+    }
 
     override suspend fun editText(
         chatId: Long,

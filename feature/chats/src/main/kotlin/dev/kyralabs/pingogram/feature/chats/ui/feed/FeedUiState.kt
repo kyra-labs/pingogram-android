@@ -30,6 +30,13 @@ data class FeedUiState(
     val adSheet: SponsoredSheet? = null,
 )
 
+/** The reactions post [key] takes, for the bar above it while its menu is open. */
+@Immutable
+data class FeedReactionChoice(
+    val key: String,
+    val emojis: ImmutableList<String>,
+)
+
 /**
  * A channel's sponsored message as its card shows it (`REQUIREMENTS.md` §2), exactly as TDLib returned it: shown after
  * channel [chatId]'s newest post, labelled "Recommended" if [isRecommended] else "Sponsored", the sponsor's [title],
