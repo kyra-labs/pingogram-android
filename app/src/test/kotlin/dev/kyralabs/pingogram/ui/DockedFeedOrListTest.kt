@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +29,12 @@ class DockedFeedOrListTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private var docked by mutableStateOf(true)
+    private var conversationBacks = 0
 
     private fun setPane(backEnabled: Boolean = true) =
         composeRule.setContent {
+            // The conversation beside the feed, which takes back while the feed's is off.
+            BackHandler(enabled = !backEnabled) { conversationBacks++ }
             DockedFeedOrList(
                 docked = docked,
                 backEnabled = backEnabled,
@@ -60,5 +64,6 @@ class DockedFeedOrListTest {
         pressBack()
 
         composeRule.onNodeWithText("Feed").assertIsDisplayed()
+        assertEquals(1, conversationBacks)
     }
 }
