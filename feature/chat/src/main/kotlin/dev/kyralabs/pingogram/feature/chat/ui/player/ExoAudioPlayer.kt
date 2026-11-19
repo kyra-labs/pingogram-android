@@ -26,8 +26,9 @@ import javax.inject.Inject
  * plays anything in costs nothing. Every call from the main thread is posted to it and returns at once, [release]
  * above all: ExoPlayer's release waits, on the thread that calls it, until its playback thread has released the codec
  * and the audio track, for up to half a second, which on the main thread held up the frames after leaving a
- * conversation. What the player does by itself comes back to the main thread for [listener], unless the main thread
- * has put another file in the player, emptied or released it since ([generation]).
+ * conversation; its looper quits once the release's last events are handled ([releaseAndQuitLooper]). What the player
+ * does by itself comes back to the main thread for [listener], unless the main thread has put another file in the
+ * player, emptied or released it since ([generation]).
  *
  * The main thread never asks the player where it is: [positionMillis] moves on from the position the player last
  * reported ([PlaybackClock]), which it reports whenever it starts or stops advancing, jumps or learns the file's
@@ -227,9 +228,9 @@ internal class ExoAudioPlayer
             playerHandler = null
             handler.post {
                 speechFocus?.abandon()
-                player?.release()
+                val released = player
                 player = null
-                handler.looper.quitSafely()
+                if (released != null) released.releaseAndQuitLooper() else handler.looper.quitSafely()
             }
         }
 
@@ -299,6 +300,22 @@ internal class ExoAudioPlayer
                 )
         }
     }
+
+/**
+ * On the player's own thread: releases it, then quits that thread's looper once nothing more is due on it. ExoPlayer's
+ * release leaves work queued for that looper (its analytics collector's release, its renderers' last events such as
+ * audio disabled), and handling it posts more (Media3's `ListenerSet` flushes its events with a message of its own).
+ * Quitting at once let those flushes reach a quitting looper, each a "sending message to a Handler on a dead thread"
+ * warning.
+ */
+internal fun ExoPlayer.releaseAndQuitLooper() {
+    val looper = applicationLooper
+    release()
+    looper.queue.addIdleHandler {
+        looper.quitSafely()
+        false
+    }
+}
 
 /** The audio attributes for the earpiece ([RaiseToListen]) or for [kind]'s media. */
 private fun attributesFor(
