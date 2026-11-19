@@ -30,6 +30,15 @@ sealed interface FeedEvent {
         val action: FeedPostAction,
     ) : FeedEvent
 
+    /**
+     * Read the posts of cards [keys] again (owner decision 2026-11-19): those on screen as the feed comes back into
+     * view, or as it is [pulled] to refresh, when the pull indicator shows and a failure is said.
+     */
+    data class Refresh(
+        val keys: List<String>,
+        val pulled: Boolean,
+    ) : FeedEvent
+
     /** The filter sheet's "Mark all as read": every unread post of the [chosen] channels (null for all) is read. */
     data class MarkAllAsRead(
         val chosen: ImmutableSet<Long>?,

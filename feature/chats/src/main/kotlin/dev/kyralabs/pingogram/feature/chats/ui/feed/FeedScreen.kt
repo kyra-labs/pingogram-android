@@ -79,6 +79,7 @@ internal fun FeedScreen(
     modifier: Modifier = Modifier,
     snackbars: SnackbarHostState = remember { SnackbarHostState() },
     openPostKey: String? = null,
+    isRefreshing: Boolean = false,
 ) {
     var filtering by rememberSaveable { mutableStateOf(false) }
     if (filtering) {
@@ -105,7 +106,7 @@ internal fun FeedScreen(
                 }
 
                 is FeedContent.Posts -> {
-                    FeedList(content, state.error, state.ads, onEvent, contentPadding, openPostKey)
+                    FeedList(content, state.error, state.ads, onEvent, contentPadding, openPostKey, isRefreshing)
                 }
             }
         }
@@ -174,6 +175,7 @@ private fun FeedList(
     onEvent: (FeedEvent) -> Unit,
     contentPadding: PaddingValues,
     openPostKey: String? = null,
+    isRefreshing: Boolean = false,
 ) {
     val viewport = remember { LayoutBoundsHolder() }
     // Each channel's ad goes after its newest card, the first of the channel in the list.
@@ -191,11 +193,11 @@ private fun FeedList(
             MaterialTheme.motionScheme,
             openPostKey,
         )
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().layoutBounds(viewport),
+    RefreshingFeedList(
+        isRefreshing = isRefreshing,
+        onRefresh = { keys, pulled -> onEvent(FeedEvent.Refresh(keys, pulled)) },
+        viewport = viewport,
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (error != null) {
             item(key = ERROR, contentType = ERROR) {
