@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
@@ -9,6 +10,8 @@ import dev.kyralabs.pingogram.core.data.mapper.toPrivacySetting
 import dev.kyralabs.pingogram.core.data.mapper.toTdPrivacySetting
 import dev.kyralabs.pingogram.core.data.mapper.withChoice
 import dev.kyralabs.pingogram.core.data.mapper.withExceptions
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
@@ -17,8 +20,8 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -38,13 +41,15 @@ class TdlibPrivacyRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : PrivacyRepository {
         override suspend fun rules(setting: PrivacySetting): Outcome<PrivacyRules> =
             client.request(TdApi.GetUserPrivacySettingRules(setting.toTdPrivacySetting())).map { it.toPrivacyRules() }
 
         override val changes: Flow<PrivacyRulesChange> =
-            client.updates
-                .filterIsInstance<TdApi.UpdateUserPrivacySettingRules>()
+            client
+                .updateRouter(scope)
+                .updatesOf<TdApi.UpdateUserPrivacySettingRules>()
                 .mapNotNull { update ->
                     update.setting.toPrivacySetting()?.let { PrivacyRulesChange(it, update.rules.toPrivacyRules()) }
                 }

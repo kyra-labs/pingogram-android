@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibWelcomeMessageRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibWelcomeMessageRepository(client)
+    private fun TestScope.repository() = TdlibWelcomeMessageRepository(client, backgroundScope)
 
     private fun text(text: String) = TdApi.MessageText(TdApi.FormattedText(text, emptyArray()), null, null)
 
@@ -42,7 +43,7 @@ class TdlibWelcomeMessageRepositoryTest {
             client.on(TdApi.LoadChatWelcomeMessages::class, TdResult.Success(TdApi.Ok()))
             val seen = mutableListOf<Outcome<List<WelcomeMessage>>>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                repository.messages(CHAT).take(2).toList(seen)
+                repository().messages(CHAT).take(2).toList(seen)
             }
             runCurrent()
             assertEquals(listOf(CHAT), client.sentOf<TdApi.LoadChatWelcomeMessages>().map { it.chatId })
@@ -70,7 +71,7 @@ class TdlibWelcomeMessageRepositoryTest {
             client.on(TdApi.LoadChatWelcomeMessages::class, TdResult.Success(TdApi.Ok()))
             val seen = mutableListOf<Outcome<List<WelcomeMessage>>>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                repository.messages(CHAT).take(1).toList(seen)
+                repository().messages(CHAT).take(1).toList(seen)
             }
             val size = TdApi.PhotoSize("x", TdApi.File().apply { id = 5 }, 800, 600, intArrayOf())
             val caption = TdApi.FormattedText("Rain", emptyArray())
@@ -94,16 +95,16 @@ class TdlibWelcomeMessageRepositoryTest {
     fun `a failure to load comes as a failure`() =
         runTest {
             client.on(TdApi.LoadChatWelcomeMessages::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
-            assertTrue(repository.messages(CHAT).first() is Outcome.Failure)
+            assertTrue(repository().messages(CHAT).first() is Outcome.Failure)
         }
 
     @Test
     fun `the limit is TDLib's option, or Telegram's five`() =
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueInteger(8)))
-            assertEquals(8, repository.countMax())
+            assertEquals(8, repository().countMax())
             client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
-            assertEquals(WelcomeLimits.COUNT_MAX_DEFAULT, repository.countMax())
+            assertEquals(WelcomeLimits.COUNT_MAX_DEFAULT, repository().countMax())
             assertEquals("welcome_message_count_max", client.sentOf<TdApi.GetOption>().first().name)
         }
 
@@ -111,9 +112,9 @@ class TdlibWelcomeMessageRepositoryTest {
     fun `adds a text and a picked photo with its caption`() =
         runTest {
             client.on(TdApi.AddChatWelcomeMessage::class, TdResult.Success(TdApi.Ok()))
-            repository.add(CHAT, WelcomeDraft(FormattedText("Welcome!", persistentListOf())))
+            repository().add(CHAT, WelcomeDraft(FormattedText("Welcome!", persistentListOf())))
             val caption = FormattedText("Rain", persistentListOf())
-            repository.add(CHAT, WelcomeDraft(caption, WelcomePhoto.Picked("/up/p.jpg")))
+            repository().add(CHAT, WelcomeDraft(caption, WelcomePhoto.Picked("/up/p.jpg")))
 
             val (text, photo) = client.sentOf<TdApi.AddChatWelcomeMessage>().map { it.inputMessageContent }
             assertEquals("Welcome!", (text as TdApi.InputMessageText).text.text)
@@ -125,7 +126,7 @@ class TdlibWelcomeMessageRepositoryTest {
     @Test
     fun `a blank text without a photo is refused before TDLib`() =
         runTest {
-            val result = repository.add(CHAT, WelcomeDraft(FormattedText("  ", persistentListOf())))
+            val result = repository().add(CHAT, WelcomeDraft(FormattedText("  ", persistentListOf())))
             assertEquals(Outcome.Failure(DomainError.InputRejected), result)
             assertTrue(client.sent.isEmpty())
         }
@@ -139,7 +140,7 @@ class TdlibWelcomeMessageRepositoryTest {
                     persistentListOf(PhotoSize("m", 320, 240, FileRef(4, 0)), PhotoSize("x", 800, 600, FileRef(5, 0))),
                     null,
                 )
-            repository.edit(CHAT, 3, WelcomeDraft(FormattedText("New", persistentListOf()), WelcomePhoto.Kept(photo)))
+            repository().edit(CHAT, 3, WelcomeDraft(FormattedText("New", persistentListOf()), WelcomePhoto.Kept(photo)))
 
             val sent = client.sentOf<TdApi.EditChatWelcomeMessage>().single()
             assertEquals(3, sent.welcomeMessageId)
@@ -153,8 +154,8 @@ class TdlibWelcomeMessageRepositoryTest {
         runTest {
             client.on(TdApi.DeleteChatWelcomeMessage::class, TdResult.Success(TdApi.Ok()))
             client.on(TdApi.DeleteAllChatWelcomeMessages::class, TdResult.Success(TdApi.Ok()))
-            assertTrue(repository.delete(CHAT, 2) is Outcome.Success)
-            assertTrue(repository.deleteAll(CHAT) is Outcome.Success)
+            assertTrue(repository().delete(CHAT, 2) is Outcome.Success)
+            assertTrue(repository().deleteAll(CHAT) is Outcome.Success)
             assertEquals(2, client.sentOf<TdApi.DeleteChatWelcomeMessage>().single().welcomeMessageId)
             assertEquals(CHAT, client.sentOf<TdApi.DeleteAllChatWelcomeMessages>().single().chatId)
         }

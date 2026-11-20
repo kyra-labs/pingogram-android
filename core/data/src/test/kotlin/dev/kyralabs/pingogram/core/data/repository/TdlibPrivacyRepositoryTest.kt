@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -34,7 +35,7 @@ import org.junit.jupiter.params.provider.EnumSource
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibPrivacyRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibPrivacyRepository(client)
+    private fun TestScope.repository() = TdlibPrivacyRepository(client, backgroundScope)
 
     private fun rules(vararg rules: TdApi.UserPrivacySettingRule) = TdApi.UserPrivacySettingRules(arrayOf(*rules))
 
@@ -46,7 +47,7 @@ class TdlibPrivacyRepositoryTest {
 
     private suspend fun rulesOf(vararg rules: TdApi.UserPrivacySettingRule): PrivacyRules {
         answerRules(*rules)
-        return (repository.rules(PrivacySetting.LastSeen) as Outcome.Success).value
+        return (repository().rules(PrivacySetting.LastSeen) as Outcome.Success).value
     }
 
     /** The rules last sent with setUserPrivacySettingRules, as their classes and ids. */
@@ -71,7 +72,7 @@ class TdlibPrivacyRepositoryTest {
         runTest {
             answerRules(TdApi.UserPrivacySettingRuleAllowAll())
 
-            repository.rules(setting)
+            repository().rules(setting)
 
             val expected =
                 when (setting) {
@@ -184,7 +185,7 @@ class TdlibPrivacyRepositoryTest {
                 TdResult.Failure(TdError(429, "Too Many Requests: retry after 8")),
             )
 
-            assertEquals(Outcome.Failure(DomainError.FloodWait(8)), repository.rules(PrivacySetting.Calls))
+            assertEquals(Outcome.Failure(DomainError.FloodWait(8)), repository().rules(PrivacySetting.Calls))
         }
 
     @Test
@@ -194,7 +195,7 @@ class TdlibPrivacyRepositoryTest {
                 CompletableDeferred<TdResult<TdApi.UserPrivacySettingRules>>().await()
             }
 
-            val result = async { repository.rules(PrivacySetting.Calls) }
+            val result = async { repository().rules(PrivacySetting.Calls) }
             advanceTimeBy(REQUEST_TIMEOUT)
             runCurrent()
 
@@ -207,7 +208,7 @@ class TdlibPrivacyRepositoryTest {
     fun `reports the changes TDLib sends for the settings it shows`() =
         runTest {
             val changes = mutableListOf<PrivacyRulesChange>()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { repository.changes.toList(changes) }
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { repository().changes.toList(changes) }
 
             client.emit(
                 TdApi.UpdateUserPrivacySettingRules(
@@ -243,7 +244,7 @@ class TdlibPrivacyRepositoryTest {
             )
             answerSet()
 
-            val result = repository.setChoice(PrivacySetting.PhoneNumber, PrivacyChoice.Contacts)
+            val result = repository().setChoice(PrivacySetting.PhoneNumber, PrivacyChoice.Contacts)
 
             assertEquals(
                 listOf(
@@ -272,7 +273,7 @@ class TdlibPrivacyRepositoryTest {
             answerRules(TdApi.UserPrivacySettingRuleAllowAll())
             answerSet()
 
-            repository.setChoice(PrivacySetting.ChatInvites, PrivacyChoice.Contacts)
+            repository().setChoice(PrivacySetting.ChatInvites, PrivacyChoice.Contacts)
 
             assertInstanceOf(
                 TdApi.UserPrivacySettingAllowChatInvites::class.java,
@@ -294,7 +295,7 @@ class TdlibPrivacyRepositoryTest {
             )
             answerSet()
 
-            repository.setChoice(PrivacySetting.LastSeen, PrivacyChoice.Everybody)
+            repository().setChoice(PrivacySetting.LastSeen, PrivacyChoice.Everybody)
 
             assertEquals(listOf("AllowAll"), sentRules())
         }
@@ -308,7 +309,7 @@ class TdlibPrivacyRepositoryTest {
             )
             answerSet()
 
-            val result = repository.setChoice(PrivacySetting.Calls, PrivacyChoice.Nobody)
+            val result = repository().setChoice(PrivacySetting.Calls, PrivacyChoice.Nobody)
 
             assertEquals(listOf("AllowUsers[7]"), sentRules())
             assertEquals(
@@ -323,7 +324,7 @@ class TdlibPrivacyRepositoryTest {
             client.on(TdApi.GetUserPrivacySettingRules::class, TdResult.Failure(TdError(500, "Network is unreachable")))
             answerSet()
 
-            val result = repository.setChoice(PrivacySetting.Calls, PrivacyChoice.Nobody)
+            val result = repository().setChoice(PrivacySetting.Calls, PrivacyChoice.Nobody)
 
             assertEquals(Outcome.Failure(DomainError.Network), result)
             assertTrue(client.sentOf<TdApi.SetUserPrivacySettingRules>().isEmpty())
@@ -337,7 +338,7 @@ class TdlibPrivacyRepositoryTest {
 
             assertEquals(
                 Outcome.Failure(DomainError.PremiumRequired),
-                repository.setChoice(PrivacySetting.VoiceMessages, PrivacyChoice.Contacts),
+                repository().setChoice(PrivacySetting.VoiceMessages, PrivacyChoice.Contacts),
             )
         }
 
@@ -348,7 +349,7 @@ class TdlibPrivacyRepositoryTest {
             client.on(TdApi.GetUserPrivacySettingRules::class, TdResult.Success(answered))
             answerSet()
 
-            repository.setChoice(PrivacySetting.Calls, PrivacyChoice.Contacts)
+            repository().setChoice(PrivacySetting.Calls, PrivacyChoice.Contacts)
 
             assertArrayEquals(
                 arrayOf<Any>(TdApi.UserPrivacySettingRuleAllowAll::class.java),
@@ -364,8 +365,8 @@ class TdlibPrivacyRepositoryTest {
             client.on(TdApi.GetReadDatePrivacySettings::class, TdResult.Success(TdApi.ReadDatePrivacySettings(true)))
             client.on(TdApi.SetReadDatePrivacySettings::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(true), repository.showsReadDate())
-            assertEquals(Outcome.Success(Unit), repository.setShowsReadDate(false))
+            assertEquals(Outcome.Success(true), repository().showsReadDate())
+            assertEquals(Outcome.Success(Unit), repository().setShowsReadDate(false))
 
             assertFalse(
                 client
@@ -386,7 +387,7 @@ class TdlibPrivacyRepositoryTest {
 
             assertEquals(
                 Outcome.Success(NewChatPrivacy(allowsNonContacts = true, paidMessageStars = 10, canRestrict = true)),
-                repository.newChatPrivacy(),
+                repository().newChatPrivacy(),
             )
             assertEquals("can_set_new_chat_privacy_settings", client.sentOf<TdApi.GetOption>().single().name)
         }
@@ -400,7 +401,7 @@ class TdlibPrivacyRepositoryTest {
             )
             client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
 
-            assertEquals(Outcome.Success(NewChatPrivacy(allowsNonContacts = true)), repository.newChatPrivacy())
+            assertEquals(Outcome.Success(NewChatPrivacy(allowsNonContacts = true)), repository().newChatPrivacy())
         }
 
     @Test
@@ -412,8 +413,8 @@ class TdlibPrivacyRepositoryTest {
             )
             client.on(TdApi.SetNewChatPrivacySettings::class, TdResult.Success(TdApi.Ok()))
 
-            repository.setAllowsNonContacts(false)
-            repository.setAllowsNonContacts(true)
+            repository().setAllowsNonContacts(false)
+            repository().setAllowsNonContacts(true)
 
             val (out, inside) = client.sentOf<TdApi.SetNewChatPrivacySettings>().map { it.settings }
             assertEquals(false to 0L, out.allowNewChatsFromUnknownUsers to out.incomingPaidMessageStarCount)
@@ -440,7 +441,7 @@ class TdlibPrivacyRepositoryTest {
                         neverUserIds = listOf(5, 6),
                     ),
                 ),
-                repository.exceptions(PrivacySetting.LastSeen),
+                repository().exceptions(PrivacySetting.LastSeen),
             )
         }
 
@@ -455,7 +456,7 @@ class TdlibPrivacyRepositoryTest {
             answerSet()
 
             val result =
-                repository.setExceptions(
+                repository().setExceptions(
                     PrivacySetting.ChatInvites,
                     PrivacyExceptionLists(alwaysUserIds = listOf(8), neverChatIds = listOf(-100)),
                 )
@@ -495,7 +496,7 @@ class TdlibPrivacyRepositoryTest {
             )
             answerSet()
 
-            repository.setExceptions(PrivacySetting.LastSeen, PrivacyExceptionLists())
+            repository().setExceptions(PrivacySetting.LastSeen, PrivacyExceptionLists())
 
             val sent =
                 client

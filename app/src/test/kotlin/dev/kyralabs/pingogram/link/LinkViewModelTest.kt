@@ -13,9 +13,12 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -35,8 +38,11 @@ import org.junit.jupiter.api.Test
 class LinkViewModelTest {
     private val client = FakeTdlibClient()
     private val botStarts = BotStartInbox()
+
+    /** The account's scope, which the router of [client] runs in; updates reach it as they are emitted. */
+    private val accountScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     private val viewModel by lazy {
-        LinkViewModel(TdlibLinkRepository(client), botStarts, TdlibOauthLoginRepository(client))
+        LinkViewModel(TdlibLinkRepository(client), botStarts, TdlibOauthLoginRepository(client, accountScope))
     }
 
     @BeforeEach
@@ -47,6 +53,7 @@ class LinkViewModelTest {
     @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
+        accountScope.cancel()
     }
 
     private fun linkType(type: TdApi.InternalLinkType) =

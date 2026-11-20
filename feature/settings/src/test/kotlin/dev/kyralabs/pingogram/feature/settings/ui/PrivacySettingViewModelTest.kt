@@ -52,7 +52,7 @@ class PrivacySettingViewModelTest {
         setting: PrivacySetting = PrivacySetting.LastSeen,
         users: TdlibUserRepository = TdlibUserRepository(client, backgroundScope),
     ): PrivacySettingViewModel =
-        PrivacySettingViewModel(setting, TdlibPrivacyRepository(client), users).also { runCurrent() }
+        PrivacySettingViewModel(setting, TdlibPrivacyRepository(client, backgroundScope), users).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: PrivacySettingViewModel): List<PrivacySettingEffect> {
         val effects = mutableListOf<PrivacySettingEffect>()

@@ -88,7 +88,7 @@ class PrivacyExceptionsViewModelTest {
             setting = PrivacySetting.LastSeen,
             side = side,
             savedStateHandle = handle,
-            privacyRepository = TdlibPrivacyRepository(client),
+            privacyRepository = TdlibPrivacyRepository(client, backgroundScope),
             chatRepository = chats,
             userRepository = users,
         ).also {

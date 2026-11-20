@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.formattedText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.photoSize
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,7 +23,7 @@ import org.junit.jupiter.api.Test
  */
 class TdlibUserProfileRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibUserProfileRepository(client)
+    private fun TestScope.repository() = TdlibUserProfileRepository(client, backgroundScope)
 
     private fun fullInfo(
         bio: String? = "Mathematician",
@@ -54,7 +55,7 @@ class TdlibUserProfileRepositoryTest {
                 ),
             )
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 val info = (awaitItem() as Outcome.Success).value
                 assertEquals("Mathematician", info.bio.text)
                 assertEquals(Birthdate(10, 12, 1815), info.birthdate)
@@ -74,7 +75,7 @@ class TdlibUserProfileRepositoryTest {
                 TdResult.Success(fullInfo(birthdate = TdApi.Birthdate(1, 4, 0), blockList = TdApi.BlockListStories())),
             )
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 val info = (awaitItem() as Outcome.Success).value
                 assertEquals(Birthdate(1, 4, null), info.birthdate)
                 assertEquals(false, info.isBlocked)
@@ -92,7 +93,7 @@ class TdlibUserProfileRepositoryTest {
                 }
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(info))
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 val mapped = (awaitItem() as Outcome.Success).value
                 assertEquals(true, mapped.canBeCalled)
                 assertEquals(true, mapped.supportsVideoCalls)
@@ -106,7 +107,7 @@ class TdlibUserProfileRepositoryTest {
             val bot = TdApi.BotInfo().also { it.description = "Finds stickers" }
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo(bio = null, botInfo = bot)))
 
-            repository.fullInfo(7).test {
+            repository().fullInfo(7).test {
                 val info = (awaitItem() as Outcome.Success).value
                 assertEquals("Finds stickers", info.botDescription)
                 assertEquals("", info.bio.text)
@@ -119,7 +120,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo()))
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 awaitItem()
                 client.emit(TdApi.UpdateUserFullInfo(43, fullInfo(bio = "Someone else")))
                 client.emit(TdApi.UpdateUserFullInfo(42, fullInfo(bio = "Poet", blockList = TdApi.BlockListMain())))
@@ -137,7 +138,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.GetUserFullInfo::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 8")))
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 assertEquals(Outcome.Failure(DomainError.FloodWait(8)), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -148,7 +149,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo(note = "Owes me a chai")))
 
-            repository.fullInfo(42).test {
+            repository().fullInfo(42).test {
                 assertEquals("Owes me a chai", (awaitItem() as Outcome.Success).value.note.text)
                 client.emit(TdApi.UpdateUserFullInfo(42, fullInfo(note = null)))
                 assertEquals("", (awaitItem() as Outcome.Success).value.note.text)
@@ -161,7 +162,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.SetUserNote::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.setNote(42, "  Met at DroidCon  "))
+            assertEquals(Outcome.Success(Unit), repository().setNote(42, "  Met at DroidCon  "))
 
             val request = client.sentOf<TdApi.SetUserNote>().single()
             assertEquals(42L, request.userId)
@@ -174,7 +175,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.SetUserNote::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 5")))
 
-            assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository.setNote(42, "Note"))
+            assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository().setNote(42, "Note"))
         }
 
     @Test
@@ -182,8 +183,8 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.SuggestUserBirthdate::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.suggestBirthdate(42, Birthdate(10, 12, 1815)))
-            assertEquals(Outcome.Success(Unit), repository.suggestBirthdate(42, Birthdate(29, 2, null)))
+            assertEquals(Outcome.Success(Unit), repository().suggestBirthdate(42, Birthdate(10, 12, 1815)))
+            assertEquals(Outcome.Success(Unit), repository().suggestBirthdate(42, Birthdate(29, 2, null)))
 
             val (full, noYear) = client.sentOf<TdApi.SuggestUserBirthdate>()
             assertEquals(42L, full.userId)
@@ -196,7 +197,7 @@ class TdlibUserProfileRepositoryTest {
         runTest {
             client.on(TdApi.SuggestUserBirthdate::class, TdResult.Failure(TdError(400, "BIRTHDAY_INVALID")))
 
-            assertTrue(repository.suggestBirthdate(42, Birthdate(31, 2, null)) is Outcome.Failure)
+            assertTrue(repository().suggestBirthdate(42, Birthdate(31, 2, null)) is Outcome.Failure)
         }
 
     @Test
@@ -206,7 +207,7 @@ class TdlibUserProfileRepositoryTest {
                 TdApi.ChatPhoto(5, 1_700_000_000, null, arrayOf(photoSize("a", 160, 160)), null, null, null)
             client.on(TdApi.GetUserProfilePhotos::class, TdResult.Success(TdApi.ChatPhotos(12, arrayOf(photo))))
 
-            val page = (repository.profilePhotos(42, offset = 20, limit = 10) as Outcome.Success).value
+            val page = (repository().profilePhotos(42, offset = 20, limit = 10) as Outcome.Success).value
 
             assertEquals(12, page.totalCount)
             assertEquals(5L, page.photos.single().id)

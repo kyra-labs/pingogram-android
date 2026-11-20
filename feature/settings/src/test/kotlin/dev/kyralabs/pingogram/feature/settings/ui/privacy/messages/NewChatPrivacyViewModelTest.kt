@@ -50,7 +50,8 @@ class NewChatPrivacyViewModelTest {
         client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueBoolean(can)))
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
-    private fun TestScope.viewModel() = NewChatPrivacyViewModel(TdlibPrivacyRepository(client)).also { runCurrent() }
+    private fun TestScope.viewModel() =
+        NewChatPrivacyViewModel(TdlibPrivacyRepository(client, backgroundScope)).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: NewChatPrivacyViewModel): List<NewChatPrivacyEffect> {
         val effects = mutableListOf<NewChatPrivacyEffect>()

@@ -62,7 +62,7 @@ class PrivacySecurityViewModelTest {
     // Through the real TDLib repositories on FakeTdlibClient, as the app wires them.
     private fun TestScope.viewModel(): PrivacySecurityViewModel =
         PrivacySecurityViewModel(
-            TdlibPrivacyRepository(client),
+            TdlibPrivacyRepository(client, backgroundScope),
             TdlibBlockListRepository(client),
             TdlibSessionRepository(client),
             TdlibTwoStepVerificationRepository(client),
