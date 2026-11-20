@@ -6,6 +6,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
+import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -53,7 +55,7 @@ class ProfileScreenTest {
         media: SharedMediaUiState = ProfilePreviewData.media,
         withContactEditor: Boolean = true,
         numbersHidden: Boolean = false,
-        storyAlbums: StoryAlbumsSlot? = null,
+        stories: ProfileStoriesSlot? = null,
         profileMusic: ProfileMusicSlot? = null,
     ) {
         composeRule.setContent {
@@ -72,7 +74,7 @@ class ProfileScreenTest {
                                 onOpenUrl = { opened += "url:$it" },
                             ),
                         onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
-                        storyAlbums = storyAlbums,
+                        stories = stories,
                         profileMusic = profileMusic,
                     )
                 }
@@ -92,20 +94,38 @@ class ProfileScreenTest {
         composeRule.onNodeWithTag(PROFILE_GRID_TEST_TAG).performScrollToNode(hasText(text))
     }
 
-    @Test
-    fun `the story albums slot shows above the shared media, for the profile's chat`() {
-        val asked = mutableListOf<Long>()
-        setScreen(
-            storyAlbums = { chatId, modifier ->
-                asked += chatId
-                Text("Albums of $chatId", modifier)
-            },
-        )
+    /** A Stories tab's slot whose items say whose stories they are and whether the tab is selected. */
+    private fun storiesSlot(asked: MutableList<Pair<Long, Boolean>>): ProfileStoriesSlot =
+        { chatId, active ->
+            asked += chatId to active
+            { _, _ -> item(key = "stories") { Text("Stories of $chatId") } }
+        }
 
+    @Test
+    fun `a person's Stories tab comes first and shows its items in place of the media once selected`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        setScreen(stories = storiesSlot(asked))
         val chatId = ProfilePreviewData.media.chatId
-        scrollTo("Albums of $chatId")
-        composeRule.onNodeWithText("Albums of $chatId").assertIsDisplayed()
-        assertEquals(chatId, asked.distinct().single())
+
+        scrollTo(string(R.string.profile_stories))
+        composeRule.onNodeWithText(string(R.string.profile_stories)).performClick()
+        scrollTo("Stories of $chatId")
+
+        composeRule.onNodeWithText("Stories of $chatId").assertIsDisplayed()
+        assertEquals(listOf(chatId to false, chatId to true), asked.distinct())
+        composeRule.onNodeWithText(string(R.string.profile_stories)).assertIsOn()
+        composeRule.assertAccessible()
+    }
+
+    @Test
+    fun `a bot's profile has no Stories tab`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        val content = ProfilePreviewData.content
+        setScreen(state = content.copy(actions = content.actions.copy(isBot = true)), stories = storiesSlot(asked))
+
+        scrollTo(string(R.string.profile_media_photos))
+        composeRule.onNodeWithText(string(R.string.profile_stories)).assertDoesNotExist()
+        assertTrue(asked.isEmpty())
     }
 
     @Test

@@ -23,3 +23,11 @@ fun NavGraphBuilder.storyViewerScreen(
 fun NavController.navigateToStoryViewer(chatId: Long) {
     navigate(StoryViewerRoute(chatId)) { launchSingleTop = true }
 }
+
+/** Plays the stories chat [chatId] keeps on its profile in the stories viewer, from story [storyId]. */
+fun NavController.navigateToProfileStoryViewer(
+    chatId: Long,
+    storyId: Int,
+) {
+    navigate(StoryViewerRoute(chatId, storyId, fromProfile = true)) { launchSingleTop = true }
+}

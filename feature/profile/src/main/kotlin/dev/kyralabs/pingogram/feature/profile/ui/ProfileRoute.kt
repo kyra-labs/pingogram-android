@@ -55,7 +55,7 @@ internal fun ProfileRoute(
     modifier: Modifier = Modifier,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
-    storyAlbums: StoryAlbumsSlot? = null,
+    stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
     onChatDeleted: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
@@ -100,7 +100,7 @@ internal fun ProfileRoute(
             onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
             onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
             snackbarHostState = snackbarHostState,
-            storyAlbums = storyAlbums,
+            stories = stories,
             profileMusic = profileMusic,
         )
     }

@@ -36,7 +36,11 @@ import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldDestinationIt
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.calculateThreePaneScaffoldValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -109,9 +113,10 @@ internal fun ProfileScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
-    storyAlbums: StoryAlbumsSlot? = null,
+    stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
 ) {
+    val storiesTab = rememberStoriesTab(state, media, stories)
     val page =
         ProfilePageParts(
             state,
@@ -121,7 +126,7 @@ internal fun ProfileScreen(
             mediaActions,
             onEditContact,
             onExportChat,
-            storyAlbums,
+            storiesTab,
             profileMusic,
         )
     if (twoPanes) {
@@ -140,9 +145,26 @@ internal class ProfilePageParts(
     val mediaActions: SharedMediaActions,
     val onEditContact: (() -> Unit)?,
     val onExportChat: (() -> Unit)? = null,
-    val storyAlbums: StoryAlbumsSlot? = null,
+    val stories: StoriesTab? = null,
     val profileMusic: ProfileMusicSlot? = null,
 )
+
+/**
+ * A person's Stories tab where `:app` gives its [slot] (owner decision 2026-11-20); none for bots and deleted accounts,
+ * which keep no stories, nor before the profile and its chat are read. Its selection survives configuration changes.
+ */
+@Composable
+private fun rememberStoriesTab(
+    state: ProfileUiState,
+    media: SharedMediaUiState,
+    slot: ProfileStoriesSlot?,
+): StoriesTab? {
+    var selected by rememberSaveable { mutableStateOf(false) }
+    val person = (state as? ProfileUiState.Content)?.takeUnless { it.actions.isBot || it.isDeletedAccount }
+    val chatId = media.chatId
+    if (slot == null || chatId == null || person == null) return null
+    return StoriesTab(selected, onSelect = { selected = it }, items = slot(chatId, selected))
+}
 
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -227,7 +249,8 @@ private fun ProfileGrid(
     val margin = windowMargin()
     val sizes = MaterialTheme.sizes
     val spacing = MaterialTheme.spacing
-    if (withMedia) SharedMediaLoadMoreEffect(gridState, page.media, page.onMediaEvent)
+    // The media's next page is not asked for while the Stories tab shows instead.
+    if (withMedia && page.stories?.selected != true) SharedMediaLoadMoreEffect(gridState, page.media, page.onMediaEvent)
     BoxWithConstraints(modifier) {
         val inset = max(margin, (maxWidth - sizes.contentMaxWidth) / 2)
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
@@ -254,7 +277,15 @@ private fun ProfileGrid(
                 fullWidth(key = MEDIA_HEADER, inset = inset, motion = motion, top = spacing.extraLarge) {
                     ProfileSectionHeader(stringResource(R.string.profile_section_media))
                 }
-                sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, inset, motion)
+                sharedMediaItems(
+                    page.media,
+                    page.onMediaEvent,
+                    page.mediaActions,
+                    cellSizePx,
+                    inset,
+                    motion,
+                    stories = page.stories,
+                )
             }
         }
     }
@@ -313,14 +344,6 @@ private fun LazyGridScope.profileItems(
                 onEditContact = page.onEditContact,
                 onExportChat = page.onExportChat,
             )
-        }
-    }
-    val albums = page.storyAlbums
-    val chatId = page.media.chatId
-    if (albums != null && chatId != null) {
-        // Nothing shows for a chat without albums, so the section adds its own space above it.
-        fullWidth(key = STORY_ALBUMS, inset = inset, motion = motion) {
-            albums(chatId, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
         }
     }
 }
@@ -400,5 +423,4 @@ private const val STRANGER = "stranger"
 private const val PHOTOS = "photos"
 private const val INFO = "info"
 private const val MORE = "more"
-private const val STORY_ALBUMS = "story-albums"
 private const val MEDIA_HEADER = "media-header"

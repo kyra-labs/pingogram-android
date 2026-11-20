@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Chats show the wallpaper set for your Telegram account, for light and dark theme, and a chat's own wallpaper when
   either of you set one: photos, patterns in your color theme's colors, and colors.
+- Profiles have a Stories tab: the person's story albums, each with how many stories it holds, above the stories they
+  keep on their profile with their dates. Tap a story to watch from there, or an album to open it.
 - In a forum topic you have read, pull up past the newest message to open the next topic with unread messages.
 - Back up what Pingogram keeps only on this phone: Settings → On this phone → Backup & restore writes your settings,
   bookmarks, reminders, keyword alerts and snippets into one file, encrypted with a password you set, in a folder you

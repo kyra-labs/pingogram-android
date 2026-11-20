@@ -41,12 +41,9 @@ data class AlbumPictureFile(
     val height: Int,
 )
 
-/** What a profile's story albums section shows (board 11a). */
+/** What a profile's story albums show at the top of its Stories tab (board 11a). */
 @Immutable
 sealed interface StoryAlbumsUiState {
-    /** Not asked yet, still loading, failed, or the chat has no albums: the section shows nothing. */
-    data object Hidden : StoryAlbumsUiState
-
     data class Content(
         val albums: ImmutableList<StoryAlbumTile>,
     ) : StoryAlbumsUiState

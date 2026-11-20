@@ -87,7 +87,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * at its edges, so the group never overflows into its menu. The tabs switch what the page shows below them, as the
  * folder tabs switch the chat list; six of them fit a connected group (more would be a `PrimaryScrollableTabRow`), and
  * one style for tabs keeps the app consistent. The selected label is `labelLargeEmphasized`; unchecked buttons on
- * `surfaceContainerHighest`, a step above the page. Screen readers hear tabs.
+ * `surfaceContainerHighest`, a step above the page. Screen readers hear tabs. A profile with a Stories tab ([stories],
+ * owner decision 2026-11-20) has it first; while it is selected, no media tab is.
  */
 @Composable
 internal fun SharedMediaTabRow(
@@ -95,11 +96,15 @@ internal fun SharedMediaTabRow(
     onSelect: (SharedMediaKind) -> Unit,
     modifier: Modifier = Modifier,
     margin: Dp = MaterialTheme.spacing.windowMarginCompact,
+    stories: StoriesTab? = null,
 ) {
     val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-    val tabs = SharedMediaTabs
-    val labels = tabs.map { it.label() }
-    val scroll = rememberTabScroll(tabs.size, selectedIndex = tabs.indexOf(selected), margin)
+    // The Stories tab, where the profile has one, comes first; null stands for it.
+    val tabs: List<SharedMediaKind?> = if (stories != null) listOf(null) + SharedMediaTabs else SharedMediaTabs
+    val storiesLabel = stringResource(R.string.profile_stories)
+    val labels = tabs.map { it?.label() ?: storiesLabel }
+    val chosen = if (stories?.selected == true) null else selected
+    val scroll = rememberTabScroll(tabs.size, selectedIndex = tabs.indexOf(chosen), margin)
     ButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
@@ -114,13 +119,13 @@ internal fun SharedMediaTabRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         tabs.forEachIndexed { index, kind ->
-            val isSelected = kind == selected
+            val isSelected = kind == chosen
             customItem(
                 buttonGroupContent = {
                     val interactionSource = remember { MutableInteractionSource() }
                     ToggleButton(
                         checked = isSelected,
-                        onCheckedChange = { onSelect(kind) },
+                        onCheckedChange = { select(kind, stories, onSelect) },
                         modifier =
                             Modifier
                                 .animateWidth(interactionSource)
@@ -142,7 +147,7 @@ internal fun SharedMediaTabRow(
                     DropdownMenuItem(
                         text = { Text(labels[index]) },
                         onClick = {
-                            onSelect(kind)
+                            select(kind, stories, onSelect)
                             menu.dismiss()
                         },
                     )
@@ -150,6 +155,16 @@ internal fun SharedMediaTabRow(
             )
         }
     }
+}
+
+/** Selects tab [kind], or for null the [stories] tab, which a media tab's selection leaves. */
+private fun select(
+    kind: SharedMediaKind?,
+    stories: StoriesTab?,
+    onSelect: (SharedMediaKind) -> Unit,
+) {
+    stories?.onSelect(kind == null)
+    if (kind != null) onSelect(kind)
 }
 
 @Composable
