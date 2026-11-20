@@ -8,4 +8,4 @@ it for linking to an app:
 - `obtainium-badge.png`: "Get it on Obtainium" from Obtainium's repository
   (https://github.com/ImranR98/Obtainium/tree/main/assets/graphics).
 - `appgallery-badge.png`: "Explore it on AppGallery" from the badge package Huawei AppGallery Connect gave for
-  Pingogram, cropped to the black badge.
+  Pingogram: the black badge, on the same transparent 646 × 250 canvas as the other two so they line up.

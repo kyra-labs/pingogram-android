@@ -203,7 +203,7 @@ the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how t
 
 <p>
   <a href="https://github.com/kyra-labs/pingogram-android/releases/latest"><img src="docs/images/github-badge.png" height="80" alt="Get it on GitHub"></a>
-  <a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="54" alt="Explore it on AppGallery"></a>
+  <a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="80" alt="Explore it on AppGallery"></a>
   <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="docs/images/obtainium-badge.png" height="80" alt="Get it on Obtainium"></a>
 </p>
 
