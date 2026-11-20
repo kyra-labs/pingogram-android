@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoLimits
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.WallpaperRepository
 import kotlinx.collections.immutable.ImmutableList
@@ -61,9 +62,10 @@ sealed interface WallpaperEvent {
         val wallpaper: Wallpaper,
     ) : WallpaperEvent
 
-    /** Previews the photo at [uri], from Android's photo picker. */
+    /** Previews the photo at [uri], from Android's photo picker, for a screen whose longer side is [screenSidePx]. */
     data class PickPhoto(
         val uri: String,
+        val screenSidePx: Int,
     ) : WallpaperEvent
 
     /** Blurs the photo picked, or not. */
@@ -128,12 +130,24 @@ internal class WallpaperPicker(
         )
     }
 
-    /** Prepares the photo at [uri] (from Android's photo picker) and previews it; a photo that cannot be read fails. */
-    fun pickPhoto(uri: String) {
+    /**
+     * Prepares the photo at [uri] (from Android's photo picker) at the screen's size ([screenSidePx] on the longer
+     * side, up to `PickedPhotoLimits.WALLPAPER_MAX_SIDE_PX`) and previews it; a photo that cannot be read fails.
+     */
+    fun pickPhoto(
+        uri: String,
+        screenSidePx: Int,
+    ) {
         if (state.value.isWorking) return
         mutableState.update { it.copy(isWorking = true) }
         scope.launch {
-            when (val prepared = photos.preparePhoto(uri)) {
+            when (
+                val prepared =
+                    photos.preparePhoto(
+                        uri,
+                        screenSidePx.coerceIn(1, PickedPhotoLimits.WALLPAPER_MAX_SIDE_PX),
+                    )
+            ) {
                 is Outcome.Success -> replacePending(WallpaperChoice.NewPhoto(prepared.value))
                 is Outcome.Failure -> onError(prepared.error)
             }

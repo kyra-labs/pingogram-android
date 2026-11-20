@@ -80,10 +80,12 @@ internal fun ChatAppearanceRoute(
             }
         }
     }
-    // Android's photo picker: no permission, and only the photo the user picks reaches the app.
+    // Android's photo picker: no permission, and only the photo the user picks reaches the app. The photo is prepared
+    // at the screen's size, as it fills the screen behind a conversation in either orientation.
+    val screenSidePx = resources.displayMetrics.let { maxOf(it.widthPixels, it.heightPixels) }
     val photoPicker =
         rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString())) }
+            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString(), screenSidePx)) }
         }
     val colors = MaterialTheme.colorScheme
     val wallpaperActions =
