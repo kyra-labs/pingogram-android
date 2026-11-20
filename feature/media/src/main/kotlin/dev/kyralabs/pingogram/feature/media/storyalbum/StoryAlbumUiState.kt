@@ -79,6 +79,8 @@ sealed interface StoryAlbumUiState {
         val loadingMore: Boolean = false,
         /** Why the next page failed, until it is asked for again. */
         val moreError: DomainError? = null,
+        /** The album is the user's own: it can be renamed, filled, emptied and deleted. */
+        val canEdit: Boolean = false,
     ) : StoryAlbumUiState {
         /** Every story of the album is loaded. */
         val endReached: Boolean get() = stories.size >= totalCount
@@ -92,4 +94,15 @@ sealed interface StoryAlbumEvent {
 
     /** Try again after a failure. */
     data object Retry : StoryAlbumEvent
+
+    /** The screen shows again, maybe after its stories changed: read them again, keeping these meanwhile. */
+    data object Refresh : StoryAlbumEvent
+
+    /** Renames the user's own album to [name]. */
+    data class Rename(
+        val name: String,
+    ) : StoryAlbumEvent
+
+    /** Deletes the user's own album; its stories stay on the profile. */
+    data object Delete : StoryAlbumEvent
 }
