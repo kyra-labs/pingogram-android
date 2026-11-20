@@ -17,7 +17,7 @@ regresses by more than 10%.
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | `SendMessageBenchmark`: `TraceSectionMetric("sendMessage")`, an async section from the composer's send (`feature:chat`'s `ChatComposer`) to the frame after the bubble on its way shows (`SendMessageTraceEffect`), sending to Saved Messages and deleting each message after |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
-| APK size (arm64-v8a) | ≤ 51 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`; raised by 1 and 2 MB for TDLib 1.8.70 by the owner, 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`) | CI on every pull request and release (§8) |
+| APK size (arm64-v8a) | ≤ 53 MB; universal ≤ 128 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`; raised by 1 and 2 MB for TDLib 1.8.70 by the owner, 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`; raised by 2 and 3 MB for the features after v2.3.0 by the owner, 2026-11-20, `docs/adr/0040-apk-budget-after-v2-3-0.md`) | CI on every pull request and release (§8) |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
@@ -192,6 +192,16 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   them, and watches the session's end with `onSessionEnd`, not every update. `TdlibUpdatesSubscriptionTest` builds an
   account's whole graph on `FakeTdlibClient`, then collects every flow its repositories offer, and fails if anything but
   the router subscribes to `updates`.
+- Chat lists: `ChatRepository.chatList(list)` is one shared flow per list (`shareIn`, while anyone collects it), so
+  the main list is sorted once per change however many follow it: the selected tab, the Feed tab's count, the header's
+  mention count, the channel feed, widgets and share shortcuts. Before, each sorted its own copy; the Feed tab's count
+  (#696) added a second sort of the main list on every chat change.
+- Always on in the background (audited 2026-11-20): the update caches and what is derived from them with
+  `SharingStarted.Eagerly` (the user's id, transfers, custom emoji, the quick reaction, a frozen account, the chat
+  lock: each a small map of one cache's state), keyword alerts, the upload cleaner, the network reporter, the share
+  shortcuts (`ShareTargetShortcuts`) and the widgets while placed. The rest follows TDLib only while a screen collects
+  it. The share shortcuts rebuild their targets on every chat, user or group change and debounce only after;
+  debouncing their inputs first is a possible next step.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.
@@ -356,6 +366,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     arm64-v8a, 0.33 MB on armeabi-v7a and 0.43 MB on x86_64. `main` before it measured arm64-v8a about 49.5 MB,
     armeabi-v7a 40.7 MB, universal 122.5 MB and x86_64 56.8 MB; with it, 49.9, 41.1, 123.6 and 57.2 MB. The owner
     raised the budgets to 51 MB (arm64-v8a) and 125 MB (universal), leaving about 1.1 and 1.4 MB.
+  - The features after v2.3.0 (backup, the Channel feed, the settings redesign, wallpapers, story albums; 2026-11-20,
+    `docs/adr/0040-apk-budget-after-v2-3-0.md`) took arm64-v8a to 51.0 MB and universal to 124.7 MB, with no native
+    library changed. The owner raised the budgets to 53 MB and 128 MB, leaving about 2 and 3.3 MB.
   - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
     code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
     its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
