@@ -66,6 +66,9 @@ class StoryAlbumScreenshotTest {
     fun albumMedium() = album(StoryAlbumPreviewData.album)
 
     @Test
+    fun ownAlbumLight() = album(StoryAlbumPreviewData.album.copy(canEdit = true))
+
+    @Test
     fun renameDialogLight() =
         capture(ThemeMode.Light) {
             AlbumNameContent(

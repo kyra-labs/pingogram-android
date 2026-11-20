@@ -23,6 +23,10 @@ private fun StoryAlbumsPreview() =
 @Composable
 private fun StoryAlbumPreview() = AlbumPreview(StoryAlbumPreviewData.album)
 
+@Preview(name = "Album, the user's own")
+@Composable
+private fun StoryAlbumOwnPreview() = AlbumPreview(StoryAlbumPreviewData.album.copy(canEdit = true))
+
 @Preview(name = "Album, renaming")
 @Composable
 private fun AlbumNameDialogPreview() =

@@ -323,6 +323,15 @@
         <item quantity="one">%1$s, story album, %2$d story</item>
         <item quantity="other">%1$s, story album, %2$d stories</item>
     </plurals>
+    <!-- The user's own album's menu and its dialogs (owner decision 2026-11-20). -->
+    <string name="story_album_more">More options</string>
+    <string name="story_album_rename">Rename</string>
+    <string name="story_album_add_stories">Add stories</string>
+    <string name="story_album_remove_stories">Remove stories</string>
+    <string name="story_album_delete">Delete album</string>
+    <string name="story_album_delete_title">Delete this album?</string>
+    <string name="story_album_delete_body">Its stories stay on your profile.</string>
+    <string name="story_album_delete_confirm">Delete</string>
     <!-- An album's name, for a new or renamed album (owner decision 2026-11-20). -->
     <string name="story_album_rename_title">Rename album</string>
     <string name="story_album_name_label">Album name</string>

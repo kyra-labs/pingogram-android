@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- In your own story album, the ⋮ menu renames it, adds or removes stories, or deletes it (its stories stay on your
+  profile).
 - Chat appearance → Wallpaper offers Telegram's wallpapers and patterns and your own photos, previewed before you apply
   them. They're saved to your Telegram account, so your other Telegram apps show them too.
 - With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,
