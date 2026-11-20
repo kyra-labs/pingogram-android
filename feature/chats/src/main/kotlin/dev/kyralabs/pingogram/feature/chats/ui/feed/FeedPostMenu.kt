@@ -24,6 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -42,11 +48,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A feed card with its menu (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 6): a long press (the `LongPress`
- * haptic) or a right click lifts the card, its shadow and scale rising on the spatial spring, shows the post's
- * [reactions] above it once they are read ([FeedReactionBar]), and opens an expressive menu below it: Open in
- * channel, Forward, Copy link, Bookmark, and "Mark as read" while the post is unread or "Mark channel as unread" once
- * read. Screen readers get the same items as the card's custom actions. A press that stops
- * the list's fling only stops it, as the folder tabs' does.
+ * haptic), a right click, the card's More button or the Menu key (Shift+F10) lifts the card, its shadow and scale
+ * rising on the spatial spring, shows the post's [reactions] above it once they are read ([FeedReactionBar]), and
+ * opens an expressive menu below it: Open in channel, Forward, Copy link, Bookmark, and "Mark as read" while the post
+ * is unread or "Mark channel as unread" once read. Screen readers get the same items as the card's custom actions. A
+ * press that stops the list's fling only stops it, as the folder tabs' does.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -68,11 +74,16 @@ internal fun FeedPostWithMenu(
             label = "feedPostLift",
         )
     val shape = MaterialTheme.shapes.extraLarge
+    val openMenu = {
+        open = true
+        currentOnEvent(FeedEvent.ShowReactions(post.key))
+    }
     Box(modifier) {
         FeedPostCard(
             post = post,
             selected = selected,
             onOpen = { onEvent(FeedEvent.Open(post.chatId, post.messageIds.first())) },
+            onMore = openMenu,
             modifier =
                 Modifier
                     .graphicsLayer {
@@ -81,10 +92,9 @@ internal fun FeedPostWithMenu(
                         scaleX = 1f + raised * (LIFT_SCALE - 1f)
                         scaleY = scaleX
                         this.shape = shape
-                    }.opensMenuOnLongPress(LocalHapticFeedback.current) {
-                        open = true
-                        currentOnEvent(FeedEvent.ShowReactions(post.key))
-                    }.semantics {
+                    }.opensMenuOnLongPress(LocalHapticFeedback.current, openMenu)
+                    .opensMenuOnKey(openMenu)
+                    .semantics {
                         customActions =
                             actions.mapIndexed { index, action ->
                                 CustomAccessibilityAction(labels[index]) {
@@ -217,6 +227,17 @@ private fun Modifier.opensMenuOnLongPress(
                 consumeUntilUp()
             }
         }
+    }
+
+/**
+ * Calls [onOpen] when the Menu key, or Shift+F10, is released on the card or a button in it, as a message's actions
+ * open from the keyboard (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"); on release, so it does not reach the menu.
+ */
+private fun Modifier.opensMenuOnKey(onOpen: () -> Unit): Modifier =
+    onPreviewKeyEvent { event ->
+        val isMenuKey = event.key == Key.Menu || (event.key == Key.F10 && event.isShiftPressed)
+        if (isMenuKey && event.type == KeyEventType.KeyUp) onOpen()
+        isMenuKey
     }
 
 /** How much a lifted card grows. */
