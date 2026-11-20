@@ -190,6 +190,14 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   used 11.4 s of CPU in a 32 s scroll against the main thread's 1.2 s, and 85% of monitor contention was the shared
   flow's slot lock (`SharedFlowImpl.tryTakeValue`). A repository declares the update types it handles, a reducer all of
   them, and watches the session's end with `onSessionEnd`, not every update.
+- Chat lists: `ChatRepository.chatList(list)` is one shared flow per list (`shareIn`, while anyone collects it), so
+  the main list is sorted once per change however many follow it: the selected tab, the Feed tab's count, the header's
+  mention count, the channel feed, widgets and share shortcuts. Before, each sorted its own copy; the Feed tab's count
+  (#696) added a second sort of the main list on every chat change.
+- Always on in the background (audited 2026-11-20): the update caches, keyword alerts, the upload cleaner, the share
+  shortcuts (`ShareTargetShortcuts`) and the widgets while placed. Everything else that follows TDLib does so only
+  while a screen collects it (`WhileSubscribed`). The share shortcuts rebuild their targets on every chat, user or
+  group change and debounce only after; debouncing their inputs first is a possible next step.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.

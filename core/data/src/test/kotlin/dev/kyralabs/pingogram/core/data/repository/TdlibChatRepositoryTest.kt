@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateScopeNotification
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUnreadChatCount
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -128,6 +129,7 @@ class TdlibChatRepositoryTest {
             }
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class) // runCurrent
     @Test
     fun `everyone who follows a list shares one sorted list`() =
         runTest {

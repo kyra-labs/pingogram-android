@@ -35,7 +35,6 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
@@ -53,6 +52,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import org.drinkless.tdlib.TdApi
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
