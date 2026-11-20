@@ -174,6 +174,8 @@ interface AccountRepositories {
 
     fun accentColorRepository(): AccentColorRepository
 
+    fun wallpaperRepository(): WallpaperRepository
+
     fun aiTextRepository(): AiTextRepository
 
     fun storyRepository(): StoryRepository

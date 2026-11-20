@@ -121,6 +121,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibWallpaperRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibWelcomeMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
@@ -240,6 +241,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WallpaperRepository
 import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
@@ -491,6 +493,9 @@ interface RepositoryModule {
 
     @Binds
     fun accentColorRepository(repository: TdlibAccentColorRepository): AccentColorRepository
+
+    @Binds
+    fun wallpaperRepository(repository: TdlibWallpaperRepository): WallpaperRepository
 
     @Binds
     fun aiTextRepository(repository: TdlibAiTextRepository): AiTextRepository

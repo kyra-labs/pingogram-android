@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibWallpaperRepository
 
 /**
  * The set of every [TdlibUpdateCache] of an account ([AccountComponent.updateCaches]), which `PingogramApplication`
@@ -86,6 +87,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
+
+    /** TDLib announces the account's wallpapers only with `updateDefaultBackground`, once per start and on changes. */
+    @Binds
+    @IntoSet
+    fun wallpaperCache(repository: TdlibWallpaperRepository): TdlibUpdateCache
 
     /** TDLib announces the AI editor's styles only with `updateTextCompositionStyles`, once per start. */
     @Binds
