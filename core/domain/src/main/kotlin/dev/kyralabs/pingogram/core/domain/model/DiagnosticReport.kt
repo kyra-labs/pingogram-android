@@ -14,8 +14,8 @@ import kotlinx.collections.immutable.persistentListOf
  * @property device the manufacturer and model, Android's version and API level, and the ABIs.
  * @property crash the last crash, if one was kept, until the user deletes it or a new crash replaces it.
  * @property log the last lines of TDLib's log, oldest first.
- * @property logIsErrorsOnly whether [log] holds errors only: release builds log at verbosity 1 (errors), debug builds at
- *   3 (errors, warnings and information).
+ * @property logIsErrorsOnly whether [log] holds errors only: release builds log at verbosity 1 (errors), debug
+ *   builds at 3 (errors, warnings and information).
  */
 data class DiagnosticReport(
     val generatedAtMillis: Long,
