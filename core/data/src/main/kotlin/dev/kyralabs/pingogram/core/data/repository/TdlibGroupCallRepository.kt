@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [GroupCallRepository] on TDLib's voice chats. TDLib announces a chat's voice chat with the chat (`updateNewChat`,
@@ -60,7 +61,7 @@ class TdlibGroupCallRepository
         @ApplicationScope scope: CoroutineScope,
     ) : GroupCallRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, GroupCallState(), ::reduce)
+        private val store = UpdateStore(client, scope, GROUP_CALL_UPDATES, GroupCallState(), ::reduce)
 
         override fun videoChat(chatId: Long): Flow<ChatVideoChat?> =
             store.state.map { it.videoChats[chatId] }.distinctUntilChanged()
@@ -390,3 +391,15 @@ private fun GroupCallState.withParticipant(
         else -> copy(participants = participants.putting(callId, next))
     }
 }
+
+/** The updates its store's reducer handles. */
+private val GROUP_CALL_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateChatVideoChat::class,
+        TdApi.UpdateGroupCall::class,
+        TdApi.UpdateGroupCallMessageSendFailed::class,
+        TdApi.UpdateGroupCallMessagesDeleted::class,
+        TdApi.UpdateGroupCallParticipant::class,
+        TdApi.UpdateNewChat::class,
+        TdApi.UpdateNewGroupCallMessage::class,
+    )

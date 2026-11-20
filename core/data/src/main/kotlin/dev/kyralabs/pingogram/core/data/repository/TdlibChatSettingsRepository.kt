@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ChatSettingsRepository] on TDLib: the chat (`getChat`: reactions, protected content), a supergroup or channel
@@ -43,7 +44,12 @@ class TdlibChatSettingsRepository
     ) : ChatSettingsRepository,
         TdlibUpdateCache {
         private val reactionStore =
-            UpdateStore<ImmutableList<String>>(client, scope, persistentListOf()) { state, update ->
+            UpdateStore<ImmutableList<String>>(
+                client,
+                scope,
+                EMOJI_REACTION_UPDATES,
+                persistentListOf(),
+            ) { state, update ->
                 if (update is TdApi.UpdateActiveEmojiReactions) {
                     update.emojis
                         .orEmpty()
@@ -266,3 +272,6 @@ private fun ChatReactions.toTdlib(): TdApi.ChatAvailableReactions =
             TdApi.ChatAvailableReactionsSome(types.toTypedArray(), maxCount)
         }
     }
+
+/** The updates its store's reducer handles. */
+private val EMOJI_REACTION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateActiveEmojiReactions::class)

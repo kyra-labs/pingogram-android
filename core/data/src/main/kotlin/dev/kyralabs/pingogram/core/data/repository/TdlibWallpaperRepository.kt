@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -39,8 +40,8 @@ class TdlibWallpaperRepository
         @ApplicationScope scope: CoroutineScope,
     ) : WallpaperRepository,
         TdlibUpdateCache {
-        private val defaultStore = UpdateStore(client, scope, AccountWallpapers(), ::reduceDefaults)
-        private val chatStore = UpdateStore(client, scope, persistentMapOf(), ::reduceChats)
+        private val defaultStore = UpdateStore(client, scope, WALLPAPER_UPDATES, AccountWallpapers(), ::reduceDefaults)
+        private val chatStore = UpdateStore(client, scope, CHAT_WALLPAPER_UPDATES, persistentMapOf(), ::reduceChats)
 
         override val defaults: StateFlow<AccountWallpapers> = defaultStore.state
 
@@ -131,3 +132,10 @@ private fun PersistentMap<Long, ChatWallpaperOverride>.withChat(
 private const val MAX_DIMMING = 100
 
 private val UPLOAD_TIMEOUT = 10.minutes
+
+/** The updates its store's reducer handles. */
+private val WALLPAPER_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateDefaultBackground::class)
+
+/** The updates [reduceChats] handles. */
+private val CHAT_WALLPAPER_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateChatBackground::class, TdApi.UpdateNewChat::class)

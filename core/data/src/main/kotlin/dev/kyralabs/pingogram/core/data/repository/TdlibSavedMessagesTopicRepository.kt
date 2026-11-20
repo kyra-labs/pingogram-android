@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [SavedMessagesTopicRepository] on TDLib's Saved Messages topics. TDLib announces each topic only with
@@ -36,7 +37,12 @@ class TdlibSavedMessagesTopicRepository
     ) : SavedMessagesTopicRepository,
         TdlibUpdateCache {
         private val store =
-            UpdateStore<PersistentMap<Long, SavedMessagesTopic>>(client, scope, persistentMapOf()) { topics, update ->
+            UpdateStore<PersistentMap<Long, SavedMessagesTopic>>(
+                client,
+                scope,
+                SAVED_TOPIC_UPDATES,
+                persistentMapOf(),
+            ) { topics, update ->
                 if (update is TdApi.UpdateSavedMessagesTopic) {
                     topics.putting(update.topic.id, update.topic.toSavedMessagesTopic())
                 } else {
@@ -82,3 +88,6 @@ internal fun TdApi.SavedMessagesTopic.toSavedMessagesTopic() =
         order = order,
         lastMessage = lastMessage?.toMessage(),
     )
+
+/** The updates its store's reducer handles. */
+private val SAVED_TOPIC_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateSavedMessagesTopic::class)

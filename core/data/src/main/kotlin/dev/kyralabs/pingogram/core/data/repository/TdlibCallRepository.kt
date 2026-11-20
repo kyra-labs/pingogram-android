@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 
 /**
@@ -39,7 +40,7 @@ class TdlibCallRepository
         @ApplicationScope scope: CoroutineScope,
     ) : CallRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, persistentMapOf(), ::reduce)
+        private val store = UpdateStore(client, scope, CALL_UPDATES, persistentMapOf(), ::reduce)
 
         override val calls: Flow<ImmutableMap<Int, Call>> = store.state.distinctUntilChanged { old, new -> old === new }
 
@@ -112,3 +113,7 @@ private fun reduce(
     val call = update.call.toCall()
     return if (calls[call.id] == call) calls else calls.putting(call.id, call)
 }
+
+/** The updates its store's reducer handles. */
+private val CALL_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateCall::class, TdApi.UpdateNewCallSignalingData::class)

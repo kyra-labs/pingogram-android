@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [SecretChatRepository] on TDLib's secret chats. TDLib announces each with `updateSecretChat` before its chat reaches
@@ -38,7 +39,7 @@ class TdlibSecretChatRepository
         @ApplicationScope scope: CoroutineScope,
     ) : SecretChatRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, persistentMapOf(), ::reduce)
+        private val store = UpdateStore(client, scope, SECRET_CHAT_UPDATES, persistentMapOf(), ::reduce)
 
         override val secretChats: Flow<ImmutableMap<Int, SecretChat>> =
             store.state.distinctUntilChanged { old, new -> old === new }
@@ -66,3 +67,6 @@ private fun reduce(
     val secretChat = update.secretChat.toSecretChat()
     return if (secretChats[secretChat.id] == secretChat) secretChats else secretChats.putting(secretChat.id, secretChat)
 }
+
+/** The updates its store's reducer handles. */
+private val SECRET_CHAT_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateSecretChat::class)

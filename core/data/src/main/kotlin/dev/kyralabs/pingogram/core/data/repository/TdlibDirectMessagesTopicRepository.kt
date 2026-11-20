@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [DirectMessagesTopicRepository] on TDLib's direct messages chat topics. TDLib announces each topic only with
@@ -40,6 +41,7 @@ class TdlibDirectMessagesTopicRepository
             UpdateStore<PersistentMap<Long, PersistentMap<Long, DirectMessagesTopic>>>(
                 client,
                 scope,
+                DIRECT_TOPIC_UPDATES,
                 persistentMapOf(),
             ) {
                 chats,
@@ -104,3 +106,6 @@ internal fun TdApi.DirectMessagesChatTopic.toDirectMessagesTopic(): DirectMessag
         lastMessage = lastMessage?.toMessage(),
     )
 }
+
+/** The updates its store's reducer handles. */
+private val DIRECT_TOPIC_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateDirectMessagesChatTopic::class)

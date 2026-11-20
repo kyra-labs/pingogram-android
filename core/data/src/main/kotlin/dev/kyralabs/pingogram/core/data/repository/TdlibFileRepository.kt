@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] and [observeUpload] add a file
@@ -41,7 +42,7 @@ class TdlibFileRepository
         @ApplicationScope scope: CoroutineScope,
     ) : FileRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, persistentMapOf(), ObservedFiles::reduce)
+        private val store = UpdateStore(client, scope, FILE_UPDATES, persistentMapOf(), ObservedFiles::reduce)
 
         override fun observe(fileId: Int): Flow<FileState> = observed(fileId) { it.state }
 
@@ -132,3 +133,6 @@ private fun ObservedFiles.putIfUnknown(
     val observed = get(fileId)
     return if (observed != null && observed.state == null) putting(fileId, observed.reported(file)) else this
 }
+
+/** The updates its store's reducer handles. */
+private val FILE_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateFile::class)
