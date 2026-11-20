@@ -115,8 +115,8 @@ class TdlibUpdatesSubscriptionTest {
         }
 
     /**
-     * A part of the app with nothing in it: a flow that never emits, false, zero, nothing. What its repository does with
-     * it does not matter here, only how it subscribes to the updates.
+     * A part of the app with nothing in it: a flow that never emits, false, zero, nothing. What its repository does
+     * with it does not matter here, only how it subscribes to the updates.
      */
     private fun stub(type: Class<*>): Any = proxy(type, ::nothingOf)
 
