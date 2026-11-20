@@ -259,8 +259,8 @@ Unknown updates are ignored but counted in debug logs.
 
 ## Backgrounds
 
-Chat wallpapers are the account's, synced to its other apps (owner decision 2026-11-20; `WallpaperRepository`). In the
-pinned TDLib:
+Chat wallpapers are the account's, synced to its other apps (owner decision 2026-11-20; `WallpaperRepository`,
+`TdlibWallpaperRepository`). In the pinned TDLib:
 
 - `background`: `id`, `is_default`, `is_dark` (suggested for dark theme), `name`, `document` (null only for fills and
   chat themes) and `type`, one of

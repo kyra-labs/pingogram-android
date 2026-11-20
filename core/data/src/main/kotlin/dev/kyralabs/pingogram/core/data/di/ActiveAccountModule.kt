@@ -112,6 +112,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.WallpaperRepository
 import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 
 /**
@@ -376,6 +377,9 @@ object ActiveAccountModule {
 
     @Provides
     fun accentColorRepository(accounts: Accounts): AccentColorRepository = accounts.active.accentColorRepository()
+
+    @Provides
+    fun wallpaperRepository(accounts: Accounts): WallpaperRepository = accounts.active.wallpaperRepository()
 
     @Provides
     fun aiTextRepository(accounts: Accounts): AiTextRepository = accounts.active.aiTextRepository()
