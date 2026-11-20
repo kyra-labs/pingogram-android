@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
@@ -46,9 +47,11 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 import kotlin.reflect.KClass
@@ -65,6 +68,8 @@ import kotlin.reflect.KClass
  * [chatList] sorts the chats of the list again whenever a chat changed, on [dispatcher]: a sort of about 1000 chats
  * costs far less than a frame, and keeping a sorted copy of every list (main, archive, each folder) up to date per
  * update would cost more code and memory than it saves. Updates that change no chat (folders, counts) sort nothing.
+ * Each list is sorted once per change however many follow it (the chat list's tabs and header, the feed, widgets,
+ * share shortcuts): its collectors share one sorted list while any of them collects it (`docs/PERFORMANCE.md` §3).
  *
  * Actions on chats only send requests: TDLib applies each change locally and reports it in an update before it tells
  * Telegram, so the cache follows without guessing; so do opening and closing a chat. One function per action, as in
@@ -76,21 +81,28 @@ class TdlibChatRepository
     @Inject
     constructor(
         private val client: TdlibClient,
-        @ApplicationScope scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
         @Dispatcher(Default) private val dispatcher: CoroutineDispatcher,
         private val openChats: OpenChats,
     ) : ChatRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, CHAT_UPDATES, ChatCache(), ChatCache::reduce)
 
+        /** Each list's sorted chats, shared by its collectors ([chatList]). */
+        private val lists = ConcurrentHashMap<ChatListType, Flow<ImmutableList<Chat>>>()
+
         override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> =
-            store.state
-                .map { it.chats }
-                // A new map is a changed chat; a changed folder or count keeps the map.
-                .distinctUntilChanged { old, new -> old === new }
-                .map { chats -> chats.sortedIn(list) }
-                .distinctUntilChanged()
-                .flowOn(dispatcher)
+            lists.computeIfAbsent(list) {
+                store.state
+                    .map { it.chats }
+                    // A new map is a changed chat; a changed folder or count keeps the map.
+                    .distinctUntilChanged { old, new -> old === new }
+                    .map { chats -> chats.sortedIn(list) }
+                    .distinctUntilChanged()
+                    .flowOn(dispatcher)
+                    // Sorted while anyone collects it, and forgotten when no one does, so it is never stale.
+                    .shareIn(scope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
+            }
 
         override suspend fun loadChats(
             list: ChatListType,

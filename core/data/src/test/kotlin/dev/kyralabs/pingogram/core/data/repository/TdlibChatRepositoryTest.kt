@@ -28,14 +28,17 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUnreadChatCount
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -123,6 +126,26 @@ class TdlibChatRepositoryTest {
 
                 expectNoEvents()
             }
+        }
+
+    @Test
+    fun `everyone who follows a list shares one sorted list`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateNewChat(chat(id = CHAT_ID, title = "Ada", positions = arrayOf(chatPosition()))))
+            val first = mutableListOf<List<Chat>>()
+            val second = mutableListOf<List<Chat>>()
+            backgroundScope.launch { repository.chatList(ChatListType.Main).collect { first += it } }
+            backgroundScope.launch { repository.chatList(ChatListType.Main).collect { second += it } }
+            runCurrent()
+
+            client.emit(TdApi.UpdateChatTitle(CHAT_ID, "Grace"))
+            runCurrent()
+
+            assertEquals(listOf("Ada", "Grace"), first.map { it.single().title })
+            // The same lists, not equal copies: sorted once for both.
+            first.zip(second).forEach { (one, other) -> assertSame(one, other) }
+            assertEquals(first.size, second.size)
         }
 
     // Updates of a chat's fields
