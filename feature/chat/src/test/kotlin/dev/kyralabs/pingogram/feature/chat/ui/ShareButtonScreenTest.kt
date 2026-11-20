@@ -43,7 +43,7 @@ class ShareButtonScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private var shares = 0
-    private val forward get() = RuntimeEnvironment.getApplication().getString(R.string.message_action_forward)
+    private val share get() = RuntimeEnvironment.getApplication().getString(R.string.message_share)
 
     private fun setButton(
         isOutgoing: Boolean = false,
@@ -71,7 +71,7 @@ class ShareButtonScreenTest {
     fun `a tap on the button shares the post`() {
         setButton()
 
-        composeRule.onNodeWithContentDescription(forward).performClick()
+        composeRule.onNodeWithContentDescription(share).performClick()
 
         assertEquals(1, shares)
     }
@@ -80,7 +80,7 @@ class ShareButtonScreenTest {
     fun `the button sits after an incoming bubble, its circle level with the bubble's bottom`() {
         setButton()
         val bubble = composeRule.onNodeWithTag(BUBBLE).getBoundsInRoot()
-        val button = composeRule.onNodeWithContentDescription(forward).getBoundsInRoot()
+        val button = composeRule.onNodeWithContentDescription(share).getBoundsInRoot()
 
         // The button's bounds are its 40 dp circle, inside its 48 dp target.
         assertEquals(bubble.right + 8.dp, button.left)
@@ -91,7 +91,7 @@ class ShareButtonScreenTest {
     fun `the button sits before an outgoing bubble`() {
         setButton(isOutgoing = true)
         val bubble = composeRule.onNodeWithTag(BUBBLE).getBoundsInRoot()
-        val button = composeRule.onNodeWithContentDescription(forward).getBoundsInRoot()
+        val button = composeRule.onNodeWithContentDescription(share).getBoundsInRoot()
 
         assertEquals(bubble.left - 8.dp, button.right)
     }
@@ -100,13 +100,13 @@ class ShareButtonScreenTest {
     fun `right to left, the button sits on the bubble's left`() {
         setButton(direction = LayoutDirection.Rtl)
         val bubble = composeRule.onNodeWithTag(BUBBLE).getBoundsInRoot()
-        val button = composeRule.onNodeWithContentDescription(forward).getBoundsInRoot()
+        val button = composeRule.onNodeWithContentDescription(share).getBoundsInRoot()
 
         assertTrue("$button before $bubble", button.right < bubble.left)
     }
 
     @Test
-    fun `screen readers forward a channel post through its custom action`() {
+    fun `screen readers share a channel post through its Share action`() {
         val events = mutableListOf<ChatEvent>()
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -115,7 +115,7 @@ class ShareButtonScreenTest {
         }
         val node = composeRule.onNodeWithContentDescription("New icons are out.", substring = true).fetchSemanticsNode()
 
-        val action = node.config[SemanticsActions.CustomActions].single { it.label == forward }
+        val action = node.config[SemanticsActions.CustomActions].single { it.label == share }
         composeRule.runOnIdle { action.action() }
 
         assertEquals(listOf(ChatEvent.Forward(33)), events.filterIsInstance<ChatEvent.Forward>())

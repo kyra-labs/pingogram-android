@@ -471,6 +471,8 @@
     <string name="message_action_copy">Copy text</string>
     <!-- Opens the forward sheet, to send the message on to other chats. -->
     <string name="message_action_forward">Forward</string>
+    <!-- The share button beside a channel post, and its screen readers' action; the actions sheet keeps "Forward". -->
+    <string name="message_share">Share</string>
     <string name="message_action_bookmark">Bookmark</string>
     <!-- Message reminders, kept on this phone (the owner's board 29). -->
     <string name="message_action_remind">Remind me</string>

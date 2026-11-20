@@ -27,12 +27,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun ChatItem.Bubble.showsShareButton(shortcuts: MessageShortcuts): Boolean =
     hasShareButton && shortcuts.canForward && status != OutgoingStatus.Pending && status != OutgoingStatus.Failed
 
-/** The screen reader's action that forwards [bubble], where its share button shows ([showsShareButton]). */
+/** The screen reader's "Share" action, which forwards [bubble] where its share button shows ([showsShareButton]). */
 internal fun shareAction(
     bubble: ChatItem.Bubble,
     shortcuts: MessageShortcuts,
 ): ContentAction? =
-    ContentAction(R.string.message_action_forward, ChatEvent.Forward(bubble.id)).takeIf {
+    ContentAction(R.string.message_share, ChatEvent.Forward(bubble.id)).takeIf {
         bubble.showsShareButton(shortcuts)
     }
 
@@ -106,7 +106,7 @@ internal fun rememberShareButtonStyle(): ShareButtonStyle {
             contentColor = scheme.onSurfaceVariant,
         )
     val icon = painterResource(UiR.drawable.ic_forward)
-    val label = stringResource(R.string.message_action_forward)
+    val label = stringResource(R.string.message_share)
     // Not keyed on the icon: painterResource hands out a new painter of the same vector as the screen recomposes,
     // which would recompose every bubble; the first one draws the same.
     return remember(colors, label) { ShareButtonStyle(colors, icon, label) }
