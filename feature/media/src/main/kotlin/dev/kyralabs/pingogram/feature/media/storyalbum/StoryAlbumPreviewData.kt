@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.media.storyalbum
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 
 /** The story albums' states for previews and goldens: placeholders for pictures, as previews load no files. */
@@ -47,4 +48,12 @@ internal object StoryAlbumPreviewData {
         )
 
     val profileStoriesMoreFailed = profileStories.copy(totalCount = 20, moreError = DomainError.Network)
+
+    /** Picking the stories of a new album, two of them picked. */
+    val picking =
+        StoryAlbumPickerUiState.Content(
+            purpose = StoryAlbumPickPurpose.Create,
+            stories = album.stories,
+            selected = persistentSetOf(1, 3),
+        )
 }
