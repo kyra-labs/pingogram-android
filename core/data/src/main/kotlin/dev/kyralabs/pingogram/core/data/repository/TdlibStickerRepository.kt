@@ -1,21 +1,25 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
+import dev.kyralabs.pingogram.core.data.updates.TdlibUpdateRouter
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onSubscription
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [StickerRepository] on TDLib's sticker lists: `getInstalledStickerSets`, `getRecentStickers` (sent, not attached to
@@ -30,21 +34,22 @@ class TdlibStickerRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : StickerRepository {
         override fun installedSets(): Flow<Outcome<List<StickerSetSummary>>> =
-            client.readOn({ it is TdApi.UpdateInstalledStickerSets && it.stickerType is TdApi.StickerTypeRegular }) {
+            client.updateRouter(scope).readOn(setOf(TdApi.UpdateInstalledStickerSets::class), { it.isRegular() }) {
                 client.request(TdApi.GetInstalledStickerSets(TdApi.StickerTypeRegular())).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun recentStickers(): Flow<Outcome<List<Sticker>>> =
-            client.readOn({ it is TdApi.UpdateRecentStickers && !it.isAttached }) {
+            client.updateRouter(scope).readOn(setOf(TdApi.UpdateRecentStickers::class), { it.isSent() }) {
                 client.request(TdApi.GetRecentStickers(false)).map { it.toStickers() }
             }
 
         override fun favoriteStickers(): Flow<Outcome<List<Sticker>>> =
-            client.readOn({ it is TdApi.UpdateFavoriteStickers }) {
+            client.updateRouter(scope).readOn(setOf(TdApi.UpdateFavoriteStickers::class)) {
                 client.request(TdApi.GetFavoriteStickers()).map { it.toStickers() }
             }
 
@@ -118,18 +123,23 @@ internal fun TdApi.StickerType?.toStickerSetKind(): StickerSetKind =
     if (this is TdApi.StickerTypeCustomEmoji) StickerSetKind.Emoji else StickerSetKind.Stickers
 
 /**
- * [read] once subscribed to [TdlibClient.updates], so no change in between is missed, then again on every update that
- * [changes] says is about it. Updates that come while a read is under way wait for it (TDLib's updates are buffered),
+ * [read] once subscribed to the updates of [types], so no change in between is missed, then again on every one of them
+ * that [changes] says is about it. Updates that come while a read is under way wait for it (the router buffers them),
  * so each read sees the list as it is after them.
  */
-internal fun <T> TdlibClient.readOn(
-    changes: (TdApi.Update) -> Boolean,
+internal fun <T> TdlibUpdateRouter.readOn(
+    types: Set<KClass<out TdApi.Update>>,
+    changes: (TdApi.Update) -> Boolean = { true },
     read: suspend () -> Outcome<T>,
 ): Flow<Outcome<T>> =
-    updates
-        .onSubscription { emit(ReadNow) }
+    updates(types) { emit(ReadNow) }
         .filter { it === ReadNow || changes(it) }
         .map { read() }
+
+private fun TdApi.Update.isRegular() =
+    this is TdApi.UpdateInstalledStickerSets && stickerType is TdApi.StickerTypeRegular
+
+private fun TdApi.Update.isSent() = this is TdApi.UpdateRecentStickers && !isAttached
 
 /** Marks the point of subscription in [readOn]: the first read; never sent by TDLib. */
 private object ReadNow : TdApi.Update() {

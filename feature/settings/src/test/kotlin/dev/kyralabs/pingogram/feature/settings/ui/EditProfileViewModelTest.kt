@@ -87,7 +87,8 @@ class EditProfileViewModelTest {
             client.emit(TdApiFixtures.myIdOption(42))
         }
         runCurrent()
-        return EditProfileViewModel(handle, profiles, users, photoFiles, TdlibPrivacyRepository(client)).also {
+        val privacy = TdlibPrivacyRepository(client, backgroundScope)
+        return EditProfileViewModel(handle, profiles, users, photoFiles, privacy).also {
             runCurrent()
         }
     }

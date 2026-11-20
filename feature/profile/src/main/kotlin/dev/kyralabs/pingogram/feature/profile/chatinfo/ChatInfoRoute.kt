@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaActions
 import dev.kyralabs.pingogram.feature.profile.ui.copyPlainText
 import dev.kyralabs.pingogram.feature.profile.ui.shareText
@@ -29,12 +30,14 @@ import kotlinx.coroutines.launch
  * The info page of the route's group or channel: hoists its [ChatInfoViewModel] and handles its [ChatInfoEffect]s
  * through [navigation]. Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar
  * before Android 13, which confirms copies itself), a link to the system's share sheet. The dialogs and the QR code's
- * sheet show over the page while the view model has one, and so does the owner's sheet before leaving.
+ * sheet show over the page while the view model has one, and so does the owner's sheet before leaving. A channel's
+ * Stories tab is [stories], where `:app` gives it.
  */
 @Composable
 internal fun ChatInfoRoute(
     navigation: ChatInfoNavigation,
     modifier: Modifier = Modifier,
+    stories: ProfileStoriesSlot? = null,
     viewModel: ChatInfoViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +63,7 @@ internal fun ChatInfoRoute(
         mediaActions = mediaActions,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        stories = stories,
     )
     val ownerLeave by viewModel.ownerLeaveSheet.collectAsStateWithLifecycle()
     (state as? ChatInfoUiState.Content)?.let { content ->

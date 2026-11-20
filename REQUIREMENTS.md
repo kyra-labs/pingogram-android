@@ -169,8 +169,10 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   (last seen, photo, calls, groups, blocked users, passcode lock w/ biometrics, 2FA, active
   sessions), Notifications (per-type channels, exceptions, sounds), Data & Storage (auto-download
   per network, storage usage via `getStorageStatistics`, clear cache), Chat settings (theme mode,
-  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper—solid/gradient
-  only), Language (per-app language API), About (version, licenses, GitHub link).
+  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper: the theme's colors,
+  or Telegram's wallpapers and patterns and the user's photos, synced to the account for light and dark theme apart,
+  with dimming in dark theme and blur for photos (owner decision 2026-11-20); a chat's own wallpaper from its info
+  page), Language (per-app language API), About (version, licenses, GitHub link).
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
   (standard/medium/high per M3), and how chats look (group bubbles; Chat appearance with the message text size,
@@ -253,6 +255,11 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   - The feed's search button searches posts in the user's channels (`searchMessages` with the channel chat type
     filter), leaving out channels the feed's channel filter leaves out while it is on; results show as global search's
     message rows, and a tap opens the post in its channel, as a card does.
+  Owner decision of 2026-11-20:
+  - With a hardware keyboard, the arrow keys move the focus between the cards, the list keeping the focused one in
+    view, and Enter opens the post in its channel, as a tap does; Tab reaches the buttons in a card (its reactions,
+    More, Open in channel), and More or the Menu key (Shift+F10) opens the post's menu. Two panes keep the focus on
+    the card whose channel opened beside the feed; screen readers keep the card's custom actions.
 - FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,

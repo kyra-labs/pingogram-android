@@ -4,14 +4,14 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.error.toOutcome
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
-import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
@@ -23,29 +23,29 @@ import org.drinkless.tdlib.TdApi
  * the upload's progress to [onProgress] meanwhile: the share uploaded from the `updateFile`s of that file, recognized
  * by its path. Each progress gives it another [REQUEST_TIMEOUT], so a large photo on a slow network is never cut off
  * while it moves; a whole timeout without either fails with [DomainError.Network]. Cancelling stops the wait only.
+ * The updates come through the router of [scope].
  */
 internal suspend fun TdlibClient.uploadPhoto(
     path: String,
+    scope: CoroutineScope,
     onProgress: (progress: Float) -> Unit,
     request: (photo: TdApi.InputChatPhoto) -> TdApi.Function<TdApi.Ok>,
 ): Outcome<Unit> =
     coroutineScope {
         val progress = Channel<Float>(Channel.CONFLATED)
-        // Subscribed before the request is sent, so its first updateFile is not missed.
+        // Registered before the request is sent, so its first updateFile is not missed; inline in the router, so a
+        // progress TDLib sends before its answer is here before the answer is.
         val watcher =
-            launch(start = CoroutineStart.UNDISPATCHED) {
-                updates.collect { update ->
-                    if (update is TdApi.UpdateFile && update.file.local?.path == path) {
-                        update.file.uploadProgress()?.let(progress::trySend)
-                    }
-                }
+            updateRouter(scope).onUpdates(setOf(TdApi.UpdateFile::class)) { update ->
+                val file = (update as TdApi.UpdateFile).file
+                if (file.local?.path == path) file.uploadProgress()?.let(progress::trySend)
             }
         val photo = TdApi.InputChatPhotoStatic(TdApi.InputFileLocal(path))
         val answer = async { send(request(photo)).toOutcome().map {} }
         try {
             awaitUpload(answer, progress, onProgress)
         } finally {
-            watcher.cancel()
+            watcher.dispose()
             answer.cancel()
         }
     }

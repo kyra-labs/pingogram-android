@@ -119,7 +119,7 @@ class ProfileDeletedViewModelTest {
                 userId = ADA,
                 savedStateHandle = handle,
                 userRepository = users,
-                profileRepository = TdlibUserProfileRepository(client),
+                profileRepository = TdlibUserProfileRepository(client, backgroundScope),
                 secretChatRepository = TdlibSecretChatRepository(client, backgroundScope),
                 chatRepository = chats,
                 blockListRepository = TdlibBlockListRepository(client),

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -39,7 +40,12 @@ import java.time.ZoneOffset
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibNotificationSettingsRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibNotificationSettingsRepository(client, FixedClock)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibNotificationSettingsRepository? = null
+
+    private fun TestScope.repository() =
+        made ?: TdlibNotificationSettingsRepository(client, FixedClock, backgroundScope).also { made = it }
 
     /** Every field differs from the one before, so a field that is not copied shows. */
     private val custom = TdApi.ScopeNotificationSettings(0, 7, true, false, true, 8, false, true, false)
@@ -73,7 +79,7 @@ class TdlibNotificationSettingsRepositoryTest {
         runTest {
             answerScope()
 
-            repository.scopeSettings(scope)
+            repository().scopeSettings(scope)
 
             val expected =
                 when (scope) {
@@ -89,7 +95,7 @@ class TdlibNotificationSettingsRepositoryTest {
         runTest {
             answerScope(TdApi.ScopeNotificationSettings(3_600, 0, false, true, false, 0, true, true, false))
 
-            val settings = repository.scopeSettings(NotificationScope.GroupChats)
+            val settings = repository().scopeSettings(NotificationScope.GroupChats)
 
             assertEquals(
                 Outcome.Success(
@@ -114,7 +120,7 @@ class TdlibNotificationSettingsRepositoryTest {
 
             assertEquals(
                 Outcome.Failure(DomainError.FloodWait(30)),
-                repository.scopeSettings(NotificationScope.PrivateChats),
+                repository().scopeSettings(NotificationScope.PrivateChats),
             )
         }
 
@@ -122,7 +128,7 @@ class TdlibNotificationSettingsRepositoryTest {
     fun `reports TDLib's changes of the defaults, leaving out scopes it does not know`() =
         runTest(UnconfinedTestDispatcher()) {
             val changes = mutableListOf<ScopeNotificationSettingsChange>()
-            val job = launch { repository.scopeChanges.take(1).toList(changes) }
+            val job = launch { repository().scopeChanges.take(1).toList(changes) }
 
             client.emit(TdApi.UpdateScopeNotificationSettings(TdApi.NotificationSettingsScopeChannelChats(), custom))
             job.join()
@@ -151,7 +157,7 @@ class TdlibNotificationSettingsRepositoryTest {
             answerScope()
             answerOk()
 
-            repository.setScopeSettings(
+            repository().setScopeSettings(
                 NotificationScope.GroupChats,
                 ScopeNotificationSettings(
                     isMuted = true,
@@ -192,7 +198,7 @@ class TdlibNotificationSettingsRepositoryTest {
                 ScopeNotificationSettings(isMuted = false, showPreview = true, pinnedMessages = true, mentions = true)
 
             StoryNotifications.entries.forEach { stories ->
-                repository.setScopeSettings(NotificationScope.PrivateChats, settings.copy(stories = stories))
+                repository().setScopeSettings(NotificationScope.PrivateChats, settings.copy(stories = stories))
             }
 
             assertEquals(
@@ -211,8 +217,8 @@ class TdlibNotificationSettingsRepositoryTest {
             val muted =
                 ScopeNotificationSettings(isMuted = true, showPreview = true, pinnedMessages = true, mentions = true)
 
-            repository.setScopeSettings(NotificationScope.PrivateChats, muted)
-            repository.setScopeSettings(NotificationScope.PrivateChats, muted.copy(isMuted = false))
+            repository().setScopeSettings(NotificationScope.PrivateChats, muted)
+            repository().setScopeSettings(NotificationScope.PrivateChats, muted.copy(isMuted = false))
 
             assertEquals(
                 listOf(3_600, 0),
@@ -226,7 +232,7 @@ class TdlibNotificationSettingsRepositoryTest {
             val settings =
                 ScopeNotificationSettings(isMuted = true, showPreview = true, pinnedMessages = true, mentions = true)
 
-            val result = repository.setScopeSettings(NotificationScope.PrivateChats, settings)
+            val result = repository().setScopeSettings(NotificationScope.PrivateChats, settings)
 
             assertInstanceOf(Outcome.Failure::class.java, result)
             assertTrue(client.sentOf<TdApi.SetScopeNotificationSettings>().isEmpty())
@@ -258,7 +264,7 @@ class TdlibNotificationSettingsRepositoryTest {
                 ),
             )
 
-            val exceptions = (repository.exceptions(NotificationScope.GroupChats) as Outcome.Success).value
+            val exceptions = (repository().exceptions(NotificationScope.GroupChats) as Outcome.Success).value
 
             assertEquals(
                 listOf(
@@ -282,7 +288,7 @@ class TdlibNotificationSettingsRepositoryTest {
 
             assertEquals(
                 Outcome.Failure(DomainError.FloodWait(5)),
-                repository.exceptions(NotificationScope.PrivateChats),
+                repository().exceptions(NotificationScope.PrivateChats),
             )
         }
 
@@ -291,7 +297,7 @@ class TdlibNotificationSettingsRepositoryTest {
         runTest(UnconfinedTestDispatcher()) {
             val change =
                 launch {
-                    assertEquals(ChatMuteChange(9, ChatMute.Default), repository.chatMuteChanges.first())
+                    assertEquals(ChatMuteChange(9, ChatMute.Default), repository().chatMuteChanges.first())
                 }
 
             client.emit(TdApi.UpdateChatNotificationSettings(9, chatNotificationSettings(useDefaultMuteFor = true)))
@@ -317,7 +323,7 @@ class TdlibNotificationSettingsRepositoryTest {
                 MuteChange.Unmute,
                 MuteChange.UseDefault,
             )) {
-                repository.setChatMute(1, change)
+                repository().setChatMute(1, change)
             }
 
             val sent = client.sentOf<TdApi.SetChatNotificationSettings>().map { it.notificationSettings }
@@ -334,7 +340,7 @@ class TdlibNotificationSettingsRepositoryTest {
         runTest {
             answerOk()
 
-            assertEquals(Outcome.Success(Unit), repository.resetAll())
+            assertEquals(Outcome.Success(Unit), repository().resetAll())
             assertEquals(1, client.sentOf<TdApi.ResetAllNotificationSettings>().size)
         }
 

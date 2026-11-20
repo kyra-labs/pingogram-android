@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
@@ -7,6 +8,8 @@ import dev.kyralabs.pingogram.core.data.mapper.toBirthdate
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toPhoto
 import dev.kyralabs.pingogram.core.data.mapper.toTdBirthdate
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.UserFullInfo
@@ -15,11 +18,11 @@ import dev.kyralabs.pingogram.core.domain.model.UserProfilePhotosPage
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -43,12 +46,14 @@ class TdlibUserProfileRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : UserProfileRepository {
         override fun fullInfo(userId: Long): Flow<Outcome<UserFullInfo>> =
             channelFlow {
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates
-                        .filterIsInstance<TdApi.UpdateUserFullInfo>()
+                    client
+                        .updateRouter(scope)
+                        .updatesOf<TdApi.UpdateUserFullInfo>()
                         .filter { it.userId == userId && it.userFullInfo != null }
                         .collect { send(Outcome.Success(it.userFullInfo.toUserFullInfo())) }
                 }

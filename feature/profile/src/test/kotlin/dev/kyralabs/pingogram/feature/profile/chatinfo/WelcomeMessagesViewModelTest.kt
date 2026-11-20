@@ -52,7 +52,8 @@ class WelcomeMessagesViewModelTest : GroupViewModelTest() {
             TdResult.Success(TdApi.Ok())
         }
         client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueInteger(3)))
-        val viewModel = WelcomeMessagesViewModel(CHAT_ID, handle, TdlibWelcomeMessageRepository(client), photos)
+        val messages = TdlibWelcomeMessageRepository(client, backgroundScope)
+        val viewModel = WelcomeMessagesViewModel(CHAT_ID, handle, messages, photos)
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
@@ -233,8 +234,8 @@ class WelcomeMessagesViewModelTest : GroupViewModelTest() {
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
             client.on(TdApi.LoadChatWelcomeMessages::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
-            val viewModel =
-                WelcomeMessagesViewModel(CHAT_ID, SavedStateHandle(), TdlibWelcomeMessageRepository(client), photos)
+            val messages = TdlibWelcomeMessageRepository(client, backgroundScope)
+            val viewModel = WelcomeMessagesViewModel(CHAT_ID, SavedStateHandle(), messages, photos)
             created += viewModel
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
             runCurrent()

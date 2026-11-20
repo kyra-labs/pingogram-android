@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -34,14 +35,18 @@ class TdlibFileStreamRepositoryTest {
             on(TdApi.DownloadFile::class) { TdResult.Success(current) }
             on(TdApi.CancelDownloadFile::class) { TdResult.Success(TdApi.Ok()) }
         }
-    private val repository = TdlibFileStreamRepository(client)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibFileStreamRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibFileStreamRepository(client, backgroundScope).also { made = it }
 
     @Test
     fun `a range already on the device answers at once, downloading nothing`() =
         runTest {
             current = partial(offset = 0, prefix = 4_096, active = false)
 
-            val range = repository.awaitRange(FILE_ID, 1_000, 1_024)
+            val range = repository().awaitRange(FILE_ID, 1_000, 1_024)
 
             assertEquals(Outcome.Success(FileRange(PATH, 3_096, SIZE)), range)
             assertTrue(client.sentOf<TdApi.DownloadFile>().isEmpty())
@@ -50,7 +55,7 @@ class TdlibFileStreamRepositoryTest {
     @Test
     fun `a range not there yet downloads from its offset at visible priority, and answers once it came`() =
         runTest {
-            val range = async { repository.awaitRange(FILE_ID, 10_000, 1_024) }
+            val range = async { repository().awaitRange(FILE_ID, 10_000, 1_024) }
             runCurrent()
 
             val download = client.sentOf<TdApi.DownloadFile>().single()
@@ -73,43 +78,43 @@ class TdlibFileStreamRepositoryTest {
             current = partial(offset = SIZE - 100, prefix = 100, active = true)
             assertEquals(
                 Outcome.Success(FileRange(PATH, 100, SIZE)),
-                repository.awaitRange(FILE_ID, SIZE - 100, 65_536),
+                repository().awaitRange(FILE_ID, SIZE - 100, 65_536),
             )
 
             current =
                 TdApi.File(FILE_ID, SIZE, SIZE, TdApi.LocalFile(PATH, true, true, false, true, 0, SIZE, SIZE), remote())
-            assertEquals(Outcome.Success(FileRange(PATH, SIZE - 5, SIZE)), repository.awaitRange(FILE_ID, 5, 65_536))
+            assertEquals(Outcome.Success(FileRange(PATH, SIZE - 5, SIZE)), repository().awaitRange(FILE_ID, 5, 65_536))
         }
 
     @Test
     fun `a download that stops short of the range fails, and an unknown file is not found`() =
         runTest {
-            val range = async { repository.awaitRange(FILE_ID, 0, 1_024) }
+            val range = async { repository().awaitRange(FILE_ID, 0, 1_024) }
             runCurrent()
 
             client.emit(updateFile(partial(offset = 0, prefix = 100, active = false)))
 
             assertEquals(Outcome.Failure(DomainError.Network), range.await())
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.awaitRange(OTHER_FILE_ID, 0, 1))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().awaitRange(OTHER_FILE_ID, 0, 1))
         }
 
     @Test
     fun `reading on within the running download starts nothing new, a seek elsewhere moves it`() =
         runTest {
-            val first = async { repository.awaitRange(FILE_ID, 0, 1_024) }
+            val first = async { repository().awaitRange(FILE_ID, 0, 1_024) }
             runCurrent()
             current = partial(offset = 0, prefix = 1_024, active = true)
             client.emit(updateFile(current))
             first.await()
 
-            val next = async { repository.awaitRange(FILE_ID, 1_024, 1_024) }
+            val next = async { repository().awaitRange(FILE_ID, 1_024, 1_024) }
             runCurrent()
             assertEquals(1, client.sentOf<TdApi.DownloadFile>().size)
             current = partial(offset = 0, prefix = 2_048, active = true)
             client.emit(updateFile(current))
             next.await()
 
-            val seek = async { repository.awaitRange(FILE_ID, 500_000, 1_024) }
+            val seek = async { repository().awaitRange(FILE_ID, 500_000, 1_024) }
             runCurrent()
             assertEquals(listOf(0L, 500_000L), client.sentOf<TdApi.DownloadFile>().map { it.offset })
             client.emit(updateFile(partial(offset = 500_000, prefix = 1_024, active = true)))
@@ -119,16 +124,16 @@ class TdlibFileStreamRepositoryTest {
     @Test
     fun `stopping cancels the download a reader started, keeping what came, but not a complete file's`() =
         runTest {
-            repository.stop(FILE_ID)
+            repository().stop(FILE_ID)
             assertTrue(client.sentOf<TdApi.CancelDownloadFile>().isEmpty())
 
-            val range = async { repository.awaitRange(FILE_ID, 0, 1_024) }
+            val range = async { repository().awaitRange(FILE_ID, 0, 1_024) }
             runCurrent()
             current = partial(offset = 0, prefix = 1_024, active = true)
             client.emit(updateFile(current))
             range.await()
 
-            repository.stop(FILE_ID)
+            repository().stop(FILE_ID)
 
             val cancel = client.sentOf<TdApi.CancelDownloadFile>().single()
             assertEquals(FILE_ID, cancel.fileId)

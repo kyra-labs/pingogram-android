@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,14 +15,19 @@ import org.junit.jupiter.api.Test
 
 class TdlibContactJoinedRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibContactJoinedRepository(client)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibContactJoinedRepository? = null
+
+    private fun TestScope.repository() =
+        made ?: TdlibContactJoinedRepository(client, backgroundScope).also { made = it }
 
     @Test
     fun `reads the option, then follows its updates`() =
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueBoolean(true)))
 
-            repository.notifies.test {
+            repository().notifies.test {
                 assertFalse(awaitItem())
 
                 client.emit(TdApi.UpdateOption(OPTION, TdApi.OptionValueBoolean(false)))
@@ -36,10 +42,10 @@ class TdlibContactJoinedRepositoryTest {
     fun `an unset or unreadable option means notices come`() =
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueEmpty()))
-            repository.notifies.test { assertTrue(awaitItem()) }
+            repository().notifies.test { assertTrue(awaitItem()) }
 
             client.on(TdApi.GetOption::class, TdResult.Failure(TdError(400, "Bad option")))
-            repository.notifies.test { assertTrue(awaitItem()) }
+            repository().notifies.test { assertTrue(awaitItem()) }
         }
 
     @Test
@@ -47,7 +53,7 @@ class TdlibContactJoinedRepositoryTest {
         runTest {
             client.on(TdApi.SetOption::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.setNotifies(false))
+            assertEquals(Outcome.Success(Unit), repository().setNotifies(false))
 
             val sent = client.sentOf<TdApi.SetOption>().single()
             assertEquals(OPTION, sent.name)
