@@ -21,6 +21,9 @@ internal object ProxyPreviewStates {
     private val office = SavedProxy(2, Proxy("10.0.0.8", 8080, ProxyType.Http()), false, 0, "")
     private val mtproto = SavedProxy(3, Proxy("mt.example.net", 443, ProxyType.Mtproto("dd00")), false, 0, "")
 
+    /** A saved proxy, in use: the one "Use proxy" turns on (Data and storage → Network). */
+    val savedProxy = home
+
     val proxies =
         ProxiesUiState.Content(
             persistentListOf(
