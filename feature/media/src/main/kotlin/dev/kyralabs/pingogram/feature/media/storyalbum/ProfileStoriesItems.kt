@@ -8,9 +8,11 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,16 +26,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.ItemMotion
+import dev.kyralabs.pingogram.core.ui.component.ListNotice
+import dev.kyralabs.pingogram.core.ui.component.NoticeBadge
 import dev.kyralabs.pingogram.core.ui.component.animateItem
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The items a profile adds to its grid for its Stories tab, [margin] in from the grid's sides, moving on [motion]. */
 typealias ProfileStoriesItems = LazyGridScope.(margin: Dp, motion: ItemMotion) -> Unit
@@ -80,9 +89,9 @@ class ProfileStoriesActions(
 )
 
 /**
- * The Stories tab's items for [state]: the album covers with their counts across the grid, then the stories as 9:16
- * tiles with their days, one to a cell with the media cells' gap, decoded at [sizePx], and their next page asked for as
- * the end shows.
+ * The Stories tab's items for [state]: the delayed loading indicator; "No stories yet"; why the stories failed with
+ * "Try again"; or the album covers with their counts across the grid, then the stories as 9:16 tiles with their days,
+ * one to a cell with the media cells' gap, decoded at [sizePx], and their next page asked for as the end shows.
  */
 internal fun LazyGridScope.profileStories(
     state: ProfileStoriesUiState,
@@ -92,8 +101,17 @@ internal fun LazyGridScope.profileStories(
     motion: ItemMotion,
 ) {
     when (state) {
-        // The loading, empty and error states come in the next change, before the profile shows the tab.
-        ProfileStoriesUiState.Loading, ProfileStoriesUiState.Empty, is ProfileStoriesUiState.Error -> {}
+        ProfileStoriesUiState.Loading -> {
+            fullSpan(STATE, motion) { StoriesLoading() }
+        }
+
+        ProfileStoriesUiState.Empty -> {
+            fullSpan(STATE, motion) { StoriesEmpty() }
+        }
+
+        is ProfileStoriesUiState.Error -> {
+            fullSpan(STATE, motion) { StoriesError(state, actions) }
+        }
 
         is ProfileStoriesUiState.Content -> {
             if (state.albums.isNotEmpty()) {
@@ -146,6 +164,57 @@ private fun LazyGridScope.footer(
     }
 }
 
+@Composable
+private fun StoriesLoading() {
+    val description = stringResource(R.string.profile_stories_loading)
+    Box(Modifier.fillMaxWidth().padding(MaterialTheme.spacing.extraLarge), contentAlignment = Alignment.Center) {
+        DelayedLoadingIndicator(Modifier.semantics { contentDescription = description })
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun StoriesEmpty() {
+    val colors = MaterialTheme.colorScheme
+    ListNotice(
+        badge =
+            NoticeBadge(
+                MaterialShapes.Cookie9Sided,
+                UiR.drawable.ic_web_stories_filled,
+                colors.primaryContainer,
+                colors.onPrimaryContainer,
+            ),
+        title = stringResource(R.string.profile_stories_empty),
+        body = stringResource(R.string.profile_stories_empty_body),
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun StoriesError(
+    state: ProfileStoriesUiState.Error,
+    actions: ProfileStoriesActions,
+) {
+    val colors = MaterialTheme.colorScheme
+    ListNotice(
+        badge =
+            NoticeBadge(
+                MaterialShapes.Cookie4Sided,
+                UiR.drawable.ic_error,
+                colors.errorContainer,
+                colors.onErrorContainer,
+            ),
+        title = stringResource(R.string.profile_stories_error),
+        body = errorText(state.error),
+        // A failure is announced at once, as the shared media tabs' are.
+        announce = LiveRegionMode.Assertive,
+    ) {
+        Button(onClick = { actions.onEvent(ProfileStoriesEvent.Retry) }, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.story_album_try_again))
+        }
+    }
+}
+
 /** A full-width item that comes, moves and goes on [motion]'s springs, as the profile's tabs' items do. */
 private fun LazyGridScope.fullSpan(
     key: String,
@@ -158,6 +227,7 @@ private fun LazyGridScope.fullSpan(
 }
 
 // Keys and content types, prefixed as they share the profile's grid with its other items.
+private const val STATE = "stories:state"
 private const val ALBUMS = "stories:albums"
 private const val STORY = "stories:story:"
 private const val FOOTER = "stories:footer"
