@@ -200,8 +200,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `SharingStarted.Eagerly` (the user's id, transfers, custom emoji, the quick reaction, a frozen account, the chat
   lock: each a small map of one cache's state), keyword alerts, the upload cleaner, the network reporter, the share
   shortcuts (`ShareTargetShortcuts`) and the widgets while placed. The rest follows TDLib only while a screen collects
-  it. The share shortcuts rebuild their targets on every chat, user or group change and debounce only after;
-  debouncing their inputs first is a possible next step.
+  it. The share shortcuts work out their targets at once on start, then
+  only once their chats, users and groups have settled for 2 s (`settled`, owner decision 2026-11-20), and publish
+  5 s after their targets last changed.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.

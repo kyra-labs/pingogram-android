@@ -29,13 +29,16 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -47,8 +50,10 @@ import kotlin.time.Duration.Companion.seconds
  * "Chats in the share sheet" is off ([DirectShareRepository]), nothing is published, and the share targets already
  * there are withdrawn ([ConversationShortcuts.withdrawShareTargets]) as it turns off and at each start.
  *
- * It follows the chat list while someone is logged in, publishing [PUBLISH_DELAY] after the first [MAX_TARGETS]
- * chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
+ * It follows the chat list while someone is logged in. It works out the targets at once from what it first reads,
+ * then again only once the chats, users and groups have stayed as they are for [SETTLE_DELAY] (owner decision
+ * 2026-11-20), as a busy account changes them many times a second; and it publishes [PUBLISH_DELAY] after the first
+ * [MAX_TARGETS] chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
  * conversation shortcut (`NotificationRenderer`). Android 11+ only, like the conversation shortcuts.
  *
  * The targets are the shown account's (`docs/adr/0031-multiple-accounts.md`), as its repositories are; their shortcut
@@ -123,7 +128,7 @@ class ShareTargetShortcuts
             }
         }
 
-        /** The [MAX_TARGETS] most recent chats the user can write in, as they change. */
+        /** The [MAX_TARGETS] most recent chats the user can write in, once what they depend on settled ([settled]). */
         private fun recentChats(): Flow<List<Target>> =
             combine(
                 combine(chatRepository.chatList(ChatListType.Main), chatLock.lockedChatIds) { chats, locked ->
@@ -133,9 +138,9 @@ class ShareTargetShortcuts
                 userRepository.myUserId,
                 groupRepository.basicGroups,
                 groupRepository.supergroups,
-            ) { chats, users, me, basicGroups, supergroups ->
-                targetsOf(chats, People(users, me, basicGroups, supergroups))
-            }
+            ) { chats, users, me, basicGroups, supergroups -> chats to People(users, me, basicGroups, supergroups) }
+                .settled(SETTLE_DELAY)
+                .map { (chats, people) -> targetsOf(chats, people) }
 
         private suspend fun publish(targets: List<Target>) {
             shortcuts.publishShareTargets(
@@ -224,9 +229,32 @@ class ShareTargetShortcuts
             /** How many chats the system's share sheet is offered: two rows of its targets. */
             const val MAX_TARGETS = 8
 
+            /** How long the chats, users and groups must stay as they are before the targets are worked out again. */
+            val SETTLE_DELAY = 2.seconds
+
             /** How long the most recent chats must stay as they are before their shortcuts are published. */
             val PUBLISH_DELAY = 5.seconds
 
             private const val USER_KEY = "user:"
         }
+    }
+
+/**
+ * This flow's first value at once, then each later one only once no other followed it within [delay]: the latest of a
+ * burst, after it ended. A new collection starts over, its first value at once again.
+ */
+@OptIn(FlowPreview::class)
+internal fun <T> Flow<T>.settled(delay: Duration): Flow<T> =
+    flow {
+        var first = true
+        emitAll(
+            debounce {
+                if (first) {
+                    first = false
+                    Duration.ZERO
+                } else {
+                    delay
+                }
+            },
+        )
     }
