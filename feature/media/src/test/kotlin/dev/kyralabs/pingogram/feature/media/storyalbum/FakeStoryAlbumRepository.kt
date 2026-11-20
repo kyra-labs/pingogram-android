@@ -40,6 +40,46 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
         return Outcome.Success(StoryAlbumPage(totalCount ?: stories.size, page))
     }
 
+    override suspend fun storyCount(
+        chatId: Long,
+        albumId: Int,
+    ): Outcome<Int> = Outcome.Success(totalCount ?: stories.size)
+
+    override suspend fun profileStories(
+        chatId: Long,
+        fromStoryId: Int,
+        limit: Int,
+    ): Outcome<StoryAlbumPage> = Outcome.Success(StoryAlbumPage(0, persistentListOf()))
+
+    override suspend fun createAlbum(
+        chatId: Long,
+        name: String,
+        storyIds: List<Int>,
+    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = 1, name = name, cover = null))
+
+    override suspend fun renameAlbum(
+        chatId: Long,
+        albumId: Int,
+        name: String,
+    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = name, cover = null))
+
+    override suspend fun addStories(
+        chatId: Long,
+        albumId: Int,
+        storyIds: List<Int>,
+    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = "", cover = null))
+
+    override suspend fun removeStories(
+        chatId: Long,
+        albumId: Int,
+        storyIds: List<Int>,
+    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = "", cover = null))
+
+    override suspend fun deleteAlbum(
+        chatId: Long,
+        albumId: Int,
+    ): Outcome<Unit> = Outcome.Success(Unit)
+
     companion object {
         /** A photo story [id], posted at [date] (Unix seconds). */
         fun story(

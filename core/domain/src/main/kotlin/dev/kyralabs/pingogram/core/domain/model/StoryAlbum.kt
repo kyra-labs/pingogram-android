@@ -5,7 +5,7 @@ import kotlinx.collections.immutable.ImmutableList
 /**
  * A chat's story album (td_api.tl `storyAlbum`, board 11a): stories its owner grouped under [name], shown on the
  * profile with a [cover], a photo or the still of a video; null when it has neither. td_api.tl gives no story count
- * with an album: [StoryAlbumPage.totalCount] says it once the album is opened.
+ * with an album: [StoryAlbumPage.totalCount] says it with a page of its stories.
  */
 data class StoryAlbum(
     val id: Int,
@@ -27,7 +27,7 @@ sealed interface StoryAlbumCover {
     ) : StoryAlbumCover
 }
 
-/** A page of an album's stories, in the album's order, out of [totalCount] in all. */
+/** A page of an album's stories, in the album's order, or of a profile's, out of [totalCount] in all. */
 data class StoryAlbumPage(
     val totalCount: Int,
     val stories: ImmutableList<Story>,
