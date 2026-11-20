@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,7 +18,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibStickerRepository]: the sticker panel's lists, read when collected and again on their updates. */
 class TdlibStickerRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibStickerRepository(client)
+    private fun TestScope.repository() = TdlibStickerRepository(client, backgroundScope)
 
     private fun setInfo(
         id: Long,
@@ -41,7 +42,7 @@ class TdlibStickerRepositoryTest {
                 TdResult.Success(TdApi.StickerSets(1, arrayOf(setInfo(3, "Garden", 24, arrayOf(cover))))),
             )
 
-            repository.installedSets().test {
+            repository().installedSets().test {
                 val sets = (awaitItem() as Outcome.Success).value
                 assertEquals(listOf(Triple(3L, "Garden", 24)), sets.map { Triple(it.id, it.title, it.size) })
                 assertEquals(StickerFormat.Tgs, sets.single().cover?.format)
@@ -60,7 +61,7 @@ class TdlibStickerRepositoryTest {
                 TdResult.Success(TdApi.StickerSets(1, arrayOf(setInfo(1, title, 1))))
             }
 
-            repository.installedSets().test {
+            repository().installedSets().test {
                 assertEquals("Old", (awaitItem() as Outcome.Success).value.single().title)
 
                 client.emit(TdApi.UpdateInstalledStickerSets(TdApi.StickerTypeCustomEmoji(), longArrayOf(9)))
@@ -80,7 +81,7 @@ class TdlibStickerRepositoryTest {
                 TdResult.Success(TdApi.Stickers(arrayOf(TdApiFixtures.sticker(emoji = emoji))))
             }
 
-            repository.recentStickers().test {
+            repository().recentStickers().test {
                 assertEquals("👍", (awaitItem() as Outcome.Success).value.single().emoji)
                 assertEquals(false, client.sentOf<TdApi.GetRecentStickers>().single().isAttached)
 
@@ -105,7 +106,7 @@ class TdlibStickerRepositoryTest {
                 }
             }
 
-            repository.favoriteStickers().test {
+            repository().favoriteStickers().test {
                 assertInstanceOf(Outcome.Failure::class.java, awaitItem())
                 fails = false
                 client.emit(TdApi.UpdateFavoriteStickers(intArrayOf()))
@@ -123,7 +124,7 @@ class TdlibStickerRepositoryTest {
                 TdResult.Success(TdApi.StickerSet().apply { stickers = arrayOf(known, unknown) })
             }
 
-            val stickers = (repository.stickerSet(3) as Outcome.Success).value
+            val stickers = (repository().stickerSet(3) as Outcome.Success).value
 
             assertEquals(listOf("🐝"), stickers.map { it.emoji })
         }
@@ -136,7 +137,7 @@ class TdlibStickerRepositoryTest {
                 TdResult.Failure(TdError(429, "Too Many Requests: retry after 7")),
             )
 
-            assertEquals(Outcome.Failure(DomainError.FloodWait(7)), repository.stickerSet(3))
+            assertEquals(Outcome.Failure(DomainError.FloodWait(7)), repository().stickerSet(3))
         }
 }
 

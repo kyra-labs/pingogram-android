@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -15,14 +16,14 @@ import org.junit.jupiter.api.Test
 /** [TdlibFrequentContactsRepository]: TDLib's option `disable_top_chats`, inverted. */
 class TdlibFrequentContactsRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibFrequentContactsRepository(client)
+    private fun TestScope.repository() = TdlibFrequentContactsRepository(client, backgroundScope)
 
     @Test
     fun `suggests while the option is unset, then follows its updates`() =
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
 
-            repository.suggests.test {
+            repository().suggests.test {
                 assertTrue(awaitItem())
                 assertEquals("disable_top_chats", client.sentOf<TdApi.GetOption>().single().name)
 
@@ -38,7 +39,7 @@ class TdlibFrequentContactsRepositoryTest {
         runTest {
             client.on(TdApi.GetOption::class, TdResult.Failure(TdError(400, "OPTION_NOT_FOUND")))
 
-            repository.suggests.test {
+            repository().suggests.test {
                 assertTrue(awaitItem())
             }
         }
@@ -48,7 +49,7 @@ class TdlibFrequentContactsRepositoryTest {
         runTest {
             client.on(TdApi.SetOption::class, TdResult.Success(TdApi.Ok()))
 
-            val result = repository.setSuggests(false)
+            val result = repository().setSuggests(false)
 
             assertEquals(Outcome.Success(Unit), result)
             val set = client.sentOf<TdApi.SetOption>().single()

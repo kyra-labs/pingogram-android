@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMemberRole
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ChatReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatSettings
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
@@ -40,7 +41,7 @@ class TdlibChatSettingsRepository
     @Inject
     constructor(
         private val client: TdlibClient,
-        @ApplicationScope scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : ChatSettingsRepository,
         TdlibUpdateCache {
         private val reactionStore =
@@ -66,7 +67,9 @@ class TdlibChatSettingsRepository
             channelFlow {
                 val state = MutableStateFlow<SettingsState?>(null)
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates.collect { update -> state.update { it?.reduce(chatId, update) } }
+                    client.updateRouter(scope).updates(SETTINGS_UPDATES).collect { update ->
+                        state.update { it?.reduce(chatId, update) }
+                    }
                 }
                 val chat =
                     when (val found = client.request(TdApi.GetChat(chatId))) {
@@ -272,6 +275,16 @@ private fun ChatReactions.toTdlib(): TdApi.ChatAvailableReactions =
             TdApi.ChatAvailableReactionsSome(types.toTypedArray(), maxCount)
         }
     }
+
+/** The updates [SettingsState.reduce] handles. */
+private val SETTINGS_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateBasicGroup::class,
+        TdApi.UpdateChatAvailableReactions::class,
+        TdApi.UpdateChatHasProtectedContent::class,
+        TdApi.UpdateSupergroup::class,
+        TdApi.UpdateSupergroupFullInfo::class,
+    )
 
 /** The updates its store's reducer handles. */
 private val EMOJI_REACTION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateActiveEmojiReactions::class)

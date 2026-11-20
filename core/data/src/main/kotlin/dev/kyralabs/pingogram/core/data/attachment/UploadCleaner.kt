@@ -5,10 +5,10 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -64,8 +64,8 @@ class UploadCleaner internal constructor(
 
     init {
         // Subscribed before the constructor returns, as UpdateStore does, so no update after it is missed.
-        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update -> if (update.concernsUploads()) queue.trySend(Event.Update(update)) }
+        client.updateRouter(scope).onUpdates(UPLOAD_UPDATES) { update ->
+            if (update.concernsUploads()) queue.trySend(Event.Update(update))
         }
         scope.launch(io) {
             maxAge?.let { files.deleteOlderThan(it.inWholeMilliseconds) }
@@ -202,6 +202,16 @@ class UploadCleaner internal constructor(
  * Whether [this] can concern a copy, checked quickly on TDLib's update stream: a file message being sent, the end of
  * a send, a deletion for good, TDLib closing.
  */
+/** The updates [concernsUploads] looks at. */
+private val UPLOAD_UPDATES =
+    setOf(
+        TdApi.UpdateAuthorizationState::class,
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateMessageSendFailed::class,
+        TdApi.UpdateMessageSendSucceeded::class,
+        TdApi.UpdateNewMessage::class,
+    )
+
 private fun TdApi.Update.concernsUploads(): Boolean =
     when (this) {
         is TdApi.UpdateNewMessage -> {

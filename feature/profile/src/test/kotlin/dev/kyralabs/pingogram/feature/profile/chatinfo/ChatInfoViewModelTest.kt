@@ -68,7 +68,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 savedStateHandle = handle,
                 chatRepository = chats,
                 groupInfoRepository = TdlibGroupInfoRepository(client),
-                administrationRepository = TdlibGroupAdministrationRepository(client),
+                administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 userRepository = users,
                 sharedMediaRepository = TdlibSharedMediaRepository(client),
                 searchRepository = TdlibSearchRepository(client, chats),

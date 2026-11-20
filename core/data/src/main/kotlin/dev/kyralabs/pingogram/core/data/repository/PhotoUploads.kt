@@ -4,7 +4,10 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.error.toOutcome
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -23,9 +26,11 @@ import org.drinkless.tdlib.TdApi
  * the upload's progress to [onProgress] meanwhile: the share uploaded from the `updateFile`s of that file, recognized
  * by its path. Each progress gives it another [REQUEST_TIMEOUT], so a large photo on a slow network is never cut off
  * while it moves; a whole timeout without either fails with [DomainError.Network]. Cancelling stops the wait only.
+ * The updates come through the router of [scope].
  */
 internal suspend fun TdlibClient.uploadPhoto(
     path: String,
+    scope: CoroutineScope,
     onProgress: (progress: Float) -> Unit,
     request: (photo: TdApi.InputChatPhoto) -> TdApi.Function<TdApi.Ok>,
 ): Outcome<Unit> =
@@ -34,8 +39,8 @@ internal suspend fun TdlibClient.uploadPhoto(
         // Subscribed before the request is sent, so its first updateFile is not missed.
         val watcher =
             launch(start = CoroutineStart.UNDISPATCHED) {
-                updates.collect { update ->
-                    if (update is TdApi.UpdateFile && update.file.local?.path == path) {
+                updateRouter(scope).updatesOf<TdApi.UpdateFile>().collect { update ->
+                    if (update.file.local?.path == path) {
                         update.file.uploadProgress()?.let(progress::trySend)
                     }
                 }

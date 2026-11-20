@@ -183,4 +183,24 @@ class TdlibUpdateRouterTest {
             assertEquals(listOf("user 1"), ids(received))
             assertEquals(1, client.updateSubscribers.value)
         }
+
+    @Test
+    fun `a flow's first emission comes once subscribed, before the updates after it`() =
+        runTest {
+            val router = router()
+            val received = mutableListOf<String>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler), start = CoroutineStart.UNDISPATCHED) {
+                router
+                    .updates(setOf(user)) {
+                        // Subscribed already: what TDLib sends meanwhile waits for the collector.
+                        assertEquals(1, client.updateSubscribers.value)
+                        client.emit(user(1))
+                        received += "subscribed"
+                    }.collect { received += ids(listOf(it)) }
+            }
+            client.emit(user(2))
+            runCurrent()
+
+            assertEquals(listOf("subscribed", "user 1", "user 2"), received)
+        }
 }
