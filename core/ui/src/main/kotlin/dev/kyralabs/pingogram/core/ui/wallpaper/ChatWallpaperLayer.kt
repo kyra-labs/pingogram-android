@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
@@ -33,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.theme.brush
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
+import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import java.io.File
 import kotlin.math.max
 
@@ -89,10 +89,8 @@ private fun WallpaperLayer(
     val themeWallpaper = MaterialTheme.chatStyle.wallpaper
     val window = LocalWindowInfo.current.containerSize
     val painter = if (wallpaper != null && data != null) wallpaperPainter(wallpaper, data, window) else null
-    val look =
-        remember(wallpaper, colors, themeWallpaper, darkThemeDimming) {
-            WallpaperLook(wallpaper, colors, themeWallpaper, darkThemeDimming)
-        }
+    val dim = if (isDarkTheme()) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
+    val look = remember(wallpaper, colors, themeWallpaper, dim) { WallpaperLook(wallpaper, colors, themeWallpaper, dim) }
     Spacer(
         modifier
             .clipToBounds()
@@ -144,15 +142,13 @@ internal fun wallpaperRequest(
             if (wallpaper is Wallpaper.Photo && wallpaper.isBlurred) transformations(WallpaperBlur)
         }.build()
 
-/** How [wallpaper] draws with this theme's [colors], the [themeWallpaper] under it and its dimming. */
+/** How [wallpaper] draws with this theme's [colors], the [themeWallpaper] under it and its [dim] of `scrim`. */
 private class WallpaperLook(
     private val wallpaper: Wallpaper?,
     private val colors: ColorScheme,
     private val themeWallpaper: Brush?,
-    darkThemeDimming: Int,
+    private val dim: Float,
 ) {
-    private val dim = if (colors.surface.luminance() < HALF) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
-
     /** What the box is filled with before any image, sized to it. */
     fun fill(size: Size): Brush? =
         when (wallpaper) {
@@ -217,7 +213,6 @@ private fun DrawScope.drawCover(
     }
 }
 
-private const val HALF = 0.5f
 
 /** The photo a [PhotoPreviewWallpaperLayer] stands for: not on Telegram yet, so it has no id or file there. */
 private const val PREVIEW_ID = 0L
