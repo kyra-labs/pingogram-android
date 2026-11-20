@@ -13,8 +13,8 @@ import kotlin.math.roundToInt
  * @property wallpaper what the conversation's messages sit on.
  * @property groupBubbles how the experimental look colors the bubbles of a group's people.
  * @property wallpaperDimming how much the account's photo or fill wallpaper is dimmed in dark theme, 0–100 percent
- *   ([MAX_WALLPAPER_DIMMING]). Kept on the device: TDLib keeps a dimming only for a chat's own wallpaper (owner decision
- *   2026-11-20, `docs/TDLIB.md` "Backgrounds").
+ *   ([MAX_WALLPAPER_DIMMING]). Kept on the device: TDLib keeps a dimming only for a chat's own wallpaper (owner
+ *   decision 2026-11-20, `docs/TDLIB.md` "Backgrounds").
  */
 data class ChatAppearance(
     val textScale: Float = DEFAULT_TEXT_SCALE,
