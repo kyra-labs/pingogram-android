@@ -41,7 +41,8 @@ class TdlibDirectMessagesTopicRepository
             UpdateStore<PersistentMap<Long, PersistentMap<Long, DirectMessagesTopic>>>(
                 client,
                 scope,
-                DIRECT_TOPIC_UPDATES, persistentMapOf(),
+                DIRECT_TOPIC_UPDATES,
+                persistentMapOf(),
             ) {
                 chats,
                 update,

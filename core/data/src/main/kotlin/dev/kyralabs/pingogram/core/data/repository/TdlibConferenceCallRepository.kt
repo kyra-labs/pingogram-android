@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * [ConferenceCallRepository] on TDLib's group calls outside chats. TDLib announces the verification

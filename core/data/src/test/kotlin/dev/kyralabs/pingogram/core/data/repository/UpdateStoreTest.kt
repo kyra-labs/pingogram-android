@@ -13,9 +13,18 @@ import org.junit.jupiter.api.Test
 class UpdateStoreTest {
     private val client = FakeTdlibClient()
 
-    /** A store of the option names TDLib reports, in order. */
+    /** Every update the store's reducer was given, by class name. */
+    private val reduced = mutableListOf<String>()
+
+    /** A store of the option names TDLib reports, in order; it asks for `updateOption` only. */
     private fun TestScope.store() =
-        UpdateStore(client, backgroundScope, persistentListOf<String>()) { names: PersistentList<String>, update ->
+        UpdateStore(
+            client,
+            backgroundScope,
+            setOf(TdApi.UpdateOption::class),
+            persistentListOf<String>(),
+        ) { names: PersistentList<String>, update ->
+            reduced += update.javaClass.simpleName
             if (update is TdApi.UpdateOption) names.adding(update.name) else names
         }
 
@@ -46,6 +55,18 @@ class UpdateStoreTest {
             listOf("a", "b", "c").forEach { client.emit(option(it)) }
 
             assertEquals(listOf("a", "b", "c"), store.state.value)
+        }
+
+    @Test
+    fun `reduces only the update types it asked for`() =
+        runTest {
+            val store = store()
+
+            client.emit(TdApi.UpdateUserStatus(1, TdApi.UserStatusEmpty()))
+            client.emit(option("a"))
+
+            assertEquals(listOf("a"), store.state.value)
+            assertEquals(listOf("UpdateOption"), reduced)
         }
 
     @Test

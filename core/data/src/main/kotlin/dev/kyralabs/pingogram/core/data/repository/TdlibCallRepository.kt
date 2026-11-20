@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import kotlin.time.Duration
 import kotlin.reflect.KClass
+import kotlin.time.Duration
 
 /**
  * [CallRepository] on TDLib's calls. TDLib announces every call, incoming ones included, with `updateCall`, the whole

@@ -22,9 +22,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
-import kotlin.reflect.KClass
 
 /**
  * [WallpaperRepository] on TDLib (`docs/TDLIB.md` "Backgrounds"): two [TdlibUpdateCache] stores, the account's
