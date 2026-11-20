@@ -22,6 +22,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -54,16 +56,24 @@ class ChatAppearanceScreenTest {
             }
         }
 
-    private fun setScreen(appearance: ChatAppearance = ChatAppearance()) {
+    private val wallpaperEvents = mutableListOf<String>()
+    private val wallpaperActions =
+        WallpaperActions(onTheme = { wallpaperEvents += "theme $it" })
+
+    private fun setScreen(
+        appearance: ChatAppearance = ChatAppearance(),
+        picker: WallpaperPickerState = WallpaperPickerState(forDarkTheme = false),
+    ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false, chat = appearance) {
                 CompositionLocalProvider(LocalHapticFeedback provides haptics) {
                     ChatAppearanceScreen(
-                        state = ChatAppearanceUiState.Content(appearance),
+                        state = ChatAppearanceUiState.Content(appearance, picker = picker),
                         onTextScale = { scales += it },
                         onBubbleCorners = { corners += it },
                         onWallpaper = { wallpapers += it },
                         onBack = {},
+                        wallpaperActions = wallpaperActions,
                     )
                 }
             }
@@ -88,6 +98,14 @@ class ChatAppearanceScreenTest {
 
         assertEquals(listOf(ChatWallpaper.PrimaryToTertiary), wallpapers)
         assertEquals(listOf(HapticFeedbackType.SegmentTick), performedHaptics)
+    }
+
+    @Test
+    fun `the picker opens on the theme the page shows in`() {
+        setScreen(picker = WallpaperPickerState())
+
+        composeRule.waitForIdle()
+        assertEquals(listOf("theme false"), wallpaperEvents)
     }
 
     @Test
