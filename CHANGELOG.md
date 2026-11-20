@@ -57,8 +57,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Changed
 - Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
-  TDLib update it handles, instead of every part waking for every update. Start-up and scrolling the chat list are
-  quicker again.
+  TDLib update it handles, instead of every part waking for every update.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
 - Pulling up at the end of a read channel now opens the next unread channel of the folder you are in, shows how
   many posts it has unread, and taps once as you pass the point where letting go opens it.
