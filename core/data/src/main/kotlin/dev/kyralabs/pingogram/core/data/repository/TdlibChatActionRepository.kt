@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ChatActionRepository] on TDLib's `updateChatAction`: the last action of each sender in each chat, and in each forum
@@ -46,7 +47,7 @@ class TdlibChatActionRepository
         @ApplicationScope scope: CoroutineScope,
     ) : ChatActionRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, Actions(), Actions::reduce)
+        private val store = UpdateStore(client, scope, ACTION_UPDATES, Actions(), Actions::reduce)
 
         // Compared by identity: an update that changes no chat keeps the same map.
         override val actionsByChat: Flow<ImmutableMap<Long, ImmutableList<SenderAction>>> =
@@ -175,3 +176,6 @@ private fun <K> PersistentMap<K, SenderActions>.withEntry(
     key: K,
     actions: SenderActions?,
 ): PersistentMap<K, SenderActions> = if (actions.isNullOrEmpty()) removing(key) else putting(key, actions)
+
+/** The updates its store's reducer handles. */
+private val ACTION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateChatAction::class)

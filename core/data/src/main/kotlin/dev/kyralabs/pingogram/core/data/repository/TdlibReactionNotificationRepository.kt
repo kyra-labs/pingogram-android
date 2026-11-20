@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ReactionNotificationRepository] on TDLib: the settings from `updateReactionNotificationSettings` (a
@@ -34,7 +35,7 @@ class TdlibReactionNotificationRepository
     ) : ReactionNotificationRepository,
         TdlibUpdateCache {
         private val store =
-            UpdateStore<Announced>(client, scope, Announced(null)) { state, update ->
+            UpdateStore<Announced>(client, scope, REACTION_NOTIFICATION_UPDATES, Announced(null)) { state, update ->
                 if (update is TdApi.UpdateReactionNotificationSettings) {
                     Announced(
                         update.notificationSettings,
@@ -91,3 +92,6 @@ private fun ReactionNotificationSource.toTdlib(): TdApi.ReactionNotificationSour
         ReactionNotificationSource.Contacts -> TdApi.ReactionNotificationSourceContacts()
         ReactionNotificationSource.None -> TdApi.ReactionNotificationSourceNone()
     }
+
+/** The updates its store's reducer handles. */
+private val REACTION_NOTIFICATION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateReactionNotificationSettings::class)

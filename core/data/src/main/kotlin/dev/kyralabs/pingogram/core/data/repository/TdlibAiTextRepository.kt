@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [AiTextRepository] on TDLib: a [TdlibUpdateCache] of `updateTextCompositionStyles`, which TDLib announces once per
@@ -33,7 +34,7 @@ class TdlibAiTextRepository
         @ApplicationScope scope: CoroutineScope,
     ) : AiTextRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, persistentListOf<TextCompositionStyle>(), ::reduce)
+        private val store = UpdateStore(client, scope, STYLE_UPDATES, persistentListOf<TextCompositionStyle>(), ::reduce)
 
         override val styles: StateFlow<ImmutableList<TextCompositionStyle>> = store.state
 
@@ -91,3 +92,6 @@ private fun reduce(
     } else {
         styles
     }
+
+/** The updates its store's reducer handles. */
+private val STYLE_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateTextCompositionStyles::class)

@@ -26,6 +26,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.reflect.KClass
 
 /**
  * [ConferenceCallRepository] on TDLib's group calls outside chats. TDLib announces the verification
@@ -41,7 +42,7 @@ class TdlibConferenceCallRepository
         @ApplicationScope scope: CoroutineScope,
     ) : ConferenceCallRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, ConferenceState(), ::reduce)
+        private val store = UpdateStore(client, scope, CONFERENCE_UPDATES, ConferenceState(), ::reduce)
 
         override fun verification(id: Int): Flow<ConferenceVerification?> =
             store.state.map { it.verifications[id] }.distinctUntilChanged()
@@ -185,3 +186,11 @@ private fun ConferenceChannel.toTdApi(): TdApi.GroupCallDataChannel =
     }
 
 private fun TdApi.GroupCallInfo.toConferenceJoin() = ConferenceJoin(groupCallId, joinPayload.orEmpty())
+
+/** The updates its store's reducer handles. */
+private val CONFERENCE_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateGroupCall::class,
+        TdApi.UpdateGroupCallParticipants::class,
+        TdApi.UpdateGroupCallVerificationState::class,
+    )

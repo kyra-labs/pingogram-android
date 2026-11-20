@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [UserRepository] on TDLib's users. TDLib announces each user with `updateUser` before any of its ids reaches the
@@ -38,7 +39,7 @@ class TdlibUserRepository
         @ApplicationScope scope: CoroutineScope,
     ) : UserRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, UserCache(), UserCache::reduce)
+        private val store = UpdateStore(client, scope, USER_UPDATES, UserCache(), UserCache::reduce)
 
         override val myUserId: StateFlow<Long?> =
             store.state.map { it.myUserId }.stateIn(scope, SharingStarted.Eagerly, initialValue = null)
@@ -88,3 +89,11 @@ private data class UserCache(
 }
 
 private const val MY_ID_OPTION = "my_id"
+
+/** The updates its store's reducer handles. */
+private val USER_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateOption::class,
+        TdApi.UpdateUser::class,
+        TdApi.UpdateUserStatus::class,
+    )

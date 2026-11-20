@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [CommunityRepository] on TDLib's communities. TDLib announces each community the account knows with
@@ -56,9 +57,9 @@ class TdlibCommunityRepository
         @ApplicationScope scope: CoroutineScope,
     ) : CommunityRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, persistentMapOf(), ::reduce)
+        private val store = UpdateStore(client, scope, COMMUNITY_UPDATES, persistentMapOf(), ::reduce)
 
-        private val known = UpdateStore(client, scope, KnownCommunities(), ::reduceKnown)
+        private val known = UpdateStore(client, scope, COMMUNITY_UPDATES, KnownCommunities(), ::reduceKnown)
 
         override fun community(id: Long): Flow<Community?> = store.state.map { it[id] }.distinctUntilChanged()
 
@@ -237,3 +238,6 @@ private fun reduceKnown(
         details = known.details.putting(update.communityId, update.communityFullInfo.toCommunityDetails()),
     )
 }
+
+/** The updates its store's reducer handles. */
+private val COMMUNITY_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateCommunity::class, TdApi.UpdateCommunityFullInfo::class)

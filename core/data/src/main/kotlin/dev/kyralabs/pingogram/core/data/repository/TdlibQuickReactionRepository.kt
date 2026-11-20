@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [QuickReactionRepository] on TDLib: the reaction of `updateDefaultReactionType` (a [TdlibUpdateCache], as TDLib
@@ -32,7 +33,7 @@ class TdlibQuickReactionRepository
     ) : QuickReactionRepository,
         TdlibUpdateCache {
         private val store =
-            UpdateStore<Announced>(client, scope, Announced(null)) { state, update ->
+            UpdateStore<Announced>(client, scope, QUICK_REACTION_UPDATES, Announced(null)) { state, update ->
                 if (update is TdApi.UpdateDefaultReactionType) {
                     Announced(update.reactionType.toReactionType())
                 } else {
@@ -55,3 +56,6 @@ class TdlibQuickReactionRepository
             val reaction: ReactionType?,
         )
     }
+
+/** The updates its store's reducer handles. */
+private val QUICK_REACTION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateDefaultReactionType::class)

@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ChatRepository] on TDLib's chats. TDLib announces each chat with `updateNewChat` before any of its ids reaches the
@@ -80,7 +81,7 @@ class TdlibChatRepository
         private val openChats: OpenChats,
     ) : ChatRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, ChatCache(), ChatCache::reduce)
+        private val store = UpdateStore(client, scope, CHAT_UPDATES, ChatCache(), ChatCache::reduce)
 
         override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> =
             store.state
@@ -497,3 +498,37 @@ private val TDLIB_ORDER =
     Comparator<ListedChat> { a, b ->
         if (a.order != b.order) b.order.compareTo(a.order) else b.chat.id.compareTo(a.chat.id)
     }
+
+/** The updates its store's reducer handles. */
+private val CHAT_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateChatAccentColors::class,
+        TdApi.UpdateChatActionBar::class,
+        TdApi.UpdateChatDraftMessage::class,
+        TdApi.UpdateChatFolders::class,
+        TdApi.UpdateChatHasProtectedContent::class,
+        TdApi.UpdateChatHasScheduledMessages::class,
+        TdApi.UpdateChatHasWelcomeMessages::class,
+        TdApi.UpdateChatIsMarkedAsUnread::class,
+        TdApi.UpdateChatIsTranslatable::class,
+        TdApi.UpdateChatLastMessage::class,
+        TdApi.UpdateChatMessageAutoDeleteTime::class,
+        TdApi.UpdateChatMessageSender::class,
+        TdApi.UpdateChatNotificationSettings::class,
+        TdApi.UpdateChatOnlineMemberCount::class,
+        TdApi.UpdateChatPermissions::class,
+        TdApi.UpdateChatPhoto::class,
+        TdApi.UpdateChatPosition::class,
+        TdApi.UpdateChatReadInbox::class,
+        TdApi.UpdateChatReadOutbox::class,
+        TdApi.UpdateChatReplyMarkup::class,
+        TdApi.UpdateChatTitle::class,
+        TdApi.UpdateChatUnreadMentionCount::class,
+        TdApi.UpdateChatUnreadReactionCount::class,
+        TdApi.UpdateMessageMentionRead::class,
+        TdApi.UpdateMessageUnreadReactions::class,
+        TdApi.UpdateNewChat::class,
+        TdApi.UpdateScopeNotificationSettings::class,
+        TdApi.UpdateUnreadChatCount::class,
+        TdApi.UpdateUnreadMessageCount::class,
+    )

@@ -36,6 +36,7 @@ import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [MessageRepository] on TDLib's chat history. Each history someone observes, or loaded recently (a chat's, or one of
@@ -70,7 +71,7 @@ class TdlibMessageRepository
         private val linkPreviews: SecretChatLinkPreviews,
     ) : MessageRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, HistoryCache(), HistoryCache::reduce)
+        private val store = UpdateStore(client, scope, HISTORY_UPDATES, HistoryCache(), HistoryCache::reduce)
 
         private val loads = HistoryLoads(store, scope)
 
@@ -260,3 +261,20 @@ internal fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
             scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), repeatPeriod.coerceAtLeast(0)) }
         if (suggestAsPost) options.suggestedPostInfo = TdApi.InputSuggestedPostInfo(null, 0)
     }
+
+/** The updates its store's reducer handles. */
+private val HISTORY_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateMessageContent::class,
+        TdApi.UpdateMessageContentOpened::class,
+        TdApi.UpdateMessageEdited::class,
+        TdApi.UpdateMessageInteractionInfo::class,
+        TdApi.UpdateMessageIsPinned::class,
+        TdApi.UpdateMessageMentionRead::class,
+        TdApi.UpdateMessageSendFailed::class,
+        TdApi.UpdateMessageSendSucceeded::class,
+        TdApi.UpdateMessageSuggestedPostInfo::class,
+        TdApi.UpdateNewMessage::class,
+        TdApi.UpdatePoll::class,
+    )

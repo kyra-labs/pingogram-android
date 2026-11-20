@@ -41,7 +41,7 @@ class TdlibCustomEmojiRepository
         private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
     ) : CustomEmojiRepository {
-        private val store = UpdateStore(client, scope, CustomEmojiCache()) { cache, _ -> cache }
+        private val store = UpdateStore(client, scope, emptySet(), CustomEmojiCache()) { cache, _ -> cache }
 
         /** The ids of the requests running now. */
         private val pending: MutableSet<Long> = ConcurrentHashMap.newKeySet()

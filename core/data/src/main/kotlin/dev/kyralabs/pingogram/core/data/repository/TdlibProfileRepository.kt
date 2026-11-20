@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ProfileRepository] on TDLib. It keeps two options from TDLib's updates: `bio_length_max`, which TDLib announces
@@ -43,7 +44,7 @@ class TdlibProfileRepository
         @ApplicationScope scope: CoroutineScope,
     ) : ProfileRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, ProfileOptions(), ProfileOptions::reduce)
+        private val store = UpdateStore(client, scope, PROFILE_UPDATES, ProfileOptions(), ProfileOptions::reduce)
 
         override val bioLengthMax: StateFlow<Int> =
             store.state
@@ -144,3 +145,6 @@ private data class ProfileOptions(
 
 private const val MY_ID_OPTION = "my_id"
 private const val BIO_LENGTH_MAX_OPTION = "bio_length_max"
+
+/** The updates its store's reducer handles. */
+private val PROFILE_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateOption::class)

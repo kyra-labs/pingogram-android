@@ -39,6 +39,7 @@ import kotlinx.coroutines.sync.withLock
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [ForumTopicRepository] on TDLib's forum topics. Each forum someone observes has its loaded topics in memory
@@ -65,7 +66,7 @@ class TdlibForumTopicRepository
         private val client: TdlibClient,
         @ApplicationScope private val scope: CoroutineScope,
     ) : ForumTopicRepository {
-        private val store = UpdateStore(client, scope, TopicCache(), TopicCache::reduce)
+        private val store = UpdateStore(client, scope, TOPIC_UPDATES, TopicCache(), TopicCache::reduce)
 
         private val pageLocks = ConcurrentHashMap<Long, Mutex>()
 
@@ -522,3 +523,14 @@ private fun ForumTopic.withNewMessage(message: Message): ForumTopic {
     val unread = if (message.isOutgoing || message.sendingState != null) unreadCount else unreadCount + 1
     return copy(lastMessage = message, unreadCount = unread)
 }
+
+/** The updates its store's reducer handles. */
+private val TOPIC_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateForumTopic::class,
+        TdApi.UpdateForumTopicInfo::class,
+        TdApi.UpdateMessageContent::class,
+        TdApi.UpdateMessageSendSucceeded::class,
+        TdApi.UpdateNewMessage::class,
+    )

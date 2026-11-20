@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [GroupRepository] on TDLib's basic groups and supergroups. TDLib announces each with `updateBasicGroup` or
@@ -34,7 +35,7 @@ class TdlibGroupRepository
         @ApplicationScope scope: CoroutineScope,
     ) : GroupRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, GroupCache(), GroupCache::reduce)
+        private val store = UpdateStore(client, scope, GROUP_UPDATES, GroupCache(), GroupCache::reduce)
 
         override val basicGroups: Flow<ImmutableMap<Long, BasicGroup>> =
             store.state.map { it.basicGroups }.distinctUntilChanged { old, new -> old === new }
@@ -70,3 +71,6 @@ private data class GroupCache(
             }
         }
 }
+
+/** The updates its store's reducer handles. */
+private val GROUP_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateBasicGroup::class, TdApi.UpdateSupergroup::class)
