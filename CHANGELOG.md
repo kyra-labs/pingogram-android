@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,
+  and the Menu key opens its menu too.
 - Chats show the wallpaper set for your Telegram account, for light and dark theme, and a chat's own wallpaper when
   either of you set one: photos, patterns in your color theme's colors, and colors.
 - Profiles and channel info have a Stories tab: the story albums, each with how many stories it holds, above the
@@ -56,6 +58,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
+  TDLib update it handles, instead of every part waking for every update.
+- Chat appearance → Wallpaper chooses for light or dark theme, and its preview shows the wallpaper your Telegram
+  account has for it; picking a theme color removes that wallpaper for the theme.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
 - Pulling up at the end of a read channel now opens the next unread channel of the folder you are in, shows how
   many posts it has unread, and taps once as you pass the point where letting go opens it.

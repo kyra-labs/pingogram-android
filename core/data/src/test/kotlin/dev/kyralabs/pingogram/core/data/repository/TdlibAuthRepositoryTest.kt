@@ -36,7 +36,7 @@ class TdlibAuthRepositoryTest {
     private val client = FakeTdlibClient(authState = AuthState.WaitPhoneNumber)
 
     private fun TestScope.repository() =
-        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+        TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
 
     private fun ok() = TdResult.Success(TdApi.Ok())
 

@@ -66,7 +66,7 @@ class SettingsViewModelTest {
     ): SettingsViewModel =
         SettingsViewModel(
             handle,
-            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+            TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler)),
             users,
             TdlibCountryRepository(client),
             deviceAccounts,

@@ -42,7 +42,12 @@ class DefaultChatLockRepositoryTest {
             passcodeRepository = passcodes,
             appLock = appLock,
             authRepository =
-                TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource),
+                TdlibAuthRepository(
+                    client,
+                    backgroundScope,
+                    StandardTestDispatcher(testScheduler),
+                    testScheduler.timeSource,
+                ),
             scope = backgroundScope,
             timeSource = testScheduler.timeSource,
         ).also { runCurrent() }
