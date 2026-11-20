@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,7 +29,8 @@ import org.junit.jupiter.api.Test
  */
 class TdlibGroupAdministrationRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibGroupAdministrationRepository(client)
+
+    private fun TestScope.repository() = TdlibGroupAdministrationRepository(client, backgroundScope)
 
     init {
         client.on(TdApi.SetChatTitle::class, TdResult.Success(TdApi.Ok()))
@@ -42,8 +44,8 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `the title is trimmed, and a blank one is refused before anything is sent`() =
         runTest {
-            assertEquals(Outcome.Success(Unit), repository.setTitle(CHAT, "  Rust Berlin "))
-            assertEquals(Outcome.Failure(DomainError.TitleInvalid), repository.setTitle(CHAT, "   "))
+            assertEquals(Outcome.Success(Unit), repository().setTitle(CHAT, "  Rust Berlin "))
+            assertEquals(Outcome.Failure(DomainError.TitleInvalid), repository().setTitle(CHAT, "   "))
 
             assertEquals("Rust Berlin", client.sentOf<TdApi.SetChatTitle>().single().title)
         }
@@ -51,8 +53,8 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `the description and the permissions are sent whole`() =
         runTest {
-            repository.setDescription(CHAT, "Meetups ")
-            repository.setPermissions(CHAT, MemberPermissions(canSendBasicMessages = true, canSendPolls = true))
+            repository().setDescription(CHAT, "Meetups ")
+            repository().setPermissions(CHAT, MemberPermissions(canSendBasicMessages = true, canSendPolls = true))
 
             assertEquals("Meetups", client.sentOf<TdApi.SetChatDescription>().single().description)
             val permissions = client.sentOf<TdApi.SetChatPermissions>().single().permissions
@@ -63,8 +65,8 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `slow mode takes only the delays Telegram accepts`() =
         runTest {
-            assertEquals(Outcome.Success(Unit), repository.setSlowModeDelay(CHAT, 60))
-            assertEquals(Outcome.Failure(DomainError.InputRejected), repository.setSlowModeDelay(CHAT, 61))
+            assertEquals(Outcome.Success(Unit), repository().setSlowModeDelay(CHAT, 60))
+            assertEquals(Outcome.Failure(DomainError.InputRejected), repository().setSlowModeDelay(CHAT, 61))
 
             assertEquals(60, client.sentOf<TdApi.SetChatSlowModeDelay>().single().slowModeDelay)
         }
@@ -74,11 +76,11 @@ class TdlibGroupAdministrationRepositoryTest {
         runTest {
             val sender = MessageSender.User(7)
             val rights = AdministratorRights(canDeleteMessages = true, canManageTags = true)
-            repository.setMemberRole(CHAT, sender, MemberRole.Administrator(canBeEdited = true, rights = rights))
-            repository.setMemberRole(CHAT, sender, MemberRole.Banned(untilDate = 0))
-            repository.setMemberRole(CHAT, sender, MemberRole.Left)
+            repository().setMemberRole(CHAT, sender, MemberRole.Administrator(canBeEdited = true, rights = rights))
+            repository().setMemberRole(CHAT, sender, MemberRole.Banned(untilDate = 0))
+            repository().setMemberRole(CHAT, sender, MemberRole.Left)
             val restricted = MemberRole.Restricted(true, 1_800_000_000, MemberPermissions(canSendBasicMessages = true))
-            repository.setMemberRole(CHAT, sender, restricted)
+            repository().setMemberRole(CHAT, sender, restricted)
 
             val sent = client.sentOf<TdApi.SetChatMemberStatus>()
             assertEquals(7L, (sent[0].memberId as TdApi.MessageSenderUser).userId)
@@ -97,7 +99,7 @@ class TdlibGroupAdministrationRepositoryTest {
         runTest {
             client.on(TdApi.SetChatMemberStatus::class, TdResult.Failure(TdError(400, "RIGHT_FORBIDDEN")))
 
-            val result = repository.setMemberRole(CHAT, MessageSender.User(7), MemberRole.Member)
+            val result = repository().setMemberRole(CHAT, MessageSender.User(7), MemberRole.Member)
 
             assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), result)
         }
@@ -105,8 +107,8 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `a member's tag goes trimmed to TDLib, and an empty one removes it`() =
         runTest {
-            repository.setMemberTag(CHAT, 7, "  Beta tester ")
-            repository.setMemberTag(CHAT, 7, "")
+            repository().setMemberTag(CHAT, 7, "  Beta tester ")
+            repository().setMemberTag(CHAT, 7, "")
 
             val (set, removed) = client.sentOf<TdApi.SetChatMemberTag>()
             assertEquals(Triple(CHAT, 7L, "Beta tester"), Triple(set.chatId, set.userId, set.tag))
@@ -116,7 +118,7 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `a tag longer than Telegram takes is refused before TDLib`() =
         runTest {
-            val result = repository.setMemberTag(CHAT, 7, "x".repeat(MemberTagLimits.LENGTH_MAX + 1))
+            val result = repository().setMemberTag(CHAT, 7, "x".repeat(MemberTagLimits.LENGTH_MAX + 1))
 
             assertEquals(Outcome.Failure(DomainError.InputRejected), result)
             assertTrue(client.sentOf<TdApi.SetChatMemberTag>().isEmpty())
@@ -125,7 +127,7 @@ class TdlibGroupAdministrationRepositoryTest {
     @Test
     fun `clearing the history keeps the chat and revokes nothing`() =
         runTest {
-            repository.clearHistory(CHAT)
+            repository().clearHistory(CHAT)
 
             val sent = client.sentOf<TdApi.DeleteChatHistory>().single()
             assertFalse(sent.removeFromChatList)
@@ -146,7 +148,7 @@ class TdlibGroupAdministrationRepositoryTest {
             }
             val progress = mutableListOf<Float>()
 
-            assertEquals(Outcome.Success(Unit), repository.setPhoto(CHAT, path) { progress += it })
+            assertEquals(Outcome.Success(Unit), repository().setPhoto(CHAT, path) { progress += it })
 
             assertEquals(listOf(0.5f), progress)
             val sent = client.sentOf<TdApi.SetChatPhoto>().single()
@@ -160,7 +162,7 @@ class TdlibGroupAdministrationRepositoryTest {
         runTest {
             client.on(TdApi.SetChatPhoto::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
 
-            assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository.removePhoto(CHAT))
+            assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository().removePhoto(CHAT))
 
             assertNull(client.sentOf<TdApi.SetChatPhoto>().single().photo)
         }
@@ -170,7 +172,7 @@ class TdlibGroupAdministrationRepositoryTest {
         runTest {
             client.on(TdApi.GetChatOwnerAfterLeaving::class, TdResult.Success(TdApiFixtures.user(id = 42)))
 
-            assertEquals(Outcome.Success(42L), repository.ownerAfterLeaving(CHAT))
+            assertEquals(Outcome.Success(42L), repository().ownerAfterLeaving(CHAT))
             assertEquals(CHAT, client.sentOf<TdApi.GetChatOwnerAfterLeaving>().single().chatId)
         }
 
@@ -186,7 +188,7 @@ class TdlibGroupAdministrationRepositoryTest {
                 )
             answers.forEach { (answer, check) ->
                 client.on(TdApi.CanTransferOwnership::class, TdResult.Success(answer))
-                assertEquals(Outcome.Success(check), repository.ownershipTransferCheck())
+                assertEquals(Outcome.Success(check), repository().ownershipTransferCheck())
             }
         }
 
@@ -195,12 +197,12 @@ class TdlibGroupAdministrationRepositoryTest {
         runTest {
             client.on(TdApi.TransferChatOwnership::class, TdResult.Failure(TdError(400, "PASSWORD_HASH_INVALID")))
 
-            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository.transferOwnership(CHAT, 7, ""))
+            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository().transferOwnership(CHAT, 7, ""))
             assertTrue(client.sentOf<TdApi.TransferChatOwnership>().isEmpty())
-            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository.transferOwnership(CHAT, 7, "nope"))
+            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository().transferOwnership(CHAT, 7, "nope"))
 
             client.on(TdApi.TransferChatOwnership::class, TdResult.Success(TdApi.Ok()))
-            assertEquals(Outcome.Success(Unit), repository.transferOwnership(CHAT, 7, "secret"))
+            assertEquals(Outcome.Success(Unit), repository().transferOwnership(CHAT, 7, "secret"))
             val sent = client.sentOf<TdApi.TransferChatOwnership>().last()
             assertEquals(Triple(CHAT, 7L, "secret"), Triple(sent.chatId, sent.userId, sent.password))
         }

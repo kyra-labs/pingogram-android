@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.domain.model.SlowModeDelays
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 
@@ -32,6 +34,7 @@ class TdlibGroupAdministrationRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : GroupAdministrationRepository {
         override suspend fun setTitle(
             chatId: Long,
@@ -51,7 +54,7 @@ class TdlibGroupAdministrationRepository
             chatId: Long,
             path: String,
             onProgress: (progress: Float) -> Unit,
-        ): Outcome<Unit> = client.uploadPhoto(path, onProgress) { photo -> TdApi.SetChatPhoto(chatId, photo) }
+        ): Outcome<Unit> = client.uploadPhoto(path, scope, onProgress) { photo -> TdApi.SetChatPhoto(chatId, photo) }
 
         override suspend fun removePhoto(chatId: Long): Outcome<Unit> =
             client.request(TdApi.SetChatPhoto(chatId, null)).map {}

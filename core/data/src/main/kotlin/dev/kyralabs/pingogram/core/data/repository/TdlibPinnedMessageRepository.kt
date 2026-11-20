@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
@@ -7,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
@@ -16,6 +18,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +49,7 @@ class TdlibPinnedMessageRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : PinnedMessageRepository {
         override fun pinnedMessages(
             chatId: Long,
@@ -61,7 +65,9 @@ class TdlibPinnedMessageRepository
                 val updates = Channel<TdApi.Update>(Channel.UNLIMITED)
                 // UNDISPATCHED: subscribed before the request below is sent, so no update falls in between.
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates.collect { if (it.pinsChatId() == chatId) updates.send(it) }
+                    client.updateRouter(scope).updates(PIN_UPDATES).collect {
+                        if (it.pinsChatId() == chatId) updates.send(it)
+                    }
                 }
                 val loaded = load(chatId, topic)
                 send(loaded)
@@ -130,6 +136,15 @@ class TdlibPinnedMessageRepository
                 }
             }
     }
+
+/** The updates [pinsChatId] reads. */
+private val PIN_UPDATES =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateMessageContent::class,
+        TdApi.UpdateMessageEdited::class,
+        TdApi.UpdateMessageIsPinned::class,
+    )
 
 /** The chat whose pinned messages [this] can change; null for other updates. */
 private fun TdApi.Update.pinsChatId(): Long? =

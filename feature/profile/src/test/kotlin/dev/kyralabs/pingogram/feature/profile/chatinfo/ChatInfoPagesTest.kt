@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.profile.chatinfo
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,48 @@ class ChatInfoPagesTest {
             ),
             events,
         )
+    }
+
+    private fun setInfo(
+        state: ChatInfoUiState,
+        asked: MutableList<Pair<Long, Boolean>>,
+    ) = setContent {
+        ChatInfoScreen(
+            state = state,
+            media = ProfilePreviewData.emptyMedia,
+            onEvent = {},
+            onMediaEvent = {},
+            onBack = {},
+            mediaActions = SharedMediaActions({ _, _ -> }, { _, _ -> }, {}),
+            stories = { chatId, active ->
+                asked += chatId to active
+                { _, _ -> item(key = "stories") { Text("Stories of $chatId") } }
+            },
+        )
+    }
+
+    @Test
+    fun `a channel's info has a Stories tab before its media, which shows its items once selected`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        setInfo(ChatInfoPreviewData.channel, asked)
+        val chatId = ProfilePreviewData.emptyMedia.chatId
+        val grid = composeRule.onNodeWithTag(CHAT_INFO_GRID_TEST_TAG)
+
+        grid.performScrollToNode(hasText(string(R.string.profile_stories)))
+        composeRule.onNodeWithText(string(R.string.profile_stories)).performClick()
+        grid.performScrollToNode(hasText("Stories of $chatId"))
+
+        composeRule.onNodeWithText("Stories of $chatId").assertExists()
+        assertEquals(listOf(chatId to false, chatId to true), asked.distinct())
+    }
+
+    @Test
+    fun `a group's info has no Stories tab`() {
+        val asked = mutableListOf<Pair<Long, Boolean>>()
+        setInfo(ChatInfoPreviewData.group, asked)
+
+        composeRule.onNodeWithText(string(R.string.profile_stories)).assertDoesNotExist()
+        assertTrue(asked.isEmpty())
     }
 
     @Test

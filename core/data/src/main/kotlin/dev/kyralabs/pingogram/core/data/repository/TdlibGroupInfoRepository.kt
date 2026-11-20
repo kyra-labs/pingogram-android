@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
@@ -9,6 +10,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toGroupMember
 import dev.kyralabs.pingogram.core.data.mapper.toInviteLink
 import dev.kyralabs.pingogram.core.data.mapper.toMemberPermissions
 import dev.kyralabs.pingogram.core.data.mapper.toMemberRole
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupDetails
 import dev.kyralabs.pingogram.core.domain.model.GroupInfo
@@ -24,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +58,7 @@ class TdlibGroupInfoRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : GroupInfoRepository {
         override fun groupInfo(chatId: Long): Flow<Outcome<GroupInfo>> =
             channelFlow {
@@ -82,7 +86,9 @@ class TdlibGroupInfoRepository
                         ),
                     )
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates.collect { update -> reduceChatUpdate(chatId, update, source, state) }
+                    client.updateRouter(scope).updates(GROUP_INFO_UPDATES).collect { update ->
+                        reduceChatUpdate(chatId, update, source, state)
+                    }
                 }
                 launch { state.update { it.withHead(client.request(source.groupRequest()).map(source::head)) } }
                 launch {
@@ -439,3 +445,14 @@ private fun MemberFilter.toSupergroupFilter(query: String): TdApi.SupergroupMemb
             TdApi.SupergroupMembersFilterBanned(query)
         }
     }
+
+/** The updates a group's info follows: its chat's, and its basic group's or supergroup's. */
+private val GROUP_INFO_UPDATES =
+    setOf(
+        TdApi.UpdateBasicGroup::class,
+        TdApi.UpdateBasicGroupFullInfo::class,
+        TdApi.UpdateChatPendingJoinRequests::class,
+        TdApi.UpdateChatPermissions::class,
+        TdApi.UpdateSupergroup::class,
+        TdApi.UpdateSupergroupFullInfo::class,
+    )

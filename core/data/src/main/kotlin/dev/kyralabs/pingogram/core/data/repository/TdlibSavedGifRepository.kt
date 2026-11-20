@@ -1,12 +1,15 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAnimation
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -21,9 +24,10 @@ class TdlibSavedGifRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : SavedGifRepository {
         override fun savedGifs(): Flow<Outcome<List<Animation>>> =
-            client.readOn({ it is TdApi.UpdateSavedAnimations }) {
+            client.updateRouter(scope).readOn(setOf(TdApi.UpdateSavedAnimations::class)) {
                 client.request(TdApi.GetSavedAnimations()).map { result ->
                     result.animations.orEmpty().map { it.toAnimation() }
                 }

@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -12,13 +15,17 @@ import org.drinkless.tdlib.TdApi
 
 /**
  * TDLib's boolean option [name]: read with `getOption` once per collection, then followed through `updateOption`, to
- * which it subscribes first, so no change in between is missed. Unset, unreadable or not a boolean, it is false.
+ * which it subscribes first (through the router of [scope]), so no change in between is missed. Unset, unreadable or
+ * not a boolean, it is false.
  */
-internal fun TdlibClient.booleanOption(name: String): Flow<Boolean> =
+internal fun TdlibClient.booleanOption(
+    name: String,
+    scope: CoroutineScope,
+): Flow<Boolean> =
     channelFlow {
         launch(start = CoroutineStart.UNDISPATCHED) {
-            updates.collect { update ->
-                if (update is TdApi.UpdateOption && update.name == name) send(update.value.isTrue())
+            updateRouter(scope).updatesOf<TdApi.UpdateOption>().collect { update ->
+                if (update.name == name) send(update.value.isTrue())
             }
         }
         val read = request(TdApi.GetOption(name))
