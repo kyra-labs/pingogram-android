@@ -25,6 +25,24 @@ class FeedbackReportTest {
     }
 
     @Test
+    fun `calls a release build's log errors only`() {
+        val text = report.copy(logIsErrorsOnly = true).toText("")
+
+        assertTrue(text.contains("TDLib log, last ${report.log.size} lines (errors only):\n"))
+    }
+
+    @Test
+    fun `does not call a debug build's log errors only`() {
+        val debug = report.copy(logIsErrorsOnly = false)
+
+        val text = debug.toText("")
+
+        assertTrue(text.contains("TDLib log, last ${report.log.size} lines (errors, warnings and information):\n"))
+        assertFalse(text.contains("errors only"))
+        assertFalse(query(debug.issueUrl("")).getValue("logs").contains("errors only"))
+    }
+
+    @Test
     fun `says what is missing`() {
         val text = report.copy(crash = null, log = persistentListOf()).toText("")
 

@@ -84,7 +84,8 @@ interface TdlibClient {
 - `start()` runs `Client.execute(SetLogVerbosityLevel)` before creating the client: 1 in release
   (`REQUIREMENTS.md` §6.2: ≤ 2: errors only), 3 in debug, and `SetLogStream` writes a rotating file
   (`filesDir/tdlib/logs/tdlib.log`; 1 MB in release, 10 MB in debug). It stays on the device: "Send feedback" shows its
-  last lines, redacted, in the report the user shares themselves (`docs/TESTING_GUIDE.md`). Our own logs never contain `TdApi` objects (their
+  last lines, redacted, in the report the user shares themselves (`docs/TESTING_GUIDE.md`), labelled "errors only"
+  only in release builds (`DiagnosticReport.logIsErrorsOnly`). Our own logs never contain `TdApi` objects (their
   `toString()` dumps everything, message text included) or user data; `AuthState.toString()`
   leaves payloads out.
 - `org.drinkless.tdlib.Client` sits behind an internal seam (`TdlibNative` / `NativeClient`), so

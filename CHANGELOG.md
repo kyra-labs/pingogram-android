@@ -91,6 +91,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- The feedback report of a debug build no longer calls TDLib's log "errors only": debug builds log warnings and
+  information too.
 - Screen edges line up: the folder tabs, stories, top bar buttons and the Contacts header's cards and buttons start and
   end on the same margin as titles and rows.
 - The app no longer crashes while the chat list shows a forum that has a topic without messages.
