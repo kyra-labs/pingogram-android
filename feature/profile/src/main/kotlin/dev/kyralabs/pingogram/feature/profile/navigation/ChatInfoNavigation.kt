@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoPage
 import dev.kyralabs.pingogram.feature.profile.chatinfo.INVITE_LINKS_CHANGED_RESULT
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MEMBERS_CHANGED_RESULT
 import dev.kyralabs.pingogram.feature.profile.chatinfo.community.CommunityScreenRoute
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatBoostRoute as ChatBoostScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoRoute as ChatInfoScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatMembersRoute as ChatMembersScreenRoute
@@ -56,7 +57,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.welcome.WelcomeMessagesRo
  * [onBack] leaves the page shown. [onLeft] runs once the user left or deleted the chat, which is gone from the lists.
  * [onOpenChat] opens a chat (a mention, a removed channel), [onOpenProfile] a member's profile, and [onOpenMedia] /
  * [onOpenMessage] the shared media as the profile's do. A rights page or link editor that saved goes back through
- * [NavController.popBackStackAfterGroupChange], so the page below reads its list again.
+ * [NavController.popBackStackAfterGroupChange], so the page below reads its list again. [stories], where given, is a
+ * channel's Stories tab before its shared media's.
  */
 @Suppress("LongParameterList") // The app's navigation from the info page.
 fun NavGraphBuilder.chatInfoScreens(
@@ -68,6 +70,7 @@ fun NavGraphBuilder.chatInfoScreens(
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     onSaved: () -> Unit,
+    stories: ProfileStoriesSlot? = null,
 ) {
     composable<ChatInfoRoute> { entry ->
         val chatId = entry.toRoute<ChatInfoRoute>().chatId
@@ -87,6 +90,7 @@ fun NavGraphBuilder.chatInfoScreens(
                         onOpenMessage = onOpenMessage,
                         onOpenCommunity = { communityId -> onOpen(CommunityRoute(communityId)) },
                     ),
+                stories = stories,
             )
         }
     }
