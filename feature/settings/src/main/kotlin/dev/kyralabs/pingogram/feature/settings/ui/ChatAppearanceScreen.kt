@@ -96,6 +96,9 @@ internal fun ChatAppearanceRoute(
                 onApply = { viewModel.onWallpaperEvent(WallpaperEvent.Apply(patternFill(colors))) },
                 onCancel = { viewModel.onWallpaperEvent(WallpaperEvent.Cancel) },
                 onRetry = { viewModel.onWallpaperEvent(WallpaperEvent.Retry) },
+                onBlurred = { viewModel.onWallpaperEvent(WallpaperEvent.SetBlurred(it)) },
+                onRemove = { viewModel.onWallpaperEvent(WallpaperEvent.Remove) },
+                onDimming = viewModel::setWallpaperDimming,
             )
         }
     ChatAppearanceScreen(
@@ -230,7 +233,7 @@ private fun BubbleCornersSegment(
  * Screen readers hear the slider by [title] with the step's label as its state.
  */
 @Composable
-private fun StepSlider(
+internal fun StepSlider(
     title: String,
     labels: List<String>,
     index: Int,
