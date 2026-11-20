@@ -8,6 +8,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.util.Xml
 import androidx.core.graphics.PathParser
+import androidx.core.graphics.createBitmap
 import coil3.ImageLoader
 import coil3.asImage
 import coil3.decode.DecodeResult
@@ -44,7 +45,7 @@ internal class VectorPatternDecoder(
             options.size.height
                 .pxOrElse { pattern.height.roundToInt() }
                 .coerceAtLeast(1)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
+        val bitmap = createBitmap(width, height, Bitmap.Config.ALPHA_8)
         val canvas = Canvas(bitmap)
         val scale = max(width / pattern.width, height / pattern.height)
         canvas.translate((width - pattern.width * scale) / 2, (height - pattern.height * scale) / 2)
