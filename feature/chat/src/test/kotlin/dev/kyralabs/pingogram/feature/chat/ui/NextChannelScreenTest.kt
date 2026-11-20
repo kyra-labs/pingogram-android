@@ -84,7 +84,7 @@ class NextChannelScreenTest {
         pullUp(LONG_PULL)
 
         assertEquals(
-            listOf(ChatEvent.OpenNextChannel(next.chatId)),
+            listOf(ChatEvent.OpenNextChannel(next)),
             events.filterIsInstance<ChatEvent.OpenNextChannel>(),
         )
         assertEquals(listOf(HapticFeedbackType.GestureThresholdActivate), haptics)
@@ -125,7 +125,7 @@ class NextChannelScreenTest {
         composeRule.runOnIdle { action.action() }
 
         assertEquals(
-            listOf(ChatEvent.OpenNextChannel(next.chatId)),
+            listOf(ChatEvent.OpenNextChannel(next)),
             events.filterIsInstance<ChatEvent.OpenNextChannel>(),
         )
     }

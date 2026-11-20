@@ -391,11 +391,11 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * A pull past the newest post of a read channel, or a screen reader's action, asks to open channel [chatId], the
-     * next unread one ([ChatViewModel.nextChannel]), in this one's place.
+     * A pull past the newest message of a read channel or forum topic, or a screen reader's action, asks to open
+     * [next], the next unread channel or topic ([ChatViewModel.nextChannel]), in this one's place.
      */
     data class OpenNextChannel(
-        val chatId: Long,
+        val next: NextChannel,
     ) : ChatEvent
 
     /** Send the failed message [messageId] again (an album's failed items). */

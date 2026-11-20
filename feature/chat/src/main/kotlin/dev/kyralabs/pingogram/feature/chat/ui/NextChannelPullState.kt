@@ -73,7 +73,7 @@ internal class NextChannelPullState(
     private val haptics: HapticFeedback,
     private val settle: AnimationSpec<Float>,
     private val scope: CoroutineScope,
-    private val onOpen: (chatId: Long) -> Unit,
+    private val onOpen: (NextChannel) -> Unit,
     initialPull: Float = 0f,
 ) {
     /** The channel a release past [threshold] opens. */
@@ -91,7 +91,7 @@ internal class NextChannelPullState(
     val isArmed: Boolean by derivedStateOf { pull >= threshold }
 
     /** Opens [next] at once, for screen readers, which do not pull. */
-    fun openNow() = onOpen(next.chatId)
+    fun openNow() = onOpen(next)
 
     /** Moves the pull to [value], stopping a settle that runs: the finger takes the list where it is. */
     private fun pullTo(value: Float) {
@@ -126,7 +126,7 @@ internal class NextChannelPullState(
 
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (pull <= 0f || offset.isSettling) return Velocity.Zero
-                if (isArmed) onOpen(next.chatId)
+                if (isArmed) onOpen(next)
                 // Upward (negative) flings pull; the settle starts at the pull's speed and runs on its own.
                 offset.snapTo(pull)
                 offset.settle(scope, 0f, settle, velocity = -available.y * RESISTANCE)
@@ -184,7 +184,15 @@ internal fun Modifier.pullAway(pull: NextChannelPullState): Modifier {
     return nestedScroll(pull.connection)
         .graphicsLayer { translationY = -pull.pull }
         .semantics {
-            val label = resources.getString(R.string.chat_next_channel_action, pull.next.title)
+            val action =
+                if (pull.next.topicId !=
+                    null
+                ) {
+                    R.string.chat_next_topic_action
+                } else {
+                    R.string.chat_next_channel_action
+                }
+            val label = resources.getString(action, pull.next.title)
             customActions =
                 listOf(
                     CustomAccessibilityAction(label) {

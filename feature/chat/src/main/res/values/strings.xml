@@ -101,6 +101,8 @@
     <string name="chat_next_channel_release">Release to open</string>
     <!-- Screen readers' action on a read channel's messages: the next unread channel's name. -->
     <string name="chat_next_channel_action">Next channel: %1$s</string>
+    <!-- The same in a read forum topic: the next unread topic's name. -->
+    <string name="chat_next_topic_action">Next topic: %1$s</string>
     <string name="chat_jump_to_bottom">Scroll to newest messages</string>
     <!-- The unread count in the badge of the button that scrolls to the newest messages. -->
     <string name="chat_unread_badge">%1$d</string>

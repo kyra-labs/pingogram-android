@@ -556,13 +556,7 @@ class ChatViewModel internal constructor(
     val customEmoji: StateFlow<ImmutableMap<Long, CustomEmoji>> get() = customEmojis.customEmoji
 
     private val nextChannels =
-        ChatNextChannel(
-            chatId,
-            wholeChat = topic == null,
-            chatRepository,
-            threadRepositories.shownLists,
-            viewModelScope,
-        ) { effectChannel.trySend(it) }
+        ChatNextChannel(chatId, topic, threadRepositories, viewModelScope) { effectChannel.trySend(it) }
 
     /**
      * The next unread channel a read channel's conversation offers, which a pull past its newest post opens
@@ -1428,7 +1422,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
             is ChatEvent.Forward -> messageActions.forward(event.messageId)
-            is ChatEvent.OpenNextChannel -> nextChannels.open(event.chatId)
+            is ChatEvent.OpenNextChannel -> nextChannels.open(event.next)
             ChatEvent.ChangePlaybackSpeed -> playback.changeSpeed()
             is ForwardEvent -> forwarding.onEvent(event)
             else -> onAttachEvent(event)

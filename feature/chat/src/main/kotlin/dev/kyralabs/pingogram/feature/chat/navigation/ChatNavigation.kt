@@ -37,8 +37,9 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
  * [onOpenChatInfo] the info page of a group or channel, from its title; [onOpenThread] pushes a forum topic or a
  * message thread opened from it, a [ChatDestination] too; [onOpenScheduledMessages] the list of the chat's scheduled
  * messages, from their bar (`scheduledMessagesScreen`). [onOpenNextChat] opens the next unread channel, which a read
- * channel offers, in the conversation's place ([onOpenChat] without it). [onOpenMessage] opens a chat at a message:
- * the original of a post forwarded from a channel ([onOpenChat] without it).
+ * channel offers, in the conversation's place ([onOpenChat] without it), and [onOpenNextTopic] the next unread forum
+ * topic, which a read topic offers, in its place ([onOpenThread] without it). [onOpenMessage] opens a chat at a
+ * message: the original of a post forwarded from a channel ([onOpenChat] without it).
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
@@ -49,6 +50,7 @@ fun NavGraphBuilder.chatScreen(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenNextTopic: ((ChatDestination) -> Unit)? = null,
     onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
 ) {
     composable<ChatDestination> { entry ->
@@ -66,6 +68,10 @@ fun NavGraphBuilder.chatScreen(
                 onOpenChatInfo = onOpenChatInfo,
                 onOpenScheduledMessages = onOpenScheduledMessages,
                 onOpenNextChat = onOpenNextChat,
+                onOpenNextTopic =
+                    onOpenNextTopic?.let { open ->
+                        { chatId, topicId -> open(ChatDestination(chatId, topicId = topicId)) }
+                    },
                 onOpenMessage = onOpenMessage,
             )
         }
@@ -148,6 +154,16 @@ fun ChatPane(
                     modifier = modifier,
                     onOpenChat = onOpenChat,
                     onOpenThread = { opened, topic -> threads = threads.pushed(PaneThread(opened, topic)) },
+                    // A read topic's next unread topic takes its place among the threads opened here.
+                    onOpenNextTopic =
+                        if (top != null) {
+                            { opened, topicId ->
+                                threads =
+                                    threads.popped().pushed(PaneThread(opened, MessageTopic.Forum(topicId)))
+                            }
+                        } else {
+                            null
+                        },
                     onOpenProfile = onOpenProfile,
                     onOpenChatInfo = onOpenChatInfo,
                     focusComposer = focusComposer && top == null,
