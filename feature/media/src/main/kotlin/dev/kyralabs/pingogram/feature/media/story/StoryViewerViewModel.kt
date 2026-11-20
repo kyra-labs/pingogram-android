@@ -83,7 +83,8 @@ import kotlin.time.TimeSource
  *   refusals are snackbars. **Replies**: only to a user's story that may be replied to, privately, in their chat.
  * - **Live stories** (board 26): the call's title and how many watch, from [liveCall] (`GroupCallRepository`).
  * - **Albums** (board 11b): with the route's album, the viewer plays that album's stories of the route's chat
- *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat.
+ *   ([StoryAlbumRepository], the first [ALBUM_STORY_LIMIT]) instead of its active stories, and no other chat; opened
+ *   from a profile's Stories tab, the stories the chat keeps on its profile, as its first [ALBUM_STORY_LIMIT].
  * - **Saved state**: the chats, the one shown and its story, so after process death the viewer opens where it was.
  *   The reply's text is not saved.
  *
@@ -379,15 +380,21 @@ class StoryViewerViewModel internal constructor(
     }
 
     /**
-     * The stories of chat [chatId] to page through: its active stories, or with the route's album, that album's stories
-     * as if they were (none unseen, so the viewer starts at the route's story or the first).
+     * The stories of chat [chatId] to page through: its active stories, or with the route's album or from its profile,
+     * that album's stories or the profile's as if they were (none unseen, so the viewer starts at the route's story or
+     * the first).
      */
     private fun storiesOf(chatId: Long): Flow<Outcome<ActiveStories>> {
         val albumId = route.albumId
         val albums = albumRepository
-        if (albumId == null || albums == null) return storyRepository.activeStoriesOf(chatId)
+        if ((albumId == null && !route.fromProfile) || albums == null) return storyRepository.activeStoriesOf(chatId)
         return flow {
-            val page = albums.stories(chatId, albumId, offset = 0, limit = ALBUM_STORY_LIMIT)
+            val page =
+                if (albumId != null) {
+                    albums.stories(chatId, albumId, offset = 0, limit = ALBUM_STORY_LIMIT)
+                } else {
+                    albums.profileStories(chatId, fromStoryId = 0, limit = ALBUM_STORY_LIMIT)
+                }
             emit(
                 page.map { found ->
                     ActiveStories(
@@ -409,7 +416,7 @@ class StoryViewerViewModel internal constructor(
     private suspend fun choosePosters() {
         if (posters.value != null) return
         val listed =
-            if (route.albumId == null) {
+            if (route.albumId == null && !route.fromProfile) {
                 storyRepository.activeStories(StoryList.Main).first().map { it.chatId }
             } else {
                 emptyList()
@@ -601,7 +608,7 @@ class StoryViewerViewModel internal constructor(
     /** The story after [key]: the next of its chat, else the first one the next chat would show. */
     private fun nextKey(key: StoryKey): StoryKey? {
         val stories = currentActive?.takeIf { it.chatId == key.chatId }?.stories
-        val following = stories?.firstOrNull { it.id > key.storyId }
+        val following = stories?.after(key.storyId)
         return if (following != null) StoryKey(key.chatId, following.id) else nextChatKey()
     }
 
@@ -618,7 +625,7 @@ class StoryViewerViewModel internal constructor(
         val posters = posters.value ?: return
         val current = position.value
         val storyId = current.storyId ?: return
-        val following = currentActive?.stories?.firstOrNull { it.id > storyId }
+        val following = currentActive?.stories?.after(storyId)
         if (following != null && currentActive?.chatId == posters.getOrNull(current.posterIndex)) {
             position.value = current.copy(storyId = following.id)
         } else {
@@ -664,7 +671,7 @@ class StoryViewerViewModel internal constructor(
         val posters = posters.value ?: return
         val current = position.value
         val storyId = current.storyId ?: return
-        val earlier = currentActive?.stories?.lastOrNull { it.id < storyId }
+        val earlier = currentActive?.stories?.before(storyId)
         when {
             earlier != null && currentActive?.chatId == posters.getOrNull(current.posterIndex) -> {
                 position.value = current.copy(storyId = earlier.id)
@@ -1014,4 +1021,19 @@ private enum class Pause {
     Viewers,
     Back,
     Sharing,
+}
+
+/**
+ * The story after story [storyId] in this list's order (an album's or a profile's is not by id), or while that story is
+ * gone, the first one posted after it.
+ */
+private fun List<StoryInfo>.after(storyId: Int): StoryInfo? {
+    val index = indexOfFirst { it.id == storyId }
+    return if (index >= 0) getOrNull(index + 1) else firstOrNull { it.id > storyId }
+}
+
+/** The story before story [storyId] in this list's order, or while that story is gone, the last posted before it. */
+private fun List<StoryInfo>.before(storyId: Int): StoryInfo? {
+    val index = indexOfFirst { it.id == storyId }
+    return if (index >= 0) getOrNull(index - 1) else lastOrNull { it.id < storyId }
 }

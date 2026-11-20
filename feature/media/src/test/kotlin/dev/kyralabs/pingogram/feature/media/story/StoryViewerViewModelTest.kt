@@ -110,6 +110,24 @@ internal class StoryViewerViewModelTest : StoryViewerViewModelHarness() {
         }
 
     @Test
+    fun `from a profile it plays the stories the chat keeps there alone, from the tapped story`() =
+        runViewModelTest {
+            albums.profile = listOf(40, 31, 12).map { FakeStoryAlbumRepository.story(it, 0) }
+            stories.setStory(photoStory(31, ADA))
+            stories.setStory(photoStory(12, ADA))
+
+            val viewModel = viewModel(StoryViewerRoute(ADA, storyId = 31, fromProfile = true), albums = albums)
+
+            assertEquals(listOf(ADA), viewModel.content.posters.map { it.chatId })
+            assertEquals(ADA to 31, viewModel.shownStory)
+            assertEquals(3, viewModel.content.story.count)
+            assertEquals(listOf(0 to 100), albums.profileRequests)
+            viewModel.onEvent(StoryViewerEvent.Next)
+            runCurrent()
+            assertEquals(ADA to 12, viewModel.shownStory)
+        }
+
+    @Test
     fun `a chat whose stories are not known yet shows loading`() =
         runViewModelTest {
             // The stories list is empty, and TDLib has not answered for the chat's stories yet.
