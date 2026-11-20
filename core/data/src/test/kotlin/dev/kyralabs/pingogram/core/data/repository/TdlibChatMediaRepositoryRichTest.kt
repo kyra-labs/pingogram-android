@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.photo
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibChatMediaRepository.richMedia]: a rich message's photos, videos and GIFs as the media viewer's one page. */
 class TdlibChatMediaRepositoryRichTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibChatMediaRepository(client)
+    private fun TestScope.repository() = TdlibChatMediaRepository(client, backgroundScope)
     private val messages = mutableMapOf<Long, TdApi.Message>()
 
     init {
@@ -49,7 +50,7 @@ class TdlibChatMediaRepositoryRichTest {
         runTest {
             messages[POST] = message(id = POST, chatId = CHAT, content = richPost())
 
-            val page = repository.richMedia(CHAT, POST).page()
+            val page = repository().richMedia(CHAT, POST).page()
 
             // Newest first, as every page: the second media has the higher id.
             assertEquals(listOf(richMediaId(POST, 1), richMediaId(POST, 0)), page.messages.map { it.id })
@@ -67,8 +68,8 @@ class TdlibChatMediaRepositoryRichTest {
         runTest {
             messages[POST] = message(id = POST, chatId = CHAT, content = messageText("Hello"))
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.richMedia(CHAT, POST))
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.richMedia(CHAT, POST * 2))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().richMedia(CHAT, POST))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().richMedia(CHAT, POST * 2))
         }
 
     private companion object {

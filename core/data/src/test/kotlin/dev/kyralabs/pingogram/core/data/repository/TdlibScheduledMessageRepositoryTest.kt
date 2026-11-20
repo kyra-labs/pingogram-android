@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageSendSuccee
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.Test
 class TdlibScheduledMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private val repository = TdlibScheduledMessageRepository(client)
+    private fun TestScope.repository() = TdlibScheduledMessageRepository(client, backgroundScope)
 
     private fun answer(vararg scheduled: TdApi.Message) =
         client.on(TdApi.GetChatScheduledMessages::class, TdResult.Success(messages(*scheduled)))
@@ -62,7 +63,7 @@ class TdlibScheduledMessageRepositoryTest {
                 scheduled(7, state = TdApi.MessageSchedulingStateSendWhenVideoProcessed(AT + 30)),
             )
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 val loaded = awaitItem().messages()
                 assertEquals(listOf(9L, 7L, 3L, 5L), loaded.map { it.message.id })
                 assertEquals(MessageSchedule.At(AT.toLong(), DAY), loaded[0].schedule)
@@ -77,7 +78,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             answer(scheduled(3))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 assertEquals(listOf(3L), awaitItem().ids())
 
                 client.emit(updateNewMessage(message(id = 4, chatId = CHAT)))
@@ -91,7 +92,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             answer()
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
                 client.emit(updateNewMessage(scheduled(1_001).apply { sendingState = pendingState() }))
                 assertEquals(listOf(1_001L), awaitItem().ids())
@@ -113,7 +114,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             answer(scheduled(3), scheduled(5, at = AT + 60))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
 
                 // TDLib deletes the scheduled message and announces the sent one, without a scheduling state.
@@ -129,7 +130,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             answer(scheduled(3))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
 
                 client.emit(updateMessageContent(CHAT, 3, messageText("Edited")))
@@ -157,7 +158,7 @@ class TdlibScheduledMessageRepositoryTest {
             val held = CompletableDeferred<TdResult<TdApi.Messages>>()
             client.on(TdApi.GetChatScheduledMessages::class) { held.await() }
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 client.emit(updateDeleteMessages(CHAT, 3))
                 held.complete(TdResult.Success(messages(scheduled(3), scheduled(5, at = AT + 60))))
 
@@ -171,7 +172,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             client.on(TdApi.GetChatScheduledMessages::class, TdResult.Failure(floodWait(7).toTdError()))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 assertEquals(Outcome.Failure(DomainError.FloodWait(7)), awaitItem())
                 awaitComplete()
             }
@@ -183,11 +184,11 @@ class TdlibScheduledMessageRepositoryTest {
             answer(scheduled(3))
             client.on(TdApi.EditMessageSchedulingState::class, TdResult.Success(TdApi.Ok()))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
                 answer()
 
-                assertEquals(Outcome.Success(Unit), repository.sendNow(CHAT, 3))
+                assertEquals(Outcome.Success(Unit), repository().sendNow(CHAT, 3))
                 assertEquals(emptyList<Long>(), awaitItem().ids())
             }
             val edit = client.sentOf<TdApi.EditMessageSchedulingState>().single()
@@ -202,11 +203,11 @@ class TdlibScheduledMessageRepositoryTest {
             answer(scheduled(3))
             client.on(TdApi.EditMessageSchedulingState::class, TdResult.Success(TdApi.Ok()))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
                 answer(scheduled(3, at = AT + 3_600, repeatPeriod = DAY))
 
-                assertEquals(Outcome.Success(Unit), repository.reschedule(CHAT, 3, AT + 3_600L, repeatPeriod = DAY))
+                assertEquals(Outcome.Success(Unit), repository().reschedule(CHAT, 3, AT + 3_600L, repeatPeriod = DAY))
                 assertEquals(MessageSchedule.At(AT + 3_600L, DAY), awaitItem().messages().single().schedule)
             }
             val state = client.sentOf<TdApi.EditMessageSchedulingState>().single().schedulingState
@@ -220,7 +221,7 @@ class TdlibScheduledMessageRepositoryTest {
         runTest {
             client.on(TdApi.DeleteMessages::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.delete(CHAT, listOf(3, 5)))
+            assertEquals(Outcome.Success(Unit), repository().delete(CHAT, listOf(3, 5)))
 
             val delete = client.sentOf<TdApi.DeleteMessages>().single()
             assertEquals(listOf(3L, 5L), delete.messageIds.toList())
@@ -237,11 +238,11 @@ class TdlibScheduledMessageRepositoryTest {
             )
             client.on(TdApi.DeleteMessages::class, TdResult.Failure(floodWait(30).toTdError()))
 
-            repository.scheduledMessages(CHAT).test {
+            repository().scheduledMessages(CHAT).test {
                 awaitItem()
 
-                assertTrue(repository.sendNow(CHAT, 3) is Outcome.Failure)
-                assertEquals(Outcome.Failure(DomainError.FloodWait(30)), repository.delete(CHAT, listOf(3)))
+                assertTrue(repository().sendNow(CHAT, 3) is Outcome.Failure)
+                assertEquals(Outcome.Failure(DomainError.FloodWait(30)), repository().delete(CHAT, listOf(3)))
                 expectNoEvents()
             }
         }

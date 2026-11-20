@@ -1,17 +1,21 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAnimation
 import dev.kyralabs.pingogram.core.data.mapper.toPhoto
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.BotCommand
 import dev.kyralabs.pingogram.core.domain.model.BotInfo
 import dev.kyralabs.pingogram.core.domain.model.BotMenuButton
 import dev.kyralabs.pingogram.core.domain.model.ChatBots
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlin.reflect.KClass
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +44,7 @@ class TdlibBotInfoRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : BotInfoRepository {
         override fun chatBots(chatId: Long): Flow<Outcome<ChatBots>> =
             channelFlow {
@@ -83,6 +88,7 @@ class TdlibBotInfoRepository
                 }
             if (user.type !is TdApi.UserTypeBot) return none()
             follow(
+                type = TdApi.UpdateUserFullInfo::class,
                 changes = { update ->
                     (update as? TdApi.UpdateUserFullInfo)
                         ?.takeIf { it.userId == userId }
@@ -95,6 +101,7 @@ class TdlibBotInfoRepository
 
         private suspend fun ProducerScope<Outcome<ChatBots>>.basicGroupBots(basicGroupId: Long) =
             follow(
+                type = TdApi.UpdateBasicGroupFullInfo::class,
                 changes = { update ->
                     if (update is TdApi.UpdateBasicGroupFullInfo && update.basicGroupId == basicGroupId) {
                         update.basicGroupFullInfo?.botCommands.toChatBots()
@@ -109,6 +116,7 @@ class TdlibBotInfoRepository
 
         private suspend fun ProducerScope<Outcome<ChatBots>>.supergroupBots(supergroupId: Long) =
             follow(
+                type = TdApi.UpdateSupergroupFullInfo::class,
                 changes = { update ->
                     if (update is TdApi.UpdateSupergroupFullInfo && update.supergroupId == supergroupId) {
                         update.supergroupFullInfo?.botCommands.toChatBots()
@@ -122,15 +130,18 @@ class TdlibBotInfoRepository
             )
 
         /**
-         * Follows the updates [changes] reads (null for other updates), from before [request] goes out, and sends its
-         * answer, then each change.
+         * Follows the updates of [type] that [changes] reads (null for the others), from before [request] goes out, and
+         * sends its answer, then each change.
          */
         private suspend fun ProducerScope<Outcome<ChatBots>>.follow(
+            type: KClass<out TdApi.Update>,
             changes: (TdApi.Update) -> ChatBots?,
             request: suspend () -> Outcome<ChatBots>,
         ) {
             launch(start = CoroutineStart.UNDISPATCHED) {
-                client.updates.collect { update -> changes(update)?.let { send(Outcome.Success(it)) } }
+                client.updateRouter(scope).updates(setOf(type)).collect { update ->
+                    changes(update)?.let { send(Outcome.Success(it)) }
+                }
             }
             send(request())
         }

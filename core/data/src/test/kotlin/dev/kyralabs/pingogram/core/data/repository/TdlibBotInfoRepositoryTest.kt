@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.photoSize
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -26,7 +27,7 @@ import org.junit.jupiter.api.Test
  */
 class TdlibBotInfoRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibBotInfoRepository(client)
+    private fun TestScope.repository() = TdlibBotInfoRepository(client, backgroundScope)
 
     private fun command(
         name: String,
@@ -66,7 +67,7 @@ class TdlibBotInfoRepositoryTest {
                 TdResult.Success(fullInfo(botInfo(menuButton = menu, photo = photo))),
             )
 
-            repository.chatBots(BOT).test {
+            repository().chatBots(BOT).test {
                 val bots = (awaitItem() as Outcome.Success).value
                 assertEquals(
                     persistentListOf(BotCommand("start", "Does start", BOT), BotCommand("help", "Does help", BOT)),
@@ -96,7 +97,7 @@ class TdlibBotInfoRepositoryTest {
             val menu = TdApi.BotMenuButton("Menu", "")
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo(botInfo(menuButton = menu))))
 
-            repository.chatBots(BOT).test {
+            repository().chatBots(BOT).test {
                 assertNull((awaitItem() as Outcome.Success).value.bot?.menuButton)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -108,7 +109,7 @@ class TdlibBotInfoRepositoryTest {
             botChat()
             client.on(TdApi.GetUserFullInfo::class, TdResult.Success(fullInfo(botInfo())))
 
-            repository.chatBots(BOT).test {
+            repository().chatBots(BOT).test {
                 awaitItem()
                 client.emit(TdApi.UpdateUserFullInfo(OTHER_BOT, fullInfo(botInfo(commands = arrayOf()))))
                 client.emit(TdApi.UpdateUserFullInfo(BOT, fullInfo(botInfo(commands = arrayOf(command("new"))))))
@@ -126,7 +127,7 @@ class TdlibBotInfoRepositoryTest {
             client.on(TdApi.GetChat::class, TdResult.Success(chat(id = PERSON, type = TdApi.ChatTypePrivate(PERSON))))
             client.on(TdApi.GetUser::class, TdResult.Success(user(id = PERSON)))
 
-            repository.chatBots(PERSON).test {
+            repository().chatBots(PERSON).test {
                 assertEquals(Outcome.Success(ChatBots.None), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -147,7 +148,7 @@ class TdlibBotInfoRepositoryTest {
                 }
             client.on(TdApi.GetBasicGroupFullInfo::class, TdResult.Success(info))
 
-            repository.chatBots(GROUP).test {
+            repository().chatBots(GROUP).test {
                 assertEquals(
                     persistentListOf(BotCommand("roll", "Does roll", BOT), BotCommand("poll", "Does poll", OTHER_BOT)),
                     (awaitItem() as Outcome.Success).value.commands,
@@ -163,7 +164,7 @@ class TdlibBotInfoRepositoryTest {
             group(TdApi.ChatTypeSupergroup(SUPERGROUP, false))
             client.on(TdApi.GetSupergroupFullInfo::class, TdResult.Success(TdApi.SupergroupFullInfo()))
 
-            repository.chatBots(GROUP).test {
+            repository().chatBots(GROUP).test {
                 assertEquals(Outcome.Success(ChatBots.None), awaitItem())
                 val added =
                     TdApi.SupergroupFullInfo().also {
@@ -187,7 +188,7 @@ class TdlibBotInfoRepositoryTest {
         runTest {
             group(TdApi.ChatTypeSupergroup(SUPERGROUP, true))
 
-            repository.chatBots(GROUP).test {
+            repository().chatBots(GROUP).test {
                 assertEquals(Outcome.Success(ChatBots.None), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -200,7 +201,7 @@ class TdlibBotInfoRepositoryTest {
             botChat()
             client.on(TdApi.GetUserFullInfo::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 8")))
 
-            repository.chatBots(BOT).test {
+            repository().chatBots(BOT).test {
                 assertEquals(Outcome.Failure(DomainError.FloodWait(8)), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -211,7 +212,7 @@ class TdlibBotInfoRepositoryTest {
         runTest {
             client.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
 
-            repository.chatBots(BOT).test {
+            repository().chatBots(BOT).test {
                 assertTrue(awaitItem() is Outcome.Failure)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -222,7 +223,7 @@ class TdlibBotInfoRepositoryTest {
         runTest {
             client.on(TdApi.SendBotStartMessage::class, TdResult.Success(TdApi.Message()))
 
-            assertEquals(Outcome.Success(Unit), repository.sendStartMessage(BOT, BOT, "ref42"))
+            assertEquals(Outcome.Success(Unit), repository().sendStartMessage(BOT, BOT, "ref42"))
 
             val sent = client.sentOf<TdApi.SendBotStartMessage>().single()
             assertEquals(BOT, sent.botUserId)
@@ -235,7 +236,7 @@ class TdlibBotInfoRepositoryTest {
         runTest {
             client.on(TdApi.SendBotStartMessage::class, TdResult.Failure(TdError(400, "Bot is blocked")))
 
-            assertTrue(repository.sendStartMessage(BOT, BOT) is Outcome.Failure)
+            assertTrue(repository().sendStartMessage(BOT, BOT) is Outcome.Failure)
         }
 
     private companion object {

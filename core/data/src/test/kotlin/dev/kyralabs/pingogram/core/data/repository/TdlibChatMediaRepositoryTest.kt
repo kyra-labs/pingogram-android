@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageVideo
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.thumbnail
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateDeleteMessages
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,7 +28,7 @@ import org.junit.jupiter.api.Test
 
 class TdlibChatMediaRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibChatMediaRepository(client)
+    private fun TestScope.repository() = TdlibChatMediaRepository(client, backgroundScope)
 
     /** The chat's messages by id, which getMessage answers with; 404 for any other id, as for a deleted message. */
     private val messages = mutableMapOf<Long, TdApi.Message>()
@@ -82,7 +83,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = (1L..100L).toList())
 
-            val page = repository.opened(CHAT, 50).page()
+            val page = repository().opened(CHAT, 50).page()
 
             assertEquals(listOf(50L), page.ids())
             assertEquals(ChatMediaFilter.PhotosAndVideos, page.filter)
@@ -97,7 +98,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1, 2, 3))
 
-            val page = repository.opened(CHAT, 3).page()
+            val page = repository().opened(CHAT, 3).page()
 
             assertTrue(page.messages.single().content is MessageContent.Video)
             assertEquals(ChatMediaFilter.PhotosAndVideos, page.filter)
@@ -108,7 +109,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1, 2), gifIds = listOf(3, 5))
 
-            val page = repository.opened(CHAT, 5).page()
+            val page = repository().opened(CHAT, 5).page()
 
             assertEquals(ChatMediaFilter.Gifs, page.filter)
             assertEquals(listOf(5L), page.ids())
@@ -121,7 +122,7 @@ class TdlibChatMediaRepositoryTest {
             // Not among the photos TDLib's search knows, e.g. one being sent.
             add(3, messagePhoto())
 
-            assertEquals(listOf(3L), repository.opened(CHAT, 3).page().ids())
+            assertEquals(listOf(3L), repository().opened(CHAT, 3).page().ids())
         }
 
     @Test
@@ -129,7 +130,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1, 2))
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 7))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().opened(CHAT, 7))
         }
 
     @Test
@@ -138,7 +139,7 @@ class TdlibChatMediaRepositoryTest {
             serveMedia(photoIds = listOf(1))
             add(2, messageText())
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 2))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().opened(CHAT, 2))
         }
 
     @Test
@@ -147,7 +148,7 @@ class TdlibChatMediaRepositoryTest {
             serveMedia(photoIds = listOf(1))
             add(2, messageDocument(document(fileName = "photo.jpg", mimeType = "image/jpeg", thumbnail = thumbnail())))
 
-            val page = repository.opened(CHAT, 2).page()
+            val page = repository().opened(CHAT, 2).page()
 
             assertEquals(listOf(2L), page.ids())
             assertTrue(page.reachedOldest && page.reachedNewest)
@@ -160,7 +161,7 @@ class TdlibChatMediaRepositoryTest {
             serveMedia(photoIds = listOf(1))
             add(2, messageDocument())
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 2))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().opened(CHAT, 2))
         }
 
     @Test
@@ -169,7 +170,7 @@ class TdlibChatMediaRepositoryTest {
             serveMedia(photoIds = listOf(1))
             add(2, messagePhoto(isSecret = true))
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.opened(CHAT, 2))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().opened(CHAT, 2))
         }
 
     // Older and newer
@@ -179,7 +180,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = (1L..100L).toList())
 
-            val page = repository.older(CHAT, ChatMediaFilter.PhotosAndVideos, 61).page()
+            val page = repository().older(CHAT, ChatMediaFilter.PhotosAndVideos, 61).page()
 
             val request = search()
             assertEquals(listOf<Any>(61L, 0, 40), listOf(request.fromMessageId, request.offset, request.limit))
@@ -193,7 +194,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(5, 6))
 
-            val page = repository.older(CHAT, ChatMediaFilter.PhotosAndVideos, 5).page()
+            val page = repository().older(CHAT, ChatMediaFilter.PhotosAndVideos, 5).page()
 
             assertEquals(emptyList<Long>(), page.ids())
             assertTrue(page.reachedOldest)
@@ -204,7 +205,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = (1L..100L).toList())
 
-            val page = repository.newer(CHAT, ChatMediaFilter.PhotosAndVideos, 30).page()
+            val page = repository().newer(CHAT, ChatMediaFilter.PhotosAndVideos, 30).page()
 
             val request = search()
             assertEquals(listOf<Any>(30L, -40, 41), listOf(request.fromMessageId, request.offset, request.limit))
@@ -218,7 +219,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(5, 6))
 
-            val page = repository.newer(CHAT, ChatMediaFilter.PhotosAndVideos, 6).page()
+            val page = repository().newer(CHAT, ChatMediaFilter.PhotosAndVideos, 6).page()
 
             assertEquals(emptyList<Long>(), page.ids())
             assertTrue(page.reachedNewest)
@@ -229,7 +230,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1), gifIds = listOf(2, 3, 4))
 
-            val page = repository.newer(CHAT, ChatMediaFilter.Gifs, 2).page()
+            val page = repository().newer(CHAT, ChatMediaFilter.Gifs, 2).page()
 
             assertTrue(search().filter is TdApi.SearchMessagesFilterAnimation)
             assertEquals(listOf(4L, 3L), page.ids())
@@ -242,7 +243,7 @@ class TdlibChatMediaRepositoryTest {
 
             assertEquals(
                 Outcome.Failure(DomainError.NotFound),
-                repository.older(CHAT, ChatMediaFilter.PhotosAndVideos, 5),
+                repository().older(CHAT, ChatMediaFilter.PhotosAndVideos, 5),
             )
         }
 
@@ -251,7 +252,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             serveMedia(photoIds = listOf(1, 2), totalCount = -1)
 
-            assertEquals(null, repository.older(CHAT, ChatMediaFilter.PhotosAndVideos, 2).page().totalCount)
+            assertEquals(null, repository().older(CHAT, ChatMediaFilter.PhotosAndVideos, 2).page().totalCount)
         }
 
     @Test
@@ -260,7 +261,7 @@ class TdlibChatMediaRepositoryTest {
             serveMedia(photoIds = listOf(1, 2, 3))
             add(2, messageText())
 
-            assertEquals(listOf(1L), repository.older(CHAT, ChatMediaFilter.PhotosAndVideos, 3).page().ids())
+            assertEquals(listOf(1L), repository().older(CHAT, ChatMediaFilter.PhotosAndVideos, 3).page().ids())
         }
 
     // Position
@@ -270,7 +271,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             client.on(TdApi.GetChatMessagePosition::class, TdResult.Success(TdApi.Count(7)))
 
-            val position = repository.position(CHAT, ChatMediaFilter.Gifs, 42)
+            val position = repository().position(CHAT, ChatMediaFilter.Gifs, 42)
 
             val request = client.sentOf<TdApi.GetChatMessagePosition>().single()
             assertEquals(Outcome.Success(7), position)
@@ -286,7 +287,7 @@ class TdlibChatMediaRepositoryTest {
                 TdResult.Failure(TdError(400, "Message can't be found in the filter")),
             )
 
-            val position = repository.position(CHAT, ChatMediaFilter.PhotosAndVideos, 42)
+            val position = repository().position(CHAT, ChatMediaFilter.PhotosAndVideos, 42)
 
             assertTrue(position is Outcome.Failure)
         }
@@ -300,8 +301,8 @@ class TdlibChatMediaRepositoryTest {
                 TdResult.Success(TdApi.MessageProperties().apply { canBeSaved = request.messageId == 42L })
             }
 
-            assertEquals(Outcome.Success(true), repository.canBeSaved(CHAT, 42))
-            assertEquals(Outcome.Success(false), repository.canBeSaved(CHAT, 43))
+            assertEquals(Outcome.Success(true), repository().canBeSaved(CHAT, 42))
+            assertEquals(Outcome.Success(false), repository().canBeSaved(CHAT, 43))
             val request = client.sentOf<TdApi.GetMessageProperties>().first()
             assertEquals(listOf(CHAT, 42L), listOf(request.chatId, request.messageId))
         }
@@ -311,7 +312,7 @@ class TdlibChatMediaRepositoryTest {
         runTest {
             client.on(TdApi.GetMessageProperties::class, TdResult.Failure(TdError(404, "Not Found")))
 
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.canBeSaved(CHAT, 42))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().canBeSaved(CHAT, 42))
         }
 
     // Deletions
@@ -319,7 +320,7 @@ class TdlibChatMediaRepositoryTest {
     @Test
     fun `deleted messages of the chat come in batches, only those deleted for good`() =
         runTest {
-            repository.deletedMessages(CHAT).test {
+            repository().deletedMessages(CHAT).test {
                 client.emit(updateDeleteMessages(CHAT, 1, 2))
                 client.emit(updateDeleteMessages(OTHER_CHAT, 3))
                 client.emit(updateDeleteMessages(CHAT, 4, isPermanent = false, fromCache = true))

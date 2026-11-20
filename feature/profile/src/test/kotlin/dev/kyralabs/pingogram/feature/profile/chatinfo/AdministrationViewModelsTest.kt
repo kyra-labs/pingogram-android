@@ -67,7 +67,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
                 userId = ADA,
                 restrict = restrict,
                 savedStateHandle = handle,
-                groupInfoRepository = TdlibGroupInfoRepository(client),
+                groupInfoRepository = TdlibGroupInfoRepository(client, backgroundScope),
                 administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 userRepository = users,
             )
@@ -170,7 +170,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
         val viewModel =
             ChatPermissionsViewModel(
                 chatId = CHAT,
-                groupInfoRepository = TdlibGroupInfoRepository(client),
+                groupInfoRepository = TdlibGroupInfoRepository(client, backgroundScope),
                 administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
             )
         created += viewModel
@@ -298,7 +298,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
                 chatId = CHAT,
                 savedStateHandle = handle,
                 chatRepository = chats,
-                groupInfoRepository = TdlibGroupInfoRepository(client),
+                groupInfoRepository = TdlibGroupInfoRepository(client, backgroundScope),
                 administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 photoRepository = photos,
             )

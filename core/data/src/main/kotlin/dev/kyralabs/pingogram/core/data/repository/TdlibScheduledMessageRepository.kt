@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
@@ -7,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
 import dev.kyralabs.pingogram.core.data.mapper.toScheduledMessage
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSchedule
 import dev.kyralabs.pingogram.core.domain.model.ScheduledMessage
@@ -16,6 +18,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -49,6 +52,7 @@ class TdlibScheduledMessageRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : ScheduledMessageRepository {
         /** The chats whose collections load their list again. */
         private val reloads = MutableSharedFlow<Long>(extraBufferCapacity = RELOAD_BUFFER)
@@ -59,7 +63,9 @@ class TdlibScheduledMessageRepository
                 // UNDISPATCHED: subscribed before the request below is sent, so no update falls in between.
                 val following =
                     launch(start = CoroutineStart.UNDISPATCHED) {
-                        client.updates.collect { if (it.scheduledChatId() == chatId) changes.send(Change.Apply(it)) }
+                        client.updateRouter(scope).updates(SCHEDULED_UPDATES).collect {
+                            if (it.scheduledChatId() == chatId) changes.send(Change.Apply(it))
+                        }
                     }
                 val reloading =
                     launch(start = CoroutineStart.UNDISPATCHED) {
@@ -212,6 +218,17 @@ private val MessageSchedule.sendsAt: Long
         }
 
 /** The chat whose scheduled messages [this] can change; null for other updates. */
+/** The updates [scheduledChatId] reads. */
+private val SCHEDULED_UPDATES =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateMessageContent::class,
+        TdApi.UpdateMessageEdited::class,
+        TdApi.UpdateMessageSendFailed::class,
+        TdApi.UpdateMessageSendSucceeded::class,
+        TdApi.UpdateNewMessage::class,
+    )
+
 private fun TdApi.Update.scheduledChatId(): Long? =
     when (this) {
         is TdApi.UpdateNewMessage -> message.chatId
