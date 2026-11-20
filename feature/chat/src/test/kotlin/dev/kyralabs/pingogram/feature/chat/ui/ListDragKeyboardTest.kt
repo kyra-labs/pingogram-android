@@ -30,12 +30,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * [HideKeyboardOnDrag]: the user's drag of the message list hides the keyboard; the list's own scrolls (a jump to a
- * message, back to the newest) and new messages arriving do not.
+ * [ReportListDrags] and the keyboard: the user's drag of the message list hides the keyboard; the list's own
+ * scrolls (a jump to a message, back to the newest) and new messages arriving do not.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
-class HideKeyboardOnDragTest {
+class ListDragKeyboardTest {
     @get:Rule(order = 0)
     val componentActivity = ComponentActivityRegistration()
 
@@ -73,7 +73,7 @@ class HideKeyboardOnDragTest {
                         BasicText("Message $id", Modifier.height(ROW_HEIGHT))
                     }
                 }
-                HideKeyboardOnDrag(listState)
+                ReportListDrags(listState) {}
             }
         }
         composeRule.waitForIdle()

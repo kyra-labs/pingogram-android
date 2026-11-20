@@ -91,9 +91,11 @@ internal fun ReportVisibleMessages(
 }
 
 /**
- * Reports each time the user starts dragging [listState] ([PinnedEvent.ListDragged]), so the pinned messages bar
- * follows the screen again after a tap chose its message. The list's own jumps (to a reply, to a pinned message) are
- * no drags, so they leave that choice.
+ * Each time the user starts dragging [listState]: reports it ([PinnedEvent.ListDragged]), so the pinned messages bar
+ * follows the screen again after a tap chose its message, and hides the keyboard, as one scrolls up to read what came
+ * before. The list's own scrolls (to the newest message, to a reply or a pinned message, as new messages arrive) are
+ * no drags, so they leave both. The composer keeps its focus, its text and its draft; a tap on it brings the keyboard
+ * back.
  */
 @Composable
 internal fun ReportListDrags(
@@ -101,26 +103,14 @@ internal fun ReportListDrags(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
-    LaunchedEffect(listState) {
-        listState.interactionSource.interactions
-            .filterIsInstance<DragInteraction.Start>()
-            .collect { currentOnEvent(PinnedEvent.ListDragged) }
-    }
-}
-
-/**
- * Hides the keyboard each time the user starts dragging [listState], as one scrolls up to read what came before. Only
- * the user's drags: the list's own scrolls (to the newest message, to a reply, as new messages arrive) are no drags, so
- * they leave the keyboard up. The composer keeps its focus, its text and its draft; a tap on it brings the keyboard
- * back.
- */
-@Composable
-internal fun HideKeyboardOnDrag(listState: LazyListState) {
     val keyboard by rememberUpdatedState(LocalSoftwareKeyboardController.current)
     LaunchedEffect(listState) {
         listState.interactionSource.interactions
             .filterIsInstance<DragInteraction.Start>()
-            .collect { keyboard?.hide() }
+            .collect {
+                keyboard?.hide()
+                currentOnEvent(PinnedEvent.ListDragged)
+            }
     }
 }
 
