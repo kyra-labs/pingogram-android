@@ -110,6 +110,7 @@ internal fun ProfileScreen(
     modifier: Modifier = Modifier,
     onEditContact: (() -> Unit)? = null,
     onExportChat: (() -> Unit)? = null,
+    onChatWallpaper: (() -> Unit)? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
@@ -128,6 +129,7 @@ internal fun ProfileScreen(
             mediaActions,
             onEditContact,
             onExportChat,
+            onChatWallpaper,
             storiesTab,
             profileMusic,
         )
@@ -147,6 +149,7 @@ internal class ProfilePageParts(
     val mediaActions: SharedMediaActions,
     val onEditContact: (() -> Unit)?,
     val onExportChat: (() -> Unit)? = null,
+    val onChatWallpaper: (() -> Unit)? = null,
     val stories: StoriesTab? = null,
     val profileMusic: ProfileMusicSlot? = null,
 )
@@ -335,6 +338,7 @@ private fun LazyGridScope.profileItems(
     val hasMore =
         (actions.contact != null && page.onEditContact != null) ||
             page.onExportChat != null ||
+            page.onChatWallpaper != null ||
             actions.isBlocked != null ||
             actions.canReport
     if (hasMore) {
@@ -345,6 +349,7 @@ private fun LazyGridScope.profileItems(
                 modifier = Modifier.padding(top = MaterialTheme.spacing.extraLarge),
                 onEditContact = page.onEditContact,
                 onExportChat = page.onExportChat,
+                onChatWallpaper = page.onChatWallpaper,
             )
         }
     }

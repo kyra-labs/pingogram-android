@@ -38,7 +38,8 @@ import kotlinx.coroutines.launch
  * shared media's photos, videos and GIFs open in the media viewer through [onOpenMedia], its files, songs and voice
  * messages in the chat at their message through [onOpenMessage], and its links in the browser. The app navigates with
  * these, as features do not know each other. [onEditContact], where given, opens the contact editor for the user;
- * [onExportChat], where given, the export page of the private chat (`docs/adr/0021-chat-export.md`).
+ * [onExportChat], where given, the export page of the private chat (`docs/adr/0021-chat-export.md`); [onChatWallpaper],
+ * where given, the private chat's own wallpaper page (owner decision 2026-11-20).
  * Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar before Android 13, which
  * confirms copies itself), a phone number to the dialer (`ACTION_DIAL`, no permission), a username's link to the
  * system's share sheet. The dialogs, the note dialog and the report sheet show over the screen while the view model has
@@ -55,6 +56,7 @@ internal fun ProfileRoute(
     modifier: Modifier = Modifier,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
+    onChatWallpaper: ((chatId: Long) -> Unit)? = null,
     stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
     onChatDeleted: (() -> Unit)? = null,
@@ -99,6 +101,8 @@ internal fun ProfileRoute(
             modifier = modifier,
             onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
             onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
+            onChatWallpaper =
+                if (onChatWallpaper != null && exportChatId != null) ({ onChatWallpaper(exportChatId) }) else null,
             snackbarHostState = snackbarHostState,
             stories = stories,
             profileMusic = profileMusic,

@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
+import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -107,6 +109,7 @@ private fun ExtraPaneNavHost(
             onOpenMessage = navigation.onOpenMessage,
             onEditContact = navigation.onEditContact,
             onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
+            onChatWallpaper = { chatId -> navController.navigateToChatWallpaper(chatId) },
             onChatDeleted = navigation.onLeft,
         )
         chatInfoScreens(
@@ -121,6 +124,7 @@ private fun ExtraPaneNavHost(
         )
         // "Export chat" of the pane's profile or info page, in the pane too.
         chatExportScreen(onBack = back)
+        chatWallpaperScreen(onBack = back)
     }
 }
 

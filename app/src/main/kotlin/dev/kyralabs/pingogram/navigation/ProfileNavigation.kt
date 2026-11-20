@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.navigation
 
+import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 import androidx.compose.runtime.State
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
@@ -29,7 +30,8 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
  * ([besideList], [navigateToChat]) and is pushed above the profile on others, so back returns to the profile. Another
  * profile and a photo, video or GIF in the media viewer are pushed above it. "Add to contacts" and "Edit contact" push
  * the contact editor (`EditContactRoute`, `feature:contacts`) above it, "Export chat" the export page
- * (`ChatExportRoute`, `feature:chat`). Its Stories tab is `feature:media`'s, a story or an album opening above it.
+ * (`ChatExportRoute`, `feature:chat`), "Wallpaper for this chat" the chat's own wallpaper (`ChatWallpaperRoute`,
+ * `feature:settings`). Its Stories tab is `feature:media`'s, a story or an album opening above it.
  */
 internal fun NavGraphBuilder.profile(
     navController: NavHostController,
@@ -45,6 +47,7 @@ internal fun NavGraphBuilder.profile(
         },
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
         onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
+        onChatWallpaper = { chatId -> navController.navigateToChatWallpaper(chatId) },
         stories = profileStories(navController),
         profileMusic = { userId, isSelf, modifier -> ProfileMusicSection(userId, isSelf, modifier) },
         // Deleting the chat with a deleted account takes the conversation below with it.

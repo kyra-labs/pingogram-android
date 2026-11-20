@@ -121,6 +121,7 @@
     <string name="profile_phone_hidden">Hidden by %1$s\'s privacy settings</string>
     <!-- Opens the export page of the chat (Export chat): its history into a folder the user picks. -->
     <string name="profile_export_chat">Export chat</string>
+    <string name="profile_chat_wallpaper">Wallpaper for this chat</string>
 
     <!-- Block confirmation. %1$s is the person's name. -->
     <string name="profile_block_title">Block %1$s?</string>

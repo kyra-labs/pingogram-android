@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A private chat's profile has "Wallpaper for this chat": pick a wallpaper or a photo for that chat alone, for you or,
+  with Telegram Premium, for both of you, or reset it to your account's.
 - Chat appearance → Wallpaper offers Telegram's wallpapers and patterns and your own photos, previewed before you apply
   them. They're saved to your Telegram account, so your other Telegram apps show them too.
 - With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,
