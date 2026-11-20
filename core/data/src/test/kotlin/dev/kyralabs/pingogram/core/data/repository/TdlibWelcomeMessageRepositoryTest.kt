@@ -19,9 +19,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -33,10 +33,12 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibWelcomeMessageRepositoryTest {
     private val client = FakeTdlibClient()
+
     /** The repository under test: one per test, made in the test's scope. */
     private var made: TdlibWelcomeMessageRepository? = null
 
-    private fun TestScope.repository() = made ?: TdlibWelcomeMessageRepository(client, backgroundScope).also { made = it }
+    private fun TestScope.repository() =
+        made ?: TdlibWelcomeMessageRepository(client, backgroundScope).also { made = it }
 
     private fun text(text: String) = TdApi.MessageText(TdApi.FormattedText(text, emptyArray()), null, null)
 

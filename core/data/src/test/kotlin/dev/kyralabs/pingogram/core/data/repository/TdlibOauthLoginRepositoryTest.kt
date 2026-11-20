@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 
 class TdlibOauthLoginRepositoryTest {
     private val client = FakeTdlibClient()
+
     /** The repository under test: one per test, made in the test's scope. */
     private var made: TdlibOauthLoginRepository? = null
 

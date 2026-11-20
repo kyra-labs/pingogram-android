@@ -17,10 +17,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.EnumSource
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibPrivacyRepositoryTest {
     private val client = FakeTdlibClient()
+
     /** The repository under test: one per test, made in the test's scope. */
     private var made: TdlibPrivacyRepository? = null
 
@@ -48,7 +49,7 @@ class TdlibPrivacyRepositoryTest {
     private fun answerSet(result: TdResult<TdApi.Ok> = TdResult.Success(TdApi.Ok())) =
         client.on(TdApi.SetUserPrivacySettingRules::class, result)
 
-    private suspend fun rulesOf(vararg rules: TdApi.UserPrivacySettingRule): PrivacyRules {
+    private suspend fun TestScope.rulesOf(vararg rules: TdApi.UserPrivacySettingRule): PrivacyRules {
         answerRules(*rules)
         return (repository().rules(PrivacySetting.LastSeen) as Outcome.Success).value
     }

@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,10 +40,12 @@ import java.time.ZoneOffset
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibNotificationSettingsRepositoryTest {
     private val client = FakeTdlibClient()
+
     /** The repository under test: one per test, made in the test's scope. */
     private var made: TdlibNotificationSettingsRepository? = null
 
-    private fun TestScope.repository() = made ?: TdlibNotificationSettingsRepository(client, FixedClock, backgroundScope).also { made = it }
+    private fun TestScope.repository() =
+        made ?: TdlibNotificationSettingsRepository(client, FixedClock, backgroundScope).also { made = it }
 
     /** Every field differs from the one before, so a field that is not copied shows. */
     private val custom = TdApi.ScopeNotificationSettings(0, 7, true, false, true, 8, false, true, false)
