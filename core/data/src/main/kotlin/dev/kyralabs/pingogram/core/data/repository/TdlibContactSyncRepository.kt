@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncSettings
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PhoneContact
@@ -78,10 +79,8 @@ class TdlibContactSyncRepository
         private var syncedInProcess = false
 
         init {
-            // UNDISPATCHED: subscribed before the constructor returns, so no logout is missed.
-            scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                client.updates.collect { update -> if (update.logsOut()) onLoggedOut() }
-            }
+            // Subscribed before the constructor returns, so no logout is missed.
+            client.updateRouter(scope).onSessionEnd(::onLoggedOut)
         }
 
         override val settings: Flow<ContactSyncSettings> = settingsRepository.settings
@@ -242,7 +241,3 @@ private fun contactsByNumber(users: Collection<User>): Map<String, Long> =
 private fun emptyText() = TdApi.FormattedText("", emptyArray())
 
 private fun PhoneContact.digits(): String = phoneNumber.filter(Char::isDigit)
-
-private fun TdApi.Update.logsOut(): Boolean =
-    this is TdApi.UpdateAuthorizationState &&
-        authorizationState.let { it is TdApi.AuthorizationStateLoggingOut || it is TdApi.AuthorizationStateClosed }

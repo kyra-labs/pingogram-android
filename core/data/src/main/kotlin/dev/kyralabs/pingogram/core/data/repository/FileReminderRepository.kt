@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.repository.ReminderRepository
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
@@ -83,10 +84,8 @@ class FileReminderRepository internal constructor(
     private val mutex = Mutex()
 
     init {
-        // UNDISPATCHED: subscribed before the constructor returns, as for every TdlibUpdateCache.
-        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update -> if (update.endsReminderSession()) scope.launch { clear() } }
-        }
+        // Subscribed before the constructor returns, as for every TdlibUpdateCache.
+        client.updateRouter(scope).onSessionEnd { scope.launch { clear() } }
     }
 
     override val reminders: Flow<ImmutableList<MessageReminder>> =
@@ -176,13 +175,6 @@ private fun List<MessageReminder>.kept(): ImmutableList<MessageReminder> {
     val dropped = (sorted.filter { it.isDone } + sorted.filterNot { it.isDone }).take(excess).toSet()
     return sorted.filterNot { it in dropped }.toImmutableList()
 }
-
-private fun TdApi.Update.endsReminderSession(): Boolean =
-    this is TdApi.UpdateAuthorizationState &&
-        (
-            authorizationState is TdApi.AuthorizationStateLoggingOut ||
-                authorizationState is TdApi.AuthorizationStateClosed
-        )
 
 private const val FLAG_DONE = 1
 private const val REMINDER_FIELDS = 5

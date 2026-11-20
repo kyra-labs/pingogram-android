@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Transcript
 import dev.kyralabs.pingogram.core.domain.repository.TranscriptRepository
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
@@ -79,10 +80,8 @@ class FileTranscriptRepository internal constructor(
     private val mutex = Mutex()
 
     init {
-        // UNDISPATCHED: subscribed before the constructor returns, as for every TdlibUpdateCache.
-        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update -> if (update.endsSession()) scope.launch { clear() } }
-        }
+        // Subscribed before the constructor returns, as for every TdlibUpdateCache.
+        client.updateRouter(scope).onSessionEnd { scope.launch { clear() } }
     }
 
     override fun transcripts(chatId: Long): Flow<ImmutableMap<Long, Transcript>> =
@@ -168,13 +167,6 @@ private data class MessageKey(
     val chatId: Long,
     val messageId: Long,
 )
-
-private fun TdApi.Update.endsSession(): Boolean =
-    this is TdApi.UpdateAuthorizationState &&
-        (
-            authorizationState is TdApi.AuthorizationStateLoggingOut ||
-                authorizationState is TdApi.AuthorizationStateClosed
-        )
 
 private const val FLAG_AUTOMATIC = 1
 private const val FLAG_FIRST = 2

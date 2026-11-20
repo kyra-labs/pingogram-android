@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
@@ -32,6 +33,9 @@ class FakeTdlibClient(
     override val connectionState = MutableStateFlow(connectionState)
     private val mutableUpdates = MutableSharedFlow<TdApi.Update>()
     override val updates: SharedFlow<TdApi.Update> = mutableUpdates.asSharedFlow()
+
+    /** How many collectors [updates] has: the app's update router alone, once its repositories are made. */
+    val updateSubscribers: StateFlow<Int> = mutableUpdates.subscriptionCount
 
     private val handlers = ConcurrentHashMap<Class<*>, suspend (TdApi.Function<*>) -> TdResult<TdApi.Object>>()
     private val sentFunctions = CopyOnWriteArrayList<TdApi.Function<*>>()

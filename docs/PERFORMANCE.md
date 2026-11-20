@@ -181,8 +181,15 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `onStop` (`TdlibNetworkTypeReporter`, from `ProcessLifecycleOwner`). TDLib reconnects at once only while online:
   offline it backs off for longer and longer, so a process Android froze in the background came back "Connecting…".
   Coming back while TDLib is not connected also sends the network again (`setNetworkType`), so it reconnects at once.
-- Updates fan-out: repositories collect `updates` on `Dispatchers.Default`, apply to in-memory
-  maps, and emit **immutable snapshots** (persistent collections: `kotlinx.collections.immutable`).
+- Updates fan-out: one collector per account, `core:data`'s `TdlibUpdateRouter`, takes `TdlibClient.updates` and
+  hands each update only to the handlers and flows that asked for its type; repositories apply them to in-memory
+  maps on `Dispatchers.Default` and emit **immutable snapshots** (persistent collections:
+  `kotlinx.collections.immutable`). **Never collect `TdlibClient.updates` directly**: a collector of its own wakes for
+  every update TDLib sends. Measured on a Galaxy S24 Ultra (2026-11-20, `main` at #752, against v2.3.0): with about
+  35 always-on collectors, warm start was 23–32% slower and the chat list's scroll P90/P95 12–19%; `Dispatchers.Default`
+  used 11.4 s of CPU in a 32 s scroll against the main thread's 1.2 s, and 85% of monitor contention was the shared
+  flow's slot lock (`SharedFlowImpl.tryTakeValue`). A repository declares the update types it handles, a reducer all of
+  them, and watches the session's end with `onSessionEnd`, not every update.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.

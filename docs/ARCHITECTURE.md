@@ -59,6 +59,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   as `MutableStateFlow<Map<Long, Chat>>` and apply updates incrementally. They never expose
   `TdApi` types upward; they map to domain models (`core:domain`). TDLib already persists
   everything in its SQLite DB, so **we do not add Room**.
+  They receive TDLib's updates through the account's `TdlibUpdateRouter` (`core:data`, one per `TdlibClient`,
+  `client.updateRouter(scope)`), the only collector of `TdlibClient.updates`: `onUpdates(types)` calls a quick,
+  non-suspending handler inline with each update of its types, `updates(types)` is a flow of them for pipelines
+  (buffered, holding the router back when full, so nothing is lost), and `onSessionEnd` signals logging out and
+  closing. Each sees its updates in TDLib's order across its types, from when it subscribed
+  (`docs/PERFORMANCE.md` §3).
   TDLib introduces each user and chat only once and `updates` replays nothing, so caches subscribe
   at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
   `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from

@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
@@ -70,10 +71,8 @@ class FileBookmarkRepository internal constructor(
     private val mutex = Mutex()
 
     init {
-        // UNDISPATCHED: subscribed before the constructor returns, as for every TdlibUpdateCache.
-        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update -> if (update.endsSession()) scope.launch { clear() } }
-        }
+        // Subscribed before the constructor returns, as for every TdlibUpdateCache.
+        client.updateRouter(scope).onSessionEnd { scope.launch { clear() } }
     }
 
     override val bookmarks: Flow<ImmutableList<Bookmark>> =
@@ -239,13 +238,6 @@ private fun writeBookmarks(
     temporary.writeText(text)
     if (!temporary.renameTo(target)) throw IOException("Could not replace ${target.name}")
 }
-
-private fun TdApi.Update.endsSession(): Boolean =
-    this is TdApi.UpdateAuthorizationState &&
-        (
-            authorizationState is TdApi.AuthorizationStateLoggingOut ||
-                authorizationState is TdApi.AuthorizationStateClosed
-        )
 
 private const val TAG = "T"
 private const val BOOKMARK = "B"
