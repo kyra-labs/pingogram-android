@@ -1,11 +1,14 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toWelcomeMessage
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.WelcomeDraft
 import dev.kyralabs.pingogram.core.domain.model.WelcomeLimits
 import dev.kyralabs.pingogram.core.domain.model.WelcomeMessage
@@ -13,11 +16,11 @@ import dev.kyralabs.pingogram.core.domain.repository.WelcomeMessageRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -31,12 +34,14 @@ class TdlibWelcomeMessageRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : WelcomeMessageRepository {
         override fun messages(chatId: Long): Flow<Outcome<ImmutableList<WelcomeMessage>>> =
             channelFlow {
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates
-                        .filterIsInstance<TdApi.UpdateChatWelcomeMessages>()
+                    client
+                        .updateRouter(scope)
+                        .updatesOf<TdApi.UpdateChatWelcomeMessages>()
                         .filter { it.chatId == chatId }
                         .collect { update ->
                             send(Outcome.Success(update.messages.map { it.toWelcomeMessage() }.toImmutableList()))

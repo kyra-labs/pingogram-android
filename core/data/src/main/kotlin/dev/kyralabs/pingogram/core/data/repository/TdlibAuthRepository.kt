@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -7,17 +8,18 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAuthStep
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.PasskeyAssertion
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -35,22 +37,25 @@ import kotlin.time.TimeSource
 @AccountScoped
 class TdlibAuthRepository(
     private val client: TdlibClient,
+    scope: CoroutineScope,
     dispatcher: CoroutineDispatcher,
     timeSource: TimeSource.WithComparableMarks,
 ) : AuthRepository {
     @Inject
     constructor(
         client: TdlibClient,
+        @ApplicationScope scope: CoroutineScope,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
-    ) : this(client, dispatcher, ElapsedRealtimeTimeSource)
+    ) : this(client, scope, dispatcher, ElapsedRealtimeTimeSource)
 
     private val firstSeen = FirstSeen(timeSource)
 
     override val authStep: Flow<AuthStep> =
-        client.updates
+        client
+            .updateRouter(scope)
             // Read the current state only once subscribed, so no update in between is missed. The update that set
             // it may still arrive and repeat it; steps are idempotent for collectors.
-            .onSubscription { emit(CurrentAuthState) }
+            .updates(setOf(TdApi.UpdateAuthorizationState::class)) { emit(CurrentAuthState) }
             .mapNotNull { update ->
                 when {
                     update === CurrentAuthState -> client.authState.value

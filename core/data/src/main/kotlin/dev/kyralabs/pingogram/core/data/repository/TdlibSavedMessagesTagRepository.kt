@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
@@ -8,12 +9,14 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SavedMessagesTag
 import dev.kyralabs.pingogram.core.domain.model.TaggedMessages
 import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTagRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
@@ -29,10 +32,12 @@ class TdlibSavedMessagesTagRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : SavedMessagesTagRepository {
         override fun tags(): Flow<List<SavedMessagesTag>> =
             client
-                .readOn({ it is TdApi.UpdateSavedMessagesTags && it.savedMessagesTopicId == ALL_TOPICS }) {
+                .updateRouter(scope)
+                .readOn(setOf(TdApi.UpdateSavedMessagesTags::class), { it.isOfAllTopics() }) {
                     client.request(TdApi.GetSavedMessagesTags(ALL_TOPICS)).map { it.toTags() }
                 }.map { it.getOrNull().orEmpty() }
 
@@ -64,6 +69,9 @@ class TdlibSavedMessagesTagRepository
             val reaction = tag.toTdReactionType() ?: return Outcome.Failure(DomainError.NotFound)
             return client.request(TdApi.SetSavedMessagesTagLabel(reaction, label.trim())).map { }
         }
+
+        private fun TdApi.Update.isOfAllTopics() =
+            this is TdApi.UpdateSavedMessagesTags && savedMessagesTopicId == ALL_TOPICS
 
         private companion object {
             /** td_api.tl `saved_messages_topic_id` 0: all of Saved Messages. */

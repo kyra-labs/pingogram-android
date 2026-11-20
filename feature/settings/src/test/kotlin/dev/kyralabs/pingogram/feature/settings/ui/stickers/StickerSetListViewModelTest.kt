@@ -70,7 +70,7 @@ class StickerSetListViewModelTest {
         archived: Boolean = false,
         kind: StickerSetKind = StickerSetKind.Stickers,
     ): StickerSetListViewModel {
-        val viewModel = StickerSetListViewModel(archived, TdlibStickerSetRepository(client), kind)
+        val viewModel = StickerSetListViewModel(archived, TdlibStickerSetRepository(client, backgroundScope), kind)
         runCurrent()
         return viewModel
     }

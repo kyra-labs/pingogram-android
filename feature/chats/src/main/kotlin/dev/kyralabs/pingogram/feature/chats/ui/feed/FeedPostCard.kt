@@ -16,6 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +68,7 @@ internal fun FeedPostCard(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    onMore: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
@@ -108,7 +111,7 @@ internal fun FeedPostCard(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         ) {
-            PostHeader(post)
+            PostHeader(post, onMore)
             post.text?.let { text ->
                 val styles = rememberFormattedTextStyles()
                 val styled = remember(text, styles) { text.toAnnotatedString(styles) }
@@ -122,7 +125,10 @@ internal fun FeedPostCard(
 
 /** The channel's avatar, its name (two lines at most) and the post's time, after the `primary` dot while unread. */
 @Composable
-private fun PostHeader(post: FeedPost) {
+private fun PostHeader(
+    post: FeedPost,
+    onMore: (() -> Unit)?,
+) {
     val typography = MaterialTheme.typography
     Row(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
@@ -158,6 +164,11 @@ private fun PostHeader(post: FeedPost) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = typography.labelMedium,
                 )
+            }
+        }
+        if (onMore != null) {
+            IconButton(onClick = onMore, shapes = IconButtonDefaults.shapes()) {
+                Icon(painterResource(UiR.drawable.ic_more_vert), stringResource(R.string.feed_post_more))
             }
         }
     }

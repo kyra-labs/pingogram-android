@@ -8,6 +8,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +37,16 @@ class ChatAppearanceScreenScreenshotTest {
     @Test
     fun customLight() = capture("customLight", ThemeMode.Light, Custom)
 
+    /** A photo from the phone picked: the note that it is uploaded, then Cancel and Apply. */
+    @Test
+    fun pickedPhotoLight() =
+        capture(
+            "pickedPhotoLight",
+            ThemeMode.Light,
+            ChatAppearance(),
+            WallpaperPickerState(forDarkTheme = false, pending = WallpaperChoice.NewPhoto("/photo.jpg")),
+        )
+
     @Test
     fun tintDark() =
         capture(
@@ -45,7 +57,7 @@ class ChatAppearanceScreenScreenshotTest {
                 bubbleCorners = BubbleCorners.ExtraLargeIncreased,
                 wallpaper = ChatWallpaper.Tertiary,
             ),
-            ThemePalette.Teal,
+            palette = ThemePalette.Teal,
         )
 
     @Test
@@ -91,10 +103,11 @@ class ChatAppearanceScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         appearance: ChatAppearance,
+        picker: WallpaperPickerState = WallpaperPickerState(themeMode == ThemeMode.Dark),
         palette: ThemePalette = ThemePalette.Pingogram,
     ) = composeRule.captureScreen(javaClass, name, themeMode, palette = palette, chat = appearance) {
         ChatAppearanceScreen(
-            state = ChatAppearanceUiState.Content(appearance),
+            state = ChatAppearanceUiState.Content(appearance, picker = picker),
             onTextScale = {},
             onBubbleCorners = {},
             onWallpaper = {},
@@ -105,7 +118,7 @@ class ChatAppearanceScreenScreenshotTest {
     private fun captureAudit(variant: ScreenshotVariant) =
         composeRule.captureScreen(javaClass, variant.goldenName, variant, chat = Custom) {
             ChatAppearanceScreen(
-                state = ChatAppearanceUiState.Content(Custom),
+                state = ChatAppearanceUiState.Content(Custom, picker = WallpaperPickerState(forDarkTheme = false)),
                 onTextScale = {},
                 onBubbleCorners = {},
                 onWallpaper = {},

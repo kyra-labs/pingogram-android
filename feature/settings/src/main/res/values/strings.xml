@@ -115,6 +115,16 @@
     <string name="settings_chat_wallpaper_secondary_primary">Second to main color</string>
     <string name="settings_chat_wallpaper_tertiary_secondary">Third to second color</string>
     <string name="settings_chat_wallpaper_neutral_primary">Gray to main color</string>
+    <string name="settings_chat_wallpaper_light">Light theme</string>
+    <string name="settings_chat_wallpaper_dark">Dark theme</string>
+    <string name="settings_chat_wallpaper_photo">From your photos</string>
+    <string name="settings_chat_wallpaper_photo_number">Photo wallpaper %1$d</string>
+    <string name="settings_chat_wallpaper_pattern">Pattern %1$d</string>
+    <string name="settings_chat_wallpaper_installed_failed">Couldn\'t load Telegram\'s wallpapers. Try again</string>
+    <string name="settings_chat_wallpaper_upload_note">Your photo is uploaded to Telegram, so it\'s your wallpaper in your other Telegram apps too.</string>
+    <string name="settings_chat_wallpaper_cancel">Cancel</string>
+    <string name="settings_chat_wallpaper_apply">Apply</string>
+    <string name="settings_chat_wallpaper_footer">Telegram\'s wallpapers and your photos are saved to your Telegram account, for light and dark theme apart, and show in your other Telegram apps too. The colors stay on this phone.</string>
     <string name="settings_color_theme">Theme</string>
     <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
     <string name="settings_color_theme_section_basic">Basic colors</string>

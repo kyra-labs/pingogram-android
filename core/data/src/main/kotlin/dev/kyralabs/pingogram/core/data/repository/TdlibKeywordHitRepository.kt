@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
@@ -24,7 +25,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,15 +101,12 @@ class TdlibKeywordHitRepository internal constructor(
             .stateIn(scope, SharingStarted.Eagerly, null)
 
     init {
-        // UNDISPATCHED: subscribed before the constructor returns, as for every TdlibUpdateCache.
-        scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update ->
-                when {
-                    update is TdApi.UpdateNewMessage -> scope.launch { consider(update.message) }
-                    update.endsSession() -> scope.launch { clear() }
-                }
-            }
+        // Subscribed before the constructor returns, as for every TdlibUpdateCache.
+        val router = client.updateRouter(scope)
+        router.onUpdates(setOf(TdApi.UpdateNewMessage::class)) { update ->
+            scope.launch { consider((update as TdApi.UpdateNewMessage).message) }
         }
+        router.onSessionEnd { scope.launch { clear() } }
     }
 
     override val recent: Flow<ImmutableList<KeywordHit>> =
@@ -210,13 +207,6 @@ internal fun TdApi.MessageContent.searchableText(): String? =
         is TdApi.MessageVoiceNote -> caption?.text
         else -> null
     }?.takeIf { it.isNotBlank() }
-
-private fun TdApi.Update.endsSession(): Boolean =
-    this is TdApi.UpdateAuthorizationState &&
-        (
-            authorizationState is TdApi.AuthorizationStateLoggingOut ||
-                authorizationState is TdApi.AuthorizationStateClosed
-        )
 
 private const val FIELDS = 4
 private const val WORD_FIELD = 3

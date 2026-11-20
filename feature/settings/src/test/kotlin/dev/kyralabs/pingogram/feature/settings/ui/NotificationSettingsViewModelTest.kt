@@ -85,10 +85,10 @@ class NotificationSettingsViewModelTest {
 
     private fun TestScope.viewModel(pushDelivery: PushDelivery = PushDelivery.TdlibConnection) =
         NotificationSettingsViewModel(
-            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
+            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW), backgroundScope),
             keepConnected,
             prompt,
-            TdlibContactJoinedRepository(client),
+            TdlibContactJoinedRepository(client, backgroundScope),
             pushDelivery,
             NotificationAccounts(deviceAccounts, accountNotifications),
         ).also { runCurrent() }
@@ -338,10 +338,10 @@ class NotificationSettingsViewModelTest {
 
     private fun TestScope.viewModelWithAccounts() =
         NotificationSettingsViewModel(
-            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
+            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW), backgroundScope),
             keepConnected,
             prompt,
-            TdlibContactJoinedRepository(client),
+            TdlibContactJoinedRepository(client, backgroundScope),
             PushDelivery.TdlibConnection,
             NotificationAccounts(
                 FakeDeviceAccountsRepository(accounts = deviceAccounts.accountList.value),

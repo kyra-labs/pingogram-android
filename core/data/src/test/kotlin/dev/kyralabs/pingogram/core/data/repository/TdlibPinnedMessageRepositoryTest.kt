@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.inTopic
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,7 +22,11 @@ import org.junit.jupiter.api.Test
 class TdlibPinnedMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private val repository = TdlibPinnedMessageRepository(client)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibPinnedMessageRepository? = null
+
+    private fun TestScope.repository() =
+        made ?: TdlibPinnedMessageRepository(client, backgroundScope).also { made = it }
 
     private fun answerPinned(vararg ids: Long) =
         client.on(
@@ -36,7 +41,7 @@ class TdlibPinnedMessageRepositoryTest {
         runTest {
             answerPinned(3, 9, 5)
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 assertEquals(listOf(9L, 5L, 3L), awaitItem().map { it.id })
             }
             val search = client.sentOf<TdApi.SearchChatMessages>().single()
@@ -50,10 +55,10 @@ class TdlibPinnedMessageRepositoryTest {
         runTest {
             client.on(TdApi.SearchChatMessages::class, TdResult.Failure(TdError(500, "Network")))
 
-            repository.pinnedMessagesOrError(CHAT).test {
+            repository().pinnedMessagesOrError(CHAT).test {
                 assertTrue(awaitItem() is Outcome.Failure)
             }
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 assertEquals(emptyList<Long>(), awaitItem().map { it.id })
             }
         }
@@ -64,7 +69,7 @@ class TdlibPinnedMessageRepositoryTest {
             answerPinned(3)
             client.on(TdApi.GetMessage::class) { TdResult.Success(pinned(it.messageId)) }
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 assertEquals(listOf(3L), awaitItem().map { it.id })
 
                 client.emit(TdApi.UpdateMessageIsPinned(CHAT, 7, true))
@@ -81,7 +86,7 @@ class TdlibPinnedMessageRepositoryTest {
             val answer = CompletableDeferred<TdResult<TdApi.FoundChatMessages>>()
             client.on(TdApi.SearchChatMessages::class) { answer.await() }
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 client.emit(TdApi.UpdateMessageIsPinned(CHAT, 3, false))
                 answer.complete(TdResult.Success(TdApi.FoundChatMessages(1, arrayOf(pinned(3)), 0)))
 
@@ -95,7 +100,7 @@ class TdlibPinnedMessageRepositoryTest {
         runTest {
             answerPinned(3, 5)
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 awaitItem()
 
                 client.emit(TdApi.UpdateMessageContent(CHAT, 5, messageText("Edited")))
@@ -115,7 +120,7 @@ class TdlibPinnedMessageRepositoryTest {
             answerPinned()
             client.on(TdApi.GetMessage::class) { TdResult.Success(message(id = it.messageId, chatId = CHAT)) }
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 assertEquals(emptyList<Long>(), awaitItem().map { it.id })
 
                 client.emit(TdApi.UpdateMessageIsPinned(OTHER_CHAT, 4, true))
@@ -140,7 +145,7 @@ class TdlibPinnedMessageRepositoryTest {
                 )
             }
 
-            repository.pinnedMessages(CHAT, MessageTopic.Forum(TOPIC)).test {
+            repository().pinnedMessages(CHAT, MessageTopic.Forum(TOPIC)).test {
                 awaitItem()
                 client.emit(TdApi.UpdateMessageIsPinned(CHAT, 8, true))
                 client.emit(TdApi.UpdateMessageIsPinned(CHAT, 7, true))
@@ -155,7 +160,7 @@ class TdlibPinnedMessageRepositoryTest {
         runTest {
             client.on(TdApi.SearchChatMessages::class, TdResult.Failure(TdError(400, "CHAT_INVALID")))
 
-            repository.pinnedMessages(CHAT).test {
+            repository().pinnedMessages(CHAT).test {
                 assertTrue(awaitItem().isEmpty())
             }
         }
@@ -165,7 +170,7 @@ class TdlibPinnedMessageRepositoryTest {
         runTest {
             client.on(TdApi.UnpinAllChatMessages::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.unpinAll(CHAT))
+            assertEquals(Outcome.Success(Unit), repository().unpinAll(CHAT))
             assertEquals(CHAT, client.sentOf<TdApi.UnpinAllChatMessages>().single().chatId)
         }
 

@@ -88,7 +88,8 @@ class StickersViewModelTest {
     }
 
     private fun TestScope.viewModel(kind: StickerSetKind = StickerSetKind.Stickers): StickersViewModel {
-        val viewModel = StickersViewModel(kind, TdlibStickerSetRepository(client), stickerSettings, SavedStateHandle())
+        val sets = TdlibStickerSetRepository(client, backgroundScope)
+        val viewModel = StickersViewModel(kind, sets, stickerSettings, SavedStateHandle())
         runCurrent()
         return viewModel
     }

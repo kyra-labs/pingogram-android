@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -18,8 +20,9 @@ class TdlibFrequentContactsRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope scope: CoroutineScope,
     ) : FrequentContactsRepository {
-        override val suggests: Flow<Boolean> = client.booleanOption(OPTION).map { disabled -> !disabled }
+        override val suggests: Flow<Boolean> = client.booleanOption(OPTION, scope).map { disabled -> !disabled }
 
         override suspend fun setSuggests(suggests: Boolean): Outcome<Unit> = client.setBooleanOption(OPTION, !suggests)
 

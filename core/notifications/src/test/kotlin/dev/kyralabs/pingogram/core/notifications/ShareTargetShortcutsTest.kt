@@ -89,8 +89,9 @@ class ShareTargetShortcutsTest {
         }
     }
 
+    /** Past both waits: the inputs settling, then the targets staying the same before they are published. */
     private fun TestScope.settle() {
-        advanceTimeBy(ShareTargetShortcuts.PUBLISH_DELAY + 1.seconds)
+        advanceTimeBy(ShareTargetShortcuts.SETTLE_DELAY + ShareTargetShortcuts.PUBLISH_DELAY + 1.seconds)
         runCurrent()
     }
 

@@ -377,6 +377,7 @@
     <string name="feed_search_hint_title">Search your channels</string>
     <string name="feed_search_hint_body">Find posts in the channels in your feed.</string>
     <!-- The feed's filter: its top bar button and its sheet (REQUIREMENTS.md FR-X5). -->
+    <string name="feed_post_more">More options</string>
     <string name="feed_filter">Filter</string>
     <string name="feed_filter_reset">Reset</string>
     <!-- A segment of the filter sheet: every followed channel, and how many. -->

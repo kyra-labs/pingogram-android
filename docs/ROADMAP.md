@@ -176,7 +176,7 @@ The owner's decision of 2026-11-17 (`REQUIREMENTS.md` §5.10, ADR 0039):
 
 The owner's decision of 2026-11-19:
 
-- [ ] Arrow keys and Enter between the Channel feed's cards (FR-X5): a hardware keyboard moves between the cards
+- [x] Arrow keys and Enter between the Channel feed's cards (FR-X5): a hardware keyboard moves between the cards
   and Enter opens the post in its channel
 
 ## Backlog (unscheduled)

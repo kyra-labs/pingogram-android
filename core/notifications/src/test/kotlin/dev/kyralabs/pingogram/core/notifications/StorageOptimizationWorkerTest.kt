@@ -34,7 +34,7 @@ class StorageOptimizationWorkerTest {
 
     private fun TestScope.account() =
         AccountStorage(
-            auth = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+            auth = TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler)),
             transfers = transfers,
             storage = TdlibStorageRepository(client),
         )
