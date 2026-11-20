@@ -323,6 +323,22 @@
         <item quantity="one">%1$s, story album, %2$d story</item>
         <item quantity="other">%1$s, story album, %2$d stories</item>
     </plurals>
+    <!-- Picking stories for one of the user's albums (owner decision 2026-11-20). -->
+    <string name="story_album_picker_title">Pick stories</string>
+    <string name="story_album_picker_create_title">New album</string>
+    <string name="story_album_picker_add_title">Add stories</string>
+    <string name="story_album_picker_remove_title">Remove stories</string>
+    <plurals name="story_album_picked">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="story_album_picker_close">Close</string>
+    <string name="story_album_picker_create">Create album</string>
+    <string name="story_album_picker_add">Add to album</string>
+    <string name="story_album_picker_remove">Remove from album</string>
+    <string name="story_album_picker_none">No stories to pick</string>
+    <string name="story_album_picker_none_body">Stories you keep on your profile show here.</string>
+    <string name="story_album_picker_error">Couldn\'t load your stories</string>
     <!-- A profile's Stories tab (owner decision 2026-11-20). -->
     <string name="profile_stories_loading">Loading stories</string>
     <string name="profile_stories_empty">No stories yet</string>
