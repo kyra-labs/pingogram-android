@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultDemoRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultDevicePushRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.data.repository.InMemoryShownChatListRepository
 import dev.kyralabs.pingogram.core.data.transcription.AndroidVoiceTranscriber
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
@@ -51,6 +52,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedSongRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.ShownChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
 
 /**
@@ -136,4 +138,8 @@ interface DeviceModule {
 
     @Binds
     fun voiceTranscriber(transcriber: AndroidVoiceTranscriber): VoiceTranscriber
+
+    /** The Chats tab's shown list is the app's, whichever account shows. */
+    @Binds
+    fun shownChatListRepository(repository: InMemoryShownChatListRepository): ShownChatListRepository
 }

@@ -34,6 +34,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -59,7 +60,7 @@ import kotlinx.coroutines.CoroutineScope
  * How far the conversation of a read channel is pulled up past its newest post ([pull], in pixels), toward [next], and
  * what the pull does: the list's [connection] takes what the list leaves of an upward drag at its newest post, at
  * [RESISTANCE], and gives it back first as the drag turns down; [isArmed] once past [threshold], with a
- * `TextHandleMove` haptic as the finger crosses it either way; released there, [onOpen] opens the channel, and the
+ * `GestureThresholdActivate` haptic as the finger crosses it; released there, [onOpen] opens the channel, and the
  * pull settles back on [settle] in [scope] either way, from the fling's speed. A fling of a pull goes nowhere else, and
  * a new pull takes the list where the settle has it. Read in the layout and draw phases ([pullAway],
  * [NextChannelIndicator]), so a pull recomposes nothing but the indicator's text as it arms. Previews start at
@@ -96,7 +97,7 @@ internal class NextChannelPullState(
     private fun pullTo(value: Float) {
         val wasArmed = pull >= threshold
         offset.snapTo(value.coerceIn(0f, threshold * MAX_PULL))
-        if (wasArmed != (pull >= threshold)) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        if (!wasArmed && pull >= threshold) haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
     }
 
     val connection: NestedScrollConnection =
@@ -175,7 +176,7 @@ internal fun rememberNextChannelPull(
 /**
  * The list of a read channel's conversation with its [pull]: it takes the list's leftover drags
  * ([NextChannelPullState.connection]) and moves the list up by the pull in its graphics layer; screen readers open
- * the next channel through a custom action ("Open the next unread channel, Material Design").
+ * the next channel through a custom action ("Next channel: Material Design").
  */
 @Composable
 internal fun Modifier.pullAway(pull: NextChannelPullState): Modifier {
@@ -197,9 +198,9 @@ internal fun Modifier.pullAway(pull: NextChannelPullState): Modifier {
 /**
  * Below the pulled list: the next channel on a `surfaceContainerHigh` pill, its avatar in a determinate
  * `CircularWavyProgressIndicator` that fills as the pull nears its threshold, its name in `titleSmallEmphasized` over
- * "Pull up to open" or, armed, "Release to open" in `bodySmall` `onSurfaceVariant`. It rises with the pull from below
- * the list's bottom, the composer's place, and fades in with its progress, both in its graphics layer.
- * Screen readers skip it: the list's custom action opens the channel ([pullAway]).
+ * its unread count ("12 unread") or, armed, "Release to open" in `bodySmall` `onSurfaceVariant`. It rises with the
+ * pull from below the list's bottom, the composer's place, and fades in with its progress, both in its graphics
+ * layer. Screen readers skip it: the list's custom action opens the channel ([pullAway]).
  */
 @Composable
 internal fun NextChannelIndicator(
@@ -239,9 +240,15 @@ internal fun NextChannelIndicator(
                 StateCrossfade(pull.isArmed, label = "NextChannelHint") { armed ->
                     Text(
                         text =
-                            stringResource(
-                                if (armed) R.string.chat_next_channel_release else R.string.chat_next_channel_pull,
-                            ),
+                            if (armed) {
+                                stringResource(R.string.chat_next_channel_release)
+                            } else {
+                                pluralStringResource(
+                                    R.plurals.chat_next_channel_unread,
+                                    next.unreadCount,
+                                    next.unreadCount,
+                                )
+                            },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

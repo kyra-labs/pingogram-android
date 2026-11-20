@@ -142,8 +142,15 @@ class FakeChatRepository : ChatRepository {
         return onViewMessages(messageIds)
     }
 
+    /** The chats of each folder, by folder id, as [mainList] for the main list. */
+    val folderLists = MutableStateFlow<Map<Int, List<Chat>>>(emptyMap())
+
     override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> =
-        if (list == ChatListType.Main) mainList.map { it.toImmutableList() } else unused()
+        when (list) {
+            ChatListType.Main -> mainList.map { it.toImmutableList() }
+            is ChatListType.Folder -> folderLists.map { it[list.id].orEmpty().toImmutableList() }
+            ChatListType.Archive -> unused()
+        }
 
     override suspend fun loadChats(
         list: ChatListType,

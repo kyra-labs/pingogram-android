@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordAlertsRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordHitRepository
+import dev.kyralabs.pingogram.core.testing.FakeShownChatListRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
@@ -41,6 +42,7 @@ import java.util.Locale
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatListViewModelHarness {
     protected val chats = FakeChatRepository()
+    protected val shownLists = FakeShownChatListRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
     protected val secretChats = FakeSecretChatRepository()
@@ -98,6 +100,7 @@ abstract class ChatListViewModelHarness {
         forumTopicRepository = forumTopics,
         catchUpChats = CatchUpChats(chats, chatListSettings, chatLock),
         keywordChats = KeywordAlertChats(chats, keywordHits, keywordAlerts, chatLock),
+        shownLists = shownLists,
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = StandardTestDispatcher(testScheduler),

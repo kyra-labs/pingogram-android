@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ShownChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -118,6 +119,7 @@ class ChatListViewModel internal constructor(
     forumTopicRepository: ForumTopicRepository,
     catchUpChats: CatchUpChats,
     private val keywordChats: KeywordAlertChats,
+    private val shownLists: ShownChatListRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -140,6 +142,7 @@ class ChatListViewModel internal constructor(
         forumTopicRepository: ForumTopicRepository,
         catchUpChats: CatchUpChats,
         keywordChats: KeywordAlertChats,
+        shownLists: ShownChatListRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -159,6 +162,7 @@ class ChatListViewModel internal constructor(
         forumTopicRepository,
         catchUpChats,
         keywordChats,
+        shownLists,
         clock,
         timePatterns,
         dispatcher,
@@ -467,6 +471,12 @@ class ChatListViewModel internal constructor(
         viewModelScope.launch {
             selectedList.collect { list ->
                 currentList = list
+                // Conversations opened from the Chats tab go on in its folder; keyword alerts are the main list's.
+                if (kind ==
+                    ChatListKind.Chats
+                ) {
+                    shownLists.show(if (list == KEYWORD_ALERTS_LIST) ChatListType.Main else list)
+                }
                 // The screen reports the new list's end afresh.
                 isNearEnd = false
                 val load = loads.value[list]

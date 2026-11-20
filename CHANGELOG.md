@@ -52,6 +52,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Changed
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
+- Pulling up at the end of a read channel now opens the next unread channel of the folder you are in, shows how
+  many posts it has unread, and taps once as you pass the point where letting go opens it.
 - The floating navigation bar, its New chat and Add contact button and the folder tabs look like Google Photos' bar:
   the selected tab on a softly tinted pill, the others in a softer color, and the bar and its button a step above
   what they float over, in place of the accent colors.

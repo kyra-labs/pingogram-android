@@ -2,9 +2,9 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.Chat
-import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ShownChatListRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,17 +17,22 @@ import kotlinx.coroutines.flow.stateIn
 
 // Jumping to the next unread channel (docs/audit/feature-gaps-octogram.md P2, docs/DESIGN_SYSTEM.md §6).
 
-/** The channel a read channel's conversation offers next: [chatId], its [title] and [photo] for its avatar. */
+/**
+ * The channel a read channel's conversation offers next: [chatId], its [title], [photo] for its avatar, and its
+ * [unreadCount] posts the user has not read.
+ */
 @Immutable
 data class NextChannel(
     val chatId: Long,
     val title: String,
     val photo: ProfilePhoto?,
+    val unreadCount: Int,
 )
 
 /**
  * The next unread channel for the conversation of channel [chatId], for `ChatViewModel`: while the channel has no
- * unread posts, the first other channel of the main chat list, in its order, with unread posts ([next]); null in any
+ * unread posts, the first other channel with unread posts of the list the Chats tab shows ([shownLists]: the main
+ * list or a folder), in its order ([next]); null in any
  * other chat, a topic or a thread ([wholeChat] false), and while the channel has unread posts. It follows the chat
  * list only while the conversation is a read channel, and only while someone collects it. Opening it goes to
  * [onEffect].
@@ -36,6 +41,7 @@ internal class ChatNextChannel(
     private val chatId: Long,
     wholeChat: Boolean,
     chats: ChatRepository,
+    shownLists: ShownChatListRepository,
     scope: CoroutineScope,
     private val onEffect: (ChatEffect) -> Unit,
 ) {
@@ -45,7 +51,14 @@ internal class ChatNextChannel(
             .map { it?.isChannel == true && it.unreadCount == 0 }
             .distinctUntilChanged()
             .flatMapLatest { read ->
-                if (read) chats.chatList(ChatListType.Main).map { nextChannelIn(it, chatId) } else flowOf(null)
+                if (read) {
+                    shownLists.shown
+                        .flatMapLatest(
+                            chats::chatList,
+                        ).map { nextChannelIn(it, chatId) }
+                } else {
+                    flowOf(null)
+                }
             }.distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
@@ -69,4 +82,4 @@ internal fun nextChannelIn(
 ): NextChannel? =
     chats
         .firstOrNull { it.id != current && it.isChannel && it.unreadCount > 0 }
-        ?.let { NextChannel(it.id, it.title, it.photo) }
+        ?.let { NextChannel(it.id, it.title, it.photo, it.unreadCount) }

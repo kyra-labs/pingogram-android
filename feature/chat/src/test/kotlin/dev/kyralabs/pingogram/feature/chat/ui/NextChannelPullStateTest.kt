@@ -115,7 +115,7 @@ class NextChannelPullStateTest {
     }
 
     @Test
-    fun `the haptic marks the threshold as the finger crosses it, and as it goes back`() {
+    fun `the haptic marks the threshold as the finger crosses it, and not as it goes back`() {
         setState()
 
         pull(THRESHOLD * 2 + STEP)
@@ -123,7 +123,7 @@ class NextChannelPullStateTest {
             state.connection.onPreScroll(Offset(0f, THRESHOLD), NestedScrollSource.UserInput)
         }
 
-        assertEquals(listOf(HapticFeedbackType.TextHandleMove, HapticFeedbackType.TextHandleMove), haptics)
+        assertEquals(listOf(HapticFeedbackType.GestureThresholdActivate), haptics)
         assertEquals(emptyList<Long>(), opened)
     }
 
