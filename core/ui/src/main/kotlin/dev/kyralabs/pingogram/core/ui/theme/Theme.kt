@@ -66,7 +66,7 @@ fun PingogramTheme(
     val pingogramColors = remember(colorScheme, dark, categories) { pingogramColors(colorScheme, dark, categories) }
     val settings =
         remember(dynamicColor, palette, contrast, amoled, dark, chat) {
-            ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled, chat)
+            ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled, chat, dark)
         }
     val fontWeightAdjustment = LocalConfiguration.current.fontWeightAdjustmentOrZero()
     val messageText = pingogramMessageText(chat.textScale, fontWeightAdjustment, effectiveContrast)
@@ -113,8 +113,8 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
 }
 
 /**
- * What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme], and whether its surfaces are true
- * black ([amoledBlack]: dark with AMOLED black on).
+ * What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme], whether its surfaces are true
+ * black ([amoledBlack]: dark with AMOLED black on), and whether it is [dark].
  */
 private data class ThemeSettings(
     val dynamicColor: Boolean,
@@ -123,6 +123,7 @@ private data class ThemeSettings(
     val amoled: Boolean,
     val amoledBlack: Boolean,
     val chat: ChatAppearance,
+    val dark: Boolean = false,
 )
 
 private val LocalThemeSettings =
@@ -145,6 +146,14 @@ private val LocalThemeSettings =
 @Composable
 @ReadOnlyComposable
 fun isAmoledBlack(): Boolean = LocalThemeSettings.current.amoledBlack
+
+/**
+ * Whether the enclosing [PingogramTheme] is dark right now: for what differs between the themes beyond their colors,
+ * e.g. the account's wallpaper for dark theme and its dimming (`docs/DESIGN_SYSTEM.md` §6 "Chat appearance").
+ */
+@Composable
+@ReadOnlyComposable
+fun isDarkTheme(): Boolean = LocalThemeSettings.current.dark
 
 /** Whether this mode resolves to the dark theme right now. */
 @Composable

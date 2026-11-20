@@ -215,7 +215,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sets it, with a preview drawn from that same style. The conversation draws with it too: `feature:chat`'s
   `BubbleTheme` takes its bubble shapes, `BubbleText` its message text (texts and captions; the composer, link previews
   and sponsored messages keep their own styles), and the conversation's sheet paints its wallpaper behind the bars and
-  the messages, in the draw phase.
+  the messages, in the draw phase. The account's and a chat's own wallpapers (`WallpaperRepository`, owner decision
+  2026-11-20) draw with `ChatWallpaperLayer` (`core:ui`): photos and patterns load through Coil from TDLib's files,
+  decoded once at the window's size off the main thread and kept in its memory cache, a vector pattern by
+  `VectorPatternDecoder` (an `ALPHA_8` mask the theme's colors tint), a blurred photo shrunk and blurred once by
+  `WallpaperBlur`; the layer draws in its own graphics layer, so scrolling neither composes nor redraws it.
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
