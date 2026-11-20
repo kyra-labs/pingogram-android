@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.ItemMotion
@@ -54,14 +55,17 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileSectionHeader
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileTopBar
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaActions
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaEvent
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaLoadMoreEffect
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaPane
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaUiState
+import dev.kyralabs.pingogram.feature.profile.ui.StoriesTab
 import dev.kyralabs.pingogram.feature.profile.ui.SupportingPanes
 import dev.kyralabs.pingogram.feature.profile.ui.profilePageColor
+import dev.kyralabs.pingogram.feature.profile.ui.rememberStoriesTab
 import dev.kyralabs.pingogram.feature.profile.ui.sharedMediaItems
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -94,8 +98,12 @@ internal fun ChatInfoScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
+    stories: ProfileStoriesSlot? = null,
 ) {
-    val page = ChatInfoPageParts(state, media, onEvent, onMediaEvent, mediaActions)
+    // Of groups and channels, channels keep stories on their profile.
+    val channel = (state as? ChatInfoUiState.Content)?.takeIf { it.kind == GroupKind.Channel }
+    val storiesTab = rememberStoriesTab(media.chatId.takeIf { channel != null }, stories)
+    val page = ChatInfoPageParts(state, media, onEvent, onMediaEvent, mediaActions, storiesTab)
     if (twoPanes) {
         SupportingPanes(
             main = {
@@ -115,6 +123,7 @@ internal fun ChatInfoScreen(
                     mediaActions,
                     gridState,
                     emptyBody = R.string.chat_info_media_empty_body,
+                    stories = storiesTab,
                 )
             },
             modifier = modifier,
@@ -131,6 +140,7 @@ internal class ChatInfoPageParts(
     val onEvent: (ChatInfoEvent) -> Unit,
     val onMediaEvent: (SharedMediaEvent) -> Unit,
     val mediaActions: SharedMediaActions,
+    val stories: StoriesTab? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the page: expanded and wider. */
@@ -205,7 +215,8 @@ private fun ChatInfoGrid(
     val margin = windowMargin()
     val sizes = MaterialTheme.sizes
     val spacing = MaterialTheme.spacing
-    if (withMedia) SharedMediaLoadMoreEffect(gridState, page.media, page.onMediaEvent)
+    // The media's next page is not asked for while the Stories tab shows instead.
+    if (withMedia && page.stories?.selected != true) SharedMediaLoadMoreEffect(gridState, page.media, page.onMediaEvent)
     BoxWithConstraints(modifier) {
         val inset = max(margin, (maxWidth - sizes.contentMaxWidth) / 2)
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
@@ -236,6 +247,7 @@ private fun ChatInfoGrid(
                     inset,
                     motion,
                     emptyBody = R.string.chat_info_media_empty_body,
+                    stories = page.stories,
                 )
             }
         }

@@ -10,8 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- Profiles have a Stories tab: the person's story albums, each with how many stories it holds, above the stories they
-  keep on their profile with their dates. Tap a story to watch from there, or an album to open it.
+- Profiles and channel info have a Stories tab: the story albums, each with how many stories it holds, above the
+  stories kept on the profile with their dates. Tap a story to watch from there, or an album to open it.
 - In a forum topic you have read, pull up past the newest message to open the next topic with unread messages.
 - Back up what Pingogram keeps only on this phone: Settings → On this phone → Backup & restore writes your settings,
   bookmarks, reminders, keyword alerts and snippets into one file, encrypted with a password you set, in a folder you
