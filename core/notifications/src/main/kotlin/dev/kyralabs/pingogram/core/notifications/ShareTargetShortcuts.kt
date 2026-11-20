@@ -53,8 +53,8 @@ import kotlin.time.Duration.Companion.seconds
  * It follows the chat list while someone is logged in. It works out the targets at once from what it first reads,
  * then again only once the chats, users and groups have stayed as they are for [SETTLE_DELAY] (owner decision
  * 2026-11-20), as a busy account changes them many times a second; and it publishes [PUBLISH_DELAY] after the first
- * [MAX_TARGETS] chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
- * conversation shortcut (`NotificationRenderer`). Android 11+ only, like the conversation shortcuts.
+ * [MAX_TARGETS] chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with
+ * every other conversation shortcut (`NotificationRenderer`). Android 11+ only, like the conversation shortcuts.
  *
  * The targets are the shown account's (`docs/adr/0031-multiple-accounts.md`), as its repositories are; their shortcut
  * ids carry its slot, so a share to one opens in that account. Switching accounts starts the app again, with the
