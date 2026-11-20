@@ -46,39 +46,52 @@ class DataStoreAppearanceRepository
                 .map { it.toAppearanceSettings() }
                 .distinctUntilChanged()
 
-        override suspend fun setThemeMode(themeMode: ThemeMode) = edit { it[THEME_MODE] = themeMode.name }
+        override suspend fun setThemeMode(themeMode: ThemeMode) = dataStore.save { it[THEME_MODE] = themeMode.name }
 
-        override suspend fun setDynamicColor(enabled: Boolean) = edit { it[DYNAMIC_COLOR] = enabled }
+        override suspend fun setDynamicColor(enabled: Boolean) = dataStore.save { it[DYNAMIC_COLOR] = enabled }
 
         override suspend fun setPalette(palette: ThemePalette) =
-            edit {
+            dataStore.save {
                 it[PALETTE] = palette.name
                 it[DYNAMIC_COLOR] = false
             }
 
-        override suspend fun setContrast(contrast: Contrast) = edit { it[CONTRAST] = contrast.name }
+        override suspend fun setContrast(contrast: Contrast) = dataStore.save { it[CONTRAST] = contrast.name }
 
-        override suspend fun setAmoled(enabled: Boolean) = edit { it[AMOLED] = enabled }
+        override suspend fun setAmoled(enabled: Boolean) = dataStore.save { it[AMOLED] = enabled }
 
         override suspend fun setChatTextScale(scale: Float) =
-            edit { it[CHAT_TEXT_SCALE] = ChatAppearance.textScaleOf(scale) }
+            dataStore.save { it[CHAT_TEXT_SCALE] = ChatAppearance.textScaleOf(scale) }
 
-        override suspend fun setBubbleCorners(corners: BubbleCorners) = edit { it[BUBBLE_CORNERS] = corners.name }
+        override suspend fun setBubbleCorners(corners: BubbleCorners) =
+            dataStore.save {
+                it[BUBBLE_CORNERS] =
+                    corners.name
+            }
 
-        override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) = edit { it[CHAT_WALLPAPER] = wallpaper.name }
+        override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) =
+            dataStore.save {
+                it[CHAT_WALLPAPER] =
+                    wallpaper.name
+            }
 
         override suspend fun setWallpaperDimming(percent: Int) =
-            edit { it[WALLPAPER_DIMMING] = percent.coerceIn(0, ChatAppearance.MAX_WALLPAPER_DIMMING) }
+            dataStore.save { it[WALLPAPER_DIMMING] = percent.coerceIn(0, ChatAppearance.MAX_WALLPAPER_DIMMING) }
 
-        override suspend fun setGroupBubbles(bubbles: GroupBubbles) = edit { it[GROUP_BUBBLES] = bubbles.name }
+        override suspend fun setGroupBubbles(bubbles: GroupBubbles) =
+            dataStore.save { it[GROUP_BUBBLES] = bubbles.name }
+    }
 
-        private suspend fun edit(change: (MutablePreferences) -> Unit): Outcome<Unit> =
-            try {
-                dataStore.edit(change)
-                Outcome.Success(Unit)
-            } catch (error: IOException) {
-                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
-            }
+/**
+ * Applies [change] to the settings file: [Outcome.Failure] when it cannot be written. Outside the repository, which
+ * has a setter per setting.
+ */
+private suspend fun DataStore<Preferences>.save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
+    try {
+        edit(change)
+        Outcome.Success(Unit)
+    } catch (error: IOException) {
+        Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
     }
 
 private fun Preferences.toAppearanceSettings(): AppearanceSettings {

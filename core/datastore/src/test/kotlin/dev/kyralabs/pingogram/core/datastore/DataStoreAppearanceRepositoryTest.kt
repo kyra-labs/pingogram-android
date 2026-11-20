@@ -191,10 +191,21 @@ class DataStoreAppearanceRepositoryTest {
             val dataStore = dataStore()
             val repository = repository(dataStore)
             repository.setWallpaperDimming(140)
-            assertEquals(100, repository.appearance.first().chat.wallpaperDimming)
+            assertEquals(
+                100,
+                repository.appearance
+                    .first()
+                    .chat.wallpaperDimming,
+            )
 
             dataStore.edit { it[intPreferencesKey("appearance.chat.wallpaper_dimming")] = -5 }
-            assertEquals(0, repository(dataStore).appearance.first().chat.wallpaperDimming)
+            assertEquals(
+                0,
+                repository(dataStore)
+                    .appearance
+                    .first()
+                    .chat.wallpaperDimming,
+            )
         }
 
     @Test
