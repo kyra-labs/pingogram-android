@@ -12,15 +12,21 @@ import dev.kyralabs.pingogram.feature.media.storyalbum.StoryAlbumRoute as StoryA
 
 /**
  * Adds an opened story album, [StoryAlbumRoute] (board 11b), to the graph; [onOpenStory] plays the album from a story
- * (see [navigateToStoryAlbumViewer]).
+ * (see [navigateToStoryAlbumViewer]), and on the user's own album [onPickStories] picks stories to add or remove (see
+ * [navigateToStoryAlbumPicker]).
  */
 fun NavGraphBuilder.storyAlbumScreen(
     onBack: () -> Unit,
     onOpenStory: (chatId: Long, albumId: Int, storyId: Int) -> Unit,
+    onPickStories: (chatId: Long, albumId: Int, removing: Boolean) -> Unit = { _, _, _ -> },
 ) {
     composable<StoryAlbumRoute> { entry ->
         val route = entry.toRoute<StoryAlbumRoute>()
-        StoryAlbum(onBack = onBack, onOpenStory = { storyId -> onOpenStory(route.chatId, route.albumId, storyId) })
+        StoryAlbum(
+            onBack = onBack,
+            onOpenStory = { storyId -> onOpenStory(route.chatId, route.albumId, storyId) },
+            onPickStories = { removing -> onPickStories(route.chatId, route.albumId, removing) },
+        )
     }
 }
 

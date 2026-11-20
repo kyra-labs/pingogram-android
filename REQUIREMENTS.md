@@ -18,7 +18,7 @@ apps or design.)
 
 - G1. A native Android experience that looks and moves as Material 3 Expressive specifies.
 - G2. Feature parity with the official app for everyday messaging by v1.0 (see §5).
-- G3. Fast, battery-friendly, small download (≤ 51 MB arm64-v8a APK, ≤ 125 MB universal, calls and voice chats
+- G3. Fast, battery-friendly, small download (≤ 53 MB arm64-v8a APK, ≤ 128 MB universal, calls and voice chats
   included; `docs/PERFORMANCE.md` §1).
 - G4. Fully open source, reproducible builds, releases on GitHub (APK), later F-Droid/Play.
 - G5. Privacy-respecting: no analytics, no ads, no telemetry.
@@ -214,7 +214,8 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   "Stories" tab on people's profiles and channels', with the chat's story albums as covers (title, count) above the
   stories it keeps on its profile as a grid with their days; a story plays the profile's stories from it, an album
   opens its own grid. Loading, "No stories yet" and an error with "Try again". No tab where a chat keeps no stories
-  (bots, deleted accounts, groups).
+  (bots, deleted accounts, groups). In the user's own album, its menu renames it, adds or removes stories (picked from
+  the profile's or the album's) and deletes it after asking.
 
 ### 5.10 Beyond the official app [after v2.3.0]
 
@@ -281,9 +282,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Cold start → chat list ≤ 1.2 s, warm start ≤ 400 ms (Macrobenchmark, Baseline + Startup Profiles shipped).
 - Chat list / conversation scroll at the display's native rate (60/90/120 Hz): P90 frame ≤ 8–10 ms, jank < 1%.
 - Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms.
-- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 51 MB arm64-v8a and
-  ≤ 125 MB universal (raised from 35 MB for the call engine, owner 2026-10-22; set from the APKs with voice chats plus
-  a small margin, owner 2026-10-23; raised for TDLib 1.8.70, owner 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`).
+- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 53 MB arm64-v8a and
+  ≤ 128 MB universal (raised from 35 MB for the call engine, owner 2026-10-22; set from the APKs with voice chats plus
+  a small margin, owner 2026-10-23; raised for TDLib 1.8.70, owner 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`; raised for the
+  features after v2.3.0, owner 2026-11-20, `docs/adr/0040-apk-budget-after-v2-3-0.md`).
 - Background battery ≤ 1.5% / 8 h; idle data ≤ 2 MB / 24 h; no polling, no periodic jobs < 15 min.
 - Compose: immutable state, keyed/contentTyped lazy lists, zero off-screen recompositions,
   animations in draw/layout phase; TDLib: suspendable, batched, prioritized, cancellable calls.

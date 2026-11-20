@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.COMPACT
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -63,6 +64,21 @@ class StoryAlbumScreenshotTest {
     @Test
     @Config(qualifiers = "w700dp-h891dp-xxhdpi")
     fun albumMedium() = album(StoryAlbumPreviewData.album)
+
+    @Test
+    fun ownAlbumLight() = album(StoryAlbumPreviewData.album.copy(canEdit = true))
+
+    @Test
+    fun renameDialogLight() =
+        capture(ThemeMode.Light) {
+            AlbumNameContent(
+                R.string.story_album_rename_title,
+                R.string.story_album_save,
+                {},
+                {},
+                initial = "Hampi trip",
+            )
+        }
 
     @Test
     fun moreFailedLight() = album(StoryAlbumPreviewData.moreFailed)
