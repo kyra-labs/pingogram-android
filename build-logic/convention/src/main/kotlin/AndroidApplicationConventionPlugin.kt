@@ -76,7 +76,11 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 }
                 // The APK size budget (docs/PERFORMANCE.md §1) of the variants built as releases are: minified.
                 onVariants(selector().all()) { variant ->
-                    if (variant.isMinifyEnabled) registerApkSizeCheck(variant)
+                    if (variant.isMinifyEnabled) {
+                        variant.packaging.resources.excludes
+                            .addAll(DEBUG_ONLY_METADATA)
+                        registerApkSizeCheck(variant)
+                    }
                 }
             }
             // LeakCanary and other debug-only tools stay out of every other build type (docs/PERFORMANCE.md §9).
@@ -169,6 +173,13 @@ private fun Project.failReleasePackaging(message: String) {
 
 /** The Gradle property that lets release variants package without a signing config: unsigned APKs. */
 private const val UNSIGNED_RELEASE_PROPERTY = "pingogram.unsignedRelease"
+
+/**
+ * Library files that only tools read, left out of the minified variants (docs/PERFORMANCE.md §8): Android Studio's
+ * inspectors read the `.version` files of a debug build, kotlinx-coroutines-debug reads `DebugProbesKt.bin`, and only
+ * kotlin-reflect, which the app does not use, reads `.kotlin_builtins`.
+ */
+private val DEBUG_ONLY_METADATA = listOf("/META-INF/*.version", "/DebugProbesKt.bin", "/kotlin/**.kotlin_builtins")
 
 /** ABIs that dependencies may ship native code for, but TDLib (and so the app) does not support. */
 private val UNSUPPORTED_ABIS = listOf("x86", "riscv64")

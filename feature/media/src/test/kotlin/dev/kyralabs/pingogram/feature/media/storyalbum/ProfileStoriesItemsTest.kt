@@ -66,6 +66,24 @@ class ProfileStoriesItemsTest {
     }
 
     @Test
+    fun `the user's own tab offers New album`() {
+        var newAlbum = 0
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                ProfileStoriesGrid(
+                    StoryAlbumPreviewData.profileStories.copy(canCreateAlbum = true),
+                    ProfileStoriesActions({}, {}, {}, onNewAlbum = { newAlbum++ }),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("New album").performClick()
+
+        assertEquals(1, newAlbum)
+        composeRule.assertAccessible()
+    }
+
+    @Test
     fun `the end of the grid asks for the next page`() {
         val state = StoryAlbumPreviewData.profileStories.copy(totalCount = 20)
         setTab(state)

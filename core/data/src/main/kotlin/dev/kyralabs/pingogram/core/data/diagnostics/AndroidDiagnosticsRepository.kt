@@ -20,7 +20,8 @@ import javax.inject.Inject
 
 /**
  * The feedback report from what is on the device (`docs/TESTING_GUIDE.md`): [AppInfo], the device, the crash
- * [CrashRecorder] kept, and the end of TDLib's log (verbosity 1, `docs/TDLIB.md`), every line redacted. It reads only;
+ * [CrashRecorder] kept, and the end of TDLib's log (verbosity 1 in release, 3 in debug builds, `docs/TDLIB.md`), every
+ * line redacted. It reads only;
  * it sends nothing.
  */
 class AndroidDiagnosticsRepository internal constructor(
@@ -56,6 +57,8 @@ class AndroidDiagnosticsRepository internal constructor(
                 device = device,
                 crash = readCrash(),
                 log = readLog().toImmutableList(),
+                // As TDLib's log is set up (`TdlibLogSettings.of`): errors only in release builds.
+                logIsErrorsOnly = !app.isDebug,
             )
         }
 

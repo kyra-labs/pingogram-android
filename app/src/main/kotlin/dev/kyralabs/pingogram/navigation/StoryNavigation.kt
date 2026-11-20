@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.navigation.StoryAlbumPickerRoute
 import dev.kyralabs.pingogram.core.navigation.StoryAlbumRoute
 import dev.kyralabs.pingogram.core.navigation.StoryViewerRoute
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbumPicker
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbumViewer
 import dev.kyralabs.pingogram.feature.media.navigation.newStoryScreen
 import dev.kyralabs.pingogram.feature.media.navigation.storyAlbumPickerScreen
@@ -36,6 +37,7 @@ internal fun NavGraphBuilder.stories(
     storyAlbumScreen(
         onBack = { navController.popBackStack<StoryAlbumRoute>(inclusive = true) },
         onOpenStory = navController::navigateToStoryAlbumViewer,
+        onPickStories = navController::navigateToStoryAlbumPicker,
     )
     storyAlbumPickerScreen(
         onDone = { navController.popBackStack<StoryAlbumPickerRoute>(inclusive = true) },

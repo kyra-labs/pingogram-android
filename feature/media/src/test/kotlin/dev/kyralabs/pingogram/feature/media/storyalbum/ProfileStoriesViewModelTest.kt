@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.StoryAlbum
 import dev.kyralabs.pingogram.feature.media.storyalbum.FakeStoryAlbumRepository.Companion.story
 import dev.kyralabs.pingogram.feature.media.ui.FakeTimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeWallClock
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -31,6 +33,7 @@ import java.util.Locale
 class ProfileStoriesViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val albums = FakeStoryAlbumRepository()
+    private val users = FakeUserRepository()
 
     init {
         Dispatchers.setMain(dispatcher)
@@ -40,7 +43,7 @@ class ProfileStoriesViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.started(): ProfileStoriesViewModel {
-        val viewModel = ProfileStoriesViewModel(albums, FakeWallClock(NOW), FakeTimePatterns()) { Locale.US }
+        val viewModel = ProfileStoriesViewModel(albums, users, FakeWallClock(NOW), FakeTimePatterns()) { Locale.US }
         viewModel.start(CHAT)
         runCurrent()
         return viewModel
@@ -70,7 +73,7 @@ class ProfileStoriesViewModelTest {
 
             albums.albums = Outcome.Success(persistentListOf(StoryAlbum(7, "Hampi trip", cover = null)))
             val viewModel =
-                ProfileStoriesViewModel(albums, FakeWallClock(NOW), FakeTimePatterns()) { Locale.US }.also {
+                ProfileStoriesViewModel(albums, users, FakeWallClock(NOW), FakeTimePatterns()) { Locale.US }.also {
                     it.start(CHAT)
                     runCurrent()
                 }
@@ -128,6 +131,31 @@ class ProfileStoriesViewModelTest {
                     .single()
                     .count,
             )
+        }
+
+    @Test
+    fun `the user's own profile with stories can create an album, someone else's cannot`() =
+        runTest(dispatcher) {
+            albums.profile = listOf(story(9, OCT_3))
+            users.myUserId.value = CHAT
+            assertTrue(started().content.canCreateAlbum)
+
+            users.myUserId.value = 1L
+            assertFalse(started().content.canCreateAlbum)
+        }
+
+    @Test
+    fun `coming back reads the tab again, keeping it meanwhile`() =
+        runTest(dispatcher) {
+            albums.profile = listOf(story(9, OCT_3))
+            val viewModel = started()
+
+            albums.albums = Outcome.Success(persistentListOf(StoryAlbum(7, "Hampi trip", cover = null)))
+            viewModel.onEvent(ProfileStoriesEvent.Refresh)
+            assertTrue(viewModel.uiState.value is ProfileStoriesUiState.Content)
+            runCurrent()
+
+            assertEquals(listOf("Hampi trip"), viewModel.content.albums.map { it.name })
         }
 
     private companion object {

@@ -30,6 +30,8 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -37,7 +39,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,7 +84,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * grid of 9:16 tiles with `large` corners, three across a phone, each with its day on a `mediaOverlay` pill; a tap
  * plays the album from that story ([onOpenStory]). The next page loads [LOAD_MORE_AHEAD] tiles before the end, a
  * [LoadingIndicator] below while it comes, its failure with "Try again". Loading is a [DelayedLoadingIndicator]; an
- * empty album and a failure are [EmptyState]s.
+ * empty album and a failure are [EmptyState]s. The user's own album has "More options" in its top bar
+ * ([AlbumMenuButton]): rename it or delete it in a dialog, or pick stories to add or remove ([onPickStories]).
  */
 @Composable
 internal fun StoryAlbumScreen(
@@ -88,11 +95,24 @@ internal fun StoryAlbumScreen(
     onOpenStory: (storyId: Int) -> Unit,
     modifier: Modifier = Modifier,
     gridState: LazyGridState = rememberLazyGridState(),
+    onPickStories: (removing: Boolean) -> Unit = {},
+    snackbars: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    val content = state as? StoryAlbumUiState.Content
+    var dialog by rememberSaveable { mutableStateOf<AlbumAction?>(null) }
+    dialog?.let { action -> AlbumActionDialog(action, content?.name.orEmpty(), onEvent) { dialog = null } }
+    val onAction = { action: AlbumAction ->
+        when (action) {
+            AlbumAction.AddStories -> onPickStories(false)
+            AlbumAction.RemoveStories -> onPickStories(true)
+            AlbumAction.Rename, AlbumAction.Delete -> dialog = action
+        }
+    }
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { AlbumTopBar((state as? StoryAlbumUiState.Content)?.name.orEmpty(), onBack) },
+        topBar = { AlbumTopBar(content?.name.orEmpty(), onBack, onAction.takeIf { content?.canEdit == true }) },
+        snackbarHost = { SnackbarHost(snackbars) },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             AlbumBody(state, onEvent, onOpenStory, gridState, contentPadding)
@@ -100,12 +120,16 @@ internal fun StoryAlbumScreen(
     }
 }
 
-/** Back and the album's name (one line, a heading), at the window margin, as Recent calls' bar. */
+/**
+ * Back and the album's name (one line, a heading), at the window margin, as Recent calls' bar; with [onAction], the
+ * user's own album's menu.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlbumTopBar(
     name: String,
     onBack: () -> Unit,
+    onAction: ((AlbumAction) -> Unit)?,
 ) {
     TopAppBar(
         title = {
@@ -125,6 +149,7 @@ private fun AlbumTopBar(
                 )
             }
         },
+        actions = { onAction?.let { AlbumMenuButton(it) } },
         modifier = Modifier.padding(horizontal = windowMargin() - MaterialTheme.spacing.windowMarginCompact),
         colors =
             TopAppBarDefaults.topAppBarColors(
