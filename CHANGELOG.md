@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Added
 - Chat appearance → Wallpaper offers Telegram's wallpapers and patterns and your own photos, previewed before you apply
   them. They're saved to your Telegram account, so your other Telegram apps show them too.
+- With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,
+  and the Menu key opens its menu too.
 - Chats show the wallpaper set for your Telegram account, for light and dark theme, and a chat's own wallpaper when
   either of you set one: photos, patterns in your color theme's colors, and colors.
 - Profiles and channel info have a Stories tab: the story albums, each with how many stories it holds, above the
