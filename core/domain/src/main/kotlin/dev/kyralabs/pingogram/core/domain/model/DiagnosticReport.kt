@@ -6,14 +6,16 @@ import kotlinx.collections.immutable.persistentListOf
 /**
  * What "Send feedback" prepares on the device for the user to read and share themselves (`docs/TESTING_GUIDE.md`):
  * nothing in it leaves the device by itself (`CLAUDE.md` rule 10). It holds the build, the device, the last crash kept
- * on the device and the end of TDLib's error log; messages, phone numbers, quoted texts and tokens are taken out before
+ * on the device and the end of TDLib's log; messages, phone numbers, quoted texts and tokens are taken out before
  * it is made ([crash] and [log] are already redacted).
  *
  * @property generatedAtMillis when it was made, wall clock.
  * @property app the build: version, version code, flavor, debug or release.
  * @property device the manufacturer and model, Android's version and API level, and the ABIs.
  * @property crash the last crash, if one was kept, until the user deletes it or a new crash replaces it.
- * @property log the last lines of TDLib's log (verbosity 1: errors), oldest first.
+ * @property log the last lines of TDLib's log, oldest first.
+ * @property logIsErrorsOnly whether [log] holds errors only: release builds log at verbosity 1 (errors), debug
+ *   builds at 3 (errors, warnings and information).
  */
 data class DiagnosticReport(
     val generatedAtMillis: Long,
@@ -21,6 +23,7 @@ data class DiagnosticReport(
     val device: String,
     val crash: CrashReport? = null,
     val log: ImmutableList<String> = persistentListOf(),
+    val logIsErrorsOnly: Boolean = true,
 )
 
 /**
