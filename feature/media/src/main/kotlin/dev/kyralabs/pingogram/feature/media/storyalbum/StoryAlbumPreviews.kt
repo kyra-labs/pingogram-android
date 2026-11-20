@@ -27,7 +27,7 @@ private fun StoryAlbumPreview() = AlbumPreview(StoryAlbumPreviewData.album)
 @Composable
 private fun AlbumNameDialogPreview() =
     PingogramPreview {
-        AlbumNameDialog(R.string.story_album_rename_title, R.string.story_album_save, {}, {}, initial = "Hampi trip")
+        AlbumNameContent(R.string.story_album_rename_title, R.string.story_album_save, {}, {}, initial = "Hampi trip")
     }
 
 @Preview(name = "Album, loading more")

@@ -68,7 +68,7 @@ class StoryAlbumScreenshotTest {
     @Test
     fun renameDialogLight() =
         capture(ThemeMode.Light) {
-            AlbumNameDialog(
+            AlbumNameContent(
                 R.string.story_album_rename_title,
                 R.string.story_album_save,
                 {},
