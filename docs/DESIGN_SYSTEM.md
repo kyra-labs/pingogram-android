@@ -467,6 +467,9 @@ a row of §6 or §13 differs, this subsection wins; the rows are edited, and the
     and do not show with reduced motion or while power saving stops the call screen animations (Q-14).
   - The emoji panel and a bot keyboard grow in and shrink away on `defaultSpatialSpec` when no system keyboard is
     involved; switching to and from the keyboard still moves nothing (Q-11).
+  - Dragging the message list hides the keyboard (`HideKeyboardOnDrag`), as one scrolls up to read; the composer keeps
+    its focus, text and draft. The list's own scrolls (a jump to a message, back to the newest) and new messages
+    arriving leave it up.
 - **Back**
   - Step-backs inside a screen preview with the back gesture, as the login flow's do: the settings flows, New story,
     Add contact's "not on Telegram" step, a topic or thread in the detail pane, docked search, and the emoji panel

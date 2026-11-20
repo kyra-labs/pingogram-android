@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -104,6 +105,22 @@ internal fun ReportListDrags(
         listState.interactionSource.interactions
             .filterIsInstance<DragInteraction.Start>()
             .collect { currentOnEvent(PinnedEvent.ListDragged) }
+    }
+}
+
+/**
+ * Hides the keyboard each time the user starts dragging [listState], as one scrolls up to read what came before. Only
+ * the user's drags: the list's own scrolls (to the newest message, to a reply, as new messages arrive) are no drags, so
+ * they leave the keyboard up. The composer keeps its focus, its text and its draft; a tap on it brings the keyboard
+ * back.
+ */
+@Composable
+internal fun HideKeyboardOnDrag(listState: LazyListState) {
+    val keyboard by rememberUpdatedState(LocalSoftwareKeyboardController.current)
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions
+            .filterIsInstance<DragInteraction.Start>()
+            .collect { keyboard?.hide() }
     }
 }
 

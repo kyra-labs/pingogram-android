@@ -583,6 +583,7 @@ private fun MessageList(
     )
     ReportVisibleMessages(content.items, listState, onEvent)
     ReportListDrags(listState, onEvent)
+    HideKeyboardOnDrag(listState)
     ReportSponsoredViews(content.items, listState, onEvent)
     ReportNearEnds(listState, onEvent)
 }

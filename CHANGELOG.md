@@ -64,6 +64,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   TDLib update it handles, instead of every part waking for every update.
 - Chat appearance → Wallpaper chooses for light or dark theme, and its preview shows the wallpaper your Telegram
   account has for it; picking a theme color removes that wallpaper for the theme.
+- Dragging the messages hides the keyboard, so you can read further up; what you typed stays in the composer. Jumping
+  to a message and new messages arriving leave the keyboard up.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
 - Pulling up at the end of a read channel now opens the next unread channel of the folder you are in, shows how
   many posts it has unread, and taps once as you pass the point where letting go opens it.
