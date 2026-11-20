@@ -88,7 +88,7 @@ interface UpdateCacheModule {
     @IntoSet
     fun accentColorCache(repository: TdlibAccentColorRepository): TdlibUpdateCache
 
-    /** TDLib announces the account's wallpapers only with `updateDefaultBackground`, once per start and on changes. */
+    /** TDLib announces the wallpapers only with updates: the account's once per start, a chat's with the chat. */
     @Binds
     @IntoSet
     fun wallpaperCache(repository: TdlibWallpaperRepository): TdlibUpdateCache
