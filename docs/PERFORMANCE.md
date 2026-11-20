@@ -370,13 +370,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - The features after v2.3.0 (backup, the Channel feed, the settings redesign, wallpapers, story albums; 2026-11-20,
     `docs/adr/0040-apk-budget-after-v2-3-0.md`) took arm64-v8a to 51.0 MB and universal to 124.7 MB, with no native
     library changed. The owner raised the budgets to 53 MB and 128 MB, leaving about 2 and 3.3 MB.
-  - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
-    code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
-    its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
-    release builds; CI's `apk size` job checks it on the pull request.
-  - Size audit (2026-11-20, ADR 0040), arm64-v8a `fossBenchmarkRelease`, v2.3.0 against `main` at #792: 53,185,363 →
-    53,487,291 bytes (50.72 → 51.01 MB, +0.29 MB). In the APK: dex +255 KB (8.17 → 8.42 MB), `resources.arsc`
-    +19 KB, resource files +18 KB; the native libraries, the font and the assets did not change.
+  - The size audit ADR 0040 asks for (2026-11-20), arm64-v8a `fossBenchmarkRelease`, v2.3.0 against `main` at #792:
+    53,185,363 → 53,487,291 bytes (50.72 → 51.01 MB, +0.29 MB). In the APK: dex +255 KB (8.17 → 8.42 MB),
+    `resources.arsc` +19 KB, resource files +18 KB; the native libraries, the font and the assets did not change.
     - Dex by package, before compression (R8 inlines and merges across packages, so these are approximate): the app's
       own modules +550 KB (7.06 → 7.61 MB), the libraries −106 KB. `feature:settings` +214 KB (Chats page #739,
       Backup & restore #703, snippets #671), `feature:chat` +141 KB (playback speed #676, round videos #670, links and
@@ -394,6 +390,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     - Trim: the minified variants leave out the library files only tools read (`META-INF/*.version`,
       `DebugProbesKt.bin`, `kotlin/**.kotlin_builtins`, 114 files), build-logic's `DEBUG_ONLY_METADATA`: −34,365
       bytes on each APK, arm64-v8a 53,487,291 → 53,452,926.
+  - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
+    code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
+    its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
+    release builds; CI's `apk size` job checks it on the pull request.
 - TDLib database and files live in `filesDir` (excluded from backup), a 4 GB limit on the
   cache, enforced by the weekly `optimizeStorage` (§3); there is no setting for it yet.
 
