@@ -208,6 +208,11 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 
 - Stories (view), translation, saved messages tabs, message search in chat, chat export,
   widgets (Glance), App Shortcuts, Wear/auto notifications pass-through, tablet list-detail.
+- Stories on profiles (owner decision 2026-11-20, `docs/audit/feature-gaps-telegram-2026.md` "Story albums"): a
+  "Stories" tab on people's profiles and channels', with the chat's story albums as covers (title, count) above the
+  stories it keeps on its profile as a grid with their days; a story plays the profile's stories from it, an album
+  opens its own grid. Loading, "No stories yet" and an error with "Try again". No tab where a chat keeps no stories
+  (bots, deleted accounts, groups).
 
 ### 5.10 Beyond the official app [after v2.3.0]
 

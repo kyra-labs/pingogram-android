@@ -81,7 +81,9 @@ internal fun ProfilePanes(
 ) {
     SupportingPanes(
         main = { ProfilePage(page, onBack, snackbarHostState, Modifier, rememberLazyGridState(), withMedia = false) },
-        supporting = { SharedMediaPane(page.media, page.onMediaEvent, page.mediaActions, gridState) },
+        supporting = {
+            SharedMediaPane(page.media, page.onMediaEvent, page.mediaActions, gridState, stories = page.stories)
+        },
         modifier = modifier,
     )
 }
@@ -136,6 +138,7 @@ internal fun SharedMediaPane(
     mediaActions: SharedMediaActions,
     gridState: LazyGridState,
     @StringRes emptyBody: Int = R.string.profile_media_empty_body,
+    stories: StoriesTab? = null,
 ) {
     Scaffold(
         containerColor = profilePageColor(),
@@ -156,7 +159,7 @@ internal fun SharedMediaPane(
             )
         },
     ) { innerPadding ->
-        SharedMediaPaneBody(media, onMediaEvent, mediaActions, innerPadding, gridState, emptyBody)
+        SharedMediaPaneBody(media, onMediaEvent, mediaActions, innerPadding, gridState, emptyBody, stories)
     }
 }
 
@@ -169,11 +172,12 @@ private fun SharedMediaPaneBody(
     innerPadding: PaddingValues,
     gridState: LazyGridState,
     @StringRes emptyBody: Int,
+    stories: StoriesTab? = null,
 ) {
     val margin = windowMargin()
     val sizes = MaterialTheme.sizes
     val extraLarge = MaterialTheme.spacing.extraLarge
-    SharedMediaLoadMoreEffect(gridState, media, onMediaEvent)
+    if (stories?.selected != true) SharedMediaLoadMoreEffect(gridState, media, onMediaEvent)
     BoxWithConstraints(Modifier.fillMaxSize().consumeWindowInsets(innerPadding)) {
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
@@ -185,7 +189,16 @@ private fun SharedMediaPaneBody(
             contentPadding =
                 remember(innerPadding, extraLarge) { innerPadding.withTop(0.dp).plusBottom(extraLarge) },
         ) {
-            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, motion, emptyBody = emptyBody)
+            sharedMediaItems(
+                media,
+                onMediaEvent,
+                mediaActions,
+                cellSizePx,
+                margin,
+                motion,
+                emptyBody = emptyBody,
+                stories = stories,
+            )
         }
     }
 }

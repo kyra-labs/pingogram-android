@@ -9,7 +9,7 @@ import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.avatarTransformTarget
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileMusicSlot
-import dev.kyralabs.pingogram.feature.profile.ui.StoryAlbumsSlot
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRoute
 
 /**
@@ -20,7 +20,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
  * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
  * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out.
- * [storyAlbums], where given, shows the user's story albums above the shared media, and [profileMusic] their profile
+ * [stories], where given, is the Stories tab before the shared media's (not for bots), and [profileMusic] their profile
  * music below the header. [onChatDeleted] leaves it once the chat with a deleted account was deleted ([onBack] where
  * not given), as the conversation below it is gone too. It grows
  * out of the conversation's avatar that opened it, and shrinks back into it (`docs/DESIGN_SYSTEM.md` §5,
@@ -34,7 +34,7 @@ fun NavGraphBuilder.profileScreen(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
-    storyAlbums: StoryAlbumsSlot? = null,
+    stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
     onChatDeleted: (() -> Unit)? = null,
 ) {
@@ -51,7 +51,7 @@ fun NavGraphBuilder.profileScreen(
                 modifier = Modifier.avatarTransformTarget(AvatarTransformKey.profile(userId)),
                 onEditContact = onEditContact,
                 onExportChat = onExportChat,
-                storyAlbums = storyAlbums,
+                stories = stories,
                 profileMusic = profileMusic,
                 onChatDeleted = onChatDeleted,
             )
