@@ -56,6 +56,17 @@ data class WallpaperImage(
     val thumbnail: FileRef? = null,
 )
 
+/**
+ * A chat's own wallpaper (td_api.tl `chatBackground`), which either person in a private chat may set; it shows in that
+ * chat instead of the account's.
+ *
+ * @property darkThemeDimming how much it is dimmed in dark theme, 0–100 percent.
+ */
+data class ChatWallpaperOverride(
+    val wallpaper: Wallpaper,
+    val darkThemeDimming: Int,
+)
+
 /** The account's wallpapers for light and dark theme (`setDefaultBackground`'s `for_dark_theme`); null for none. */
 data class AccountWallpapers(
     val light: Wallpaper? = null,

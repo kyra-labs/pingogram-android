@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
@@ -27,6 +28,10 @@ internal fun TdApi.Background.toWallpaper(): Wallpaper? =
             null
         }
     }
+
+/** This chat background as a [ChatWallpaperOverride]; null when Pingogram cannot draw it. */
+internal fun TdApi.ChatBackground.toOverride(): ChatWallpaperOverride? =
+    background?.toWallpaper()?.let { ChatWallpaperOverride(it, darkThemeDimming) }
 
 private fun TdApi.Document.toWallpaperImage() =
     WallpaperImage(

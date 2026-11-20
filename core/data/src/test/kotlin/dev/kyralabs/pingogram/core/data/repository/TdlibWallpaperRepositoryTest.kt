@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
@@ -9,6 +10,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -19,7 +21,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** The account's wallpapers from TDLib's updates, the installed ones, and setting and removing them. */
+/** The account's wallpapers and the chats' own, from TDLib's updates, and setting and removing them. */
 class TdlibWallpaperRepositoryTest {
     private val client = FakeTdlibClient()
 
@@ -145,6 +147,45 @@ class TdlibWallpaperRepositoryTest {
 
             assertNull(repository.defaults.value.dark)
             assertTrue(client.sentOf<TdApi.DeleteDefaultBackground>().single().forDarkTheme)
+        }
+
+    @Test
+    fun `follows a chat's own wallpaper from its first announcement`() =
+        runTest {
+            val repository = repository()
+            val chat =
+                TdApiFixtures
+                    .chat(
+                        id = 7,
+                    ).apply { background = TdApi.ChatBackground(photoBackground(id = 1), 30) }
+            client.emit(TdApi.UpdateNewChat(chat))
+
+            assertEquals(
+                ChatWallpaperOverride(Wallpaper.Photo(1, PHOTO_IMAGE, isBlurred = false), darkThemeDimming = 30),
+                repository.chatWallpaper(7).first(),
+            )
+
+            client.emit(TdApi.UpdateChatBackground(7, null))
+            assertNull(repository.chatWallpaper(7).first())
+        }
+
+    @Test
+    fun `sets a chat's wallpaper for the user alone, and resets it without restoring the previous one`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.SetChatBackground::class, TdResult.Success(TdApi.Ok()))
+            client.on(TdApi.DeleteChatBackground::class, TdResult.Success(TdApi.Ok()))
+            val photo = Wallpaper.Photo(1, PHOTO_IMAGE, isBlurred = false)
+
+            repository.setChatWallpaper(7, WallpaperChoice.Existing(photo), darkThemeDimming = 140, onlyForSelf = true)
+            repository.removeChatWallpaper(7)
+
+            with(client.sentOf<TdApi.SetChatBackground>().single()) {
+                assertEquals(7L, chatId)
+                assertEquals(100, darkThemeDimming)
+                assertTrue(onlyForSelf)
+            }
+            assertFalse(client.sentOf<TdApi.DeleteChatBackground>().single().restorePrevious)
         }
 
     private companion object {
