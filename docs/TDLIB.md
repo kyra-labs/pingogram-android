@@ -228,9 +228,40 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 `updateUnreadMessageCount`, `updateUnreadChatCount`, `updateScopeNotificationSettings`,
 `updateDefaultReactionType`, `updateAvailableMessageEffects`, `updateStickerSet`,
 `updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`, `updateMessageIsPinned` (pinned
-messages), `updateForumTopicInfo`, `updateForumTopic` (forum topics, while a forum is observed).
+messages), `updateForumTopicInfo`, `updateForumTopic` (forum topics, while a forum is observed),
+`updateDefaultBackground`, `updateChatBackground` (wallpapers, "Backgrounds" below).
 
 Unknown updates are ignored but counted in debug logs.
+
+## Backgrounds
+
+Chat wallpapers are the account's, synced to its other apps (owner decision 2026-11-20; `WallpaperRepository`). In the
+pinned TDLib:
+
+- `background`: `id`, `is_default`, `is_dark` (suggested for dark theme), `name`, `document` (null only for fills and
+  chat themes) and `type`, one of
+  - `backgroundTypeWallpaper(is_blurred, is_moving)`: a JPEG; a blurred one is drawn downscaled to fit 450 × 450 and
+    box-blurred with radius 12, by the app;
+  - `backgroundTypePattern(fill, intensity, is_inverted, is_moving)`: a PNG or a vector pattern (MIME type
+    `application/x-tgwallpattern`, a gzipped subset of SVG) over `fill`, `intensity` 0–100, `is_inverted` for dark
+    themes. Its `document.thumbnail` is a PNG (`thumbnailFormatPng` exists for these alone). Pingogram fills patterns
+    with the theme's colors and passes those as `fill` when it sets one, for the other apps;
+  - `backgroundTypeFill(fill)`: `backgroundFillSolid`, `backgroundFillGradient(top_color, bottom_color,
+    rotation_angle)` or `backgroundFillFreeformGradient(colors)` (3 or 4), colors 24-bit RGB. Shown, never offered;
+  - `backgroundTypeChatTheme(theme_name)`: channels' chat themes only. Not drawn.
+- The account's: `updateDefaultBackground(for_dark_theme, background)`, sent for each theme at start and on every
+  change (null for none); `getInstalledBackgrounds(for_dark_theme)`; `setDefaultBackground(background, type,
+  for_dark_theme)`, which answers the `background` set (`inputBackgroundRemote(background_id)` for one on Telegram,
+  `inputBackgroundLocal(inputFileLocal)` to upload a JPEG wallpaper or a PNG pattern, null to create a fill);
+  `deleteDefaultBackground(for_dark_theme)`. `searchBackground(name)` finds one by the name in a background link.
+  Dimming in dark theme is not part of a default background: Pingogram keeps it on the device.
+- A chat's own: `chat.background` (`chatBackground(background, dark_theme_dimming)`, 0–100) and
+  `updateChatBackground`. `setChatBackground(chat_id, background, type, dark_theme_dimming, only_for_self)` works in
+  private and secret chats with non-deleted users (and in boosted channels and groups, which Pingogram does not offer);
+  for both people (`only_for_self` false) only with Telegram Premium, else Telegram refuses.
+  `deleteChatBackground(chat_id, restore_previous)`; restoring belongs to a `messageChatSetBackground` service
+  message, so Pingogram passes false.
+- A failed upload or download leaves the background there was: Pingogram changes nothing until TDLib answers.
 
 ## Compliance notes (must read)
 
