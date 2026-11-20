@@ -169,8 +169,10 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   (last seen, photo, calls, groups, blocked users, passcode lock w/ biometrics, 2FA, active
   sessions), Notifications (per-type channels, exceptions, sounds), Data & Storage (auto-download
   per network, storage usage via `getStorageStatistics`, clear cache), Chat settings (theme mode,
-  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper—solid/gradient
-  only), Language (per-app language API), About (version, licenses, GitHub link).
+  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper: the theme's colors,
+  or Telegram's wallpapers and patterns and the user's photos, synced to the account for light and dark theme apart,
+  with dimming in dark theme and blur for photos (owner decision 2026-11-20); a chat's own wallpaper from its info
+  page), Language (per-app language API), About (version, licenses, GitHub link).
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
   (standard/medium/high per M3), and how chats look (group bubbles; Chat appearance with the message text size,

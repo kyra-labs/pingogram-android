@@ -47,22 +47,26 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The parts of the Chat appearance page (docs/DESIGN_SYSTEM.md §6, "Chat appearance"): the preview and the chips.
 
 /**
- * A conversation as the theme's chat style ([chatStyle]) draws it: on the wallpaper (the conversation's `surface`
- * without one), two incoming messages of one sender and an outgoing reply, in the bubbles' shapes and colors
- * (`docs/DESIGN_SYSTEM.md` §2.2, §4) and the message text style. Static sample content; screen readers hear one
- * description.
+ * A conversation as the theme's chat style ([chatStyle]) draws it: on the theme-color wallpaper (the conversation's
+ * `surface` without one), or, without [drawsWallpaper], over the one its caller draws behind it; two incoming
+ * messages of one sender and an outgoing reply, in the bubbles' shapes and colors (`docs/DESIGN_SYSTEM.md` §2.2,
+ * §4) and the message text style. Static sample content; screen readers hear one description.
  */
 @Composable
-internal fun ChatPreview(modifier: Modifier = Modifier) {
+internal fun ChatPreview(
+    modifier: Modifier = Modifier,
+    drawsWallpaper: Boolean = true,
+) {
     val style = MaterialTheme.chatStyle
     val colors = MaterialTheme.colorScheme
     val description = stringResource(R.string.settings_chat_preview)
+    val wallpaper = if (drawsWallpaper) Modifier.background(style.wallpaper ?: SolidColor(colors.surface)) else Modifier
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clearAndSetSemantics { contentDescription = description }
-                .background(style.wallpaper ?: SolidColor(colors.surface))
+                .then(wallpaper)
                 .padding(MaterialTheme.spacing.medium),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
     ) {

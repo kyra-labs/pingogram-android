@@ -56,6 +56,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- Chat appearance → Wallpaper chooses for light or dark theme, and its preview shows the wallpaper your Telegram
+  account has for it; picking a theme color removes that wallpaper for the theme.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
 - Pulling up at the end of a read channel now opens the next unread channel of the folder you are in, shows how
   many posts it has unread, and taps once as you pass the point where letting go opens it.
