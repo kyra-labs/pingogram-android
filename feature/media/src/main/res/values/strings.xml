@@ -315,6 +315,14 @@
     <string name="story_album_empty_body">Stories added to this album show here.</string>
     <string name="story_album_error">Couldn\'t load this album</string>
     <string name="story_album_try_again">Try again</string>
+    <plurals name="story_album_cover_count">
+        <item quantity="one">%1$d story</item>
+        <item quantity="other">%1$d stories</item>
+    </plurals>
+    <plurals name="story_album_cover_description_count">
+        <item quantity="one">%1$s, story album, %2$d story</item>
+        <item quantity="other">%1$s, story album, %2$d stories</item>
+    </plurals>
     <!-- Profile music (boards 13a, 13b) -->
     <string name="profile_music_header">Profile music</string>
     <string name="profile_music_open_playlist">Open playlist</string>
