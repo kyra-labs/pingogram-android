@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -90,9 +91,11 @@ internal fun ReportVisibleMessages(
 }
 
 /**
- * Reports each time the user starts dragging [listState] ([PinnedEvent.ListDragged]), so the pinned messages bar
- * follows the screen again after a tap chose its message. The list's own jumps (to a reply, to a pinned message) are
- * no drags, so they leave that choice.
+ * Each time the user starts dragging [listState]: reports it ([PinnedEvent.ListDragged]), so the pinned messages bar
+ * follows the screen again after a tap chose its message, and hides the keyboard, as one scrolls up to read what came
+ * before. The list's own scrolls (to the newest message, to a reply or a pinned message, as new messages arrive) are
+ * no drags, so they leave both. The composer keeps its focus, its text and its draft; a tap on it brings the keyboard
+ * back.
  */
 @Composable
 internal fun ReportListDrags(
@@ -100,10 +103,14 @@ internal fun ReportListDrags(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val currentOnEvent by rememberUpdatedState(onEvent)
+    val keyboard by rememberUpdatedState(LocalSoftwareKeyboardController.current)
     LaunchedEffect(listState) {
         listState.interactionSource.interactions
             .filterIsInstance<DragInteraction.Start>()
-            .collect { currentOnEvent(PinnedEvent.ListDragged) }
+            .collect {
+                keyboard?.hide()
+                currentOnEvent(PinnedEvent.ListDragged)
+            }
     }
 }
 
