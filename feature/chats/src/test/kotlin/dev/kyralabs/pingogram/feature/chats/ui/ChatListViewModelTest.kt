@@ -285,6 +285,20 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
     // Folders
 
     @Test
+    fun `the Chats tab says which list it shows, for the conversations opened from it`() =
+        runTest {
+            chats.folderList.value = persistentListOf(folder(1))
+            val viewModel = viewModel()
+            assertEquals(ChatListType.Main, shownLists.shown.value)
+
+            send(viewModel, ChatListEvent.SelectFolder(1))
+            assertEquals(ChatListType.Folder(1), shownLists.shown.value)
+
+            send(viewModel, ChatListEvent.SelectFolder(null))
+            assertEquals(ChatListType.Main, shownLists.shown.value)
+        }
+
+    @Test
     fun `selecting a folder shows its chats and loads its first page`() =
         runTest {
             chats.folderList.value = persistentListOf(folder(1))

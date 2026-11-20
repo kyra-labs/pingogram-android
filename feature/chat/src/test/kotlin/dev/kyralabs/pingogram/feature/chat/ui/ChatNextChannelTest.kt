@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
@@ -52,7 +53,21 @@ class ChatNextChannelTest : ChatViewModelHarness() {
         runViewModelTest {
             val viewModel = showing(channelChat, groupChat.copy(unreadCount = 3), channel(OTHER, 0), channel(NEXT, 4))
 
-            assertEquals(NextChannel(NEXT, "Channel $NEXT", photo = null), viewModel.nextChannel.value)
+            assertEquals(NextChannel(NEXT, "Channel $NEXT", photo = null, unreadCount = 4), viewModel.nextChannel.value)
+        }
+
+    @Test
+    fun `in a folder the Chats tab shows, the next channel is that folder's`() =
+        runViewModelTest {
+            chats.folderLists.value = mapOf(FOLDER to listOf(channel(OTHER, 2)))
+            shownLists.shown.value = ChatListType.Folder(FOLDER)
+            val viewModel = showing(channelChat, channel(NEXT, 4))
+
+            assertEquals(OTHER, viewModel.nextChannel.value?.chatId)
+
+            shownLists.shown.value = ChatListType.Main
+            runCurrent()
+            assertEquals(NEXT, viewModel.nextChannel.value?.chatId)
         }
 
     @Test
@@ -94,6 +109,7 @@ class ChatNextChannelTest : ChatViewModelHarness() {
 
     private companion object {
         const val NEXT = -300L
+        const val FOLDER = 1
         const val OTHER = -400L
     }
 }

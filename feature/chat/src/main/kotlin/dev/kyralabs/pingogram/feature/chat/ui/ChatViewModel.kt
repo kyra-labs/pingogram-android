@@ -556,7 +556,13 @@ class ChatViewModel internal constructor(
     val customEmoji: StateFlow<ImmutableMap<Long, CustomEmoji>> get() = customEmojis.customEmoji
 
     private val nextChannels =
-        ChatNextChannel(chatId, wholeChat = topic == null, chatRepository, viewModelScope) { effectChannel.trySend(it) }
+        ChatNextChannel(
+            chatId,
+            wholeChat = topic == null,
+            chatRepository,
+            threadRepositories.shownLists,
+            viewModelScope,
+        ) { effectChannel.trySend(it) }
 
     /**
      * The next unread channel a read channel's conversation offers, which a pull past its newest post opens

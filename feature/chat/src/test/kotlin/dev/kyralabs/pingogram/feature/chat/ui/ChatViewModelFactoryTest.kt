@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.testing.FakeDeviceTextFinder
 import dev.kyralabs.pingogram.core.testing.FakeDirectMessagesTopicRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeSavedMessagesTopicRepository
+import dev.kyralabs.pingogram.core.testing.FakeShownChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
@@ -149,6 +150,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
             FakeDirectMessagesTopicRepository(),
             FakeUserRepository(),
             FakeChatRepository(),
+            FakeShownChatListRepository(),
         )
 
     private fun inlineBotRepositories() =

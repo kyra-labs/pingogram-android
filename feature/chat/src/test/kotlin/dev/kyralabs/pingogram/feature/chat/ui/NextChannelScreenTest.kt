@@ -87,7 +87,7 @@ class NextChannelScreenTest {
             listOf(ChatEvent.OpenNextChannel(next.chatId)),
             events.filterIsInstance<ChatEvent.OpenNextChannel>(),
         )
-        assertEquals(listOf(HapticFeedbackType.TextHandleMove), haptics)
+        assertEquals(listOf(HapticFeedbackType.GestureThresholdActivate), haptics)
     }
 
     @Test
@@ -101,11 +101,11 @@ class NextChannelScreenTest {
     }
 
     @Test
-    fun `the indicator says letting go opens the channel once past the threshold`() {
+    fun `the indicator shows the channel's unread posts, then that letting go opens it once past the threshold`() {
         setScreen()
 
         pullUp(SHORT_PULL, release = false)
-        composeRule.onNodeWithText(string(R.string.chat_next_channel_pull), useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("${next.unreadCount} unread", useUnmergedTree = true).assertExists()
         pullNextChannel(composeRule, LONG_PULL - SHORT_PULL, release = false, start = false)
         composeRule.onNodeWithText(string(R.string.chat_next_channel_release), useUnmergedTree = true).assertExists()
     }
@@ -114,6 +114,7 @@ class NextChannelScreenTest {
     fun `screen readers open the next channel through the list's custom action`() {
         setScreen()
         val label = string(R.string.chat_next_channel_action, next.title)
+        assertEquals("Next channel: ${next.title}", label)
 
         val action =
             composeRule
