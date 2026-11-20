@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.wallpaper
 
 import android.graphics.Bitmap
+import androidx.core.graphics.scale
 import coil3.size.Size
 import coil3.transform.Transformation
 import dev.kyralabs.pingogram.core.ui.image.gaussianBlur
@@ -24,7 +25,7 @@ internal object WallpaperBlur : Transformation() {
         val scale = min(1f, BLUR_SIDE / max(input.width, input.height))
         val width = (input.width * scale).roundToInt().coerceAtLeast(1)
         val height = (input.height * scale).roundToInt().coerceAtLeast(1)
-        val small = Bitmap.createScaledBitmap(input, width, height, true)
+        val small = input.scale(width, height)
         val pixels = IntArray(width * height)
         small.getPixels(pixels, 0, width, 0, 0, width, height)
         if (small !== input) small.recycle()
