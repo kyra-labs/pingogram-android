@@ -132,8 +132,8 @@ What is left, item by item and with owners, is in `docs/audit/v1-readiness.md`.
       is in (Settings → Privacy and security → Delete account), and so is its web page
       (`docs/website/delete-account.md`, published at `https://pingogram.kyralabs.dev/delete-account/`)
 - [ ] Galaxy Store and AppGallery listings (the owner, `docs/STORES.md`): Galaxy Store gets `gms`, AppGallery `foss`
-      (Huawei push is blocked on Telegram's side, `docs/adr/0033-hms-push-for-huawei-phones.md`); both need Pingogram's
-      privacy policy linked inside the app first
+      (Huawei push is blocked on Telegram's side, `docs/adr/0033-hms-push-for-huawei-phones.md`). AppGallery is done:
+      published on 2026-11-18, in every country it serves except India. Galaxy Store is left
 - [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes.
   - Done:
     - the fastlane listing: texts, icon, feature graphic, screenshots;

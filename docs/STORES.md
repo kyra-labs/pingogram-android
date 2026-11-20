@@ -16,6 +16,10 @@ reads, sends or asks for, update `PLAY_STORE.md` and check this file in the same
   official pages as search results quoted it, with the page named.
 - What neither confirmed is marked **Unconfirmed**: check it in the console before relying on it.
 
+**Status.** AppGallery: published on 2026-11-18 (App ID `C119632829`, link `https://url.cloud.huawei.com/CXKdcPQ1DW`,
+badge in `docs/images/appgallery-badge.png`), in every country AppGallery serves except India. Galaxy Store: not yet
+submitted.
+
 ## 1. Which build each store gets
 
 | Store | Build | File from the GitHub release's assets | Why |

@@ -210,6 +210,12 @@ it is closed. The APKs ending in `-gms` get notifications through Google's push 
 on phones with Google Play services; both are the same app, and one replaces the other with your
 data kept.
 
+<a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="60" alt="Explore it on AppGallery"></a>
+
+On Huawei phones, get Pingogram from [AppGallery](https://url.cloud.huawei.com/CXKdcPQ1DW): it is the plain build,
+so turn on "Keep connected" for notifications while it is closed. AppGallery offers it in every country it serves
+except India.
+
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="https://img.shields.io/badge/Get_it_on-Obtainium-2156C4?style=for-the-badge" alt="Get it on Obtainium"></a>
 
 [Obtainium](https://github.com/ImranR98/Obtainium) installs Pingogram from these releases and keeps it
