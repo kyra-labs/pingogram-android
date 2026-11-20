@@ -10,6 +10,10 @@ rules apply to humans and AI assistants.
   Telegram apps or other GPL forks into this repo.
 - Nothing that violates the Telegram API Terms of Service will be merged.
 - UI must be Jetpack Compose + Material 3 Expressive (`docs/DESIGN_SYSTEM.md`).
+- Credit what you bring in, in the same PR. Maven dependencies are credited by the build (Settings → About →
+  Open-source licenses), so they need nothing. Anything else the app ships (a prebuilt library, a font, icons, data
+  files, code ported from another project) gets an entry in `config/licenses/extra.json` with its SPDX license, and a
+  line in the README's Credits. Images used only in the README or docs go in `docs/images/CREDITS.md`.
 
 ## Local setup
 
