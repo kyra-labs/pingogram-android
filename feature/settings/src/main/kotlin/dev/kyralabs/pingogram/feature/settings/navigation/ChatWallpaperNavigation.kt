@@ -12,7 +12,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperRout
  * profile it is opened from. [onBack] leaves it.
  */
 fun NavGraphBuilder.chatWallpaperScreen(onBack: () -> Unit) {
-    composable<ChatWallpaperRoute> { entry -> ChatOwnWallpaperRoute(entry.toRoute<ChatWallpaperRoute>().chatId, onBack) }
+    composable<ChatWallpaperRoute> { entry ->
+        ChatOwnWallpaperRoute(entry.toRoute<ChatWallpaperRoute>().chatId, onBack)
+    }
 }
 
 /** Pushes chat [chatId]'s own wallpaper page. */

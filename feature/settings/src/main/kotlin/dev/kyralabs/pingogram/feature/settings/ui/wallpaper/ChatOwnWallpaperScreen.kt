@@ -26,6 +26,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.errorMessage
+import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -35,8 +37,6 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
@@ -122,59 +122,79 @@ internal fun ChatOwnWallpaperScreen(
             item { shapes ->
                 SettingsSegment(shapes) {
                     Box(Modifier.clip(shapes.shape)) {
-                        PreviewWallpaper(picker.pending, state.own?.wallpaper, state.dimming, Modifier.matchParentSize())
+                        PreviewWallpaper(
+                            picker.pending,
+                            state.own?.wallpaper,
+                            state.dimming,
+                            Modifier.matchParentSize(),
+                        )
                         ChatPreview(drawsWallpaper = false)
                     }
                 }
             }
         }
-        SettingsGroup(footer = stringResource(R.string.settings_chat_wallpaper_own_footer)) {
-            item { shapes ->
-                SettingsSegment(shapes) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth().selectableGroup().padding(MaterialTheme.spacing.large),
-                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-                    ) {
-                        AccountWallpaperChips(
-                            installed = picker.installed,
-                            selectedId = selectedWallpaperId(picker.pending, state.own?.wallpaper),
-                            onPick = actions.onPick,
-                            onPickPhoto = actions.onPickPhoto,
-                            onRetry = actions.onRetry,
-                        )
-                    }
-                }
-            }
-            if (state.canSetForBoth) {
-                item { shapes ->
-                    SettingsSegment(shapes) {
-                        ChoiceRow(
-                            options = ForBothOptions,
-                            selected = state.forBoth,
-                            label = { stringResource(forBothLabel(it)) },
-                            onSelect = onForBoth,
-                            contentPadding = PaddingValues(MaterialTheme.spacing.large),
-                        )
-                    }
-                }
-            }
-            picker.pending?.let { pending ->
-                item { shapes ->
-                    SettingsSegment(shapes) {
-                        PendingWallpaperActions(pending, picker.isWorking, actions.onCancel, actions.onApply)
-                    }
-                }
-            }
-            if (state.own != null && picker.pending == null) {
-                item { shapes ->
-                    SettingsRow(
-                        title = stringResource(R.string.settings_chat_wallpaper_reset),
-                        shapes = shapes,
-                        supportingContent = { Text(stringResource(R.string.settings_chat_wallpaper_reset_summary)) },
-                        onClick = onReset,
+        ChatOwnWallpaperGroup(state, actions, onForBoth, onReset)
+    }
+}
+
+/**
+ * The installed wallpapers and the photo picker; with Telegram Premium, whether the wallpaper is for both people; then
+ * Cancel and Apply for a pick, or "Reset wallpaper" for the chat's own.
+ */
+@Composable
+private fun ChatOwnWallpaperGroup(
+    state: ChatOwnWallpaperUiState,
+    actions: WallpaperActions,
+    onForBoth: (Boolean) -> Unit,
+    onReset: () -> Unit,
+) {
+    val picker = state.picker
+    SettingsGroup(footer = stringResource(R.string.settings_chat_wallpaper_own_footer)) {
+        item { shapes ->
+            SettingsSegment(shapes) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().selectableGroup().padding(MaterialTheme.spacing.large),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                ) {
+                    AccountWallpaperChips(
+                        installed = picker.installed,
+                        selectedId = selectedWallpaperId(picker.pending, state.own?.wallpaper),
+                        onPick = actions.onPick,
+                        onPickPhoto = actions.onPickPhoto,
+                        onRetry = actions.onRetry,
                     )
                 }
+            }
+        }
+        if (state.canSetForBoth) {
+            item { shapes ->
+                SettingsSegment(shapes) {
+                    ChoiceRow(
+                        options = ForBothOptions,
+                        selected = state.forBoth,
+                        label = { stringResource(forBothLabel(it)) },
+                        onSelect = onForBoth,
+                        contentPadding = PaddingValues(MaterialTheme.spacing.large),
+                    )
+                }
+            }
+        }
+        picker.pending?.let { pending ->
+            item { shapes ->
+                SettingsSegment(shapes) {
+                    PendingWallpaperActions(pending, picker.isWorking, actions.onCancel, actions.onApply)
+                }
+            }
+        }
+        if (state.own != null && picker.pending == null) {
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_chat_wallpaper_reset),
+                    shapes = shapes,
+                    supportingContent = { Text(stringResource(R.string.settings_chat_wallpaper_reset_summary)) },
+                    onClick = onReset,
+                )
             }
         }
     }
