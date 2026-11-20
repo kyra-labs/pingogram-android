@@ -35,7 +35,10 @@ import org.junit.jupiter.params.provider.EnumSource
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibPrivacyRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibPrivacyRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibPrivacyRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibPrivacyRepository(client, backgroundScope).also { made = it }
 
     private fun rules(vararg rules: TdApi.UserPrivacySettingRule) = TdApi.UserPrivacySettingRules(arrayOf(*rules))
 

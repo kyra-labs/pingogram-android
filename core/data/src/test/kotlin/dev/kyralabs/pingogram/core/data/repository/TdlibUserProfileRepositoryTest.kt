@@ -23,7 +23,10 @@ import org.junit.jupiter.api.Test
  */
 class TdlibUserProfileRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibUserProfileRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibUserProfileRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibUserProfileRepository(client, backgroundScope).also { made = it }
 
     private fun fullInfo(
         bio: String? = "Mathematician",

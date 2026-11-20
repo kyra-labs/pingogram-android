@@ -15,7 +15,10 @@ import org.junit.jupiter.api.Test
 
 class TdlibOauthLoginRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibOauthLoginRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibOauthLoginRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibOauthLoginRepository(client, backgroundScope).also { made = it }
 
     private fun info(
         matchCodeFirst: Boolean = true,

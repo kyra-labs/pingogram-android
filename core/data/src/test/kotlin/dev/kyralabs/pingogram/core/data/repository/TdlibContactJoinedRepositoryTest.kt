@@ -15,7 +15,10 @@ import org.junit.jupiter.api.Test
 
 class TdlibContactJoinedRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibContactJoinedRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibContactJoinedRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibContactJoinedRepository(client, backgroundScope).also { made = it }
 
     @Test
     fun `reads the option, then follows its updates`() =

@@ -40,7 +40,10 @@ import java.time.ZoneOffset
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibNotificationSettingsRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibNotificationSettingsRepository(client, FixedClock, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibNotificationSettingsRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibNotificationSettingsRepository(client, FixedClock, backgroundScope).also { made = it }
 
     /** Every field differs from the one before, so a field that is not copied shows. */
     private val custom = TdApi.ScopeNotificationSettings(0, 7, true, false, true, 8, false, true, false)

@@ -33,7 +33,10 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TdlibWelcomeMessageRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibWelcomeMessageRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibWelcomeMessageRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibWelcomeMessageRepository(client, backgroundScope).also { made = it }
 
     private fun text(text: String) = TdApi.MessageText(TdApi.FormattedText(text, emptyArray()), null, null)
 
