@@ -37,4 +37,14 @@ internal object StoryAlbumPreviewData {
     val empty = album.copy(totalCount = 0, stories = persistentListOf())
 
     val error = StoryAlbumUiState.Error(DomainError.Network)
+
+    /** A profile's Stories tab: two albums with their counts over the profile's stories. */
+    val profileStories =
+        ProfileStoriesUiState.Content(
+            albums = persistentListOf(albums.albums[0].copy(count = 12), albums.albums[1].copy(count = 1)),
+            stories = album.stories,
+            totalCount = album.stories.size,
+        )
+
+    val profileStoriesMoreFailed = profileStories.copy(totalCount = 20, moreError = DomainError.Network)
 }

@@ -268,9 +268,12 @@ private fun LazyGridScope.footer(
     }
 }
 
-/** One story: its picture cropped to 9:16 with `large` corners and its day on a pill; one button for screen readers. */
+/**
+ * One story: its picture cropped to 9:16 with `large` corners and its day on a pill; one button for screen readers.
+ * An opened album's grid and a profile's Stories tab show it.
+ */
 @Composable
-private fun StoryTile(
+internal fun StoryTile(
     story: AlbumStory,
     sizePx: Int,
     onOpenStory: (storyId: Int) -> Unit,
