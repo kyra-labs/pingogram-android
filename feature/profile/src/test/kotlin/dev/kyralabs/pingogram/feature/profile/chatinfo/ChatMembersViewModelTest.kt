@@ -53,7 +53,7 @@ class ChatMembersViewModelTest : GroupViewModelTest() {
                 chatId = CHAT,
                 initialFilter = filter,
                 savedStateHandle = handle,
-                groupInfoRepository = TdlibGroupInfoRepository(client),
+                groupInfoRepository = TdlibGroupInfoRepository(client, backgroundScope),
                 administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 userRepository = users,
                 chatRepository = chats,
