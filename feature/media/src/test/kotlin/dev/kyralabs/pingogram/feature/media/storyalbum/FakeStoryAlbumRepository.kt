@@ -13,8 +13,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 /**
- * Albums and an album's stories set by the tests: [stories] are paged by the offsets asked ([requests]), out of
- * [totalCount]; [failNext] makes the next page fail.
+ * Albums, an album's stories and a profile's set by the tests: [stories] are paged by the offsets asked ([requests]),
+ * out of [totalCount]; [failNext] makes the next album page fail.
  */
 internal class FakeStoryAlbumRepository : StoryAlbumRepository {
     var albums: Outcome<ImmutableList<StoryAlbum>> = Outcome.Success(persistentListOf())
@@ -22,6 +22,10 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
     var totalCount: Int? = null
     var failNext: Outcome.Failure? = null
     val requests = mutableListOf<Pair<Int, Int>>()
+
+    /** The stories on the chat's profile, paged after the story asked for ([profileRequests]). */
+    var profile: List<Story> = emptyList()
+    val profileRequests = mutableListOf<Pair<Int, Int>>()
 
     override suspend fun albums(chatId: Long): Outcome<ImmutableList<StoryAlbum>> = albums
 
@@ -49,7 +53,11 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
         chatId: Long,
         fromStoryId: Int,
         limit: Int,
-    ): Outcome<StoryAlbumPage> = Outcome.Success(StoryAlbumPage(0, persistentListOf()))
+    ): Outcome<StoryAlbumPage> {
+        profileRequests += fromStoryId to limit
+        val page = profile.dropWhile { fromStoryId != 0 && it.id != fromStoryId }.drop(if (fromStoryId == 0) 0 else 1)
+        return Outcome.Success(StoryAlbumPage(profile.size, page.take(limit).toImmutableList()))
+    }
 
     override suspend fun createAlbum(
         chatId: Long,
