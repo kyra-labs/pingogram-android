@@ -5,12 +5,16 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
 import kotlinx.collections.immutable.ImmutableList
 
-/** A story album's cover tile (board 11a): its [name] and the picture its [cover] shows, if any. */
+/**
+ * A story album's cover tile (board 11a): its [name], the picture its [cover] shows, if any, and how many stories it
+ * holds ([count]), null where that is not read.
+ */
 @Immutable
 data class StoryAlbumTile(
     val id: Int,
     val name: String,
     val cover: AlbumPicture?,
+    val count: Int? = null,
 )
 
 /**
