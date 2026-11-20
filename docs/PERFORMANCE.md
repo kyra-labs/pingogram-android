@@ -190,7 +190,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   used 11.4 s of CPU in a 32 s scroll against the main thread's 1.2 s, and 85% of monitor contention was the shared
   flow's slot lock (`SharedFlowImpl.tryTakeValue`). A repository declares the update types it handles, a reducer all of
   them, and watches the session's end with `onSessionEnd`, not every update. `TdlibUpdatesSubscriptionTest` builds an
-  account's whole graph on `FakeTdlibClient` and fails if anything but the router subscribes to `updates`.
+  account's whole graph on `FakeTdlibClient`, then collects every flow its repositories offer, and fails if anything but
+  the router subscribes to `updates`.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.
