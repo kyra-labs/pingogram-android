@@ -47,6 +47,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // TDLib's AAR keeps every member of TdApi; proguard-rules.pro keeps what its native code uses instead.
+            optimization {
+                keepRules {
+                    ignoreFrom("org.drinkless:tdlib")
+                }
+            }
         }
         // Release-like, non-debuggable builds for :benchmark (Macrobenchmark and Baseline Profile generation).
         // The baseline profile plugin would create them itself, but copy the release signing; declaring them here
