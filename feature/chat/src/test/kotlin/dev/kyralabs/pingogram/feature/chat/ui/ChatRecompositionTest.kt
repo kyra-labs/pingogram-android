@@ -13,7 +13,11 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -27,6 +31,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaper
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -81,6 +87,22 @@ class ChatRecompositionTest {
         val others = counter.recomposedOwn.filterNot { JUMP_BUTTON in it || it.startsWith(SCREEN_LAMBDA) }
         assertEquals(emptyList<String>(), others)
         assertTrue(counter.recomposedOwn.toString(), counter.recomposedOwn.size < SCROLL_FRAMES / RARE)
+    }
+
+    @Test
+    fun `scrolling over a photo wallpaper recomposes nothing but the jump button`() {
+        val photo = Wallpaper.Photo(1, WallpaperImage(FileRef(WALLPAPER_FILE, 0)), isBlurred = true)
+        setScreen(messages(MESSAGES), wallpaper = ConversationWallpaper(AccountWallpapers(photo, photo)))
+
+        repeat(SCROLL_FRAMES) {
+            composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
+            frame()
+        }
+
+        assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > ENTRIES_ON_SCREEN)
+        // The wallpaper draws in a layer of its own: the scroll composes nothing of it.
+        val others = counter.recomposedOwn.filterNot { JUMP_BUTTON in it || it.startsWith(SCREEN_LAMBDA) }
+        assertEquals(emptyList<String>(), others)
     }
 
     @Test
@@ -301,13 +323,17 @@ class ChatRecompositionTest {
     private fun setScreen(
         initial: ChatUiState,
         customEmoji: CustomEmojiRenderer? = null,
+        wallpaper: ConversationWallpaper = ConversationWallpaper(),
     ) {
         state = initial
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 if (shown) {
                     listState = rememberLazyListState()
-                    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+                    CompositionLocalProvider(
+                        LocalCustomEmoji provides customEmoji,
+                        LocalConversationWallpaper provides wallpaper,
+                    ) {
                         ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
                     }
                 }
@@ -414,6 +440,7 @@ class ChatRecompositionTest {
 
     private companion object {
         const val MESSAGES = 200
+        const val WALLPAPER_FILE = 900
         const val RUN = 3
         const val PERCENT = 100
         const val ENTRIES_ON_SCREEN = 10
