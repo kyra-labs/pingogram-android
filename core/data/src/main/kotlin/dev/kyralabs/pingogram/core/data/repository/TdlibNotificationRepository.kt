@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [NotificationRepository] on TDLib's notification engine (`docs/TDLIB.md`, Notifications). TDLib leaves the engine
@@ -48,7 +49,8 @@ class TdlibNotificationRepository
         private val linkPreviews: SecretChatLinkPreviews,
     ) : NotificationRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, NotificationCache(), NotificationCache::reduce)
+        private val store =
+            UpdateStore(client, scope, NOTIFICATION_UPDATES, NotificationCache(), NotificationCache::reduce)
 
         init {
             // Each login (authState is a StateFlow, so every time it turns Ready). Not in the store: requests are not
@@ -202,3 +204,12 @@ private data class NotificationCache(
         return copy(groups = groups.putting(groupId, group.copy(notifications = notifications)))
     }
 }
+
+/** The updates its store's reducer handles. */
+private val NOTIFICATION_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateActiveNotifications::class,
+        TdApi.UpdateHavePendingNotifications::class,
+        TdApi.UpdateNotification::class,
+        TdApi.UpdateNotificationGroup::class,
+    )

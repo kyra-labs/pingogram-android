@@ -180,6 +180,7 @@ class AppearanceViewModel
                     { appearanceRepository.setBubbleCorners(target.chat.bubbleCorners) },
                     { appearanceRepository.setChatWallpaper(target.chat.wallpaper) },
                     { appearanceRepository.setGroupBubbles(target.chat.groupBubbles) },
+                    { appearanceRepository.setWallpaperDimming(target.chat.wallpaperDimming) },
                 )
             for (write in writes) {
                 val saved = write()

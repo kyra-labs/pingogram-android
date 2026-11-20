@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [AccentColorRepository] on TDLib: a [TdlibUpdateCache] of `updateAccentColors`, which TDLib sends once per start and
@@ -24,7 +25,7 @@ class TdlibAccentColorRepository
         @ApplicationScope scope: CoroutineScope,
     ) : AccentColorRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, BUILT_IN, ::reduce)
+        private val store = UpdateStore(client, scope, ACCENT_UPDATES, BUILT_IN, ::reduce)
 
         override val options: StateFlow<List<AccentColorOption>> = store.state
 
@@ -43,3 +44,6 @@ private fun reduce(
     val builtInOf = update.colors.associate { it.id to it.builtInAccentColorId }
     return update.availableAccentColorIds.map { id -> AccentColorOption(id, builtInOf[id] ?: id) }
 }
+
+/** The updates its store's reducer handles. */
+private val ACCENT_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateAccentColors::class)

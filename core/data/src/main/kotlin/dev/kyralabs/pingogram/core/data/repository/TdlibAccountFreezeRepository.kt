@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [AccountFreezeRepository] on TDLib: the last `updateFreezeState` (a [TdlibUpdateCache], as TDLib announces it only
@@ -26,7 +27,7 @@ class TdlibAccountFreezeRepository
     ) : AccountFreezeRepository,
         TdlibUpdateCache {
         private val store =
-            UpdateStore(client, scope, Announced(null)) { state, update ->
+            UpdateStore(client, scope, FREEZE_UPDATES, Announced(null)) { state, update ->
                 if (update is TdApi.UpdateFreezeState) Announced(update.toFreeze()) else state
             }
 
@@ -51,3 +52,6 @@ private fun TdApi.UpdateFreezeState.toFreeze(): AccountFreeze? =
     } else {
         null
     }
+
+/** The updates its store's reducer handles. */
+private val FREEZE_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateFreezeState::class)

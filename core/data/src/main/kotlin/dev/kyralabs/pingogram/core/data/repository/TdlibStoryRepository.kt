@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [StoryRepository] on TDLib's stories. TDLib announces each chat's active stories only with `updateChatActiveStories`
@@ -64,7 +65,7 @@ class TdlibStoryRepository
         @ApplicationScope scope: CoroutineScope,
     ) : StoryRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, StoryState(), ::reduce)
+        private val store = UpdateStore(client, scope, STORY_UPDATES, StoryState(), ::reduce)
 
         override fun activeStories(list: StoryList): Flow<ImmutableList<ActiveStories>> =
             store.state
@@ -259,3 +260,11 @@ private fun TdApi.Update.isAbout(
 
 /** How many viewers of the user's own story a page asks for. */
 private const val VIEWERS_PAGE = 50
+
+/** The updates its store's reducer handles. */
+private val STORY_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateChatActiveStories::class,
+        TdApi.UpdateStory::class,
+        TdApi.UpdateStoryDeleted::class,
+    )

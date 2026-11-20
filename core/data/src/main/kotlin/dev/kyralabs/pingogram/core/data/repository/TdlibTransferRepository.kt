@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [TransferRepository] on TDLib's updates, followed from before TDLib starts (`UpdateCacheModule`):
@@ -62,7 +63,7 @@ class TdlibTransferRepository private constructor(
         scope: CoroutineScope,
     ) : this(client, scope, null)
 
-    private val store = UpdateStore(client, scope, TransferState(), TransferState::reduce)
+    private val store = UpdateStore(client, scope, TRANSFER_UPDATES, TransferState(), TransferState::reduce)
 
     override val transfers: StateFlow<Transfers> =
         combine(store.state, storyPosts?.uploads ?: flowOf(persistentListOf())) { state, stories ->
@@ -238,3 +239,13 @@ private fun TdApi.MessageContent.fileToUpload(): TdApi.File? =
         is TdApi.MessageVideoNote -> videoNote.video
         else -> null
     }
+
+/** The updates its store's reducer handles. */
+private val TRANSFER_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateFile::class,
+        TdApi.UpdateMessageSendFailed::class,
+        TdApi.UpdateMessageSendSucceeded::class,
+        TdApi.UpdateNewMessage::class,
+    )

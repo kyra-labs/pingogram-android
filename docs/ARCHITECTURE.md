@@ -68,7 +68,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   TDLib introduces each user and chat only once and `updates` replays nothing, so caches subscribe
   at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
   `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from
-  every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
+  the update types it declares, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
   (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` makes before
   `TdlibClient.start()`. Every new caching repository must join that set.
 - **Accounts** (`docs/adr/0031-multiple-accounts.md`): the repositories that talk to TDLib are an account's, not the

@@ -151,6 +151,23 @@ internal class ProfilePageParts(
     val profileMusic: ProfileMusicSlot? = null,
 )
 
+/**
+ * A person's Stories tab where `:app` gives its [slot] (owner decision 2026-11-20); none for bots and deleted accounts,
+ * which keep no stories, nor before the profile and its chat are read. Its selection survives configuration changes.
+ */
+@Composable
+private fun rememberStoriesTab(
+    state: ProfileUiState,
+    media: SharedMediaUiState,
+    slot: ProfileStoriesSlot?,
+): StoriesTab? {
+    var selected by rememberSaveable { mutableStateOf(false) }
+    val person = (state as? ProfileUiState.Content)?.takeUnless { it.actions.isBot || it.isDeletedAccount }
+    val chatId = media.chatId
+    if (slot == null || chatId == null || person == null) return null
+    return StoriesTab(selected, onSelect = { selected = it }, items = slot(chatId, selected))
+}
+
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
