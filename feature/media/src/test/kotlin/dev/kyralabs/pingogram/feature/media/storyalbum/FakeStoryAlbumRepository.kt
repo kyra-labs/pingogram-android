@@ -33,6 +33,10 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
     /** Makes every album's count fail. */
     var countFailure: Outcome.Failure? = null
 
+    /** The albums created and changed, as "create:Hampi:[9, 4]"; [changeFailure] refuses them all. */
+    val changes = mutableListOf<String>()
+    var changeFailure: Outcome.Failure? = null
+
     override suspend fun albums(chatId: Long): Outcome<ImmutableList<StoryAlbum>> = albums
 
     override suspend fun stories(
@@ -73,30 +77,39 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
         chatId: Long,
         name: String,
         storyIds: List<Int>,
-    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = 1, name = name, cover = null))
+    ): Outcome<StoryAlbum> = change("create:$name:$storyIds") { StoryAlbum(id = 1, name = name, cover = null) }
 
     override suspend fun renameAlbum(
         chatId: Long,
         albumId: Int,
         name: String,
-    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = name, cover = null))
+    ): Outcome<StoryAlbum> = change("rename:$albumId:$name") { StoryAlbum(id = albumId, name = name, cover = null) }
 
     override suspend fun addStories(
         chatId: Long,
         albumId: Int,
         storyIds: List<Int>,
-    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = "", cover = null))
+    ): Outcome<StoryAlbum> = change("add:$albumId:$storyIds") { StoryAlbum(id = albumId, name = "", cover = null) }
 
     override suspend fun removeStories(
         chatId: Long,
         albumId: Int,
         storyIds: List<Int>,
-    ): Outcome<StoryAlbum> = Outcome.Success(StoryAlbum(id = albumId, name = "", cover = null))
+    ): Outcome<StoryAlbum> = change("remove:$albumId:$storyIds") { StoryAlbum(id = albumId, name = "", cover = null) }
 
     override suspend fun deleteAlbum(
         chatId: Long,
         albumId: Int,
-    ): Outcome<Unit> = Outcome.Success(Unit)
+    ): Outcome<Unit> = change("delete:$albumId") {}
+
+    /** Records [call] in [changes], and answers with [changeFailure] if set, else [result]. */
+    private fun <T> change(
+        call: String,
+        result: () -> T,
+    ): Outcome<T> {
+        changes += call
+        return changeFailure ?: Outcome.Success(result())
+    }
 
     companion object {
         /** A photo story [id], posted at [date] (Unix seconds). */
