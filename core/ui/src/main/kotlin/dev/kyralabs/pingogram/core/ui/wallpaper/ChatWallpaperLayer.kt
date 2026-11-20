@@ -90,7 +90,8 @@ private fun WallpaperLayer(
     val window = LocalWindowInfo.current.containerSize
     val painter = if (wallpaper != null && data != null) wallpaperPainter(wallpaper, data, window) else null
     val dim = if (isDarkTheme()) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
-    val look = remember(wallpaper, colors, themeWallpaper, dim) { WallpaperLook(wallpaper, colors, themeWallpaper, dim) }
+    val look =
+        remember(wallpaper, colors, themeWallpaper, dim) { WallpaperLook(wallpaper, colors, themeWallpaper, dim) }
     Spacer(
         modifier
             .clipToBounds()
@@ -212,7 +213,6 @@ private fun DrawScope.drawCover(
         with(painter) { draw(drawn, colorFilter = colorFilter) }
     }
 }
-
 
 /** The photo a [PhotoPreviewWallpaperLayer] stands for: not on Telegram yet, so it has no id or file there. */
 private const val PREVIEW_ID = 0L
