@@ -115,4 +115,5 @@ private fun reduce(
 }
 
 /** The updates its store's reducer handles. */
-private val CALL_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateCall::class, TdApi.UpdateNewCallSignalingData::class)
+private val CALL_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateCall::class, TdApi.UpdateNewCallSignalingData::class)

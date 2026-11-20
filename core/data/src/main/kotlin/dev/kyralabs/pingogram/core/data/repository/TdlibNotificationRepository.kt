@@ -49,7 +49,8 @@ class TdlibNotificationRepository
         private val linkPreviews: SecretChatLinkPreviews,
     ) : NotificationRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, NOTIFICATION_UPDATES, NotificationCache(), NotificationCache::reduce)
+        private val store =
+            UpdateStore(client, scope, NOTIFICATION_UPDATES, NotificationCache(), NotificationCache::reduce)
 
         init {
             // Each login (authState is a StateFlow, so every time it turns Ready). Not in the store: requests are not

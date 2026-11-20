@@ -94,4 +94,5 @@ private fun ReactionNotificationSource.toTdlib(): TdApi.ReactionNotificationSour
     }
 
 /** The updates its store's reducer handles. */
-private val REACTION_NOTIFICATION_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateReactionNotificationSettings::class)
+private val REACTION_NOTIFICATION_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateReactionNotificationSettings::class)

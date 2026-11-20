@@ -240,4 +240,5 @@ private fun reduceKnown(
 }
 
 /** The updates its store's reducer handles. */
-private val COMMUNITY_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateCommunity::class, TdApi.UpdateCommunityFullInfo::class)
+private val COMMUNITY_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateCommunity::class, TdApi.UpdateCommunityFullInfo::class)

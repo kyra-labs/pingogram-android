@@ -73,4 +73,5 @@ private data class GroupCache(
 }
 
 /** The updates its store's reducer handles. */
-private val GROUP_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateBasicGroup::class, TdApi.UpdateSupergroup::class)
+private val GROUP_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateBasicGroup::class, TdApi.UpdateSupergroup::class)

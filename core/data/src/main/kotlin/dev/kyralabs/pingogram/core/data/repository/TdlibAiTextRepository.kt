@@ -34,7 +34,8 @@ class TdlibAiTextRepository
         @ApplicationScope scope: CoroutineScope,
     ) : AiTextRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, STYLE_UPDATES, persistentListOf<TextCompositionStyle>(), ::reduce)
+        private val store =
+            UpdateStore(client, scope, STYLE_UPDATES, persistentListOf<TextCompositionStyle>(), ::reduce)
 
         override val styles: StateFlow<ImmutableList<TextCompositionStyle>> = store.state
 

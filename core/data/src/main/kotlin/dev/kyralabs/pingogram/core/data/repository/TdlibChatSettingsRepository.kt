@@ -44,7 +44,12 @@ class TdlibChatSettingsRepository
     ) : ChatSettingsRepository,
         TdlibUpdateCache {
         private val reactionStore =
-            UpdateStore<ImmutableList<String>>(client, scope, EMOJI_REACTION_UPDATES, persistentListOf()) { state, update ->
+            UpdateStore<ImmutableList<String>>(
+                client,
+                scope,
+                EMOJI_REACTION_UPDATES,
+                persistentListOf(),
+            ) { state, update ->
                 if (update is TdApi.UpdateActiveEmojiReactions) {
                     update.emojis
                         .orEmpty()
