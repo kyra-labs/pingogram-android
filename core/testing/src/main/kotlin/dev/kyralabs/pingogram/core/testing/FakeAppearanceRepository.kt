@@ -61,6 +61,12 @@ class FakeAppearanceRepository(
     override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) =
         change { it.copy(chat = it.chat.copy(wallpaper = wallpaper)) }
 
+    override suspend fun setWallpaperDimming(percent: Int) =
+        change {
+            val dimming = percent.coerceIn(0, ChatAppearance.MAX_WALLPAPER_DIMMING)
+            it.copy(chat = it.chat.copy(wallpaperDimming = dimming))
+        }
+
     override suspend fun setGroupBubbles(bubbles: GroupBubbles) =
         change { it.copy(chat = it.chat.copy(groupBubbles = bubbles)) }
 

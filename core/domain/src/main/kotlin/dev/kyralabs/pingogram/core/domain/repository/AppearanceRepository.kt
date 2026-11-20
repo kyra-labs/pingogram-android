@@ -48,6 +48,12 @@ interface AppearanceRepository {
     /** Saves the conversation's [wallpaper]; fails as [setThemeMode] does. */
     suspend fun setChatWallpaper(wallpaper: ChatWallpaper): Outcome<Unit>
 
+    /**
+     * Saves how much the account's wallpaper dims in dark theme, [percent] kept within 0–100; fails as [setThemeMode]
+     * does.
+     */
+    suspend fun setWallpaperDimming(percent: Int): Outcome<Unit>
+
     /** Saves how the experimental look colors groups' bubbles ([bubbles]); fails as [setThemeMode] does. */
     suspend fun setGroupBubbles(bubbles: GroupBubbles): Outcome<Unit>
 }

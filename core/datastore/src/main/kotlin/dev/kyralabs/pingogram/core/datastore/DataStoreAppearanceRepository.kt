@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
@@ -66,6 +67,9 @@ class DataStoreAppearanceRepository
 
         override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) = edit { it[CHAT_WALLPAPER] = wallpaper.name }
 
+        override suspend fun setWallpaperDimming(percent: Int) =
+            edit { it[WALLPAPER_DIMMING] = percent.coerceIn(0, ChatAppearance.MAX_WALLPAPER_DIMMING) }
+
         override suspend fun setGroupBubbles(bubbles: GroupBubbles) = edit { it[GROUP_BUBBLES] = bubbles.name }
 
         private suspend fun edit(change: (MutablePreferences) -> Unit): Outcome<Unit> =
@@ -91,6 +95,9 @@ private fun Preferences.toAppearanceSettings(): AppearanceSettings {
                 textScale = this[CHAT_TEXT_SCALE]?.let(ChatAppearance::textScaleOf) ?: defaults.chat.textScale,
                 bubbleCorners = enumOrNull<BubbleCorners>(this[BUBBLE_CORNERS]) ?: defaults.chat.bubbleCorners,
                 wallpaper = enumOrNull<ChatWallpaper>(this[CHAT_WALLPAPER]) ?: defaults.chat.wallpaper,
+                wallpaperDimming =
+                    this[WALLPAPER_DIMMING]?.coerceIn(0, ChatAppearance.MAX_WALLPAPER_DIMMING)
+                        ?: defaults.chat.wallpaperDimming,
                 groupBubbles = enumOrNull<GroupBubbles>(this[GROUP_BUBBLES]) ?: defaults.chat.groupBubbles,
             ),
     )
@@ -108,3 +115,4 @@ private val CHAT_TEXT_SCALE = floatPreferencesKey("appearance.chat.text_scale")
 private val BUBBLE_CORNERS = stringPreferencesKey("appearance.chat.bubble_corners")
 private val CHAT_WALLPAPER = stringPreferencesKey("appearance.chat.wallpaper")
 private val GROUP_BUBBLES = stringPreferencesKey("appearance.chat.group_bubbles")
+private val WALLPAPER_DIMMING = intPreferencesKey("appearance.chat.wallpaper_dimming")

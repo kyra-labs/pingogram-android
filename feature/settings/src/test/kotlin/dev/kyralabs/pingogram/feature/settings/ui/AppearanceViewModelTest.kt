@@ -119,7 +119,7 @@ class AppearanceViewModelTest {
                     palette = ThemePalette.Teal,
                     contrast = Contrast.High,
                     amoled = true,
-                    chat = ChatAppearance(textScale = 1.2f, groupBubbles = GroupBubbles.Tinted),
+                    chat = ChatAppearance(textScale = 1.2f, groupBubbles = GroupBubbles.Tinted, wallpaperDimming = 30),
                 )
             repository.save(custom)
             val viewModel = viewModel()
