@@ -68,6 +68,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ChatWallpaperViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetHost
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetViewModel
@@ -198,6 +200,10 @@ internal fun ConversationRoute(
         hiltViewModel<KeywordMatchViewModel, KeywordMatchViewModel.Factory>(key = "keyword-$chatId-$messageId") {
             it.create(chatId, messageId)
         },
+    wallpaperViewModel: ChatWallpaperViewModel =
+        hiltViewModel<ChatWallpaperViewModel, ChatWallpaperViewModel.Factory>(key = "wallpaper-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
@@ -306,6 +312,7 @@ internal fun ConversationRoute(
         LocalBirthdaySuggestions provides birthdaysViewModel,
         LocalReminderChips provides reminderChips,
         LocalVideoNoteSurface provides videoNoteSurface,
+        LocalConversationWallpaper provides wallpaperViewModel.wallpaper.collectAsStateWithLifecycle().value,
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {

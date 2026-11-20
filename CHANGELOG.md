@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Chats show the wallpaper set for your Telegram account, for light and dark theme, and a chat's own wallpaper when
+  either of you set one: photos, patterns in your color theme's colors, and colors.
 - In a forum topic you have read, pull up past the newest message to open the next topic with unread messages.
 - Back up what Pingogram keeps only on this phone: Settings → On this phone → Backup & restore writes your settings,
   bookmarks, reminders, keyword alerts and snippets into one file, encrypted with a password you set, in a folder you

@@ -89,6 +89,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import dev.kyralabs.pingogram.feature.chat.ui.saved.ConversationTabsSlot
 import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaperLayer
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
@@ -344,9 +345,10 @@ private fun ChatScaffold(
         floatingActionButton = jumpButton,
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
-            val wallpaper = MaterialTheme.chatStyle.wallpaper
-            Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
+            // The chat's own, the account's or the theme-color wallpaper, drawn behind the bars and the messages in a
+            // layer of its own, so scrolling neither composes nor redraws it.
+            ConversationWallpaperLayer(Modifier.matchParentSize())
+            Column(Modifier.fillMaxSize()) {
                 // What TDLib suggests about a chat someone new started, then a keyword alert's matches (board 30).
                 ConversationCards(contentPadding)
                 // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
