@@ -44,7 +44,7 @@ class DataOptionsViewModelTest {
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
     private fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()) =
-        DataOptionsViewModel(handle, TdlibDataOptionsRepository(client)).also { runCurrent() }
+        DataOptionsViewModel(handle, TdlibDataOptionsRepository(client, backgroundScope)).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: DataOptionsViewModel): List<DataOptionsEffect> {
         val effects = mutableListOf<DataOptionsEffect>()

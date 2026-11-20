@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.data.mapper.MUTE_FOREVER
 import dev.kyralabs.pingogram.core.data.mapper.toAddChatRequest
 import dev.kyralabs.pingogram.core.data.mapper.toCommunity
 import dev.kyralabs.pingogram.core.data.mapper.toCommunityDetails
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.Community
 import dev.kyralabs.pingogram.core.domain.model.CommunityAddChatRequest
 import dev.kyralabs.pingogram.core.domain.model.CommunityAddResult
@@ -27,7 +29,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -54,7 +55,7 @@ class TdlibCommunityRepository
     @Inject
     constructor(
         private val client: TdlibClient,
-        @ApplicationScope scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : CommunityRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, COMMUNITY_UPDATES, persistentMapOf(), ::reduce)
@@ -66,8 +67,9 @@ class TdlibCommunityRepository
         override fun details(id: Long): Flow<Outcome<CommunityDetails>> =
             channelFlow {
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates
-                        .filterIsInstance<TdApi.UpdateCommunityFullInfo>()
+                    client
+                        .updateRouter(scope)
+                        .updatesOf<TdApi.UpdateCommunityFullInfo>()
                         .filter { it.communityId == id && it.communityFullInfo != null }
                         .collect { send(Outcome.Success(it.communityFullInfo.toCommunityDetails())) }
                 }

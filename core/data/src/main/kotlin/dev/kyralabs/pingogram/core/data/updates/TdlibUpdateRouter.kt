@@ -8,7 +8,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import java.util.WeakHashMap
@@ -60,13 +62,20 @@ internal class TdlibUpdateRouter private constructor(
         return DisposableHandle { handlers -= handler }
     }
 
-    /** The updates of [types] from when it is collected, in TDLib's order; collected with `UNDISPATCHED`, at once. */
-    fun updates(types: Set<KClass<out TdApi.Update>>): Flow<TdApi.Update> {
+    /**
+     * The updates of [types] from when it is collected, in TDLib's order. [onSubscribed] runs once subscribed, before
+     * the first of them: what it emits (a read of the current state) misses no update that came in between.
+     */
+    fun updates(
+        types: Set<KClass<out TdApi.Update>>,
+        onSubscribed: suspend FlowCollector<TdApi.Update>.() -> Unit = {},
+    ): Flow<TdApi.Update> {
         val classes = types.javaClasses()
         return flow {
             val subscriber = Subscriber(classes, Channel(BUFFER_CAPACITY))
             subscribers += subscriber
             try {
+                onSubscribed()
                 for (update in subscriber.channel) emit(update)
             } finally {
                 subscribers -= subscriber
@@ -141,6 +150,10 @@ internal class TdlibUpdateRouter private constructor(
             }
     }
 }
+
+/** The updates of type [T] from when it is collected ([TdlibUpdateRouter.updates]). */
+internal inline fun <reified T : TdApi.Update> TdlibUpdateRouter.updatesOf(): Flow<T> =
+    updates(setOf(T::class)).map { it as T }
 
 /** The router of this client ([TdlibUpdateRouter.of]). */
 internal fun TdlibClient.updateRouter(scope: CoroutineScope): TdlibUpdateRouter = TdlibUpdateRouter.of(this, scope)

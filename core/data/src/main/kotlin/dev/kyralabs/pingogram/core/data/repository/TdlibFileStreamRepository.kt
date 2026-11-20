@@ -1,16 +1,19 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.repository.FileRange
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
@@ -29,6 +32,7 @@ class TdlibFileStreamRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : FileStreamRepository {
         /** The offset each streamed file downloads from, for the files a reader started. */
         private val downloads = ConcurrentHashMap<Int, Long>()
@@ -44,8 +48,9 @@ class TdlibFileStreamRepository
                 // short of the range (cancelled, failed) ends the wait, once this reader's request is in.
                 val reached =
                     async(start = CoroutineStart.UNDISPATCHED) {
-                        client.updates
-                            .filterIsInstance<TdApi.UpdateFile>()
+                        client
+                            .updateRouter(scope)
+                            .updatesOf<TdApi.UpdateFile>()
                             .map { it.file }
                             .first { file ->
                                 file.id == fileId &&

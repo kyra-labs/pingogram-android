@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ChannelFeed
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
@@ -14,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChannelFeedRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -51,6 +54,7 @@ class TdlibChannelFeedRepository
     constructor(
         private val client: TdlibClient,
         private val chatRepository: ChatRepository,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : ChannelFeedRepository {
         private val held = ChannelFeedPosts()
 
@@ -59,7 +63,7 @@ class TdlibChannelFeedRepository
 
         override val feed: Flow<ChannelFeed> =
             channelFlow {
-                launch { client.updates.collect(held::apply) }
+                launch { client.updateRouter(scope).updates(FEED_UPDATES).collect(held::apply) }
                 channels
                     .onEach { held.channels = it }
                     .onEach(::readSinceRead)
@@ -174,3 +178,12 @@ class TdlibChannelFeedRepository
 /** A channel, whose posts the feed shows; a supergroup that is not a channel is a group. */
 private val Chat.isChannel: Boolean
     get() = (type as? ChatType.Supergroup)?.isChannel == true
+
+/** The updates [ChannelFeedPosts.apply] reads. */
+private val FEED_UPDATES =
+    setOf(
+        TdApi.UpdateDeleteMessages::class,
+        TdApi.UpdateMessageContent::class,
+        TdApi.UpdateMessageEdited::class,
+        TdApi.UpdateMessageInteractionInfo::class,
+    )
