@@ -56,7 +56,7 @@ internal class NotificationsHarness(
             openChats,
             SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
         )
-    val auth = TdlibAuthRepository(client, dispatcher)
+    val auth = TdlibAuthRepository(client, backgroundScope, dispatcher)
     val chatLock = FakeChatLockRepository()
     val directShare = FakeDirectShareRepository()
 

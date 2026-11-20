@@ -65,7 +65,7 @@ class MainActivityViewModelTest {
         appearanceRepository: FakeAppearanceRepository = appearance,
     ): MainActivityViewModel =
         MainActivityViewModel(
-            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+            TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
             appearanceRepository,
             appLock,
             passcodes,
@@ -332,7 +332,12 @@ class MainActivityViewModelTest {
             var asked = 0
             val viewModel =
                 MainActivityViewModel(
-                    TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+                    TdlibAuthRepository(
+                        client,
+                        backgroundScope,
+                        StandardTestDispatcher(testScheduler),
+                        TimeSource.Monotonic,
+                    ),
                     appearance,
                     appLock,
                     passcodes,
@@ -372,7 +377,12 @@ class MainActivityViewModelTest {
 
             val viewModel =
                 MainActivityViewModel(
-                    TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+                    TdlibAuthRepository(
+                        client,
+                        backgroundScope,
+                        StandardTestDispatcher(testScheduler),
+                        TimeSource.Monotonic,
+                    ),
                     appearance,
                     appLock,
                     withoutPasscode,

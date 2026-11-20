@@ -66,7 +66,7 @@ class AuthViewModelTest {
     }
 
     private fun TestScope.authRepository() =
-        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+        TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
 
     // Through the real TDLib repositories on FakeTdlibClient, as the app wires them.
     private fun TestScope.viewModel(

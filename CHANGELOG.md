@@ -58,6 +58,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
+  TDLib update it handles, instead of every part waking for every update.
 - Chat appearance → Wallpaper chooses for light or dark theme, and its preview shows the wallpaper your Telegram
   account has for it; picking a theme color removes that wallpaper for the theme.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
