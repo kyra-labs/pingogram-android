@@ -472,9 +472,7 @@ class ChatListViewModel internal constructor(
             selectedList.collect { list ->
                 currentList = list
                 // Conversations opened from the Chats tab go on in its folder; keyword alerts are the main list's.
-                if (kind ==
-                    ChatListKind.Chats
-                ) {
+                if (kind == ChatListKind.Chats) {
                     shownLists.show(if (list == KEYWORD_ALERTS_LIST) ChatListType.Main else list)
                 }
                 // The screen reports the new list's end afresh.
