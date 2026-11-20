@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.navigation.StoryAlbumRoute
 import dev.kyralabs.pingogram.feature.media.storyalbum.FakeStoryAlbumRepository.Companion.story
 import dev.kyralabs.pingogram.feature.media.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeTimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.media.ui.FakeWallClock
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.chat
 import kotlinx.collections.immutable.persistentListOf
@@ -19,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -30,6 +32,7 @@ class StoryAlbumViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val albums = FakeStoryAlbumRepository()
     private val chats = FakeChatRepository()
+    private val users = FakeUserRepository()
 
     init {
         Dispatchers.setMain(dispatcher)
@@ -45,6 +48,7 @@ class StoryAlbumViewModelTest {
             StoryAlbumRoute(CHAT, ALBUM),
             albums,
             chats,
+            users,
             FakeWallClock(NOW),
             FakeTimePatterns(),
         ) { Locale.US }
@@ -124,6 +128,61 @@ class StoryAlbumViewModelTest {
                 viewModel.onEvent(StoryAlbumEvent.Retry)
                 assertEquals(StoryAlbumUiState.Loading, awaitItem())
                 assertEquals(1, (awaitItem() as StoryAlbumUiState.Content).stories.size)
+            }
+        }
+
+    @Test
+    fun `the user's own album is renamed and deleted, and a refusal is a snackbar`() =
+        runTest(dispatcher) {
+            users.myUserId.value = CHAT
+            albums.stories = listOf(story(1, OCT_3))
+            val viewModel = viewModel()
+
+            viewModel.effects.test {
+                viewModel.uiState.test {
+                    skipItems(1)
+                    assertTrue((awaitItem() as StoryAlbumUiState.Content).canEdit)
+                    viewModel.onEvent(StoryAlbumEvent.Rename(" Hampi, 2026 "))
+                    assertEquals("Hampi, 2026", (awaitItem() as StoryAlbumUiState.Content).name)
+                }
+                albums.changeFailure = Outcome.Failure(DomainError.Network)
+                viewModel.onEvent(StoryAlbumEvent.Delete)
+                assertEquals(StoryAlbumEffect.ShowError(DomainError.Network), awaitItem())
+                albums.changeFailure = null
+                viewModel.onEvent(StoryAlbumEvent.Delete)
+                assertEquals(StoryAlbumEffect.Deleted, awaitItem())
+            }
+            assertEquals(listOf("rename:$ALBUM:Hampi, 2026", "delete:$ALBUM", "delete:$ALBUM"), albums.changes)
+        }
+
+    @Test
+    fun `someone else's album cannot be changed`() =
+        runTest(dispatcher) {
+            users.myUserId.value = 1L
+            albums.stories = listOf(story(1, OCT_3))
+            val viewModel = viewModel()
+
+            viewModel.uiState.test {
+                skipItems(1)
+                assertFalse((awaitItem() as StoryAlbumUiState.Content).canEdit)
+                viewModel.onEvent(StoryAlbumEvent.Rename("Mine now"))
+                viewModel.onEvent(StoryAlbumEvent.Delete)
+                expectNoEvents()
+            }
+            assertTrue(albums.changes.isEmpty())
+        }
+
+    @Test
+    fun `coming back reads the album again, keeping its stories meanwhile`() =
+        runTest(dispatcher) {
+            albums.stories = listOf(story(1, OCT_3))
+            val viewModel = viewModel()
+
+            viewModel.uiState.test {
+                skipItems(2)
+                albums.stories = listOf(story(1, OCT_3), story(2, OCT_3))
+                viewModel.onEvent(StoryAlbumEvent.Refresh)
+                assertEquals(2, (awaitItem() as StoryAlbumUiState.Content).stories.size)
             }
         }
 
