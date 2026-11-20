@@ -217,8 +217,6 @@ private val MessageSchedule.sendsAt: Long
             MessageSchedule.WhenOnline -> Long.MAX_VALUE
         }
 
-/** The chat whose scheduled messages [this] can change; null for other updates. */
-
 /** The updates [scheduledChatId] reads. */
 private val SCHEDULED_UPDATES =
     setOf(
@@ -230,6 +228,7 @@ private val SCHEDULED_UPDATES =
         TdApi.UpdateNewMessage::class,
     )
 
+/** The chat whose scheduled messages [this] can change; null for other updates. */
 private fun TdApi.Update.scheduledChatId(): Long? =
     when (this) {
         is TdApi.UpdateNewMessage -> message.chatId

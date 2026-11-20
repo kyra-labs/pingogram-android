@@ -137,8 +137,6 @@ class TdlibPinnedMessageRepository
             }
     }
 
-/** The chat whose pinned messages [this] can change; null for other updates. */
-
 /** The updates [pinsChatId] reads. */
 private val PIN_UPDATES =
     setOf(
@@ -148,6 +146,7 @@ private val PIN_UPDATES =
         TdApi.UpdateMessageIsPinned::class,
     )
 
+/** The chat whose pinned messages [this] can change; null for other updates. */
 private fun TdApi.Update.pinsChatId(): Long? =
     when (this) {
         is TdApi.UpdateMessageIsPinned -> chatId
