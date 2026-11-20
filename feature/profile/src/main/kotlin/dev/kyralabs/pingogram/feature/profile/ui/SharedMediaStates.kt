@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.ListNotice
+import dev.kyralabs.pingogram.core.ui.component.NoticeBadge
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
 import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -103,11 +105,8 @@ internal fun MediaEmpty(
     @StringRes body: Int = R.string.profile_media_empty_body,
 ) {
     val colors = MaterialTheme.colorScheme
-    MediaNotice(
-        shape = MaterialShapes.Cookie9Sided,
-        icon = kind.icon,
-        container = colors.primaryContainer,
-        content = colors.onPrimaryContainer,
+    ListNotice(
+        badge = NoticeBadge(MaterialShapes.Cookie9Sided, kind.icon, colors.primaryContainer, colors.onPrimaryContainer),
         title = stringResource(kind.emptyTitle),
         body = stringResource(body),
     )
@@ -121,11 +120,14 @@ internal fun MediaError(
     onRetry: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    MediaNotice(
-        shape = MaterialShapes.Cookie4Sided,
-        icon = UiR.drawable.ic_error,
-        container = colors.errorContainer,
-        content = colors.onErrorContainer,
+    ListNotice(
+        badge =
+            NoticeBadge(
+                MaterialShapes.Cookie4Sided,
+                UiR.drawable.ic_error,
+                colors.errorContainer,
+                colors.onErrorContainer,
+            ),
         title = stringResource(R.string.profile_media_error),
         body = errorText(error.error),
         // A failure is announced at once (board 24h), an empty tab politely.
@@ -134,50 +136,6 @@ internal fun MediaError(
         Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(R.string.profile_retry), style = MaterialTheme.typography.labelLargeEmphasized)
         }
-    }
-}
-
-/** A notice in place of a tab's items: a `MaterialShapes` badge with [icon], [title], [body] and an [action]. */
-@Suppress("LongParameterList") // The badge's shape, icon and colors, and the texts and action.
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun MediaNotice(
-    shape: RoundedPolygon,
-    @DrawableRes icon: Int,
-    container: Color,
-    content: Color,
-    title: String,
-    body: String,
-    announce: LiveRegionMode = LiveRegionMode.Polite,
-    action: (@Composable () -> Unit)? = null,
-) {
-    val spacing = MaterialTheme.spacing
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.extraLarge, vertical = spacing.extraLarge),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-    ) {
-        val badgeShape = shape.toShape()
-        Box(
-            modifier = Modifier.size(MaterialTheme.sizes.headlineBadge).background(container, badgeShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painter = painterResource(icon), contentDescription = null, tint = content)
-        }
-        Text(
-            text = title,
-            modifier = Modifier.semantics { heading() },
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMediumEmphasized,
-        )
-        Text(
-            text = body,
-            modifier = Modifier.semantics { liveRegion = announce },
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        action?.invoke()
     }
 }
 
