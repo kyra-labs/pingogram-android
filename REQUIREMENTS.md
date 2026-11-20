@@ -214,8 +214,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   "Stories" tab on people's profiles and channels', with the chat's story albums as covers (title, count) above the
   stories it keeps on its profile as a grid with their days; a story plays the profile's stories from it, an album
   opens its own grid. Loading, "No stories yet" and an error with "Try again". No tab where a chat keeps no stories
-  (bots, deleted accounts, groups). In the user's own album, its menu renames it, adds or removes stories (picked from
-  the profile's or the album's) and deletes it after asking.
+  (bots, deleted accounts, groups). On the user's own profile, "New album" asks for a name, then for its stories; in
+  the user's own album, its menu renames it, adds or removes stories (picked from the profile's or the album's) and
+  deletes it after asking.
 
 ### 5.10 Beyond the official app [after v2.3.0]
 

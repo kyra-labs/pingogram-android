@@ -355,6 +355,9 @@
     <string name="story_album_picker_error">Couldn\'t load your stories</string>
     <!-- A profile's Stories tab (owner decision 2026-11-20). -->
     <string name="profile_stories_loading">Loading stories</string>
+    <string name="story_album_new">New album</string>
+    <string name="story_album_new_title">New album</string>
+    <string name="story_album_new_next">Next</string>
     <string name="profile_stories_empty">No stories yet</string>
     <string name="profile_stories_empty_body">Stories kept on this profile show here.</string>
     <string name="profile_stories_error">Couldn\'t load stories</string>

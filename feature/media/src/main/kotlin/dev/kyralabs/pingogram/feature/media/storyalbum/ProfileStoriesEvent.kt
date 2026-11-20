@@ -7,4 +7,7 @@ sealed interface ProfileStoriesEvent {
 
     /** Try again after a failure. */
     data object Retry : ProfileStoriesEvent
+
+    /** The tab shows again, maybe after an album was created or changed: read it again, keeping it meanwhile. */
+    data object Refresh : ProfileStoriesEvent
 }
