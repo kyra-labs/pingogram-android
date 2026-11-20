@@ -1,11 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
-import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
-import dev.kyralabs.pingogram.core.domain.model.FileRef
-import dev.kyralabs.pingogram.core.domain.model.Wallpaper
-import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaper
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,7 +13,11 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -33,6 +31,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageUi
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaper
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf

@@ -89,7 +89,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import dev.kyralabs.pingogram.feature.chat.ui.saved.ConversationTabsSlot
 import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaperLayer
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
@@ -102,6 +101,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaperLayer
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackEvent
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackSlot
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackUi

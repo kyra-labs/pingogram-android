@@ -1,12 +1,12 @@
 package dev.kyralabs.pingogram.feature.chat.ui.wallpaper
 
 import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
-import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
-import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeWallpaperRepository
 import kotlinx.coroutines.Dispatchers

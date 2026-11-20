@@ -45,12 +45,11 @@ class ChatWallpaperViewModel
                 repository.chatWallpaper(chatId),
                 appearance.appearance.map { it.chat.wallpaperDimming }.distinctUntilChanged(),
                 ::ConversationWallpaper,
+            ).stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                ConversationWallpaper(repository.defaults.value),
             )
-                .stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-                    ConversationWallpaper(repository.defaults.value),
-                )
 
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L

@@ -43,7 +43,8 @@ class FakeWallpaperRepository(
 
     override val defaults: StateFlow<AccountWallpapers> = mutableDefaults.asStateFlow()
 
-    override fun chatWallpaper(chatId: Long): Flow<ChatWallpaperOverride?> = chats.map { it[chatId] }.distinctUntilChanged()
+    override fun chatWallpaper(chatId: Long): Flow<ChatWallpaperOverride?> =
+        chats.map { it[chatId] }.distinctUntilChanged()
 
     /** Gives chat [chatId] [wallpaper] as its own, as an update from the other person would; null removes it. */
     fun setChat(
@@ -91,10 +92,13 @@ class FakeWallpaperRepository(
 
     private fun wallpaperOf(choice: WallpaperChoice): Wallpaper =
         when (choice) {
-            is WallpaperChoice.Existing ->
+            is WallpaperChoice.Existing -> {
                 (choice.wallpaper as? Wallpaper.Photo)?.copy(isBlurred = choice.isBlurred) ?: choice.wallpaper
-            is WallpaperChoice.NewPhoto ->
+            }
+
+            is WallpaperChoice.NewPhoto -> {
                 Wallpaper.Photo(uploadedId, UPLOADED_IMAGE, isBlurred = choice.isBlurred)
+            }
         }
 
     /** One [setChatWallpaper] call. */

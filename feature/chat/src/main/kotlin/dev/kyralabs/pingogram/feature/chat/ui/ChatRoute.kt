@@ -68,8 +68,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ChatWallpaperViewModel
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetHost
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.ReminderSheetViewModel
@@ -83,6 +81,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.transcription.transcriptionNotice
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceStartOrAsk
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ChatWallpaperViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
