@@ -27,6 +27,12 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
     var profile: List<Story> = emptyList()
     val profileRequests = mutableListOf<Pair<Int, Int>>()
 
+    /** Makes the next profile page fail. */
+    var profileFailure: Outcome.Failure? = null
+
+    /** Makes every album's count fail. */
+    var countFailure: Outcome.Failure? = null
+
     override suspend fun albums(chatId: Long): Outcome<ImmutableList<StoryAlbum>> = albums
 
     override suspend fun stories(
@@ -47,7 +53,7 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
     override suspend fun storyCount(
         chatId: Long,
         albumId: Int,
-    ): Outcome<Int> = Outcome.Success(totalCount ?: stories.size)
+    ): Outcome<Int> = countFailure ?: Outcome.Success(totalCount ?: stories.size)
 
     override suspend fun profileStories(
         chatId: Long,
@@ -55,6 +61,10 @@ internal class FakeStoryAlbumRepository : StoryAlbumRepository {
         limit: Int,
     ): Outcome<StoryAlbumPage> {
         profileRequests += fromStoryId to limit
+        profileFailure?.let {
+            profileFailure = null
+            return it
+        }
         val page = profile.dropWhile { fromStoryId != 0 && it.id != fromStoryId }.drop(if (fromStoryId == 0) 0 else 1)
         return Outcome.Success(StoryAlbumPage(profile.size, page.take(limit).toImmutableList()))
     }

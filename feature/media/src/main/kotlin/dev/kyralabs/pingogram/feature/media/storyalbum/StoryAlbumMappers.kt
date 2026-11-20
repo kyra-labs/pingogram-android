@@ -16,11 +16,12 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-/** The album's cover tile. */
-internal fun StoryAlbum.toTile(): StoryAlbumTile =
+/** The album's cover tile, holding [count] stories where that is known. */
+internal fun StoryAlbum.toTile(count: Int? = null): StoryAlbumTile =
     StoryAlbumTile(
         id = id,
         name = name,
+        count = count,
         cover =
             when (val cover = cover) {
                 is StoryAlbumCover.Photo -> cover.photo.toPicture()
