@@ -78,7 +78,8 @@ class OauthLoginViewModelTest {
             client.emit(TdApiFixtures.myIdOption(ME))
         }
         runCurrent()
-        return OauthLoginViewModel(URL, handle, TdlibOauthLoginRepository(client), users, backgroundScope).also {
+        val logins = TdlibOauthLoginRepository(client, backgroundScope)
+        return OauthLoginViewModel(URL, handle, logins, users, backgroundScope).also {
             runCurrent()
         }
     }

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
@@ -12,6 +13,8 @@ import dev.kyralabs.pingogram.core.data.mapper.toProfilePhoto
 import dev.kyralabs.pingogram.core.data.mapper.toScopeNotificationSettings
 import dev.kyralabs.pingogram.core.data.mapper.toTdScope
 import dev.kyralabs.pingogram.core.data.mapper.with
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.ChatMuteChange
 import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.domain.model.NotificationException
@@ -20,11 +23,11 @@ import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettingsChange
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
@@ -46,6 +49,8 @@ class TdlibNotificationSettingsRepository
     constructor(
         private val client: TdlibClient,
         private val clock: WallClock,
+        // Not "scope": the notification scopes have that name here.
+        @ApplicationScope private val accountScope: CoroutineScope,
     ) : NotificationSettingsRepository {
         override suspend fun scopeSettings(scope: NotificationScope): Outcome<ScopeNotificationSettings> =
             client
@@ -54,8 +59,9 @@ class TdlibNotificationSettingsRepository
                 ).map { it.toScopeNotificationSettings() }
 
         override val scopeChanges: Flow<ScopeNotificationSettingsChange> =
-            client.updates
-                .filterIsInstance<TdApi.UpdateScopeNotificationSettings>()
+            client
+                .updateRouter(accountScope)
+                .updatesOf<TdApi.UpdateScopeNotificationSettings>()
                 .mapNotNull { update ->
                     update.scope.toNotificationScope()?.let { scope ->
                         ScopeNotificationSettingsChange(
@@ -110,8 +116,9 @@ class TdlibNotificationSettingsRepository
         }
 
         override val chatMuteChanges: Flow<ChatMuteChange> =
-            client.updates
-                .filterIsInstance<TdApi.UpdateChatNotificationSettings>()
+            client
+                .updateRouter(accountScope)
+                .updatesOf<TdApi.UpdateChatNotificationSettings>()
                 .map { ChatMuteChange(it.chatId, it.notificationSettings.toChatMute(clock.now().epochSecond)) }
 
         override suspend fun setChatMute(

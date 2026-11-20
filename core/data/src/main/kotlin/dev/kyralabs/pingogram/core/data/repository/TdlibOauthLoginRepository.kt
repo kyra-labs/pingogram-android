@@ -1,13 +1,16 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
 import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -22,9 +25,10 @@ class TdlibOauthLoginRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : OauthLoginRepository {
         override val requests: Flow<String> =
-            client.updates.filterIsInstance<TdApi.UpdateNewOauthRequest>().map { it.url }
+            client.updateRouter(scope).updatesOf<TdApi.UpdateNewOauthRequest>().map { it.url }
 
         override suspend fun request(url: String): Outcome<OauthLoginRequest> =
             client.request(TdApi.GetOauthLinkInfo(url, "")).map { it.toRequest() }
