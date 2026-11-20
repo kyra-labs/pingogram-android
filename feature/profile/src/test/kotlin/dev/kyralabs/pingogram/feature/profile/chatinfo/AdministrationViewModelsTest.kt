@@ -68,7 +68,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
                 restrict = restrict,
                 savedStateHandle = handle,
                 groupInfoRepository = TdlibGroupInfoRepository(client),
-                administrationRepository = TdlibGroupAdministrationRepository(client),
+                administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 userRepository = users,
             )
         created += viewModel
@@ -171,7 +171,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
             ChatPermissionsViewModel(
                 chatId = CHAT,
                 groupInfoRepository = TdlibGroupInfoRepository(client),
-                administrationRepository = TdlibGroupAdministrationRepository(client),
+                administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
@@ -299,7 +299,7 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
                 savedStateHandle = handle,
                 chatRepository = chats,
                 groupInfoRepository = TdlibGroupInfoRepository(client),
-                administrationRepository = TdlibGroupAdministrationRepository(client),
+                administrationRepository = TdlibGroupAdministrationRepository(client, backgroundScope),
                 photoRepository = photos,
             )
         created += viewModel

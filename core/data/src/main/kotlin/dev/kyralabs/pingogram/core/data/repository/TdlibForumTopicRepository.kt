@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toTdColor
 import dev.kyralabs.pingogram.core.data.mapper.topicMuteFor
 import dev.kyralabs.pingogram.core.data.mapper.withInfo
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -71,7 +72,9 @@ class TdlibForumTopicRepository
         private val pageLocks = ConcurrentHashMap<Long, Mutex>()
 
         init {
-            scope.launch { client.updates.collect { update -> refetchesFor(update).forEach(::refetchLater) } }
+            client.updateRouter(scope).onUpdates(REFETCH_UPDATES) { update ->
+                refetchesFor(update).forEach(::refetchLater)
+            }
         }
 
         override fun topics(chatId: Long): Flow<ForumTopicList> =
@@ -523,6 +526,10 @@ private fun ForumTopic.withNewMessage(message: Message): ForumTopic {
     val unread = if (message.isOutgoing || message.sendingState != null) unreadCount else unreadCount + 1
     return copy(lastMessage = message, unreadCount = unread)
 }
+
+/** The updates [TdlibForumTopicRepository] reads a topic again on. */
+private val REFETCH_UPDATES =
+    setOf(TdApi.UpdateDeleteMessages::class, TdApi.UpdateForumTopic::class, TdApi.UpdateForumTopicInfo::class)
 
 /** The updates its store's reducer handles. */
 private val TOPIC_UPDATES: Set<KClass<out TdApi.Update>> =

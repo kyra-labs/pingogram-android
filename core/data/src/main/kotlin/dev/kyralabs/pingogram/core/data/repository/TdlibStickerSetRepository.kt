@@ -1,14 +1,17 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.StickerSetDetails
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -28,30 +31,32 @@ class TdlibStickerSetRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : StickerSetRepository {
         override fun installedSets(kind: StickerSetKind): Flow<Outcome<List<StickerSetSummary>>> =
-            client.readOn({ it.changesInstalledSets(kind) }) {
+            client.updateRouter(scope).readOn(INSTALLED, { it.changesInstalledSets(kind) }) {
                 client.request(TdApi.GetInstalledStickerSets(kind.toStickerType())).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun archivedSets(kind: StickerSetKind): Flow<Outcome<List<StickerSetSummary>>> =
-            client.readOn({ it.changesInstalledSets(kind) }) {
+            client.updateRouter(scope).readOn(INSTALLED, { it.changesInstalledSets(kind) }) {
                 client.request(TdApi.GetArchivedStickerSets(kind.toStickerType(), 0, PAGE_SIZE)).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun trendingSets(kind: StickerSetKind): Flow<Outcome<List<StickerSetSummary>>> =
-            client.readOn({ it.changesInstalledSets(kind) || it.changesTrendingSets(kind) }) {
+            client.updateRouter(scope).readOn(INSTALLED_OR_TRENDING, { it.changesSets(kind) }) {
                 client.request(TdApi.GetTrendingStickerSets(kind.toStickerType(), 0, PAGE_SIZE)).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun stickerSet(setId: Long): Flow<Outcome<StickerSetDetails>> =
-            client.readOn(
+            client.updateRouter(scope).readOn(
+                setOf(TdApi.UpdateInstalledStickerSets::class, TdApi.UpdateStickerSet::class),
                 {
                     it is TdApi.UpdateInstalledStickerSets ||
                         (it is TdApi.UpdateStickerSet && it.stickerSet?.id == setId)
@@ -120,6 +125,16 @@ private fun TdApi.StickerType?.isOf(kind: StickerSetKind): Boolean =
         StickerSetKind.Stickers -> this is TdApi.StickerTypeRegular
         StickerSetKind.Emoji -> this is TdApi.StickerTypeCustomEmoji
     }
+
+/** The updates of the installed sets, read again on. */
+private val INSTALLED = setOf(TdApi.UpdateInstalledStickerSets::class)
+
+/** The updates of the installed and the trending sets, read again on. */
+private val INSTALLED_OR_TRENDING =
+    setOf(TdApi.UpdateInstalledStickerSets::class, TdApi.UpdateTrendingStickerSets::class)
+
+private fun TdApi.Update.changesSets(kind: StickerSetKind): Boolean =
+    changesInstalledSets(kind) || changesTrendingSets(kind)
 
 private fun TdApi.Update.changesInstalledSets(kind: StickerSetKind): Boolean =
     this is TdApi.UpdateInstalledStickerSets && stickerType.isOf(kind)

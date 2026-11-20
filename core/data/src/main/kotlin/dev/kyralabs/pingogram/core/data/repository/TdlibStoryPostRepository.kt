@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.story.MediaStoryVideoCutter
 import dev.kyralabs.pingogram.core.data.story.StoryPostings
 import dev.kyralabs.pingogram.core.data.story.StoryVideoCutter
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.StoryPostAbility
@@ -72,7 +73,7 @@ class TdlibStoryPostRepository internal constructor(
     init {
         // Subscribed before this returns, so no update about a story posted through it is missed.
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            client.updates.collect { update ->
+            client.updateRouter(scope).updates(POST_UPDATES).collect { update ->
                 when (update) {
                     is TdApi.UpdateStoryPostSucceeded -> {
                         posted(update.oldStoryId)
@@ -288,3 +289,7 @@ private fun TdApi.CanPostStoryResult.toAbility(): StoryPostAbility =
         is TdApi.CanPostStoryResultLiveStoryIsActive -> StoryPostAbility.LiveStoryActive
         else -> StoryPostAbility.NotAllowed
     }
+
+/** The updates [TdlibStoryPostRepository] follows its postings by. */
+private val POST_UPDATES =
+    setOf(TdApi.UpdateFile::class, TdApi.UpdateStoryPostFailed::class, TdApi.UpdateStoryPostSucceeded::class)

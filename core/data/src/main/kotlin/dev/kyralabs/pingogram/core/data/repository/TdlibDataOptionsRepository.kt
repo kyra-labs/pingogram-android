@@ -1,10 +1,12 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -19,8 +21,9 @@ class TdlibDataOptionsRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope scope: CoroutineScope,
     ) : DataOptionsRepository {
-        override val prefersIpv6: Flow<Boolean> = client.booleanOption(PREFER_IPV6)
+        override val prefersIpv6: Flow<Boolean> = client.booleanOption(PREFER_IPV6, scope)
 
         override suspend fun setPrefersIpv6(prefers: Boolean): Outcome<Unit> =
             client.setBooleanOption(PREFER_IPV6, prefers)

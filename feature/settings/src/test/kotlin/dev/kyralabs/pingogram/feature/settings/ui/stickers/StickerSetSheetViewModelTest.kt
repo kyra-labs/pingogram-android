@@ -64,7 +64,7 @@ class StickerSetSheetViewModelTest {
         setId: Long = 3,
         name: String? = null,
     ): StickerSetSheetViewModel {
-        val viewModel = StickerSetSheetViewModel(setId, name, TdlibStickerSetRepository(client))
+        val viewModel = StickerSetSheetViewModel(setId, name, TdlibStickerSetRepository(client, backgroundScope))
         runCurrent()
         return viewModel
     }

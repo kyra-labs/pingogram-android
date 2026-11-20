@@ -6,6 +6,8 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toCall
 import dev.kyralabs.pingogram.core.data.mapper.toTdApi
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
@@ -18,7 +20,6 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -47,8 +48,9 @@ class TdlibCallRepository
         override fun call(id: Int): Flow<Call?> = store.state.map { it[id] }.distinctUntilChanged()
 
         override val signalingData: Flow<CallSignalingData> =
-            client.updates
-                .filterIsInstance<TdApi.UpdateNewCallSignalingData>()
+            client
+                .updateRouter(scope)
+                .updatesOf<TdApi.UpdateNewCallSignalingData>()
                 .map { CallSignalingData(it.callId, it.data ?: ByteArray(0)) }
 
         override suspend fun startCall(
