@@ -189,7 +189,19 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   35 always-on collectors, warm start was 23–32% slower and the chat list's scroll P90/P95 12–19%; `Dispatchers.Default`
   used 11.4 s of CPU in a 32 s scroll against the main thread's 1.2 s, and 85% of monitor contention was the shared
   flow's slot lock (`SharedFlowImpl.tryTakeValue`). A repository declares the update types it handles, a reducer all of
-  them, and watches the session's end with `onSessionEnd`, not every update.
+  them, and watches the session's end with `onSessionEnd`, not every update. `TdlibUpdatesSubscriptionTest` builds an
+  account's whole graph on `FakeTdlibClient`, then collects every flow its repositories offer, and fails if anything but
+  the router subscribes to `updates`.
+- Chat lists: `ChatRepository.chatList(list)` is one shared flow per list (`shareIn`, while anyone collects it), so
+  the main list is sorted once per change however many follow it: the selected tab, the Feed tab's count, the header's
+  mention count, the channel feed, widgets and share shortcuts. Before, each sorted its own copy; the Feed tab's count
+  (#696) added a second sort of the main list on every chat change.
+- Always on in the background (audited 2026-11-20): the update caches and what is derived from them with
+  `SharingStarted.Eagerly` (the user's id, transfers, custom emoji, the quick reaction, a frozen account, the chat
+  lock: each a small map of one cache's state), keyword alerts, the upload cleaner, the network reporter, the share
+  shortcuts (`ShareTargetShortcuts`) and the widgets while placed. The rest follows TDLib only while a screen collects
+  it. The share shortcuts rebuild their targets on every chat, user or group change and debounce only after;
+  debouncing their inputs first is a possible next step.
 - Never keep more than the visible chat's messages in memory; evict other chats' message
   caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
   levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.

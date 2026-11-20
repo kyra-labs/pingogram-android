@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import org.junit.Rule
 import org.junit.Test
@@ -36,6 +37,16 @@ class ChatAppearanceScreenScreenshotTest {
     @Test
     fun customLight() = capture("customLight", ThemeMode.Light, Custom)
 
+    /** A photo from the phone picked: the note that it is uploaded, then Cancel and Apply. */
+    @Test
+    fun pickedPhotoLight() =
+        capture(
+            "pickedPhotoLight",
+            ThemeMode.Light,
+            ChatAppearance(),
+            WallpaperPickerState(forDarkTheme = false, pending = WallpaperChoice.NewPhoto("/photo.jpg")),
+        )
+
     @Test
     fun tintDark() =
         capture(
@@ -46,7 +57,7 @@ class ChatAppearanceScreenScreenshotTest {
                 bubbleCorners = BubbleCorners.ExtraLargeIncreased,
                 wallpaper = ChatWallpaper.Tertiary,
             ),
-            ThemePalette.Teal,
+            palette = ThemePalette.Teal,
         )
 
     @Test
@@ -92,14 +103,11 @@ class ChatAppearanceScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         appearance: ChatAppearance,
+        picker: WallpaperPickerState = WallpaperPickerState(themeMode == ThemeMode.Dark),
         palette: ThemePalette = ThemePalette.Pingogram,
     ) = composeRule.captureScreen(javaClass, name, themeMode, palette = palette, chat = appearance) {
         ChatAppearanceScreen(
-            state =
-                ChatAppearanceUiState.Content(
-                    appearance,
-                    picker = WallpaperPickerState(themeMode == ThemeMode.Dark),
-                ),
+            state = ChatAppearanceUiState.Content(appearance, picker = picker),
             onTextScale = {},
             onBubbleCorners = {},
             onWallpaper = {},

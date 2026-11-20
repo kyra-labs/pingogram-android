@@ -14,6 +14,11 @@ import dev.kyralabs.pingogram.core.ui.wallpaper.PhotoPreviewWallpaperLayer
 @Immutable
 internal class WallpaperActions(
     val onTheme: (dark: Boolean) -> Unit = {},
+    val onPick: (Wallpaper) -> Unit = {},
+    val onPickPhoto: () -> Unit = {},
+    val onApply: () -> Unit = {},
+    val onCancel: () -> Unit = {},
+    val onRetry: () -> Unit = {},
 )
 
 /**
