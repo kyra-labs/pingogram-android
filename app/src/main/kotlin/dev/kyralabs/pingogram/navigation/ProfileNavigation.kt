@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.navigation
 
-import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 import androidx.compose.runtime.State
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
@@ -22,6 +21,7 @@ import dev.kyralabs.pingogram.feature.profile.navigation.pollStatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
+import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 
 /**
  * A user's profile (`REQUIREMENTS.md` FR-P2), pushed above the screen it is opened from. Its "Message" returns to the

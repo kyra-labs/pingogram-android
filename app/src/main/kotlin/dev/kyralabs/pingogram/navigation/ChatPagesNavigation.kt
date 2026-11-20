@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.navigation
 
-import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
@@ -11,6 +10,7 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToBookmarkTags
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.navigation.pinnedMessagesScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.scheduledMessagesScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
 
 /**
  * The pushed conversation and the pages of a chat pushed above what opens them, with the shared axis on X. The chat

@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.ui
 
-import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
-import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -27,6 +25,8 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 
 /**
  * The Chats tab's extra pane on extra-large windows (`docs/DESIGN_SYSTEM.md` §7): [content]'s profile or info page

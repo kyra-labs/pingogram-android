@@ -18,8 +18,9 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * channel a mention in the bio named), [onOpenProfile] another user's profile (a mention), [onOpenMedia] a photo, video
  * or GIF of the shared media in the media viewer, and [onOpenMessage] a file, song or voice message in the chat at its
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
- * the user; without it, those rows are left out. [onChatWallpaper], where the app has the chat wallpaper page, opens it for the private chat. [onExportChat], where the app has the export page, is what "Export
+ * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
  * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out.
+ * [onChatWallpaper], where the app has the chat wallpaper page, is what "Wallpaper for this chat" opens for it.
  * [stories], where given, is the Stories tab before the shared media's (not for bots), and [profileMusic] their profile
  * music below the header. [onChatDeleted] leaves it once the chat with a deleted account was deleted ([onBack] where
  * not given), as the conversation below it is gone too. It grows
