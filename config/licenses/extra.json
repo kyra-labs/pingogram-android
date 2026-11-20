@@ -42,6 +42,14 @@
       "licenses": ["Apache-2.0"]
     },
     {
+      "id": "material-color-utilities",
+      "name": "Material Color Utilities",
+      "description": "Google's color science library; Pingogram's harmonized colors use its harmonize and CAM16 code, ported to Kotlin.",
+      "website": "https://github.com/material-foundation/material-color-utilities",
+      "developers": ["Google"],
+      "licenses": ["Apache-2.0"]
+    },
+    {
       "id": "unicode-emoji",
       "name": "Unicode Emoji data",
       "description": "The emoji of the emoji panel and their groups, from Unicode's emoji-test.txt, bundled with the app.",

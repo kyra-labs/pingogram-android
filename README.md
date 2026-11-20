@@ -201,6 +201,12 @@ the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how t
 
 ## Download
 
+<p>
+  <a href="https://github.com/kyra-labs/pingogram-android/releases/latest"><img src="docs/images/github-badge.png" height="80" alt="Get it on GitHub"></a>
+  <a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="54" alt="Explore it on AppGallery"></a>
+  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="docs/images/obtainium-badge.png" height="80" alt="Get it on Obtainium"></a>
+</p>
+
 Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
 The 0.x releases before 1.0.0 are marked as pre-releases. Use `-universal.apk` unless you know your
 device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
@@ -210,7 +216,9 @@ it is closed. The APKs ending in `-gms` get notifications through Google's push 
 on phones with Google Play services; both are the same app, and one replaces the other with your
 data kept.
 
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="https://img.shields.io/badge/Get_it_on-Obtainium-2156C4?style=for-the-badge" alt="Get it on Obtainium"></a>
+On Huawei phones, get Pingogram from [AppGallery](https://url.cloud.huawei.com/CXKdcPQ1DW): it is the plain build,
+so turn on "Keep connected" for notifications while it is closed. AppGallery offers it in every country it serves
+except India.
 
 [Obtainium](https://github.com/ImranR98/Obtainium) installs Pingogram from these releases and keeps it
 updated. Set the APK filter to `arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for the build
@@ -250,10 +258,32 @@ releases and checked against a pinned SHA-256 (see [docs/TDLIB.md](docs/TDLIB.md
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Commits
 must be signed off (DCO). Report security issues as described in [SECURITY.md](SECURITY.md).
 
+## Credits
+
+Pingogram is built on the work of others. Thank you:
+
+- [TDLib](https://github.com/tdlib/td), the Telegram Database Library, by Aliaksei Levin and Arseny Smirnov: Boost
+  Software License 1.0.
+- [NTgCalls](https://github.com/pytgcalls/ntgcalls), the call engine, by Laky-64 and the NTgCalls contributors:
+  LGPL-3.0; its third-party code (WebRTC, Boost, FFmpeg, Opus and others) under the licenses in its
+  [THIRD_PARTY_NOTICES](https://github.com/pytgcalls/ntgcalls/blob/master/THIRD_PARTY_NOTICES.md).
+- [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex), by Google: SIL Open Font License 1.1.
+- [Material Symbols](https://fonts.google.com/icons), by Google: Apache License 2.0.
+- [Material Color Utilities](https://github.com/material-foundation/material-color-utilities), by Google, whose
+  harmonize and CAM16 code is ported to Kotlin: Apache License 2.0.
+- [Unicode emoji data](https://www.unicode.org/emoji/), by Unicode, Inc.: Unicode License v3.
+- Every other library the app uses (Kotlin, AndroidX, Jetpack Compose, Media3 and the rest) is listed with its
+  license in the app, under Settings → About → Open-source licenses. The build generates that list from the app's
+  dependencies, so it stays complete as they change.
+- The store badges in [Download](#download): see [docs/images/CREDITS.md](docs/images/CREDITS.md).
+- The translators on [Hosted Weblate](https://hosted.weblate.org/engage/pingogram/).
+
 ## License
 
 GPL-3.0-or-later — see [LICENSE](LICENSE), with an additional permission to combine Pingogram with Google's Play
 services and Firebase libraries, which the `gms` build uses for push notifications
-([LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md)). TDLib is licensed under the Boost Software License 1.0.
-Google Sans Flex is used under the SIL Open Font License 1.1.
-"Telegram" is a trademark of Telegram FZ-LLC; Pingogram is an independent project.
+([LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md)). The components above keep their own licenses.
+
+"Telegram" is a trademark of Telegram FZ-LLC; Pingogram is an independent project, not affiliated with Telegram.
+HUAWEI and AppGallery are trademarks of Huawei Technologies Co., Ltd.; GitHub is a trademark of GitHub, Inc.;
+Google Sans Flex and Material Symbols are Google's.
