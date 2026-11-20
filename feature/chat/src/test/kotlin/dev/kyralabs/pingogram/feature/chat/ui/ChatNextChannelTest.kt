@@ -4,14 +4,20 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.ForumTopic
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.FORUM_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.SUPERGROUP_ID
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.channelChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumChat
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumTopic
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.groupChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.supergroup
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -101,10 +107,53 @@ class ChatNextChannelTest : ChatViewModelHarness() {
             val viewModel = showing(channelChat, channel(NEXT, 4))
 
             viewModel.effects.test {
-                send(viewModel, ChatEvent.OpenNextChannel(OTHER), ChatEvent.OpenNextChannel(NEXT))
+                val stale = NextChannel(OTHER, "Channel $OTHER", photo = null, unreadCount = 1)
+                send(
+                    viewModel,
+                    ChatEvent.OpenNextChannel(stale),
+                    ChatEvent.OpenNextChannel(checkNotNull(viewModel.nextChannel.value)),
+                )
                 assertEquals(ChatEffect.OpenNextChannel(NEXT), awaitItem())
                 expectNoEvents()
             }
+        }
+
+    /** The conversation of [forumChat]'s topic [topicId], the forum holding [topics], its next topic collected. */
+    private fun TestScope.showingTopic(
+        topicId: Int,
+        vararg topics: ForumTopic,
+    ): ChatViewModel {
+        chats.setChats(forumChat)
+        forumTopics.forums.value =
+            mapOf(FORUM_CHAT to ForumTopicList(topics.toList().toPersistentList(), reachedEnd = true))
+        messages.setHistory(FORUM_CHAT, history(message(1, FORUM_CHAT)))
+        val viewModel = viewModel(FORUM_CHAT, topic = MessageTopic.Forum(topicId))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.nextChannel.collect {} }
+        runCurrent()
+        return viewModel
+    }
+
+    @Test
+    fun `a read forum topic offers the forum's next topic with unread messages, which opens in its place`() =
+        runViewModelTest {
+            val viewModel =
+                showingTopic(1, forumTopic(1), forumTopic(2), forumTopic(3, name = "Releases", unreadCount = 5))
+
+            val next = NextChannel(FORUM_CHAT, "Releases", photo = null, unreadCount = 5, topicId = 3)
+            assertEquals(next, viewModel.nextChannel.value)
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenNextChannel(next))
+                assertEquals(ChatEffect.OpenNextChannel(FORUM_CHAT, topicId = 3), awaitItem())
+            }
+        }
+
+    @Test
+    fun `a topic with unread messages, or a forum without other unread topics, offers none`() =
+        runViewModelTest {
+            assertNull(
+                showingTopic(1, forumTopic(1, unreadCount = 2), forumTopic(2, unreadCount = 5)).nextChannel.value,
+            )
+            assertNull(showingTopic(1, forumTopic(1), forumTopic(2)).nextChannel.value)
         }
 
     private companion object {

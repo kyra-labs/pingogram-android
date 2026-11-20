@@ -64,9 +64,13 @@ sealed interface ChatEffect {
     /** "Forwarded from …" of a user who hides their account was tapped: a snackbar says nothing can open. */
     data object ForwardSourceHidden : ChatEffect
 
-    /** Open channel [chatId], the next unread one, in this conversation's place, so back leads where it did. */
+    /**
+     * Open channel [chatId], the next unread one, or its forum topic [topicId], the next unread topic, in this
+     * conversation's place, so back leads where it did.
+     */
     data class OpenNextChannel(
         val chatId: Long,
+        val topicId: Int? = null,
     ) : ChatEffect
 
     /** Open the calendar app at a new event starting at [unixTime] (Unix time), for the user to save or not. */

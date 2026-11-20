@@ -149,6 +149,9 @@ internal fun ConversationRoute(
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
+    onOpenNextTopic: (chatId: Long, topicId: Int) -> Unit = { chat, topicId ->
+        onOpenThread(chat, MessageTopic.Forum(topicId))
+    },
     onOpenMessage: ((chatId: Long, messageId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
@@ -236,6 +239,7 @@ internal fun ConversationRoute(
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
     val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
+    val currentOnOpenNextTopic by rememberUpdatedState(onOpenNextTopic)
     val currentOnOpenMessage by rememberUpdatedState(onOpenMessage)
     val launchers = rememberAttachLaunchers(viewModel::onEvent, snackbarHostState)
     val attach =
@@ -256,6 +260,7 @@ internal fun ConversationRoute(
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
         onOpenNextChat = { currentOnOpenNextChat(it) },
+        onOpenNextTopic = { chat, topic -> currentOnOpenNextTopic(chat, topic) },
         onOpenMessage = { chat, message -> currentOnOpenMessage?.invoke(chat, message) ?: currentOnOpenChat(chat) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
@@ -362,7 +367,8 @@ internal fun ConversationRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
- * [onOpenThread], the next unread channel to [onOpenNextChat] and a forwarded post's original to [onOpenMessage]; the
+ * [onOpenThread], the next unread channel to [onOpenNextChat], the next unread forum topic to [onOpenNextTopic] and a
+ * forwarded post's original to [onOpenMessage]; the
  * camera app opens through [onLaunchCamera], which asks for the camera permission first and says in a snackbar why no
  * camera app opened; a bot's keyboard button that asks for the location opens the "Location" sheet through
  * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action that opens it
@@ -394,6 +400,9 @@ internal fun ChatEffects(
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenNextChat: (chatId: Long) -> Unit = onOpenChat,
+    onOpenNextTopic: (chatId: Long, topicId: Int) -> Unit = { chatId, topicId ->
+        onOpenThread(chatId, MessageTopic.Forum(topicId))
+    },
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit = { chatId, _ -> onOpenChat(chatId) },
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
@@ -467,7 +476,8 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.OpenNextChannel -> {
-                        onOpenNextChat(effect.chatId)
+                        val topicId = effect.topicId
+                        if (topicId != null) onOpenNextTopic(effect.chatId, topicId) else onOpenNextChat(effect.chatId)
                         ""
                     }
 

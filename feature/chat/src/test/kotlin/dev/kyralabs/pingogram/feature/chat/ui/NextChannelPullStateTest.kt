@@ -35,7 +35,7 @@ class NextChannelPullStateTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val haptics = mutableListOf<HapticFeedbackType>()
-    private val opened = mutableListOf<Long>()
+    private val opened = mutableListOf<NextChannel>()
     private lateinit var state: NextChannelPullState
 
     private fun setState() {
@@ -124,7 +124,7 @@ class NextChannelPullStateTest {
         }
 
         assertEquals(listOf(HapticFeedbackType.GestureThresholdActivate), haptics)
-        assertEquals(emptyList<Long>(), opened)
+        assertEquals(emptyList<NextChannel>(), opened)
     }
 
     private companion object {

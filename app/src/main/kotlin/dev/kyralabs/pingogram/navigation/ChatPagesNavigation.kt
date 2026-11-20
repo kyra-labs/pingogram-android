@@ -16,7 +16,7 @@ import dev.kyralabs.pingogram.feature.chat.navigation.scheduledMessagesScreen
  * messages were forwarded to goes above the conversation they came from, so back returns there; so do a forum's
  * topics, a message's thread of replies, the chat's scheduled messages (`REQUIREMENTS.md` FR-C5, from the
  * conversation's bar, also in the Chats tab's detail pane) and its pinned messages (from the pinned bar). The next
- * unread channel takes the read one's place
+ * unread channel takes the read one's place, and the next unread forum topic the read topic's
  * ([navigateToChatInPlace]). "Export chat" opens from a profile or an info page
  * (`docs/adr/0021-chat-export.md`). [openMedia] opens a photo, video or GIF of the conversation in the media viewer.
  */
@@ -32,7 +32,8 @@ internal fun NavGraphBuilder.chatScreens(
         onOpenProfile = navController::navigateToProfile,
         onOpenChatInfo = navController::navigateToChatInfo,
         onOpenScheduledMessages = navController::navigateToScheduledMessages,
-        onOpenNextChat = navController::navigateToChatInPlace,
+        onOpenNextChat = { navController.navigateToChatInPlace(it) },
+        onOpenNextTopic = { navController.navigateToChatInPlace(it) },
         onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId = messageId)) },
     )
     chatExportScreen(onBack = { navController.popBackStack() })
