@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.ui.COMPACT
@@ -27,7 +28,7 @@ import org.robolectric.annotation.Config
 
 /**
  * A profile's Stories tab (owner decision 2026-11-20): album covers with their counts open their album, a story's tile
- * plays the profile's stories from it, and the end of the grid asks for more.
+ * plays the profile's stories from it, the end of the grid asks for more, and the empty and failed states.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -85,5 +86,22 @@ class ProfileStoriesItemsTest {
         composeRule.onNodeWithText("Try again").performClick()
 
         assertEquals(listOf(ProfileStoriesEvent.Retry), events)
+    }
+
+    @Test
+    fun `a profile without stories says so`() {
+        setTab(ProfileStoriesUiState.Empty)
+        composeRule.onNodeWithText("No stories yet").assertIsDisplayed()
+    }
+
+    @Test
+    fun `stories that failed to load say why and offer Try again`() {
+        setTab(ProfileStoriesUiState.Error(DomainError.Network))
+
+        composeRule.onNodeWithText("Couldn't load stories").assertIsDisplayed()
+        composeRule.onNodeWithText("Try again").performClick()
+
+        assertEquals(listOf(ProfileStoriesEvent.Retry), events)
+        composeRule.assertAccessible()
     }
 }

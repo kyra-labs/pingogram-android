@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.rememberItemMotion
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -37,3 +38,16 @@ private fun ProfileStoriesPreview() = PingogramPreview { ProfileStoriesGrid(Stor
 @Composable
 private fun ProfileStoriesMoreFailedPreview() =
     PingogramPreview { ProfileStoriesGrid(StoryAlbumPreviewData.profileStoriesMoreFailed) }
+
+@Preview(name = "Stories tab, loading")
+@Composable
+private fun ProfileStoriesLoadingPreview() = PingogramPreview { ProfileStoriesGrid(ProfileStoriesUiState.Loading) }
+
+@Preview(name = "Stories tab, empty")
+@Composable
+private fun ProfileStoriesEmptyPreview() = PingogramPreview { ProfileStoriesGrid(ProfileStoriesUiState.Empty) }
+
+@Preview(name = "Stories tab, error")
+@Composable
+private fun ProfileStoriesErrorPreview() =
+    PingogramPreview { ProfileStoriesGrid(ProfileStoriesUiState.Error(DomainError.Network)) }
