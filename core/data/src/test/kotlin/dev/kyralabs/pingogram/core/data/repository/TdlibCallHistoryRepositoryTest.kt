@@ -24,7 +24,11 @@ import org.junit.jupiter.api.Test
 /** [TdlibCallHistoryRepository] on a [FakeTdlibClient]: the search, each outcome, deleting and the updates. */
 class TdlibCallHistoryRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibCallHistoryRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibCallHistoryRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibCallHistoryRepository(client, backgroundScope).also { made = it }
 
     private fun call(
         reason: TdApi.CallDiscardReason = TdApi.CallDiscardReasonHungUp(),
@@ -105,7 +109,7 @@ class TdlibCallHistoryRepositoryTest {
                     CallOutcome.Cancelled,
                     CallOutcome.Answered,
                 ),
-                repository
+                repository()
                     .page()
                     .page()
                     .entries

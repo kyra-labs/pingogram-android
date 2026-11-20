@@ -22,7 +22,12 @@ import org.junit.jupiter.api.Test
 /** [TdlibChatMediaRepository.richMedia]: a rich message's photos, videos and GIFs as the media viewer's one page. */
 class TdlibChatMediaRepositoryRichTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibChatMediaRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibChatMediaRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibChatMediaRepository(client, backgroundScope).also { made = it }
+
     private val messages = mutableMapOf<Long, TdApi.Message>()
 
     init {

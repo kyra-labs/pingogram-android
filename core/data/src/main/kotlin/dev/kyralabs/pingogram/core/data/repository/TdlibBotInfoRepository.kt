@@ -13,7 +13,6 @@ import dev.kyralabs.pingogram.core.domain.model.BotMenuButton
 import dev.kyralabs.pingogram.core.domain.model.ChatBots
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
-import kotlin.reflect.KClass
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -23,6 +22,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 /**
  * [BotInfoRepository] on TDLib: a chat's bots from the full info of its user or group, followed through

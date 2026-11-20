@@ -2,15 +2,15 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.domain.repository().FileRange
+import dev.kyralabs.pingogram.core.domain.repository.FileRange
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,7 +35,11 @@ class TdlibFileStreamRepositoryTest {
             on(TdApi.DownloadFile::class) { TdResult.Success(current) }
             on(TdApi.CancelDownloadFile::class) { TdResult.Success(TdApi.Ok()) }
         }
-    private fun TestScope.repository() = TdlibFileStreamRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibFileStreamRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibFileStreamRepository(client, backgroundScope).also { made = it }
 
     @Test
     fun `a range already on the device answers at once, downloading nothing`() =

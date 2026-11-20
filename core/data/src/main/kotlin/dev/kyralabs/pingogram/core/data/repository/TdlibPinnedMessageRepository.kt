@@ -138,6 +138,7 @@ class TdlibPinnedMessageRepository
     }
 
 /** The chat whose pinned messages [this] can change; null for other updates. */
+
 /** The updates [pinsChatId] reads. */
 private val PIN_UPDATES =
     setOf(

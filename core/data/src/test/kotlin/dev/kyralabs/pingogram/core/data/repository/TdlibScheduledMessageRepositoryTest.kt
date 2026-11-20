@@ -37,7 +37,11 @@ import org.junit.jupiter.api.Test
 class TdlibScheduledMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibScheduledMessageRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibScheduledMessageRepository? = null
+
+    private fun TestScope.repository() =
+        made ?: TdlibScheduledMessageRepository(client, backgroundScope).also { made = it }
 
     private fun answer(vararg scheduled: TdApi.Message) =
         client.on(TdApi.GetChatScheduledMessages::class, TdResult.Success(messages(*scheduled)))

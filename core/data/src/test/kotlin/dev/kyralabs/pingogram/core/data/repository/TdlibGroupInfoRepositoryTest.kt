@@ -30,7 +30,11 @@ import org.junit.jupiter.api.Test
  */
 class TdlibGroupInfoRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibGroupInfoRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibGroupInfoRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibGroupInfoRepository(client, backgroundScope).also { made = it }
 
     private val adminRights =
         TdApi.ChatAdministratorRights().also {

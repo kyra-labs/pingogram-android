@@ -218,6 +218,7 @@ private val MessageSchedule.sendsAt: Long
         }
 
 /** The chat whose scheduled messages [this] can change; null for other updates. */
+
 /** The updates [scheduledChatId] reads. */
 private val SCHEDULED_UPDATES =
     setOf(

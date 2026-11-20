@@ -28,7 +28,11 @@ import org.junit.jupiter.api.Test
 
 class TdlibChatMediaRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibChatMediaRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibChatMediaRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibChatMediaRepository(client, backgroundScope).also { made = it }
 
     /** The chat's messages by id, which getMessage answers with; 404 for any other id, as for a deleted message. */
     private val messages = mutableMapOf<Long, TdApi.Message>()

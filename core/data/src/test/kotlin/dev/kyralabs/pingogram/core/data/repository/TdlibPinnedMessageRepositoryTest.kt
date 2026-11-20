@@ -22,7 +22,11 @@ import org.junit.jupiter.api.Test
 class TdlibPinnedMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibPinnedMessageRepository(client, backgroundScope)
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibPinnedMessageRepository? = null
+
+    private fun TestScope.repository() =
+        made ?: TdlibPinnedMessageRepository(client, backgroundScope).also { made = it }
 
     private fun answerPinned(vararg ids: Long) =
         client.on(

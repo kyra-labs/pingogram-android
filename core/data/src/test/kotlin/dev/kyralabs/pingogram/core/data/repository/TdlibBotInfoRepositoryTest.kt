@@ -27,7 +27,11 @@ import org.junit.jupiter.api.Test
  */
 class TdlibBotInfoRepositoryTest {
     private val client = FakeTdlibClient()
-    private fun TestScope.repository() = TdlibBotInfoRepository(client, backgroundScope)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibBotInfoRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibBotInfoRepository(client, backgroundScope).also { made = it }
 
     private fun command(
         name: String,
