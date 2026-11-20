@@ -253,6 +253,11 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   - The feed's search button searches posts in the user's channels (`searchMessages` with the channel chat type
     filter), leaving out channels the feed's channel filter leaves out while it is on; results show as global search's
     message rows, and a tap opens the post in its channel, as a card does.
+  Owner decision of 2026-11-20:
+  - With a hardware keyboard, the arrow keys move the focus between the cards, the list keeping the focused one in
+    view, and Enter opens the post in its channel, as a tap does; Tab reaches the buttons in a card (its reactions,
+    More, Open in channel), and More or the Menu key (Shift+F10) opens the post's menu. Two panes keep the focus on
+    the card whose channel opened beside the feed; screen readers keep the card's custom actions.
 - FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,
