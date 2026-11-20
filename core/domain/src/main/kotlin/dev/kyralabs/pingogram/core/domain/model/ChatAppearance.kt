@@ -12,14 +12,20 @@ import kotlin.math.roundToInt
  * @property bubbleCorners the shape scale's step for a bubble's round corners.
  * @property wallpaper what the conversation's messages sit on.
  * @property groupBubbles how the experimental look colors the bubbles of a group's people.
+ * @property wallpaperDimming how much the account's photo or fill wallpaper is dimmed in dark theme, 0–100 percent
+ *   ([MAX_WALLPAPER_DIMMING]). Kept on the device: TDLib keeps a dimming only for a chat's own wallpaper (owner
+ *   decision 2026-11-20, `docs/TDLIB.md` "Backgrounds").
  */
 data class ChatAppearance(
     val textScale: Float = DEFAULT_TEXT_SCALE,
     val bubbleCorners: BubbleCorners = BubbleCorners.ExtraLarge,
     val wallpaper: ChatWallpaper = ChatWallpaper.None,
     val groupBubbles: GroupBubbles = GroupBubbles.Automatic,
+    val wallpaperDimming: Int = 0,
 ) {
     companion object {
+        const val MAX_WALLPAPER_DIMMING = 100
+
         const val DEFAULT_TEXT_SCALE = 1f
         const val MIN_TEXT_SCALE = 0.85f
         const val MAX_TEXT_SCALE = 1.3f

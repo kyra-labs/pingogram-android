@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -148,12 +149,13 @@ class DataStoreAppearanceRepositoryTest {
             first.setBubbleCorners(BubbleCorners.Large)
             first.setChatWallpaper(ChatWallpaper.SecondaryToPrimary)
             first.setGroupBubbles(GroupBubbles.Tinted)
+            first.setWallpaperDimming(35)
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
             val restarted = repository().appearance.first()
 
             assertEquals(
-                ChatAppearance(1.2f, BubbleCorners.Large, ChatWallpaper.SecondaryToPrimary, GroupBubbles.Tinted),
+                ChatAppearance(1.2f, BubbleCorners.Large, ChatWallpaper.SecondaryToPrimary, GroupBubbles.Tinted, 35),
                 restarted.chat,
             )
         }
@@ -180,6 +182,29 @@ class DataStoreAppearanceRepositoryTest {
                     .first()
                     .chat.textScale,
                 0.001f,
+            )
+        }
+
+    @Test
+    fun `the wallpaper's dimming stays within 0 to 100 percent`() =
+        runTest {
+            val dataStore = dataStore()
+            val repository = repository(dataStore)
+            repository.setWallpaperDimming(140)
+            assertEquals(
+                100,
+                repository.appearance
+                    .first()
+                    .chat.wallpaperDimming,
+            )
+
+            dataStore.edit { it[intPreferencesKey("appearance.chat.wallpaper_dimming")] = -5 }
+            assertEquals(
+                0,
+                repository(dataStore)
+                    .appearance
+                    .first()
+                    .chat.wallpaperDimming,
             )
         }
 
