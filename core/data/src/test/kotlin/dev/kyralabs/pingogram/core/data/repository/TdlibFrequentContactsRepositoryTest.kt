@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibFrequentContactsRepository]: TDLib's option `disable_top_chats`, inverted. */
 class TdlibFrequentContactsRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibFrequentContactsRepository(client, backgroundScope)
 
     @Test

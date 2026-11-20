@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test
  */
 class TdlibGroupAdministrationRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibGroupAdministrationRepository(client, backgroundScope)
 
     init {

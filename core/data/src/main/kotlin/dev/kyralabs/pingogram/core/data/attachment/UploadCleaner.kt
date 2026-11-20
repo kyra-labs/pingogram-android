@@ -198,10 +198,6 @@ class UploadCleaner internal constructor(
     }
 }
 
-/**
- * Whether [this] can concern a copy, checked quickly on TDLib's update stream: a file message being sent, the end of
- * a send, a deletion for good, TDLib closing.
- */
 /** The updates [concernsUploads] looks at. */
 private val UPLOAD_UPDATES =
     setOf(
@@ -212,6 +208,10 @@ private val UPLOAD_UPDATES =
         TdApi.UpdateNewMessage::class,
     )
 
+/**
+ * Whether [this] can concern a copy, checked quickly on TDLib's update stream: a file message being sent, the end of
+ * a send, a deletion for good, TDLib closing.
+ */
 private fun TdApi.Update.concernsUploads(): Boolean =
     when (this) {
         is TdApi.UpdateNewMessage -> {

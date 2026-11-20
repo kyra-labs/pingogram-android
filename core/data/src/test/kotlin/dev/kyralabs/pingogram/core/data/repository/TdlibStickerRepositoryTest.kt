@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibStickerRepository]: the sticker panel's lists, read when collected and again on their updates. */
 class TdlibStickerRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibStickerRepository(client, backgroundScope)
 
     private fun setInfo(

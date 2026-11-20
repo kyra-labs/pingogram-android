@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibStickerSetRepository]: Settings → Stickers' lists and changes. */
 class TdlibStickerSetRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibStickerSetRepository(client, backgroundScope)
 
     private fun setInfo(

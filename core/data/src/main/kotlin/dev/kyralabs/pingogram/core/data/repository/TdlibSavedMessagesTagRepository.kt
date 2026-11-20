@@ -70,6 +70,9 @@ class TdlibSavedMessagesTagRepository
             return client.request(TdApi.SetSavedMessagesTagLabel(reaction, label.trim())).map { }
         }
 
+        private fun TdApi.Update.isOfAllTopics() =
+            this is TdApi.UpdateSavedMessagesTags && savedMessagesTopicId == ALL_TOPICS
+
         private companion object {
             /** td_api.tl `saved_messages_topic_id` 0: all of Saved Messages. */
             const val ALL_TOPICS = 0L
@@ -81,6 +84,3 @@ private fun TdApi.SavedMessagesTags.toTags(): List<SavedMessagesTag> =
     tags.orEmpty().mapNotNull { tag ->
         tag.tag?.toReactionType()?.let { SavedMessagesTag(it, tag.label.orEmpty(), tag.count) }
     }
-
-private fun TdApi.Update.isOfAllTopics() =
-    this is TdApi.UpdateSavedMessagesTags && savedMessagesTopicId == ALL_TOPICS

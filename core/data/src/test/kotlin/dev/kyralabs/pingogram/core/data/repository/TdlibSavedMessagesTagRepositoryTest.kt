@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 /** Saved Messages' tags: `getSavedMessagesTags` and its update, `searchSavedMessages` by tag, labels. */
 class TdlibSavedMessagesTagRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibSavedMessagesTagRepository(client, backgroundScope)
 
     private fun tags(vararg tags: TdApi.SavedMessagesTag) = TdApi.SavedMessagesTags(arrayOf(*tags))

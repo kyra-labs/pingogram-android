@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 /** [TdlibDataOptionsRepository]: TDLib's option `prefer_ipv6` and deleting the cloud drafts. */
 class TdlibDataOptionsRepositoryTest {
     private val client = FakeTdlibClient()
+
     private fun TestScope.repository() = TdlibDataOptionsRepository(client, backgroundScope)
 
     @Test
