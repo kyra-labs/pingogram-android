@@ -88,7 +88,7 @@ class RecentChatsWidgetUpdaterTest {
         client.on(TdApi.LoadChats::class, TdResult.Success(TdApi.Ok()))
         val files = TdlibFileRepository(client, TdlibTransferRepository(client, backgroundScope), backgroundScope)
         return WidgetAccount(
-            auth = TdlibAuthRepository(client, dispatcher),
+            auth = TdlibAuthRepository(client, backgroundScope, dispatcher),
             chats = TdlibChatRepository(client, backgroundScope, dispatcher, OpenChats()),
             users = TdlibUserRepository(client, backgroundScope),
             groups = TdlibGroupRepository(client, backgroundScope),

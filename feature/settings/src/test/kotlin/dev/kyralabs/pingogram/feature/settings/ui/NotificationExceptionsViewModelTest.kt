@@ -66,7 +66,7 @@ class NotificationExceptionsViewModelTest {
     private fun TestScope.viewModel() =
         NotificationExceptionsViewModel(
             NotificationScope.GroupChats,
-            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
+            TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW), backgroundScope),
             testTimeFormats(),
         ).also { runCurrent() }
 

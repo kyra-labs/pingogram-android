@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -23,7 +24,11 @@ import org.junit.jupiter.api.Test
 /** [TdlibCallHistoryRepository] on a [FakeTdlibClient]: the search, each outcome, deleting and the updates. */
 class TdlibCallHistoryRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibCallHistoryRepository(client)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibCallHistoryRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibCallHistoryRepository(client, backgroundScope).also { made = it }
 
     private fun call(
         reason: TdApi.CallDiscardReason = TdApi.CallDiscardReasonHungUp(),
@@ -46,7 +51,7 @@ class TdlibCallHistoryRepositoryTest {
         runTest {
             answer()
 
-            repository.page(offset = "abc", limit = 30, onlyMissed = true)
+            repository().page(offset = "abc", limit = 30, onlyMissed = true)
 
             val request = client.sentOf<TdApi.SearchCallMessages>().single()
             assertEquals("abc", request.offset)
@@ -63,7 +68,7 @@ class TdlibCallHistoryRepositoryTest {
                 next = "next",
             )
 
-            val page = repository.page().page()
+            val page = repository().page().page()
 
             assertEquals(
                 listOf(
@@ -104,7 +109,7 @@ class TdlibCallHistoryRepositoryTest {
                     CallOutcome.Cancelled,
                     CallOutcome.Answered,
                 ),
-                repository
+                repository()
                     .page()
                     .page()
                     .entries
@@ -125,7 +130,7 @@ class TdlibCallHistoryRepositoryTest {
                 ),
             )
 
-            val entries = repository.page().page().entries
+            val entries = repository().page().page().entries
             assertEquals(listOf(true, true, true), entries.map { it.isGroupCall })
             assertEquals(listOf(true, false, false), entries.map { it.isActive })
             assertEquals(
@@ -140,7 +145,7 @@ class TdlibCallHistoryRepositoryTest {
         runTest {
             client.on(TdApi.SearchCallMessages::class, TdResult.Failure(TdError(400, "SOMETHING")))
 
-            assertEquals(Outcome.Failure::class, repository.page()::class)
+            assertEquals(Outcome.Failure::class, repository().page()::class)
         }
 
     @Test
@@ -149,7 +154,7 @@ class TdlibCallHistoryRepositoryTest {
             client.on(TdApi.DeleteMessages::class, TdResult.Success(TdApi.Ok()))
             val entry = CallHistoryEntry(42, 9, 42, 0, false, false, CallOutcome.Missed, 0)
 
-            assertEquals(Outcome.Success(Unit), repository.delete(entry))
+            assertEquals(Outcome.Success(Unit), repository().delete(entry))
 
             val request = client.sentOf<TdApi.DeleteMessages>().single()
             assertEquals(42L, request.chatId)
@@ -163,7 +168,7 @@ class TdlibCallHistoryRepositoryTest {
             client.on(TdApi.DeleteMessages::class, TdResult.Failure(TdError(400, "MESSAGE_DELETE_FORBIDDEN")))
             val entry = CallHistoryEntry(42, 9, 42, 0, false, false, CallOutcome.Missed, 0)
 
-            val outcome = repository.delete(entry)
+            val outcome = repository().delete(entry)
 
             assertEquals(true, outcome is Outcome.Failure && outcome.error !is DomainError.Network)
         }
@@ -171,7 +176,7 @@ class TdlibCallHistoryRepositoryTest {
     @Test
     fun `new call messages and permanent deletions change the history, other updates do not`() =
         runTest {
-            repository.changes.test {
+            repository().changes.test {
                 client.emit(TdApi.UpdateNewMessage(message(id = 1, chatId = 42, content = messageText())))
                 client.emit(TdApi.UpdateNewMessage(message(id = 2, chatId = 42, content = call())))
                 client.emit(TdApi.UpdateDeleteMessages(42, longArrayOf(5), false, true))

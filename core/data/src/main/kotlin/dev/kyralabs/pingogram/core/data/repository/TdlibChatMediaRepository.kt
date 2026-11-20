@@ -1,10 +1,13 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
+import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -15,9 +18,9 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
@@ -44,6 +47,7 @@ class TdlibChatMediaRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : ChatMediaRepository {
         override suspend fun opened(
             chatId: Long,
@@ -150,8 +154,9 @@ class TdlibChatMediaRepository
         ): Outcome<Boolean> = client.request(TdApi.GetMessageProperties(chatId, messageId)).map { it.canBeSaved }
 
         override fun deletedMessages(chatId: Long): Flow<Set<Long>> =
-            client.updates
-                .filterIsInstance<TdApi.UpdateDeleteMessages>()
+            client
+                .updateRouter(scope)
+                .updatesOf<TdApi.UpdateDeleteMessages>()
                 // Not permanent: only unloaded from TDLib's memory (fromCache), or out of reach for now.
                 .filter { it.chatId == chatId && it.isPermanent }
                 .map { it.messageIds.toSet() }

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,7 +18,8 @@ import org.junit.jupiter.api.Test
 /** Saved Messages' tags: `getSavedMessagesTags` and its update, `searchSavedMessages` by tag, labels. */
 class TdlibSavedMessagesTagRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibSavedMessagesTagRepository(client)
+
+    private fun TestScope.repository() = TdlibSavedMessagesTagRepository(client, backgroundScope)
 
     private fun tags(vararg tags: TdApi.SavedMessagesTag) = TdApi.SavedMessagesTags(arrayOf(*tags))
 
@@ -32,7 +34,7 @@ class TdlibSavedMessagesTagRepositoryTest {
         runTest {
             client.on(TdApi.GetSavedMessagesTags::class, TdResult.Success(tags(tag("❤", "Ideas", 3))))
 
-            repository.tags().test {
+            repository().tags().test {
                 assertEquals(listOf(SavedMessagesTag(ReactionType.Emoji("❤"), "Ideas", 3)), awaitItem())
                 assertEquals(0L, client.sentOf<TdApi.GetSavedMessagesTags>().single().savedMessagesTopicId)
 
@@ -51,7 +53,7 @@ class TdlibSavedMessagesTagRepositoryTest {
         runTest {
             client.on(TdApi.GetSavedMessagesTags::class, TdResult.Failure(TdError(400, "PREMIUM_ACCOUNT_REQUIRED")))
 
-            repository.tags().test { assertEquals(emptyList<SavedMessagesTag>(), awaitItem()) }
+            repository().tags().test { assertEquals(emptyList<SavedMessagesTag>(), awaitItem()) }
         }
 
     @Test
@@ -68,7 +70,7 @@ class TdlibSavedMessagesTagRepositoryTest {
                 ),
             )
 
-            val found = (repository.taggedMessages(ReactionType.Emoji("❤"), 0, 20) as Outcome.Success).value
+            val found = (repository().taggedMessages(ReactionType.Emoji("❤"), 0, 20) as Outcome.Success).value
 
             assertEquals(listOf(9L, 8L), found.messages.map { it.id })
             assertEquals(3, found.totalCount)
@@ -84,13 +86,13 @@ class TdlibSavedMessagesTagRepositoryTest {
     fun `a label is set trimmed, and Telegram's refusal is its error`() =
         runTest {
             client.on(TdApi.SetSavedMessagesTagLabel::class, TdResult.Success(TdApi.Ok()))
-            assertEquals(Outcome.Success(Unit), repository.setLabel(ReactionType.Emoji("❤"), " Ideas "))
+            assertEquals(Outcome.Success(Unit), repository().setLabel(ReactionType.Emoji("❤"), " Ideas "))
             assertEquals("Ideas", client.sentOf<TdApi.SetSavedMessagesTagLabel>().single().label)
 
             client.on(TdApi.SetSavedMessagesTagLabel::class, TdResult.Failure(TdError(400, "PREMIUM_ACCOUNT_REQUIRED")))
             assertEquals(
                 Outcome.Failure(DomainError.PremiumRequired),
-                repository.setLabel(ReactionType.Emoji("❤"), "Ideas"),
+                repository().setLabel(ReactionType.Emoji("❤"), "Ideas"),
             )
         }
 }

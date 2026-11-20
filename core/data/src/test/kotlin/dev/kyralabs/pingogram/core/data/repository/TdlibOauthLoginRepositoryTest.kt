@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,7 +15,11 @@ import org.junit.jupiter.api.Test
 
 class TdlibOauthLoginRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibOauthLoginRepository(client)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibOauthLoginRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibOauthLoginRepository(client, backgroundScope).also { made = it }
 
     private fun info(
         matchCodeFirst: Boolean = true,
@@ -45,7 +50,7 @@ class TdlibOauthLoginRepositoryTest {
         runTest {
             client.on(TdApi.GetOauthLinkInfo::class, TdResult.Success(info()))
 
-            val request = (repository.request(URL) as Outcome.Success).value
+            val request = (repository().request(URL) as Outcome.Success).value
 
             assertEquals(
                 OauthLoginRequest(
@@ -71,7 +76,7 @@ class TdlibOauthLoginRepositoryTest {
         runTest {
             client.on(TdApi.GetOauthLinkInfo::class, TdResult.Success(info(matchCodeFirst = false)))
 
-            val request = (repository.request(URL) as Outcome.Success).value
+            val request = (repository().request(URL) as Outcome.Success).value
 
             assertFalse(request.needsMatchCode)
         }
@@ -82,8 +87,8 @@ class TdlibOauthLoginRepositoryTest {
             client.on(TdApi.CheckOauthRequestMatchCode::class, TdResult.Success(TdApi.Ok()))
             client.on(TdApi.AcceptOauthRequest::class, TdResult.Success(TdApi.HttpUrl("https://example.org/done")))
 
-            repository.checkMatchCode(URL, "42")
-            val accepted = repository.accept(URL, "42", allowMessages = false, sharePhoneNumber = true)
+            repository().checkMatchCode(URL, "42")
+            val accepted = repository().accept(URL, "42", allowMessages = false, sharePhoneNumber = true)
 
             assertEquals(Outcome.Success("https://example.org/done"), accepted)
             assertEquals("42", client.sentOf<TdApi.CheckOauthRequestMatchCode>().single().matchCode)
@@ -99,14 +104,14 @@ class TdlibOauthLoginRepositoryTest {
         runTest {
             client.on(TdApi.DeclineOauthRequest::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.decline(URL))
+            assertEquals(Outcome.Success(Unit), repository().decline(URL))
             assertEquals(URL, client.sentOf<TdApi.DeclineOauthRequest>().single().url)
         }
 
     @Test
     fun `follows the requests Telegram announces`() =
         runTest {
-            repository.requests.test {
+            repository().requests.test {
                 client.emit(TdApi.UpdateNewOauthRequest("example.org", "Berlin, Germany", URL))
 
                 assertEquals(URL, awaitItem())

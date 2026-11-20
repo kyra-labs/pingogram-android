@@ -64,6 +64,7 @@ class TdlibChannelFeedRepositoryTest {
         TdlibChannelFeedRepository(
             client,
             TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats()),
+            backgroundScope,
         )
 
     private fun post(

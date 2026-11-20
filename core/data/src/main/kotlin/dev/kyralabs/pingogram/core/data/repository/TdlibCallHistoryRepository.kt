@@ -1,8 +1,10 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryChange
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryEntry
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryPage
@@ -10,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.CallOutcome
 import dev.kyralabs.pingogram.core.domain.repository.CallHistoryRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
@@ -31,6 +34,7 @@ class TdlibCallHistoryRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : CallHistoryRepository {
         override suspend fun page(
             offset: String,
@@ -45,7 +49,7 @@ class TdlibCallHistoryRepository
             }
 
         override val changes: Flow<CallHistoryChange> =
-            client.updates.mapNotNull { update ->
+            client.updateRouter(scope).updates(CALL_HISTORY_UPDATES).mapNotNull { update ->
                 when (update) {
                     is TdApi.UpdateNewMessage -> update.message?.toCallHistoryEntry()?.let(CallHistoryChange::Added)
                     is TdApi.UpdateDeleteMessages -> update.toRemoved()
@@ -58,6 +62,9 @@ class TdlibCallHistoryRepository
                 .request(TdApi.DeleteMessages(entry.chatId, longArrayOf(entry.messageId), false))
                 .map { }
     }
+
+/** The updates [TdlibCallHistoryRepository.changes] reads. */
+private val CALL_HISTORY_UPDATES = setOf(TdApi.UpdateDeleteMessages::class, TdApi.UpdateNewMessage::class)
 
 private fun TdApi.UpdateDeleteMessages.toRemoved(): CallHistoryChange.Removed? =
     takeIf { isPermanent && !fromCache && messageIds?.isNotEmpty() == true }

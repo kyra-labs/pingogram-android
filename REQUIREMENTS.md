@@ -18,7 +18,7 @@ apps or design.)
 
 - G1. A native Android experience that looks and moves as Material 3 Expressive specifies.
 - G2. Feature parity with the official app for everyday messaging by v1.0 (see §5).
-- G3. Fast, battery-friendly, small download (≤ 51 MB arm64-v8a APK, ≤ 125 MB universal, calls and voice chats
+- G3. Fast, battery-friendly, small download (≤ 53 MB arm64-v8a APK, ≤ 128 MB universal, calls and voice chats
   included; `docs/PERFORMANCE.md` §1).
 - G4. Fully open source, reproducible builds, releases on GitHub (APK), later F-Droid/Play.
 - G5. Privacy-respecting: no analytics, no ads, no telemetry.
@@ -169,8 +169,10 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   (last seen, photo, calls, groups, blocked users, passcode lock w/ biometrics, 2FA, active
   sessions), Notifications (per-type channels, exceptions, sounds), Data & Storage (auto-download
   per network, storage usage via `getStorageStatistics`, clear cache), Chat settings (theme mode,
-  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper—solid/gradient
-  only), Language (per-app language API), About (version, licenses, GitHub link).
+  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper: the theme's colors,
+  or Telegram's wallpapers and patterns and the user's photos, synced to the account for light and dark theme apart,
+  with dimming in dark theme and blur for photos (owner decision 2026-11-20); a chat's own wallpaper from its info
+  page), Language (per-app language API), About (version, licenses, GitHub link).
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
   (standard/medium/high per M3), and how chats look (group bubbles; Chat appearance with the message text size,
@@ -255,6 +257,11 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   - The feed's search button searches posts in the user's channels (`searchMessages` with the channel chat type
     filter), leaving out channels the feed's channel filter leaves out while it is on; results show as global search's
     message rows, and a tap opens the post in its channel, as a card does.
+  Owner decision of 2026-11-20:
+  - With a hardware keyboard, the arrow keys move the focus between the cards, the list keeping the focused one in
+    view, and Enter opens the post in its channel, as a tap does; Tab reaches the buttons in a card (its reactions,
+    More, Open in channel), and More or the Menu key (Shift+F10) opens the post's menu. Two panes keep the focus on
+    the card whose channel opened beside the feed; screen readers keep the card's custom actions.
 - FR-X6 Should: **Backup and restore of what Pingogram keeps on the phone** (`docs/adr/0039-local-backup-and-restore.md`,
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,
@@ -276,9 +283,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Cold start → chat list ≤ 1.2 s, warm start ≤ 400 ms (Macrobenchmark, Baseline + Startup Profiles shipped).
 - Chat list / conversation scroll at the display's native rate (60/90/120 Hz): P90 frame ≤ 8–10 ms, jank < 1%.
 - Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms.
-- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 51 MB arm64-v8a and
-  ≤ 125 MB universal (raised from 35 MB for the call engine, owner 2026-10-22; set from the APKs with voice chats plus
-  a small margin, owner 2026-10-23; raised for TDLib 1.8.70, owner 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`).
+- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 53 MB arm64-v8a and
+  ≤ 128 MB universal (raised from 35 MB for the call engine, owner 2026-10-22; set from the APKs with voice chats plus
+  a small margin, owner 2026-10-23; raised for TDLib 1.8.70, owner 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`; raised for the
+  features after v2.3.0, owner 2026-11-20, `docs/adr/0040-apk-budget-after-v2-3-0.md`).
 - Background battery ≤ 1.5% / 8 h; idle data ≤ 2 MB / 24 h; no polling, no periodic jobs < 15 min.
 - Compose: immutable state, keyed/contentTyped lazy lists, zero off-screen recompositions,
   animations in draw/layout phase; TDLib: suspendable, batched, prioritized, cancellable calls.

@@ -64,7 +64,7 @@ class ReminderWorkerTest {
         userName: (Long) -> String? = { null },
     ) = ReminderAccountParts(
         reminders = reminders,
-        auth = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+        auth = TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler)),
         chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats()),
         messages =
             TdlibMessageRepository(

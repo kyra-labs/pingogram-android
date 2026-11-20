@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,7 +20,8 @@ import org.junit.jupiter.api.Test
 /** [TdlibStickerSetRepository]: Settings → Stickers' lists and changes. */
 class TdlibStickerSetRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibStickerSetRepository(client)
+
+    private fun TestScope.repository() = TdlibStickerSetRepository(client, backgroundScope)
 
     private fun setInfo(
         id: Long,
@@ -48,7 +50,7 @@ class TdlibStickerSetRepositoryTest {
                 TdResult.Success(TdApi.StickerSets(installed.size, installed.toTypedArray()))
             }
 
-            repository.installedSets(StickerSetKind.Emoji).test {
+            repository().installedSets(StickerSetKind.Emoji).test {
                 val first = (awaitItem() as Outcome.Success).value.single()
                 assertEquals(5L, first.id)
                 assertEquals(StickerSetKind.Emoji, first.kind)
@@ -70,7 +72,7 @@ class TdlibStickerSetRepositoryTest {
                 TdResult.Success(TdApi.StickerSets(2, arrayOf(setInfo(7), setInfo(8, installed = true))))
             }
 
-            val found = (repository.searchSets("cats", StickerSetKind.Emoji) as Outcome.Success).value
+            val found = (repository().searchSets("cats", StickerSetKind.Emoji) as Outcome.Success).value
 
             val request = client.sentOf<TdApi.SearchStickerSets>().single()
             assertEquals("cats", request.query)
@@ -84,7 +86,7 @@ class TdlibStickerSetRepositoryTest {
         runTest {
             client.on(TdApi.ReorderInstalledStickerSets::class, TdResult.Success(TdApi.Ok()))
 
-            repository.reorder(listOf(3L, 1L), StickerSetKind.Emoji)
+            repository().reorder(listOf(3L, 1L), StickerSetKind.Emoji)
 
             val request = client.sentOf<TdApi.ReorderInstalledStickerSets>().single()
             assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, request.stickerType)
@@ -99,7 +101,7 @@ class TdlibStickerSetRepositoryTest {
                 TdResult.Success(TdApi.StickerSets(archived.size, archived.toTypedArray()))
             }
 
-            repository.archivedSets().test {
+            repository().archivedSets().test {
                 val first = (awaitItem() as Outcome.Success).value.single()
                 assertEquals(1L, first.id)
                 assertTrue(first.isArchived)
@@ -124,7 +126,7 @@ class TdlibStickerSetRepositoryTest {
                 TdResult.Success(TdApi.TrendingStickerSets(sets.size, sets, false))
             }
 
-            repository.trendingSets().test {
+            repository().trendingSets().test {
                 assertFalse((awaitItem() as Outcome.Success).value.single().isViewed)
 
                 sets = arrayOf(setInfo(5, viewed = true), setInfo(6, viewed = false))
@@ -151,7 +153,7 @@ class TdlibStickerSetRepositoryTest {
                 )
             }
 
-            repository.stickerSet(3).test {
+            repository().stickerSet(3).test {
                 val details = (awaitItem() as Outcome.Success).value
                 assertEquals(listOf("🐝", "🌻"), details.stickers.map { it.emoji })
                 assertEquals(2, details.set.size)
@@ -170,9 +172,9 @@ class TdlibStickerSetRepositoryTest {
         runTest {
             client.on(TdApi.ChangeStickerSet::class, TdResult.Success(TdApi.Ok()))
 
-            repository.install(1)
-            repository.archive(2)
-            repository.remove(3)
+            repository().install(1)
+            repository().archive(2)
+            repository().remove(3)
 
             assertEquals(
                 listOf(Triple(1L, true, false), Triple(2L, false, true), Triple(3L, false, false)),
@@ -185,7 +187,7 @@ class TdlibStickerSetRepositoryTest {
         runTest {
             client.on(TdApi.ReorderInstalledStickerSets::class, TdResult.Success(TdApi.Ok()))
 
-            assertEquals(Outcome.Success(Unit), repository.reorder(listOf(3, 1, 2)))
+            assertEquals(Outcome.Success(Unit), repository().reorder(listOf(3, 1, 2)))
 
             val request = client.sentOf<TdApi.ReorderInstalledStickerSets>().single()
             assertEquals(listOf(3L, 1L, 2L), request.stickerSetIds.toList())
@@ -197,8 +199,8 @@ class TdlibStickerSetRepositoryTest {
         runTest {
             client.on(TdApi.ViewTrendingStickerSets::class, TdResult.Success(TdApi.Ok()))
 
-            repository.markTrendingViewed(emptyList())
-            repository.markTrendingViewed(listOf(6))
+            repository().markTrendingViewed(emptyList())
+            repository().markTrendingViewed(listOf(6))
 
             val sent = client.sentOf<TdApi.ViewTrendingStickerSets>()
             assertEquals(listOf(listOf(6L)), sent.map { it.stickerSetIds.toList() })
@@ -215,7 +217,7 @@ class TdlibStickerSetRepositoryTest {
                 }
             }
 
-            assertEquals(Outcome.Success(3L), repository.findSet("garden"))
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.findSet("nothing"))
+            assertEquals(Outcome.Success(3L), repository().findSet("garden"))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().findSet("nothing"))
         }
 }

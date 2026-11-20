@@ -36,8 +36,12 @@ import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.UK_INTERNATIONAL
 import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.answerCountryRequests
 import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.ok
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import org.drinkless.tdlib.TdApi
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -62,6 +66,14 @@ class CodeEntryTest {
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+    /** The account's scope, which the router of [client] runs in, on the main thread as the screen does. */
+    private val accountScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    @After
+    fun tearDown() {
+        accountScope.cancel()
+    }
 
     private val client =
         FakeTdlibClient(
@@ -140,7 +152,7 @@ class CodeEntryTest {
         val viewModel =
             AuthViewModel(
                 savedStateHandle = SavedStateHandle(),
-                authRepository = TdlibAuthRepository(client, Dispatchers.Main.immediate),
+                authRepository = TdlibAuthRepository(client, accountScope, Dispatchers.Main.immediate),
                 countryRepository = TdlibCountryRepository(client),
                 connectionRepository = TdlibConnectionRepository(client),
                 deviceAccounts = FakeDeviceAccountsRepository(),

@@ -41,7 +41,7 @@ class TdlibProfileRepository
     @Inject
     constructor(
         private val client: TdlibClient,
-        @ApplicationScope scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : ProfileRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, PROFILE_UPDATES, ProfileOptions(), ProfileOptions::reduce)
@@ -92,7 +92,7 @@ class TdlibProfileRepository
         override suspend fun setProfilePhoto(
             path: String,
             onProgress: (progress: Float) -> Unit,
-        ): Outcome<Unit> = client.uploadPhoto(path, onProgress) { photo -> TdApi.SetProfilePhoto(photo, false) }
+        ): Outcome<Unit> = client.uploadPhoto(path, scope, onProgress) { photo -> TdApi.SetProfilePhoto(photo, false) }
 
         override suspend fun profileLink(): Outcome<ProfileLink> =
             client.request(TdApi.GetUserLink()).map { ProfileLink(it.url, it.expiresIn) }

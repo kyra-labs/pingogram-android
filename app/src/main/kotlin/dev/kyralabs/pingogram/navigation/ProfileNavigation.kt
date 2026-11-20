@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.pollStatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
+import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 
 /**
  * A user's profile (`REQUIREMENTS.md` FR-P2), pushed above the screen it is opened from. Its "Message" returns to the
@@ -45,15 +46,7 @@ internal fun NavGraphBuilder.profile(
         },
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
         onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
-        stories = { chatId, active ->
-            rememberProfileStoriesItems(
-                chatId = chatId,
-                active = active,
-                onOpenStory = { storyId -> navController.navigateToProfileStoryViewer(chatId, storyId) },
-                onOpenAlbum = { albumId -> navController.navigateToStoryAlbum(chatId, albumId) },
-                onCreateAlbum = { name -> navController.navigateToNewStoryAlbum(chatId, name) },
-            )
-        },
+        stories = profileStories(navController),
         profileMusic = { userId, isSelf, modifier -> ProfileMusicSection(userId, isSelf, modifier) },
         // Deleting the chat with a deleted account takes the conversation below with it.
         onChatDeleted = { navController.popBackStackToChats() },
@@ -99,8 +92,24 @@ internal fun NavGraphBuilder.chatInfo(
             navController.navigateToChat(chatId, messageId, besideList = besideList.value)
         },
         onSaved = { navController.popBackStackAfterGroupChange() },
+        stories = profileStories(navController),
     )
 }
+
+/**
+ * The Stories tab of a person's or channel's profile, `feature:media`'s: a story opens the stories viewer on the
+ * profile's stories, an album its grid, each above the profile.
+ */
+private fun profileStories(navController: NavHostController): ProfileStoriesSlot =
+    { chatId, active ->
+        rememberProfileStoriesItems(
+            chatId = chatId,
+            active = active,
+            onOpenStory = { storyId -> navController.navigateToProfileStoryViewer(chatId, storyId) },
+            onOpenAlbum = { albumId -> navController.navigateToStoryAlbum(chatId, albumId) },
+            onCreateAlbum = { name -> navController.navigateToNewStoryAlbum(chatId, name) },
+        )
+    }
 
 /** A poll's statistics, pushed above the conversation (its entry is in the poll's message actions). */
 internal fun NavGraphBuilder.pollStatistics(navController: NavHostController) {

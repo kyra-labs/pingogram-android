@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdStoryList
 import dev.kyralabs.pingogram.core.data.mapper.toViewersPage
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -62,7 +63,7 @@ class TdlibStoryRepository
     @Inject
     constructor(
         private val client: TdlibClient,
-        @ApplicationScope scope: CoroutineScope,
+        @ApplicationScope private val scope: CoroutineScope,
     ) : StoryRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, STORY_UPDATES, StoryState(), ::reduce)
@@ -138,7 +139,9 @@ class TdlibStoryRepository
             channelFlow {
                 // Subscribed before the request goes out, so a change in between is not missed.
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates
+                    client
+                        .updateRouter(scope)
+                        .updates(STORY_CHANGES)
                         .filter { it.isAbout(chatId, storyId) }
                         .collect { update ->
                             when (update) {
@@ -257,6 +260,9 @@ private fun TdApi.Update.isAbout(
         is TdApi.UpdateStoryDeleted -> storyPosterChatId == chatId && this.storyId == storyId
         else -> false
     }
+
+/** The updates [TdlibStoryRepository.story] follows one story by. */
+private val STORY_CHANGES = setOf(TdApi.UpdateStory::class, TdApi.UpdateStoryDeleted::class)
 
 /** How many viewers of the user's own story a page asks for. */
 private const val VIEWERS_PAGE = 50

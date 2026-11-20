@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,7 +30,11 @@ import org.junit.jupiter.api.Test
  */
 class TdlibGroupInfoRepositoryTest {
     private val client = FakeTdlibClient()
-    private val repository = TdlibGroupInfoRepository(client)
+
+    /** The repository under test: one per test, made in the test's scope. */
+    private var made: TdlibGroupInfoRepository? = null
+
+    private fun TestScope.repository() = made ?: TdlibGroupInfoRepository(client, backgroundScope).also { made = it }
 
     private val adminRights =
         TdApi.ChatAdministratorRights().also {
@@ -90,7 +95,7 @@ class TdlibGroupInfoRepositoryTest {
         runTest {
             answerSupergroup()
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 var info = (awaitItem() as Outcome.Success).value
                 if (info.details == null) info = (awaitItem() as Outcome.Success).value
                 assertEquals(GroupKind.Supergroup, info.kind)
@@ -119,7 +124,7 @@ class TdlibGroupInfoRepositoryTest {
         runTest {
             answerSupergroup()
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 skipUntilDetails()
                 client.emit(TdApi.UpdateSupergroupFullInfo(SUPERGROUP, supergroupFullInfo(members = 2_000)))
                 assertEquals(2_000, (awaitItem() as Outcome.Success).value.details?.memberCount)
@@ -148,7 +153,7 @@ class TdlibGroupInfoRepositoryTest {
         runTest {
             answerSupergroup()
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 skipUntilDetails()
                 client.emit(TdApi.UpdateChatPendingJoinRequests(CHAT, TdApi.ChatJoinRequestsInfo(4, longArrayOf(1, 2))))
                 assertEquals(4, (awaitItem() as Outcome.Success).value.pendingJoinRequests)
@@ -163,7 +168,7 @@ class TdlibGroupInfoRepositoryTest {
         runTest {
             answerSupergroup(full = TdResult.Failure(TdError(429, "Too Many Requests: retry after 9")))
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 var info = (awaitItem() as Outcome.Success).value
                 if (info.detailsError == null) info = (awaitItem() as Outcome.Success).value
                 assertNull(info.details)
@@ -177,7 +182,7 @@ class TdlibGroupInfoRepositoryTest {
         runTest {
             client.on(TdApi.GetChat::class, TdResult.Success(TdApiFixtures.chat(id = CHAT)))
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 assertEquals(Outcome.Failure(DomainError.NotFound), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
@@ -206,7 +211,7 @@ class TdlibGroupInfoRepositoryTest {
                 }
             client.on(TdApi.GetBasicGroupFullInfo::class, TdResult.Success(full))
 
-            repository.groupInfo(CHAT).test {
+            repository().groupInfo(CHAT).test {
                 var info = (awaitItem() as Outcome.Success).value
                 if (info.details == null) info = (awaitItem() as Outcome.Success).value
                 assertEquals(GroupKind.BasicGroup, info.kind)
@@ -228,10 +233,10 @@ class TdlibGroupInfoRepositoryTest {
             val tagged = member(7, TdApi.ChatMemberStatusAdministrator(false, adminRights)).also { it.tag = "Mod" }
             client.on(TdApi.GetSupergroupMembers::class, TdResult.Success(TdApi.ChatMembers(40, arrayOf(tagged))))
 
-            val page = (repository.members(CHAT, MemberFilter.Recent, offset = 20) as Outcome.Success).value
-            repository.members(CHAT, MemberFilter.Recent, query = "ada")
-            repository.members(CHAT, MemberFilter.Banned, query = "spam")
-            repository.members(CHAT, MemberFilter.Administrators, query = "ignored")
+            val page = (repository().members(CHAT, MemberFilter.Recent, offset = 20) as Outcome.Success).value
+            repository().members(CHAT, MemberFilter.Recent, query = "ada")
+            repository().members(CHAT, MemberFilter.Banned, query = "spam")
+            repository().members(CHAT, MemberFilter.Administrators, query = "ignored")
 
             assertEquals(40, page.totalCount)
             assertEquals("Mod", page.members.single().tag)
@@ -256,9 +261,9 @@ class TdlibGroupInfoRepositoryTest {
                 TdResult.Success(TdApi.ChatMembers(1, arrayOf(member(1, TdApiFixtures.memberStatus())))),
             )
 
-            val first = (repository.members(CHAT, MemberFilter.Recent, query = "a") as Outcome.Success).value
-            val next = (repository.members(CHAT, MemberFilter.Recent, offset = 1) as Outcome.Success).value
-            val banned = (repository.members(CHAT, MemberFilter.Banned) as Outcome.Success).value
+            val first = (repository().members(CHAT, MemberFilter.Recent, query = "a") as Outcome.Success).value
+            val next = (repository().members(CHAT, MemberFilter.Recent, offset = 1) as Outcome.Success).value
+            val banned = (repository().members(CHAT, MemberFilter.Banned) as Outcome.Success).value
 
             assertEquals(1, first.members.size)
             assertTrue(next.members.isEmpty() && banned.members.isEmpty())
@@ -278,7 +283,7 @@ class TdlibGroupInfoRepositoryTest {
                 )
             client.on(TdApi.GetChatMember::class, TdResult.Success(member(9, restricted)))
 
-            val found = (repository.member(CHAT, 9) as Outcome.Success).value
+            val found = (repository().member(CHAT, 9) as Outcome.Success).value
 
             val role = found.role as MemberRole.Restricted
             assertEquals(1_800_000_000L, role.untilDate)

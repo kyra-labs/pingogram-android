@@ -116,7 +116,9 @@ internal fun ProfileScreen(
     stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
 ) {
-    val storiesTab = rememberStoriesTab(state, media, stories)
+    val person = (state as? ProfileUiState.Content)?.takeUnless { it.actions.isBot || it.isDeletedAccount }
+    // Bots and deleted accounts keep no stories.
+    val storiesTab = rememberStoriesTab(media.chatId.takeIf { person != null }, stories)
     val page =
         ProfilePageParts(
             state,
