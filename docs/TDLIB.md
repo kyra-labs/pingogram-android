@@ -194,6 +194,30 @@ account's other apps):
   My contacts / Nobody choice (`reactionNotificationSettings`) filters them.
 - Nothing at all for reactions to the user's stories.
 
+## Profile stories and story albums
+
+What the pinned TDLib (`TdApi.java`, checked 2026-11-20) offers for a profile's Stories tab
+(`StoryAlbumRepository`, `TdlibStoryAlbumRepository`):
+
+| Need | Call | Returns |
+|---|---|---|
+| The stories a chat keeps on its profile | `getChatPostedToChatPageStories(chatId, fromStoryId, limit)` | `stories`: `totalCount`, `stories`, `pinnedStoryIds` (pinned first, then newest first; `fromStoryId` 0 for the first page) |
+| The owner's other stories, not on the profile | `getChatArchivedStories(chatId, fromStoryId, limit)` | `stories` (the owner's own chats only; not used) |
+| Pin stories at the top of the profile | `setChatPinnedStories(chatId, storyIds)` | `ok` (not used) |
+| Put a story on the profile or take it off | `toggleStoryIsPostedToChatPage(storyPosterChatId, storyId, isPostedToChatPage)` | `ok` (not used) |
+| A chat's albums | `getChatStoryAlbums(chatId)` | `storyAlbums`: `storyAlbum` (`id`, `name`, `photoIcon` or `videoIcon`) |
+| An album's stories | `getStoryAlbumStories(chatId, storyAlbumId, offset, limit)` | `stories` with `totalCount`; also how an album's count is read (`limit` 1), as `storyAlbum` has none |
+| Create an album | `createStoryAlbum(storyPosterChatId, name, storyIds)` | `storyAlbum` |
+| Add stories to an album, or take them out | `addStoryAlbumStories` / `removeStoryAlbumStories(chatId, storyAlbumId, storyIds)` | `storyAlbum` |
+| Rename an album | `setStoryAlbumName(chatId, storyAlbumId, name)` | `storyAlbum` |
+| Reorder an album's stories, or the albums | `reorderStoryAlbumStories(chatId, storyAlbumId, storyIds)`, `reorderStoryAlbums(chatId, storyAlbumIds)` | `storyAlbum`, `ok` (not used) |
+| Delete an album | `deleteStoryAlbum(chatId, storyAlbumId)` | `ok`; its stories stay |
+
+A `story` says which albums hold it (`albumIds`) and whether it may join one (`canBeAddedToAlbum`).
+`userFullInfo.hasPostedToProfileStories` and `supergroupFullInfo.hasPinnedStories` say whether a profile has
+stories without reading them. td_api.tl sends no update for albums or profile stories: each screen reads them
+when it opens, and again after the user changes them.
+
 ## Authorization state machine
 
 ```
