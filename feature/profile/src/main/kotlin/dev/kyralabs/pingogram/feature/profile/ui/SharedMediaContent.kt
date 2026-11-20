@@ -92,7 +92,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The shared media's items for a [LazyGridScope] whose cells are [cellSize] wide ([cellSizePx] in pixels, the size the
  * grid's images are decoded at): the tabs ([SharedMediaTabRow]) as a full-span item, then the shown tab's content,
  * inset by [margin] from the grid's sides. Nothing while [media] has no chat yet. An empty tab says [emptyBody] below
- * its title: what shows there, for a private chat or a group.
+ * its title: what shows there, for a private chat or a group. With [stories], a Stories tab comes first, whose items
+ * show in place of the media's while it is selected.
  */
 @Suppress("LongParameterList") // The state, where its events go, and the grid's geometry.
 internal fun LazyGridScope.sharedMediaItems(
@@ -104,12 +105,22 @@ internal fun LazyGridScope.sharedMediaItems(
     motion: ItemMotion,
     showTabs: Boolean = true,
     @StringRes emptyBody: Int = R.string.profile_media_empty_body,
+    stories: StoriesTab? = null,
 ) {
     val chatId = media.chatId ?: return
     if (showTabs) {
         fullSpan(key = TABS, contentType = TABS, motion = motion) {
-            SharedMediaTabRow(media.selected, onSelect = { onEvent(SharedMediaEvent.Select(it)) }, margin = margin)
+            SharedMediaTabRow(
+                media.selected,
+                onSelect = { onEvent(SharedMediaEvent.Select(it)) },
+                margin = margin,
+                stories = stories,
+            )
         }
+    }
+    if (stories?.selected == true) {
+        stories.items(this, margin, motion)
+        return
     }
     when (val content = media.content) {
         null, SharedMediaContent.Loading -> {

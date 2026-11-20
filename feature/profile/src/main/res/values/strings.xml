@@ -152,6 +152,8 @@
 
     <!-- Shared media -->
     <string name="profile_section_media">Shared media</string>
+    <!-- The Stories tab before the shared media tabs, on people's and channels' profiles (owner decision 2026-11-20). -->
+    <string name="profile_stories">Stories</string>
     <string name="profile_media_photos">Photos and videos</string>
     <string name="profile_media_files">Files</string>
     <string name="profile_media_links">Links</string>
