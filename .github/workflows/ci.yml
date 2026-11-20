@@ -147,19 +147,22 @@ jobs:
           path: app/build/outputs/apk/foss/debug/*.apk
           retention-days: 14
 
-  # One result for all of the above, under the name pull requests and the debug channel have always waited for.
+  # One result for all of the above and the APK size budget, under the name pull requests and the debug channel have
+  # always waited for: "build" passes only when every check did, so a merge that waits for it waits for all of them.
   build:
     name: build
-    needs: [quick-checks, check, debug-apk]
+    needs: [quick-checks, check, debug-apk, apk-size]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every check passed
         env:
-          RESULTS: ${{ needs.quick-checks.result }} ${{ needs.check.result }} ${{ needs.debug-apk.result }}
+          RESULTS: >-
+            ${{ needs.quick-checks.result }} ${{ needs.check.result }} ${{ needs.debug-apk.result }}
+            ${{ needs.apk-size.result }}
         run: |
-          echo "quick checks, check, debug apk: $RESULTS"
+          echo "quick checks, check, debug apk, apk size: $RESULTS"
           for result in $RESULTS; do
             [ "$result" = success ] || { echo "Not every check passed."; exit 1; }
           done
@@ -209,7 +212,7 @@ jobs:
 
   # The APK size budget (docs/PERFORMANCE.md §1, §8): the foss APKs built as a release is (R8, resource shrinking),
   # signed with the debug key so no release credentials are needed; arm64-v8a at most 53 MB, universal 128 MB. Its own
-  # job, beside build, so the build's tests do not wait for R8.
+  # job, so the tests do not wait for R8; the build gate waits for it.
   apk-size:
     name: apk size
     runs-on: ubuntu-latest
