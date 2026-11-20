@@ -10,8 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- In your own story album, the ⋮ menu renames it, adds or removes stories, or deletes it (its stories stay on your
-  profile).
+- Make story albums on your own profile: Stories → New album, name it, pick its stories. In your own album, the ⋮ menu
+  renames it, adds or removes stories, or deletes it (its stories stay on your profile).
 - Profiles have a Stories tab: the person's story albums, each with how many stories it holds, above the stories they
   keep on their profile with their dates. Tap a story to watch from there, or an album to open it.
 - In a forum topic you have read, pull up past the newest message to open the next topic with unread messages.
