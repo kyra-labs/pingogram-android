@@ -518,6 +518,20 @@ data class StoryAlbumRoute(
 )
 
 /**
+ * Picking stories for one of the user's own story albums (owner decision 2026-11-20), `:feature:media`, pushed above
+ * the profile or the album it is opened from: without [albumId], the stories of a new album named [name], from those
+ * on chat [chatId]'s profile; with it, stories to add to that album (those not in it yet), or with [removing] to take
+ * out of it.
+ */
+@Serializable
+data class StoryAlbumPickerRoute(
+    val chatId: Long,
+    val albumId: Int? = null,
+    val name: String = "",
+    val removing: Boolean = false,
+)
+
+/**
  * Posting a story (`docs/adr/0036-posting-stories.md`), `:feature:media`: the photos and videos picked with Android's
  * photo picker or taken with the camera app, reordered and sent on to the composer. Full screen, like the stories
  * viewer, without the navigation bar or rail.
