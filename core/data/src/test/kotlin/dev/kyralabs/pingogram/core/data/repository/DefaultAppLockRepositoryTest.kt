@@ -35,7 +35,7 @@ class DefaultAppLockRepositoryTest {
     private val time = TestTimeSource()
 
     private fun TestScope.lock(passcodes: FakePasscodeRepository): DefaultAppLockRepository =
-        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+        TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
             .let { auth ->
                 DefaultAppLockRepository(
                     passcodeRepository = passcodes,
@@ -65,7 +65,12 @@ class DefaultAppLockRepositoryTest {
     fun `is unknown until the settings are read`() =
         runTest {
             val authRepository =
-                TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+                TdlibAuthRepository(
+                    client,
+                    backgroundScope,
+                    StandardTestDispatcher(testScheduler),
+                    testScheduler.timeSource,
+                )
             val lock =
                 DefaultAppLockRepository(
                     withPasscode(),

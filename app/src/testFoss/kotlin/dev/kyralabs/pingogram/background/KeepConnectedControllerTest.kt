@@ -26,7 +26,12 @@ class KeepConnectedControllerTest {
     private fun TestScope.started() {
         KeepConnectedController(
             setting,
-            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic).authStep,
+            TdlibAuthRepository(
+                client,
+                backgroundScope,
+                StandardTestDispatcher(testScheduler),
+                TimeSource.Monotonic,
+            ).authStep,
             foreground,
             service,
             backgroundScope,
