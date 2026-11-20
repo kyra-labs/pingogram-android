@@ -14,12 +14,15 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.AccountWallpaperChips
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PendingWallpaperActions
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.selectedWallpaperId
 import kotlinx.collections.immutable.persistentListOf
 
 /**
  * Chat appearance's "Wallpaper" (owner decision 2026-11-20, `docs/DESIGN_SYSTEM.md` §6): which theme it is picked
- * for, then the chips ([WallpaperChips]).
+ * for, then the chips ([WallpaperChips]); a pick waits for Cancel or Apply.
  */
 @Composable
 internal fun WallpaperGroup(
@@ -46,19 +49,27 @@ internal fun WallpaperGroup(
                 }
             }
         }
-        item { shapes -> SettingsSegment(shapes) { WallpaperChips(state, set, onWallpaper) } }
+        item { shapes -> SettingsSegment(shapes) { WallpaperChips(state, set, onWallpaper, actions) } }
+        picker.pending?.let { pending ->
+            item { shapes ->
+                SettingsSegment(shapes) {
+                    PendingWallpaperActions(pending, picker.isWorking, actions.onCancel, actions.onApply)
+                }
+            }
+        }
     }
 }
 
 /**
- * The theme-color chips, chosen only where the account has no wallpaper for the theme ([set]) and nothing is picked;
- * one radio group for screen readers. Picking one removes the account's for that theme.
+ * The theme-color chips, chosen only where the account has no wallpaper for the theme ([set]) and nothing is picked,
+ * then the account's wallpapers ([AccountWallpaperChips]); one radio group for screen readers.
  */
 @Composable
 private fun WallpaperChips(
     state: ChatAppearanceUiState.Content,
     set: Wallpaper?,
     onWallpaper: (ChatWallpaper) -> Unit,
+    actions: WallpaperActions,
 ) {
     val picker = state.picker
     FlowRow(
@@ -78,6 +89,13 @@ private fun WallpaperChips(
                 onClick = { onWallpaper(wallpaper) },
             )
         }
+        AccountWallpaperChips(
+            installed = picker.installed,
+            selectedId = selectedWallpaperId(picker.pending, set),
+            onPick = actions.onPick,
+            onPickPhoto = actions.onPickPhoto,
+            onRetry = actions.onRetry,
+        )
     }
 }
 

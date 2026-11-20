@@ -14,16 +14,23 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
+import dev.kyralabs.pingogram.core.domain.model.FileRef
+import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
+import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.InstalledWallpapers
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -58,7 +65,14 @@ class ChatAppearanceScreenTest {
 
     private val wallpaperEvents = mutableListOf<String>()
     private val wallpaperActions =
-        WallpaperActions(onTheme = { wallpaperEvents += "theme $it" })
+        WallpaperActions(
+            onTheme = { wallpaperEvents += "theme $it" },
+            onPick = { wallpaperEvents += "pick ${it.id}" },
+            onPickPhoto = { wallpaperEvents += "photos" },
+            onApply = { wallpaperEvents += "apply" },
+            onCancel = { wallpaperEvents += "cancel" },
+            onRetry = { wallpaperEvents += "retry" },
+        )
 
     private fun setScreen(
         appearance: ChatAppearance = ChatAppearance(),
@@ -98,6 +112,48 @@ class ChatAppearanceScreenTest {
 
         assertEquals(listOf(ChatWallpaper.PrimaryToTertiary), wallpapers)
         assertEquals(listOf(HapticFeedbackType.SegmentTick), performedHaptics)
+    }
+
+    @Test
+    fun `the installed wallpapers and the photo picker are offered, and a pick previews`() {
+        val loaded = InstalledWallpapers.Loaded(persistentListOf(PHOTO, PATTERN))
+        setScreen(picker = WallpaperPickerState(forDarkTheme = false, installed = loaded))
+
+        composeRule
+            .onNodeWithContentDescription(string(R.string.settings_chat_wallpaper_photo))
+            .performScrollTo()
+            .performClick()
+        val pattern = RuntimeEnvironment.getApplication().getString(R.string.settings_chat_wallpaper_pattern, 2)
+        composeRule
+            .onNodeWithContentDescription(pattern)
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+            .performClick()
+
+        assertEquals(listOf("photos", "pick 2"), wallpaperEvents)
+    }
+
+    @Test
+    fun `a photo from the phone says it is uploaded, and waits for Apply or Cancel`() {
+        setScreen(picker = WallpaperPickerState(forDarkTheme = true, pending = WallpaperChoice.NewPhoto("/x.jpg")))
+
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_upload_note)).performScrollTo()
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_cancel)).performScrollTo().performClick()
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_apply)).performScrollTo().performClick()
+
+        assertEquals(listOf("cancel", "apply"), wallpaperEvents)
+    }
+
+    @Test
+    fun `installed wallpapers that cannot load offer to try again`() {
+        setScreen(picker = WallpaperPickerState(forDarkTheme = false, installed = InstalledWallpapers.Failed))
+
+        composeRule
+            .onNodeWithText(string(R.string.settings_chat_wallpaper_installed_failed))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(listOf("retry"), wallpaperEvents)
     }
 
     @Test
@@ -144,6 +200,9 @@ class ChatAppearanceScreenTest {
     }
 
     private companion object {
+        val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
+        val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(20, 0), isVector = true), 50, false)
+
         /** The index of 130% among 85%, 90%, …, 130%. */
         const val LAST_TEXT_STEP = 9f
     }
