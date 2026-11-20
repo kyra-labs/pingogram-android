@@ -5,16 +5,13 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.data.updates.updateRouter
-import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
@@ -36,21 +33,19 @@ internal suspend fun TdlibClient.uploadPhoto(
 ): Outcome<Unit> =
     coroutineScope {
         val progress = Channel<Float>(Channel.CONFLATED)
-        // Subscribed before the request is sent, so its first updateFile is not missed.
+        // Registered before the request is sent, so its first updateFile is not missed; inline in the router, so a
+        // progress TDLib sends before its answer is here before the answer is.
         val watcher =
-            launch(start = CoroutineStart.UNDISPATCHED) {
-                updateRouter(scope).updatesOf<TdApi.UpdateFile>().collect { update ->
-                    if (update.file.local?.path == path) {
-                        update.file.uploadProgress()?.let(progress::trySend)
-                    }
-                }
+            updateRouter(scope).onUpdates(setOf(TdApi.UpdateFile::class)) { update ->
+                val file = (update as TdApi.UpdateFile).file
+                if (file.local?.path == path) file.uploadProgress()?.let(progress::trySend)
             }
         val photo = TdApi.InputChatPhotoStatic(TdApi.InputFileLocal(path))
         val answer = async { send(request(photo)).toOutcome().map {} }
         try {
             awaitUpload(answer, progress, onProgress)
         } finally {
-            watcher.cancel()
+            watcher.dispose()
             answer.cancel()
         }
     }
