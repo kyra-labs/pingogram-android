@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.feature.chat.ui.wallpaper
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,7 +14,10 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
+import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarColors
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
@@ -74,9 +80,9 @@ internal fun rememberConversationBackdrop(): ConversationBackdrop? {
 internal val LocalConversationBackdrop = staticCompositionLocalOf<ConversationBackdrop?> { null }
 
 /**
- * [content] given the conversation's backdrop ([rememberConversationBackdrop]): where it has a Telegram wallpaper,
- * over the wallpaper blurred across the window, with the status bar's icons for its top and [LocalConversationBackdrop]
- * set for the parts below; elsewhere as today.
+ * [content] given the conversation's backdrop ([rememberConversationBackdrop]): where it has a Telegram wallpaper, in
+ * the window's [WallpaperFrame], with the status bar's icons for its top and [LocalConversationBackdrop] set for the
+ * parts below; elsewhere as today.
  */
 @Composable
 internal fun ConversationBackdropBox(
@@ -86,13 +92,30 @@ internal fun ConversationBackdropBox(
     val backdrop = rememberConversationBackdrop()
     StatusBarIcons(backdrop?.bar?.darkStatusBarIcons)
     Box(modifier.then(backdrop?.let { Modifier.wallpaperFrame(it.frame) } ?: Modifier)) {
-        backdrop?.let {
-            ConversationWallpaperLayer(Modifier.matchParentSize(), it.frame, blurred = true)
-            // The wash covers all the blur shows through, the top bar and the sheet's rounded corners below it, so
-            // the messages read as a rounded container below the bar.
-            WallpaperBarTheme(it.bar, it.seed) { Spacer(Modifier.matchParentSize().background(it.bar.wash())) }
-        }
         CompositionLocalProvider(LocalConversationBackdrop provides backdrop) { content(backdrop) }
+    }
+}
+
+/**
+ * Over a Telegram wallpaper, what shows behind the top bar: the wallpaper blurred and washed, from the window's top to
+ * the end of the messages' sheet's rounded corners ([innerPadding]'s top, as `ContentSheet` places the sheet), the only
+ * place it shows, so the messages read as a rounded container below the bar. Clipped in the draw phase, so a collapsing
+ * bar redraws it without recomposing, and nothing of it is drawn under the sheet's opaque wallpaper. Nothing elsewhere.
+ */
+@Composable
+private fun ConversationBarBackdrop(innerPadding: PaddingValues) {
+    val backdrop = LocalConversationBackdrop.current ?: return
+    val corner = MaterialTheme.shapes.extraLarge.topStart
+    Box(
+        Modifier.fillMaxSize().drawWithContent {
+            val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
+            clipRect(bottom = bottom) { this@drawWithContent.drawContent() }
+        },
+    ) {
+        ConversationWallpaperLayer(Modifier.matchParentSize(), backdrop.frame, blurred = true)
+        WallpaperBarTheme(backdrop.bar, backdrop.seed) {
+            Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
+        }
     }
 }
 
@@ -107,5 +130,31 @@ internal fun ConversationBarSlot(content: @Composable (barColor: Color) -> Unit)
         content(MaterialTheme.colorScheme.surfaceContainer)
     } else {
         WallpaperBarTheme(backdrop.bar, backdrop.seed) { content(Color.Transparent) }
+    }
+}
+
+/**
+ * The messages' `ContentSheet` on the conversation's wallpaper (`docs/DESIGN_SYSTEM.md` §6, §13.5): the chat's own, the
+ * account's or the theme-color one, in a layer of its own so scrolling neither composes nor redraws it. Over a Telegram
+ * wallpaper the sheet and its surround are clear: it shows its part of the window's wallpaper sharp, and the wallpaper
+ * blurred behind the top bar and its rounded corners ([ConversationBarBackdrop]).
+ */
+@Composable
+internal fun ConversationSheet(
+    innerPadding: PaddingValues,
+    modifier: Modifier,
+    content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
+) {
+    val backdrop = LocalConversationBackdrop.current
+    val colors = MaterialTheme.colorScheme
+    ConversationBarBackdrop(innerPadding)
+    ContentSheet(
+        innerPadding,
+        modifier,
+        color = if (backdrop != null) Color.Transparent else colors.surface,
+        surround = if (backdrop != null) Color.Transparent else colors.surfaceContainer,
+    ) { contentPadding ->
+        ConversationWallpaperLayer(Modifier.matchParentSize(), backdrop?.frame)
+        content(contentPadding)
     }
 }
