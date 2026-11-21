@@ -207,8 +207,6 @@
     <string name="settings_power_saving_card_saving">جارٍ توفير الطاقة الآن</string>
     <string name="settings_power_saving_card_normal">كل شيء يعمل بشكل طبيعي</string>
     <string name="settings_privacy_checkup">فحص الخصوصية</string>
-    <plurals name="settings_privacy_checkup_what">
-    </plurals>
     <string name="settings_privacy_checkup_review">مراجعة</string>
     <string name="settings_privacy_checkup_not_now">ليس الآن</string>
     <string name="settings_storage_used_on_device">مستخدمة على هذا الجهاز</string>

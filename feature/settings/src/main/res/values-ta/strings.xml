@@ -207,8 +207,6 @@
     <string name="settings_power_saving_card_saving">இப்போது மின்சேமிப்பில் உள்ளது</string>
     <string name="settings_power_saving_card_normal">அனைத்தும் வழக்கம்போல் இயங்கும்</string>
     <string name="settings_privacy_checkup">தனியுரிமைச் சரிபார்ப்பு</string>
-    <plurals name="settings_privacy_checkup_what">
-    </plurals>
     <string name="settings_privacy_checkup_review">மதிப்பாய்வு செய்</string>
     <string name="settings_privacy_checkup_not_now">இப்போது வேண்டாம்</string>
     <string name="settings_storage_used_on_device">இந்தச் சாதனத்தில் பயன்படுத்தப்பட்டது</string>
