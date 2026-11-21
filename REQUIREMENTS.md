@@ -172,7 +172,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper: the theme's colors,
   or Telegram's wallpapers and patterns and the user's photos, synced to the account for light and dark theme apart,
   with dimming in dark theme and blur for photos (owner decision 2026-11-20); a chat's own wallpaper from its info
-  page; both on one wallpaper page that previews the conversation and sets nothing until Apply, ADR 0041), Language (per-app language API), About (version, licenses, GitHub link).
+  page; both on one wallpaper page that previews the conversation and sets nothing until Apply, ADR 0041; a conversation with a photo or a fill wallpaper takes its colors from it, owner decision 2026-11-21), Language (per-app language API), About (version, licenses, GitHub link).
 - FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
   curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
   (standard/medium/high per M3), and how chats look (group bubbles; Chat appearance with the message text size,
