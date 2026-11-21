@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.NextChannelPreviewData
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -73,6 +74,19 @@ class NextChannelPullStateTest {
             composeRule.mainClock.advanceTimeByFrame()
             composeRule.waitForIdle()
         }
+
+    @Test
+    fun `the indicator is pulled, and composed, only while the list is pulled`() {
+        setState()
+        assertFalse("at rest", state.isPulled)
+
+        pull(STEP)
+        assertTrue("pulled", state.isPulled)
+
+        release()
+        frames(SETTLE_FRAMES)
+        assertFalse("settled back", state.isPulled)
+    }
 
     @Test
     fun `let go, the pull settles back by itself over several frames`() {

@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.ui.component.HiddenTitle
+import dev.kyralabs.pingogram.core.ui.component.rememberTwoRowTitles
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -70,13 +72,24 @@ internal fun ExportPageScaffold(
     body: @Composable (innerPadding: PaddingValues) -> Unit,
 ) {
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
+    val titles = rememberTwoRowTitles(scrollBehavior)
+    val typography = MaterialTheme.typography
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = exportPageColor(),
         topBar = {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 TwoRowsTopAppBar(
-                    title = { expanded -> PageTitle(title, expanded) },
+                    // Each row's title only while that row can show (docs/PERFORMANCE.md, "Overdraw").
+                    title = { expanded ->
+                        if (titles.shows(expanded)) {
+                            PageTitle(title, expanded)
+                        } else {
+                            HiddenTitle(
+                                if (expanded) typography.headlineMediumEmphasized else typography.titleLargeEmphasized,
+                            )
+                        }
+                    },
                     modifier =
                         Modifier
                             .widthIn(max = MaterialTheme.sizes.contentMaxWidth)

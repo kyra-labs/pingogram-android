@@ -90,6 +90,9 @@ internal class NextChannelPullState(
     /** Pulled past [threshold]: a release opens [next]. */
     val isArmed: Boolean by derivedStateOf { pull >= threshold }
 
+    /** Whether the list is pulled at all: the indicator shows, and is composed, only then (`docs/PERFORMANCE.md`). */
+    val isPulled: Boolean by derivedStateOf { pull > 0f }
+
     /** Opens [next] at once, for screen readers, which do not pull. */
     fun openNow() = onOpen(next)
 

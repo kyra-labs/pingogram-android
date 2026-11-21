@@ -231,7 +231,9 @@ internal fun FloatingDatePill(
             label = "datePill",
         )
     val pillModifier = remember(modifier, alpha) { modifier.graphicsLayer { this.alpha = alpha.value } }
-    date?.let { DatePill(it.resolve(), pillModifier, floating = true) }
+    // Composed only while scrolling and fading out, not at alpha 0 between scrolls (docs/PERFORMANCE.md, "Overdraw").
+    val shows by remember(listState) { derivedStateOf { listState.isScrollInProgress || alpha.value > 0f } }
+    if (shows) date?.let { DatePill(it.resolve(), pillModifier, floating = true) }
 }
 
 @Composable

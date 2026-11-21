@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -128,21 +130,25 @@ internal fun StickerImage(
     // 1 once the animation shows its first frame; read in the draw phase.
     val animationShown = remember(sticker.file.id) { mutableFloatStateOf(0f) }
     val hiddenByAnimation = Modifier.graphicsLayer { alpha = 1f - animationShown.floatValue }
+    // The emoji and the thumbnail go once the animation covers them, not kept at alpha 0 under it.
+    val standInsShow by remember(animationShown) { derivedStateOf { animationShown.floatValue < 1f } }
     Box(modifier.size(displaySize), contentAlignment = Alignment.Center) {
-        if (pictureId == null) {
-            StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation)
-        } else {
-            val alpha = rememberImageAlpha(pictureId)
-            StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation.fadingOutAs(alpha))
-            val density = LocalDensity.current
-            TdlibImage(
-                fileId = pictureId,
-                widthPx = with(density) { displaySize.width.roundToPx() },
-                heightPx = with(density) { displaySize.height.roundToPx() },
-                alpha = alpha,
-                modifier = hiddenByAnimation.matchParentSize(),
-                contentScale = ContentScale.Fit,
-            )
+        if (standInsShow) {
+            if (pictureId == null) {
+                StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation)
+            } else {
+                val alpha = rememberImageAlpha(pictureId)
+                StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation.fadingOutAs(alpha))
+                val density = LocalDensity.current
+                TdlibImage(
+                    fileId = pictureId,
+                    widthPx = with(density) { displaySize.width.roundToPx() },
+                    heightPx = with(density) { displaySize.height.roundToPx() },
+                    alpha = alpha,
+                    modifier = hiddenByAnimation.matchParentSize(),
+                    contentScale = ContentScale.Fit,
+                )
+            }
         }
         if (animated != null) {
             AnimatedSticker(
