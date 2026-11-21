@@ -14,11 +14,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.FloatState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -26,14 +32,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.brush
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.wallpaper.WallpaperFrame
+import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperFrame
+import dev.kyralabs.pingogram.core.ui.wallpaper.wallpaperFrame
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.ChatPreview
 import kotlinx.coroutines.CoroutineDispatcher
@@ -63,17 +70,23 @@ private fun PreviewContent(
     modifier: Modifier,
 ) {
     val description = stringResource(R.string.settings_chat_preview)
+    val frame = rememberWallpaperFrame()
+    val backdrop = rememberPreviewBackdrop(state, frame)
+    // Where the bar ends, set as it is placed and read only while drawing: the wallpaper is drawn sharp below it only.
+    val barBottom = remember { mutableFloatStateOf(0f) }
     Box(
         modifier =
             modifier
                 .previewFrame(MaterialTheme.sizes.mediaMaxWidth)
                 .clip(MaterialTheme.shapes.extraLarge)
+                .wallpaperFrame(frame)
                 .clearAndSetSemantics { contentDescription = description },
         propagateMinConstraints = true,
     ) {
-        PreviewBackground(state, Modifier.matchParentSize())
+        val below = if (backdrop != null) Modifier.drawBelow(barBottom) else Modifier
+        PreviewBackground(state, Modifier.matchParentSize().then(below), frame)
         Column(verticalArrangement = Arrangement.SpaceBetween) {
-            PreviewTopBar(state.chat)
+            PreviewTopBar(state, backdrop, Modifier.onPlaced { barBottom.floatValue = it.size.height.toFloat() })
             Column(
                 modifier = Modifier.padding(bottom = MaterialTheme.spacing.small),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,48 +100,30 @@ private fun PreviewContent(
 }
 
 /**
- * What the preview draws behind the messages: a chat's own wallpaper, picked or set (the account's theme color
- * without one); for the account, the theme-color wallpaper shown, with the picked or set wallpaper over it.
+ * What the preview draws behind the messages, in [frame]: a chat's own wallpaper, picked or set (the account's theme
+ * color without one); for the account, the theme-color wallpaper shown, with the picked or set wallpaper over it.
  */
 @Composable
 private fun PreviewBackground(
     state: WallpaperPageUiState,
     modifier: Modifier,
+    frame: WallpaperFrame,
 ) {
     val pending = state.picker.pending
     if (state.isChat) {
-        PreviewWallpaper(pending, state.shownWallpaper, state.dimming, modifier)
+        PreviewWallpaper(pending, state.shownWallpaper, state.dimming, modifier, frame)
     } else {
         val colors = MaterialTheme.colorScheme
         Spacer(modifier.background(state.shownThemeColor.brush(colors) ?: SolidColor(colors.surface)))
         if (pending != null || state.shownWallpaper != null) {
-            PreviewWallpaper(pending, state.shownWallpaper, state.dimming, modifier)
+            PreviewWallpaper(pending, state.shownWallpaper, state.dimming, modifier, frame)
         }
     }
 }
 
-/** The conversation's top bar: back, the chat's photo and name, or a sample's for the account's wallpaper. */
-@Composable
-private fun PreviewTopBar(chat: WallpaperPageChat?) {
-    val colors = MaterialTheme.colorScheme
-    val spacing = MaterialTheme.spacing
-    val name = chat?.title ?: stringResource(R.string.settings_wallpaper_preview_name)
-    Row(
-        modifier = Modifier.fillMaxWidth().background(colors.surfaceContainer).padding(spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.small),
-    ) {
-        Icon(painterResource(UiR.drawable.ic_arrow_back), contentDescription = null, tint = colors.onSurface)
-        Avatar(photo = chat?.photo, name = name, id = chat?.id ?: 0L, size = MaterialTheme.sizes.avatarExtraSmall)
-        Text(
-            text = name,
-            style = MaterialTheme.typography.titleMedium.userContent,
-            color = colors.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
+/** Draws only below [top] (pixels from this box's top), clipped in the draw phase. */
+private fun Modifier.drawBelow(top: FloatState): Modifier =
+    drawWithContent { clipRect(top = top.floatValue) { this@drawWithContent.drawContent() } }
 
 /** "Today" on an opaque pill, as the conversation's date chips. */
 @Composable
