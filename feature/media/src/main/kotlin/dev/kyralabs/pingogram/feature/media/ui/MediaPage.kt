@@ -285,7 +285,9 @@ private fun BoxScope.PhotoLayers(
         covered = remember(full, previewShown) { { previewShown.value || full.value >= 1f } },
     )
     val preview = remember(media, files) { previewSize(media, files) }
-    if (preview != null) {
+    // Gone once the full size faded in over it, not drawn under it in every frame of a swipe, zoom or drag.
+    val fullShown by remember(full) { derivedStateOf { full.value >= 1f } }
+    if (preview != null && !fullShown) {
         ViewerImage(
             preview.file.id,
             preview.width,
