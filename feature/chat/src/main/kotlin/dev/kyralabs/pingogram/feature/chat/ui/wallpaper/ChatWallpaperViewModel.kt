@@ -8,6 +8,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -64,7 +65,7 @@ class ChatWallpaperViewModel
 data class ConversationWallpaper(
     val account: AccountWallpapers = AccountWallpapers(),
     val own: ChatWallpaperOverride? = null,
-    val accountDimming: Int = 0,
+    val accountDimming: Int = ChatAppearance.DEFAULT_WALLPAPER_DIMMING,
 ) {
     /** What shows in [dark] theme and its dimming; a null wallpaper for the theme-color one. */
     fun forTheme(dark: Boolean): ShownWallpaper =

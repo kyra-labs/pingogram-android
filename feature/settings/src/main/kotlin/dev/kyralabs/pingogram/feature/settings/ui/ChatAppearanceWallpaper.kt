@@ -7,11 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.AccountWallpaperChips
@@ -19,6 +24,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PendingWallpaperActi
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.selectedWallpaperId
 import kotlinx.collections.immutable.persistentListOf
+import java.text.NumberFormat
 
 /**
  * Chat appearance's "Wallpaper" (owner decision 2026-11-20, `docs/DESIGN_SYSTEM.md` §6): which theme it is picked
@@ -50,6 +56,7 @@ internal fun WallpaperGroup(
             }
         }
         item { shapes -> SettingsSegment(shapes) { WallpaperChips(state, set, onWallpaper, actions) } }
+        wallpaperOptions(state, set, actions)
         picker.pending?.let { pending ->
             item { shapes ->
                 SettingsSegment(shapes) {
@@ -99,9 +106,74 @@ private fun WallpaperChips(
     }
 }
 
+/**
+ * What the picked or set wallpaper offers: "Blur" for a picked photo, "Remove wallpaper" where the account has one for
+ * the theme ([set]) and nothing is picked, and the dark theme's dimming when picking for it.
+ */
+private fun SettingsGroupScope.wallpaperOptions(
+    state: ChatAppearanceUiState.Content,
+    set: Wallpaper?,
+    actions: WallpaperActions,
+) {
+    val picker = state.picker
+    picker.pending?.blurred()?.let { blurred ->
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_chat_wallpaper_blur),
+                summary = stringResource(R.string.settings_chat_wallpaper_blur_summary),
+                checked = blurred,
+                shapes = shapes,
+                onCheckedChange = actions.onBlurred,
+            )
+        }
+    }
+    if (set != null && picker.pending == null) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_chat_wallpaper_remove),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_chat_wallpaper_remove_summary)) },
+                onClick = actions.onRemove,
+            )
+        }
+    }
+    if (picker.forDarkTheme == true) {
+        item { shapes ->
+            StepSlider(
+                title = stringResource(R.string.settings_chat_wallpaper_dimming),
+                labels = dimmingLabels(),
+                index = state.appearance.wallpaperDimming / DIMMING_STEP,
+                shapes = shapes,
+                onStep = { actions.onDimming(it * DIMMING_STEP) },
+            )
+        }
+    }
+}
+
+/** Whether the picked photo is blurred; null for a pattern, which has no blur. */
+private fun WallpaperChoice.blurred(): Boolean? =
+    when (this) {
+        is WallpaperChoice.NewPhoto -> isBlurred
+        is WallpaperChoice.Existing -> isBlurred.takeIf { wallpaper is Wallpaper.Photo }
+    }
+
+/** 0% to 100% in steps of [DIMMING_STEP], in the user's locale. */
+@Composable
+private fun dimmingLabels(): List<String> {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(locale) {
+        val percent = NumberFormat.getPercentInstance(locale)
+        (0..ChatAppearance.MAX_WALLPAPER_DIMMING step DIMMING_STEP).map { percent.format(it / PERCENT) }
+    }
+}
+
 /** "Dark theme" for [dark], else "Light theme". */
 private fun themeLabel(dark: Boolean): Int =
     if (dark) R.string.settings_chat_wallpaper_dark else R.string.settings_chat_wallpaper_light
 
 /** Light theme, then dark theme: which the wallpaper is picked for. */
 private val ThemeOptions = persistentListOf(false, true)
+
+/** The dimming slider's step, in percent. */
+private const val DIMMING_STEP = 10
+private const val PERCENT = 100.0

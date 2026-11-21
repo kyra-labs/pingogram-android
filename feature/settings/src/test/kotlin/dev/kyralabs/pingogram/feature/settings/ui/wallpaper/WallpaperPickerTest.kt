@@ -58,7 +58,7 @@ class WallpaperPickerTest {
         runTest {
             val picker = picker()
             picker.showTheme(dark = true)
-            picker.pickPhoto("content://photo")
+            picker.pickPhoto("content://photo", SCREEN_SIDE)
             runCurrent()
             picker.setBlurred(true)
 
@@ -112,7 +112,7 @@ class WallpaperPickerTest {
             val picker = picker()
             photos.onPreparePhoto = { Outcome.Failure(DomainError.PhotoInvalid) }
 
-            picker.pickPhoto("content://broken")
+            picker.pickPhoto("content://broken", SCREEN_SIDE)
             runCurrent()
 
             assertEquals(listOf<DomainError>(DomainError.PhotoInvalid), errors)
@@ -125,7 +125,7 @@ class WallpaperPickerTest {
         runTest {
             val picker = picker()
             picker.showTheme(dark = false)
-            picker.pickPhoto("content://a")
+            picker.pickPhoto("content://a", SCREEN_SIDE)
             runCurrent()
 
             picker.showTheme(dark = true)
@@ -133,7 +133,7 @@ class WallpaperPickerTest {
             assertNull(picker.state.value.pending)
             assertEquals(listOf("/cache/uploads/content://a.jpg"), photos.discarded)
 
-            picker.pickPhoto("content://b")
+            picker.pickPhoto("content://b", SCREEN_SIDE)
             runCurrent()
             picker.cancel()
             assertEquals(2, photos.discarded.size)
@@ -143,5 +143,6 @@ class WallpaperPickerTest {
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(20, 0), isVector = true), 50, false)
         val FILL = Wallpaper.Fill(3, listOf(0xFFFFFF))
+        const val SCREEN_SIDE = 2400
     }
 }

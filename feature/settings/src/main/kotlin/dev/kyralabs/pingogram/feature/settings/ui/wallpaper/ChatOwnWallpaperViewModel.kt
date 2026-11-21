@@ -9,6 +9,7 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.onFailure
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -39,7 +40,7 @@ data class ChatOwnWallpaperUiState(
     val picker: WallpaperPickerState = WallpaperPickerState(),
     val canSetForBoth: Boolean = false,
     val forBoth: Boolean = false,
-    val dimming: Int = 0,
+    val dimming: Int = ChatAppearance.DEFAULT_WALLPAPER_DIMMING,
 )
 
 /** What the user does on a chat's own wallpaper page, besides picking ([WallpaperEvent]). */
@@ -90,7 +91,7 @@ class ChatOwnWallpaperViewModel
 
         private val picker = WallpaperPicker(viewModelScope, wallpapers, photos, ::showError)
 
-        /** The choices made on the page; null dimming follows the chat's own, else none. */
+        /** The choices made on the page; null dimming follows the chat's own, else the default. */
         private val choices = MutableStateFlow(Choices())
 
         private val premium: Flow<Boolean> =
@@ -106,7 +107,7 @@ class ChatOwnWallpaperViewModel
                     picker = pick,
                     canSetForBoth = canBoth,
                     forBoth = canBoth && made.forBoth,
-                    dimming = made.dimming ?: own?.darkThemeDimming ?: 0,
+                    dimming = made.dimming ?: own?.darkThemeDimming ?: ChatAppearance.DEFAULT_WALLPAPER_DIMMING,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatOwnWallpaperUiState())
 
@@ -116,7 +117,7 @@ class ChatOwnWallpaperViewModel
                 is WallpaperEvent.ShowTheme -> picker.showTheme(event.dark)
                 WallpaperEvent.Retry -> picker.retry()
                 is WallpaperEvent.Pick -> picker.pick(event.wallpaper)
-                is WallpaperEvent.PickPhoto -> picker.pickPhoto(event.uri)
+                is WallpaperEvent.PickPhoto -> picker.pickPhoto(event.uri, event.screenSidePx)
                 is WallpaperEvent.SetBlurred -> picker.setBlurred(event.blurred)
                 WallpaperEvent.Cancel -> picker.cancel()
                 is WallpaperEvent.Apply -> apply(event.patternFill)

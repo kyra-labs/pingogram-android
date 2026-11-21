@@ -186,6 +186,18 @@ class DataStoreAppearanceRepositoryTest {
         }
 
     @Test
+    fun `the wallpaper dims by 30 percent in dark theme until the user changes it`() =
+        runTest {
+            assertEquals(
+                30,
+                repository(dataStore())
+                    .appearance
+                    .first()
+                    .chat.wallpaperDimming,
+            )
+        }
+
+    @Test
     fun `the wallpaper's dimming stays within 0 to 100 percent`() =
         runTest {
             val dataStore = dataStore()

@@ -68,6 +68,18 @@ class AndroidPickedPhotoRepositoryTest {
         }
 
     @Test
+    fun `a wallpaper photo is prepared at the longer side asked for`() =
+        runTest {
+            content.add("content://photo", "photo.jpg", "image/jpeg", bytes = byteArrayOf(1))
+            media.images[1] = ImageInfo(4000, 3000, Orientation.fromExif(EXIF_ROTATE_90))
+
+            repository().preparePhoto("content://photo", PickedPhotoLimits.WALLPAPER_MAX_SIDE_PX)
+
+            val plan = media.plans.single()
+            assertEquals(PickedPhotoLimits.WALLPAPER_MAX_SIDE_PX, maxOf(plan.width, plan.height))
+        }
+
+    @Test
     fun `a video, a GIF or an image that cannot be decoded is refused and leaves nothing`() =
         runTest {
             val repository = repository()

@@ -52,7 +52,9 @@ class ChatOwnWallpaperViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = ChatOwnWallpaperViewModel(CHAT, wallpapers, users, FakePickedPhotoRepository())
+    private val photos = FakePickedPhotoRepository()
+
+    private fun viewModel() = ChatOwnWallpaperViewModel(CHAT, wallpapers, users, photos)
 
     private fun TestScope.effectsOf(viewModel: ChatOwnWallpaperViewModel): List<ChatOwnWallpaperEffect> {
         val effects = mutableListOf<ChatOwnWallpaperEffect>()
@@ -74,6 +76,27 @@ class ChatOwnWallpaperViewModelTest {
             assertEquals(true, set.onlyForSelf)
             assertEquals(ChatWallpaperOverride(PHOTO, 40), viewModel.uiState.value.own)
             assertNull(viewModel.uiState.value.picker.pending)
+        }
+
+    @Test
+    fun `a new wallpaper dims by 30 percent in dark theme until the user changes it`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.onWallpaperEvent(WallpaperEvent.Pick(PHOTO))
+            viewModel.onWallpaperEvent(WallpaperEvent.Apply(emptyList()))
+
+            assertEquals(30, wallpapers.chatWallpapersSet.single().darkThemeDimming)
+        }
+
+    @Test
+    fun `a photo is prepared at the screen's size, up to 2560 px`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto("content://phone", SCREEN_SIDE))
+            viewModel.onWallpaperEvent(WallpaperEvent.Cancel)
+            viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto("content://tablet", 3200))
+
+            assertEquals(listOf(SCREEN_SIDE, 2560), photos.preparedSides)
         }
 
     @Test
@@ -110,7 +133,7 @@ class ChatOwnWallpaperViewModelTest {
             wallpapers.setChat(CHAT, ChatWallpaperOverride(PHOTO, darkThemeDimming = 0))
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
-            viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto("content://photo"))
+            viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto("content://photo", SCREEN_SIDE))
             wallpapers.failure = DomainError.Network
 
             viewModel.onWallpaperEvent(WallpaperEvent.Apply(emptyList()))
@@ -158,6 +181,7 @@ class ChatOwnWallpaperViewModelTest {
     private companion object {
         const val CHAT = 7L
         const val ME = 1L
+        const val SCREEN_SIDE = 2400
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
     }
 }
