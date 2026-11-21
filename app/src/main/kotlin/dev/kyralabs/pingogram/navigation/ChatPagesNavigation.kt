@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToBookmarkTags
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.navigation.pinnedMessagesScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.scheduledMessagesScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
 
 /**
  * The pushed conversation and the pages of a chat pushed above what opens them, with the shared axis on X. The chat
@@ -37,6 +38,7 @@ internal fun NavGraphBuilder.chatScreens(
         onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId = messageId)) },
     )
     chatExportScreen(onBack = { navController.popBackStack() })
+    chatWallpaperScreen(onBack = { navController.popBackStack() })
     scheduledMessagesScreen(onBack = { navController.popBackStack() })
     pinnedMessagesScreen(onBack = { navController.popBackStack() })
     // The bookmarks kept on this phone, from Settings › On this phone and Saved Messages (LocalBookmarksLauncher).

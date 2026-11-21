@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
  * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
  * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out.
+ * [onChatWallpaper], where the app has the chat wallpaper page, is what "Wallpaper for this chat" opens for it.
  * [stories], where given, is the Stories tab before the shared media's (not for bots), and [profileMusic] their profile
  * music below the header. [onChatDeleted] leaves it once the chat with a deleted account was deleted ([onBack] where
  * not given), as the conversation below it is gone too. It grows
@@ -34,6 +35,7 @@ fun NavGraphBuilder.profileScreen(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     onEditContact: ((userId: Long) -> Unit)? = null,
     onExportChat: ((chatId: Long) -> Unit)? = null,
+    onChatWallpaper: ((chatId: Long) -> Unit)? = null,
     stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
     onChatDeleted: (() -> Unit)? = null,
@@ -51,6 +53,7 @@ fun NavGraphBuilder.profileScreen(
                 modifier = Modifier.avatarTransformTarget(AvatarTransformKey.profile(userId)),
                 onEditContact = onEditContact,
                 onExportChat = onExportChat,
+                onChatWallpaper = onChatWallpaper,
                 stories = stories,
                 profileMusic = profileMusic,
                 onChatDeleted = onChatDeleted,

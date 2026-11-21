@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.chatWallpaperScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.navigateToChatWallpaper
 
 /**
  * The Chats tab's extra pane on extra-large windows (`docs/DESIGN_SYSTEM.md` §7): [content]'s profile or info page
@@ -107,6 +109,7 @@ private fun ExtraPaneNavHost(
             onOpenMessage = navigation.onOpenMessage,
             onEditContact = navigation.onEditContact,
             onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
+            onChatWallpaper = { chatId -> navController.navigateToChatWallpaper(chatId) },
             onChatDeleted = navigation.onLeft,
         )
         chatInfoScreens(
@@ -121,6 +124,7 @@ private fun ExtraPaneNavHost(
         )
         // "Export chat" of the pane's profile or info page, in the pane too.
         chatExportScreen(onBack = back)
+        chatWallpaperScreen(onBack = back)
     }
 }
 

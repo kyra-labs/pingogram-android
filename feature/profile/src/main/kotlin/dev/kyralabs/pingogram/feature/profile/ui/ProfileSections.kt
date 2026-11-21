@@ -340,6 +340,7 @@ private fun PhoneRow(
 /**
  * What else can be done with the account, segmented rows without icons: "Add to contacts" or "Edit contact" (only with
  * [onEditContact], the app's contact editor), "Export chat" (only with [onExportChat], the app's export page),
+ * "Wallpaper for this chat" (only with [onChatWallpaper], the app's chat wallpaper page),
  * "Block Aisha" in `error` (after a confirmation) or "Unblock Aisha", and "Report" in `error`, which opens the report
  * sheet. Rows that do not apply are left out.
  */
@@ -350,6 +351,7 @@ internal fun ProfileMoreGroup(
     modifier: Modifier = Modifier,
     onEditContact: (() -> Unit)? = null,
     onExportChat: (() -> Unit)? = null,
+    onChatWallpaper: (() -> Unit)? = null,
 ) {
     val error = MaterialTheme.colorScheme.error
     val rows = mutableListOf<ProfileRow>()
@@ -361,6 +363,12 @@ internal fun ProfileMoreGroup(
     if (onExportChat != null) {
         rows +=
             ProfileRow("export") { ActionRow(stringResource(R.string.profile_export_chat), it, onClick = onExportChat) }
+    }
+    if (onChatWallpaper != null) {
+        rows +=
+            ProfileRow("wallpaper") {
+                ActionRow(stringResource(R.string.profile_chat_wallpaper), it, onClick = onChatWallpaper)
+            }
     }
     actions.isBlocked?.let { isBlocked ->
         rows +=
