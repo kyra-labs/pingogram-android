@@ -608,6 +608,16 @@ data class ChatExportRoute(
 )
 
 /**
+ * A chat's own wallpaper (owner decision 2026-11-20, `feature:settings`): a settings-style page pushed above the
+ * profile it is opened from, with the shared axis on X, where the user picks, previews, sets or resets the wallpaper
+ * of chat [chatId].
+ */
+@Serializable
+data class ChatWallpaperRoute(
+    val chatId: Long,
+)
+
+/**
  * The scheduled messages of chat [chatId] (`REQUIREMENTS.md` FR-C5), `:feature:chat`: pushed above the conversation
  * whose "3 scheduled messages" bar opens it, with the shared axis on X, as bubbles under their send days, each to send
  * now, reschedule, edit, copy or delete.

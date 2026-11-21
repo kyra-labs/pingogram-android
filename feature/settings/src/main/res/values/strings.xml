@@ -129,6 +129,12 @@
     <string name="settings_chat_wallpaper_remove">Remove wallpaper</string>
     <string name="settings_chat_wallpaper_remove_summary">Go back to the theme\'s colors</string>
     <string name="settings_chat_wallpaper_dimming">Dimming in dark theme</string>
+    <string name="settings_chat_wallpaper_title">Wallpaper for this chat</string>
+    <string name="settings_chat_wallpaper_own_footer">It shows in this chat instead of your Telegram account\'s wallpaper. Set for both of you, the other person sees it too.</string>
+    <string name="settings_chat_wallpaper_for_me">Only for me</string>
+    <string name="settings_chat_wallpaper_for_both">For both of you</string>
+    <string name="settings_chat_wallpaper_reset">Reset wallpaper</string>
+    <string name="settings_chat_wallpaper_reset_summary">Show your account\'s wallpaper in this chat again</string>
     <string name="settings_chat_wallpaper_footer">Telegram\'s wallpapers and your photos are saved to your Telegram account, for light and dark theme apart, and show in your other Telegram apps too. The colors stay on this phone.</string>
     <string name="settings_color_theme">Theme</string>
     <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
