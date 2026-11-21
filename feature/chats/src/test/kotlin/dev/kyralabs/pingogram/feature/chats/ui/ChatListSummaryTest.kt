@@ -48,7 +48,7 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
 
             chats.setChats(ChatListType.Main, chat(id = 2), chat(id = 3, unreadMentionCount = 1))
             chats.unreadCounts.value = mapOf(ChatListType.Main to unread(unreadUnmuted = 0))
-            runCurrent()
+            afterCountPace()
 
             assertEquals(0, summary().unreadChats)
             assertEquals(1, summary().mentionChats)
@@ -132,7 +132,7 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
             assertFalse(summary().offersCatchUp)
 
             chats.setChats(ChatListType.Main, *(2L..6L).map { chat(id = it, unreadCount = 1) }.toTypedArray())
-            runCurrent()
+            afterCountPace()
 
             assertEquals(5, summary().catchUpChats)
             assertTrue(summary().offersCatchUp)
@@ -149,7 +149,7 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
             assertEquals(0, summary().catchUpChats)
 
             chatListSettings.setCatchUpIncludesMuted(true)
-            runCurrent()
+            afterCountPace()
 
             assertTrue(summary().offersCatchUp)
         }
