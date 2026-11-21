@@ -72,7 +72,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 7.0),
-            toneDeltaPair = { ToneDeltaPair(primaryContainer, primary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(primaryContainer, primary) },
         )
 
     val onPrimary: DynamicColor =
@@ -92,7 +92,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(primaryContainer, primary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(primaryContainer, primary) },
         )
 
     val onPrimaryContainer: DynamicColor =
@@ -121,7 +121,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 7.0),
-            toneDeltaPair = { ToneDeltaPair(secondaryContainer, secondary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(secondaryContainer, secondary) },
         )
 
     val onSecondary: DynamicColor =
@@ -141,7 +141,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(secondaryContainer, secondary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(secondaryContainer, secondary) },
         )
 
     val onSecondaryContainer: DynamicColor =
@@ -161,7 +161,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 7.0),
-            toneDeltaPair = { ToneDeltaPair(tertiaryContainer, tertiary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(tertiaryContainer, tertiary) },
         )
 
     val onTertiary: DynamicColor =
@@ -181,7 +181,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(tertiaryContainer, tertiary, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(tertiaryContainer, tertiary) },
         )
 
     val onTertiaryContainer: DynamicColor =
@@ -201,7 +201,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 7.0),
-            toneDeltaPair = { ToneDeltaPair(errorContainer, error, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(errorContainer, error) },
         )
 
     val onError: DynamicColor =
@@ -221,7 +221,7 @@ internal object MaterialAccentColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(errorContainer, error, 10.0, TonePolarity.Nearer, stayTogether = false) },
+            toneDeltaPair = { containerPair(errorContainer, error) },
         )
 
     val onErrorContainer: DynamicColor =
@@ -233,3 +233,9 @@ internal object MaterialAccentColors {
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 11.0),
         )
 }
+
+/** A container and its accent, kept 10 tones apart with the container nearer the surface, as upstream pairs them. */
+private fun containerPair(
+    container: DynamicColor,
+    accent: DynamicColor,
+): ToneDeltaPair = ToneDeltaPair(container, accent, 10.0, TonePolarity.Nearer, stayTogether = false)
