@@ -14,15 +14,14 @@
  * limitations under the License.
  *
  * Ported to Kotlin by the Pingogram authors from material-color-utilities 0.4.0
- * (https://github.com/material-foundation/material-color-utilities): hct/hct, reading a color; finding
- * one comes with the HCT solver.
+ * (https://github.com/material-foundation/material-color-utilities): hct/hct.
  */
 
 package dev.kyralabs.pingogram.core.ui.theme.mcu
 
 /**
  * A color in HCT, Material's color space: [hue] and [chroma] from CAM16, [tone] the L* of L*a*b*, so that a tone
- * difference is a contrast difference. Immutable, unlike upstream's, whose setters solve for a new color.
+ * difference is a contrast difference. Immutable, unlike upstream's, whose setters solve for a new color: use [from].
  */
 internal class Hct private constructor(
     private val argb: Int,
@@ -46,5 +45,12 @@ internal class Hct private constructor(
     companion object {
         /** [argb] in HCT. */
         fun fromInt(argb: Int): Hct = Hct(argb)
+
+        /** The color of [hue], [chroma] and [tone], or the closest in sRGB's gamut: chroma gives way first. */
+        fun from(
+            hue: Double,
+            chroma: Double,
+            tone: Double,
+        ): Hct = Hct(HctSolver.solveToInt(hue, chroma, tone))
     }
 }
