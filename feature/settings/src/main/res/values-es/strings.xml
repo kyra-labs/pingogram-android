@@ -208,9 +208,6 @@
     <string name="settings_power_saving_card_normal">Todo se reproduce con normalidad</string>
     <string name="settings_privacy_checkup">Revisión de privacidad</string>
     <plurals name="settings_privacy_checkup_what">
-        <item quantity="one">cosa que cualquiera en Telegram puede ver</item>
-        <item quantity="many">de cosas que cualquiera en Telegram puede ver</item>
-        <item quantity="other">cosas que cualquiera en Telegram puede ver</item>
     </plurals>
     <string name="settings_privacy_checkup_review">Revisar</string>
     <string name="settings_privacy_checkup_not_now">Ahora no</string>
