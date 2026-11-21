@@ -103,7 +103,11 @@ internal object QuantizerWsmeans {
                 var newClusterIndex = -1
                 for (j in 0 until clusterCount) {
                     val distance =
-                        if (distances[previousClusterIndex][j] < 4 * previousDistance) distance(points[i], clusters[j]) else null
+                        if (distances[previousClusterIndex][j] < 4 * previousDistance) {
+                            distance(points[i], clusters[j])
+                        } else {
+                            null
+                        }
                     if (distance != null && distance < minimumDistance) {
                         minimumDistance = distance
                         newClusterIndex = j
