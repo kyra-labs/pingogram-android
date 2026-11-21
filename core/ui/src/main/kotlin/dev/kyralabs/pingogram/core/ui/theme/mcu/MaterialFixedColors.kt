@@ -33,7 +33,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(primaryFixed, primaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(primaryFixed, primaryFixedDim) },
         )
 
     val primaryFixedDim: DynamicColor =
@@ -44,7 +44,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(primaryFixed, primaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(primaryFixed, primaryFixedDim) },
         )
 
     val onPrimaryFixed: DynamicColor =
@@ -75,7 +75,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(secondaryFixed, secondaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(secondaryFixed, secondaryFixedDim) },
         )
 
     val secondaryFixedDim: DynamicColor =
@@ -86,7 +86,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(secondaryFixed, secondaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(secondaryFixed, secondaryFixedDim) },
         )
 
     val onSecondaryFixed: DynamicColor =
@@ -117,7 +117,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(tertiaryFixed, tertiaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(tertiaryFixed, tertiaryFixedDim) },
         )
 
     val tertiaryFixedDim: DynamicColor =
@@ -128,7 +128,7 @@ internal object MaterialFixedColors {
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
-            toneDeltaPair = { ToneDeltaPair(tertiaryFixed, tertiaryFixedDim, 10.0, TonePolarity.Lighter, stayTogether = true) },
+            toneDeltaPair = { fixedPair(tertiaryFixed, tertiaryFixedDim) },
         )
 
     val onTertiaryFixed: DynamicColor =
@@ -151,3 +151,9 @@ internal object MaterialFixedColors {
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 11.0),
         )
 }
+
+/** A fixed color and its dim twin, kept 10 tones apart with the fixed one lighter, as upstream pairs them. */
+private fun fixedPair(
+    fixed: DynamicColor,
+    fixedDim: DynamicColor,
+): ToneDeltaPair = ToneDeltaPair(fixed, fixedDim, 10.0, TonePolarity.Lighter, stayTogether = true)
