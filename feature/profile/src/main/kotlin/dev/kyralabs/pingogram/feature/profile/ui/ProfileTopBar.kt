@@ -42,7 +42,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
+import dev.kyralabs.pingogram.core.ui.component.HiddenTitle
 import dev.kyralabs.pingogram.core.ui.component.rememberPolygon
+import dev.kyralabs.pingogram.core.ui.component.rememberTwoRowTitles
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiImage
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -82,15 +84,27 @@ internal fun ProfileTopBar(
 ) {
     val collapsing by remember(scrollBehavior) { derivedStateOf { scrollBehavior.state.collapsedFraction > HALF } }
     val tint = profileTint(header?.profileColor)
+    // Each row's title and the status only while that row can show (docs/PERFORMANCE.md, "Overdraw"): the hidden
+    // copy held an emoji status that kept playing.
+    val titles = rememberTwoRowTitles(scrollBehavior)
+    val typography = MaterialTheme.typography
     TwoRowsTopAppBar(
-        title = { expanded -> header?.let { ProfileTitle(it, expanded, collapsing) } },
+        title = { expanded ->
+            header?.let {
+                if (titles.shows(expanded)) {
+                    ProfileTitle(it, expanded, collapsing)
+                } else {
+                    HiddenTitle(if (expanded) typography.displaySmallEmphasized else typography.titleLargeEmphasized)
+                }
+            }
+        },
         modifier =
             if (tint == Color.Transparent) {
                 modifier
             } else {
                 modifier.clip(MaterialTheme.shapes.extraLarge.copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize))
             },
-        subtitle = { expanded -> header?.let { if (expanded) ProfileSubtitle(it) } },
+        subtitle = { expanded -> header?.let { if (expanded && titles.shows(expanded = true)) ProfileSubtitle(it) } },
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {

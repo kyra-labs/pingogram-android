@@ -53,8 +53,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.HiddenTitle
 import dev.kyralabs.pingogram.core.ui.component.ReservedProgressLine
 import dev.kyralabs.pingogram.core.ui.component.performToggle
+import dev.kyralabs.pingogram.core.ui.component.rememberTwoRowTitles
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -87,13 +89,24 @@ internal fun InfoPageScaffold(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
+    // Each row's title only while that row can show (docs/PERFORMANCE.md, "Overdraw").
+    val titles = rememberTwoRowTitles(scrollBehavior)
+    val typography = MaterialTheme.typography
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = profilePageColor(),
         topBar = {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 TwoRowsTopAppBar(
-                    title = { expanded -> InfoPageTitle(title, expanded) },
+                    title = { expanded ->
+                        if (titles.shows(expanded)) {
+                            InfoPageTitle(title, expanded)
+                        } else {
+                            HiddenTitle(
+                                if (expanded) typography.headlineMediumEmphasized else typography.titleLargeEmphasized,
+                            )
+                        }
+                    },
                     modifier =
                         Modifier
                             .widthIn(max = MaterialTheme.sizes.contentMaxWidth)

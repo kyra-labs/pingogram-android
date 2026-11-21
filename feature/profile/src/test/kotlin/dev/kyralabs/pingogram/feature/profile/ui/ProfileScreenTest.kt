@@ -166,6 +166,20 @@ class ProfileScreenTest {
     }
 
     @Test
+    fun `the header lays out the name once, on the row that shows`() {
+        setScreen(profileMusic = { _, _, _ -> })
+
+        fun names() = composeRule.onAllNodesWithText("Ada Lovelace", useUnmergedTree = true).fetchSemanticsNodes().size
+
+        assertEquals("at rest", 1, names())
+
+        composeRule.onNodeWithTag(PROFILE_GRID_TEST_TAG).performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+
+        assertEquals("collapsed", 1, names())
+    }
+
+    @Test
     fun `the name is a heading`() {
         setScreen()
 

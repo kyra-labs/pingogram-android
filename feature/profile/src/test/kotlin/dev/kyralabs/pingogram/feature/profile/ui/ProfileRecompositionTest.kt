@@ -140,7 +140,7 @@ class ProfileRecompositionTest {
         /** At most one recomposition in this many frames counts as rare, nothing like one in every frame. */
         const val RARE = 4
 
-        /** The top bar's title, whose two rows compose as it collapses. */
-        val BAR_PARTS = setOf("ProfileTitle", "ProfileAvatar", "ProfileSubtitle", "ProfileLabel")
+        /** The top bar's title, whose two rows compose as it collapses: the collapsed one's emoji status too. */
+        val BAR_PARTS = setOf("ProfileTitle", "ProfileAvatar", "ProfileSubtitle", "ProfileLabel", "EmojiStatus")
     }
 }
