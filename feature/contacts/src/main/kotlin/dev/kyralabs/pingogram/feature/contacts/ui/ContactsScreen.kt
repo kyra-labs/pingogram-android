@@ -133,8 +133,10 @@ internal fun ContactsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        // The top bar's container; the content sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             ContactsTopBar(state.content, scrollBehavior, searchFocus, onOpenMyQrCode, onScanQrCode) {
                 onEvent(ContactsEvent.Invite)
@@ -143,7 +145,11 @@ internal fun ContactsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        ContentSheet(
+            innerPadding,
+            Modifier.consumeWindowInsets(innerPadding),
+            paintsSurround = true,
+        ) { contentPadding ->
             ContactsBody(state, syncControls, callbacks, listState, contentPadding)
             // The list's end fades into the sheet behind the floating navigation bar, as the Chats tab's does.
             BottomFade(Modifier.align(Alignment.BottomCenter))
