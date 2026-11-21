@@ -1,6 +1,6 @@
 # 0041. Chat colors from the wallpaper
 
-- Status: proposed (owner decisions 2026-11-21)
+- Status: accepted (owner, 2026-11-21)
 - Builds on the chat wallpapers of 2026-11-20 (`docs/TDLIB.md` "Backgrounds", `docs/DESIGN_SYSTEM.md` §6 "Chat
   appearance").
 
