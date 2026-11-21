@@ -39,16 +39,17 @@ internal val LocalConversationWallpaper = compositionLocalOf { ConversationWallp
  * The wallpaper behind the conversation's bars and messages (`docs/DESIGN_SYSTEM.md` §6 "Chat appearance"): the chat's
  * own, else the account's for the theme dimmed as Chat appearance says in dark theme, else the theme-color one. In
  * [frame], the conversation's window, it draws its part of the window's wallpaper; [blurred], the copy behind the top
- * bar.
+ * bar; [placeholder], what shows until a photo is drawn where no theme-color wallpaper is chosen.
  */
 @Composable
 internal fun ConversationWallpaperLayer(
     modifier: Modifier = Modifier,
     frame: WallpaperFrame? = null,
     blurred: Boolean = false,
+    placeholder: Color = Color.Unspecified,
 ) {
     val shown = LocalConversationWallpaper.current.forTheme(isDarkTheme())
-    ChatWallpaperLayer(shown.wallpaper, shown.darkThemeDimming, modifier, frame, blurred)
+    ChatWallpaperLayer(shown.wallpaper, shown.darkThemeDimming, modifier, frame, blurred, placeholder)
 }
 
 /**
@@ -112,7 +113,14 @@ private fun ConversationBarBackdrop(innerPadding: PaddingValues) {
             clipRect(bottom = bottom) { this@drawWithContent.drawContent() }
         },
     ) {
-        ConversationWallpaperLayer(Modifier.matchParentSize(), backdrop.frame, blurred = true)
+        // Until a photo is drawn, the bar's color without a wallpaper, not the window's.
+        val placeholder = MaterialTheme.colorScheme.surfaceContainer
+        ConversationWallpaperLayer(
+            Modifier.matchParentSize(),
+            backdrop.frame,
+            blurred = true,
+            placeholder = placeholder,
+        )
         WallpaperBarTheme(backdrop.bar, backdrop.seed) {
             Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
         }
@@ -137,7 +145,9 @@ internal fun ConversationBarSlot(content: @Composable (barColor: Color) -> Unit)
  * The messages' `ContentSheet` on the conversation's wallpaper (`docs/DESIGN_SYSTEM.md` §6, §13.5): the chat's own, the
  * account's or the theme-color one, in a layer of its own so scrolling neither composes nor redraws it. Over a Telegram
  * wallpaper the sheet and its surround are clear: it shows its part of the window's wallpaper sharp, and the wallpaper
- * blurred behind the top bar and its rounded corners ([ConversationBarBackdrop]).
+ * blurred behind the top bar and its rounded corners ([ConversationBarBackdrop]). The wallpaper is opaque, so nothing
+ * is drawn under it (`docs/PERFORMANCE.md`, "Overdraw"); a photo shows the sheet's `surface` in its place until it is
+ * drawn, and if it cannot be, never the window's color.
  */
 @Composable
 internal fun ConversationSheet(
@@ -154,7 +164,7 @@ internal fun ConversationSheet(
         color = if (backdrop != null) Color.Transparent else colors.surface,
         surround = if (backdrop != null) Color.Transparent else colors.surfaceContainer,
     ) { contentPadding ->
-        ConversationWallpaperLayer(Modifier.matchParentSize(), backdrop?.frame)
+        ConversationWallpaperLayer(Modifier.matchParentSize(), backdrop?.frame, placeholder = colors.surface)
         content(contentPadding)
     }
 }
