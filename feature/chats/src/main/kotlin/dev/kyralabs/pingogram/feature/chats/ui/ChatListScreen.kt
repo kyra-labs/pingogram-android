@@ -166,8 +166,10 @@ internal fun ChatListScreen(
     Box(modifier) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+            // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the
+            // content keeps the color it had on that container.
             containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             topBar = {
                 ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, summary, headerActions)
             },
