@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -105,7 +106,10 @@ internal fun SavedTagScreen(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             Column {
                 TopAppBar(
@@ -132,7 +136,7 @@ internal fun SavedTagScreen(
             }
         },
     ) { padding ->
-        ContentSheet(padding, Modifier.consumeWindowInsets(padding)) { contentPadding ->
+        ContentSheet(padding, Modifier.consumeWindowInsets(padding), paintsSurround = true) { contentPadding ->
             TaggedList(state.results, onEvent, contentPadding)
         }
     }

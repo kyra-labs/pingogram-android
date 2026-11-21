@@ -115,9 +115,16 @@ internal fun ForumTopicsScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        ContentSheet(
+            innerPadding,
+            Modifier.consumeWindowInsets(innerPadding),
+            paintsSurround = true,
+        ) { contentPadding ->
             TopicsBody(state.content, onEvent, onTopicEvent, onOpenTopic, listState, contentPadding)
         }
     }

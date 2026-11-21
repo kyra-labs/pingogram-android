@@ -35,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -340,11 +341,18 @@ private fun ChatScaffold(
             }
         },
         bottomBar = bottomBar,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = jumpButton,
     ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        ContentSheet(
+            innerPadding,
+            Modifier.consumeWindowInsets(innerPadding),
+            paintsSurround = true,
+        ) { contentPadding ->
             // The chat's own, the account's or the theme-color wallpaper, drawn behind the bars and the messages in a
             // layer of its own, so scrolling neither composes nor redraws it.
             ConversationWallpaperLayer(Modifier.matchParentSize())
