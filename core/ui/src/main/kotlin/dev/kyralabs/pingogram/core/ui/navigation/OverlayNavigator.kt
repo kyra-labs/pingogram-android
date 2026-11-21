@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -150,7 +151,9 @@ fun rememberOverlayNavigator(navController: NavHostController): OverlayNavigator
  * ([OverlayNavigator]). Each overlay fades in and out on the default effects spring, in an [AnimatedVisibilityScope]
  * its content shares elements with (`ProvideNavAnimatedVisibilityScope`), and keeps its saved state while it is on the
  * back stack. While one shows, what is below takes no touches, no keyboard focus and is hidden from screen readers, as
- * below a dialog; it stays composed and drawn.
+ * below a dialog; it stays composed and drawn, unless the top overlay settled and covers it completely
+ * ([CoverBelow]): then it stays composed and measured but is not placed, so it draws nothing and no animation of it
+ * plays under the overlay (`docs/PERFORMANCE.md`, "Overdraw").
  *
  * While an overlay is drawn, until its way out ended, the host carries [OVERLAY_TEST_TAG]: an overlay's own content
  * leaves the semantics in the first frame of its way out, so the benchmarks wait for this tag to know it is gone.
@@ -177,8 +180,16 @@ fun OverlayHost(
     val saveableStateHolder = rememberSaveableStateHolder()
     // The overlays still to draw: those on the back stack, and above them those going out.
     val shown = remember(backStack, transitions) { backStack + transitions.filter { it !in backStack } }
+    // What each overlay says of the screen below; the top one's decides whether it is placed.
+    val covers = remember { HashMap<String, OverlayCover>() }
+    val topCover = backStack.lastOrNull()?.let { top -> covers.getOrPut(top.id) { OverlayCover() } }
     Box(if (shown.isEmpty()) modifier else modifier.testTag(OVERLAY_TEST_TAG)) {
-        Box(Modifier.fillMaxSize().then(if (backStack.isEmpty()) Modifier else Covered)) { below() }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(if (backStack.isEmpty()) Modifier else Covered)
+                .placedUnless { topCover?.hidesBelow == true },
+        ) { below() }
         shown.forEach { entry ->
             key(entry.id) {
                 OverlayEntry(
@@ -187,6 +198,8 @@ fun OverlayHost(
                     visible = entry in backStack,
                     restored = entry !in transitions,
                     saveableStateHolder = saveableStateHolder,
+                    cover = covers.getOrPut(entry.id) { OverlayCover() },
+                    onGone = { covers.remove(entry.id) },
                 )
             }
         }
@@ -209,6 +222,8 @@ private fun OverlayEntry(
     visible: Boolean,
     restored: Boolean,
     saveableStateHolder: SaveableStateHolder,
+    cover: OverlayCover,
+    onGone: () -> Unit,
 ) {
     val destination = entry.destination as OverlayNavigator.Destination
     val gate = remember { OverlayEnterGate() }
@@ -251,12 +266,15 @@ private fun OverlayEntry(
                     compositingStrategy = CompositingStrategy.ModulateAlpha
                 }.overlayTouches(visible),
         ) {
-            CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
+            CompositionLocalProvider(LocalOverlayEnterGate provides gate, LocalOverlayCover provides cover) {
                 entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
             }
         }
     }
     val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
+    // Shown in full, its fade in over and not going out: only then may it hide the screen below.
+    val shownInFull = visible && state.isIdle && state.currentState == EnterExitState.Visible
+    SideEffect { cover.shownInFull = shownInFull }
     if (settled) {
         LaunchedEffect(visible) { completeTransition(navigator, entry, visible, saveableStateHolder) }
     }
@@ -269,6 +287,7 @@ private fun OverlayEntry(
                     ?.value
                     .orEmpty()
             if (entry !in onBackStack) navigator.onTransitionComplete(entry)
+            onGone()
         }
     }
 }
@@ -372,6 +391,40 @@ private class OverlayEnterGate {
 }
 
 private val LocalOverlayEnterGate = staticCompositionLocalOf<OverlayEnterGate?> { null }
+
+/**
+ * Says the overlay destination this is composed in hides the screen below completely while [opaque] (read in the
+ * layout phase, so it can follow a drag): once the overlay is shown in full, the screen below is not placed then, and
+ * draws nothing ([OverlayHost]). Nothing outside an overlay destination.
+ */
+@Composable
+fun CoverBelow(opaque: () -> Boolean) {
+    val cover = LocalOverlayCover.current ?: return
+    DisposableEffect(cover, opaque) {
+        cover.opaque = opaque
+        onDispose { cover.opaque = NotOpaque }
+    }
+}
+
+/** What an overlay says of the screen below it ([CoverBelow]), and whether it is shown in full; main thread only. */
+private class OverlayCover {
+    var opaque: () -> Boolean by mutableStateOf(NotOpaque)
+    var shownInFull by mutableStateOf(false)
+
+    /** Whether the screen below shows nowhere: the overlay is shown in full and opaque. */
+    val hidesBelow: Boolean get() = shownInFull && opaque()
+}
+
+private val NotOpaque: () -> Boolean = { false }
+
+private val LocalOverlayCover = staticCompositionLocalOf<OverlayCover?> { null }
+
+/** Measured as ever, but placed, and so drawn, only while [hidden] is false; read in the layout phase. */
+private fun Modifier.placedUnless(hidden: () -> Boolean): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) { if (!hidden()) placeable.place(0, 0) }
+    }
 
 /** [OverlayHost]'s tag while an overlay is drawn, until its way out ended. */
 const val OVERLAY_TEST_TAG = "overlay"

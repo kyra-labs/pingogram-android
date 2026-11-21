@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.navigation.CoverBelow
 import dev.kyralabs.pingogram.core.ui.navigation.PostponeOverlayEnter
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -124,6 +125,10 @@ internal fun MediaViewerScreen(
         BoxWithConstraints(modifier.fillMaxSize().viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave)) {
             val height = constraints.maxHeight.toFloat()
             Box(Modifier.matchParentSize().drawBehind { drawRect(scrim, alpha = 1f - dismiss.fraction(height)) })
+            // The opaque scrim hides the screen below while nothing drags or gestures the viewer away: it is not drawn
+            // under it then, nor its stickers and indicators played (docs/PERFORMANCE.md, "Overdraw").
+            val opaque = remember(dismiss, height) { { dismiss.fraction(height) == 0f } }
+            CoverBelow(opaque)
             Scaffold(
                 topBar = {
                     Chrome(visible = chrome.visible || content == null, dismiss, height) {
