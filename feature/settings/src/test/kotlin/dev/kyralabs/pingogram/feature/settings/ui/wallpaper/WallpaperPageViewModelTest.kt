@@ -16,7 +16,9 @@ import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.FakeWallpaperRepository
+import dev.kyralabs.pingogram.core.testing.FakeWallpaperSeedRepository
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.theme.fillSeed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -38,7 +40,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * The wallpaper page for the account and for a chat: nothing is set before Apply; then a pick, a theme color, the
- * dimming or the reset, for the user alone or with Telegram Premium both people; a failure keeps what was set.
+ * dimming or the reset, for the user alone or with Telegram Premium both people; a failure keeps what was set. The
+ * preview takes the wallpaper's seed, and Apply keeps a photo's.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WallpaperPageViewModelTest {
@@ -47,6 +50,7 @@ class WallpaperPageViewModelTest {
     private val appearance = FakeAppearanceRepository(AppearanceSettings())
     private val users = PremiumUsers(ME)
     private val photos = FakePickedPhotoRepository()
+    private val seeds = FakeWallpaperSeedRepository()
 
     @BeforeEach
     fun setUp() {
@@ -63,7 +67,8 @@ class WallpaperPageViewModelTest {
         runCurrent()
         client.emit(TdApiFixtures.updateNewChat(TdApiFixtures.chat(id = CHAT, type = TdApi.ChatTypePrivate(5))))
         runCurrent()
-        return WallpaperPageViewModel(chatId, wallpapers, appearance, chats, users, photos).also {
+        val repositories = WallpaperRepositories(wallpapers, seeds)
+        return WallpaperPageViewModel(chatId, repositories, appearance, chats, users, photos).also {
             it.picker(WallpaperEvent.ShowTheme(dark = true))
         }
     }
@@ -266,11 +271,83 @@ class WallpaperPageViewModelTest {
             assertTrue(viewModel.uiState.value.draft.isReset)
         }
 
+    @Test
+    fun `a photo's seed found for the preview colors it, and a successful Apply keeps it for that photo`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.picker(WallpaperEvent.Pick(PHOTO))
+            assertNull(viewModel.uiState.value.seed)
+
+            viewModel.onEvent(WallpaperPageEvent.SeedFound(SeedPhoto.OnTelegram(PHOTO.id), SEED))
+            assertEquals(SEED, viewModel.uiState.value.seed)
+            assertEquals(emptyMap<Long, Int>(), seeds.seeds.value)
+            viewModel.apply()
+
+            assertEquals(mapOf(PHOTO.id to SEED), seeds.seeds.value)
+        }
+
+    @Test
+    fun `a photo's kept seed colors the preview without finding it again`() =
+        runTest {
+            seeds.seeds.value = mapOf(PHOTO.id to SEED)
+            val viewModel = viewModel()
+
+            viewModel.picker(WallpaperEvent.Pick(PHOTO))
+
+            assertEquals(SEED, viewModel.uiState.value.seed)
+        }
+
+    @Test
+    fun `a new photo's seed is kept for the background its upload became`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.picker(WallpaperEvent.PickPhoto("content://photo", SCREEN_SIDE))
+            val path = (viewModel.uiState.value.picker.pending as WallpaperChoice.NewPhoto).path
+
+            viewModel.onEvent(WallpaperPageEvent.SeedFound(SeedPhoto.Picked(path), SEED))
+            assertEquals(SEED, viewModel.uiState.value.seed)
+            viewModel.apply()
+
+            assertEquals(mapOf(FakeWallpaperRepository.UPLOADED_ID to SEED), seeds.seeds.value)
+        }
+
+    @Test
+    fun `a failed Apply keeps no seed`() =
+        runTest {
+            val viewModel = viewModel()
+            viewModel.picker(WallpaperEvent.Pick(PHOTO))
+            viewModel.onEvent(WallpaperPageEvent.SeedFound(SeedPhoto.OnTelegram(PHOTO.id), SEED))
+            wallpapers.failure = DomainError.Network
+
+            viewModel.apply()
+
+            assertEquals(emptyMap<Long, Int>(), seeds.seeds.value)
+        }
+
+    @Test
+    fun `a pattern has no seed and a fill's comes from its colors, and neither is kept`() =
+        runTest {
+            val viewModel = viewModel(CHAT)
+            viewModel.picker(WallpaperEvent.Pick(PATTERN))
+            assertNull(viewModel.uiState.value.seed)
+            viewModel.apply()
+
+            viewModel.picker(WallpaperEvent.Pick(FILL))
+            assertEquals(fillSeed(FILL.colors.map { it or OPAQUE }), viewModel.uiState.value.seed)
+            viewModel.apply()
+
+            assertEquals(2, wallpapers.chatWallpapersSet.size)
+            assertEquals(emptyMap<Long, Int>(), seeds.seeds.value)
+        }
+
     private companion object {
+        const val SEED = 0xFF6750A4.toInt()
+        const val OPAQUE = 0xFF shl 24
         const val CHAT = 5L
         const val ME = 1L
         const val SCREEN_SIDE = 2400
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(11, 0)), intensity = 50, isInverted = false)
+        val FILL = Wallpaper.Fill(3, listOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
     }
 }

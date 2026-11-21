@@ -91,6 +91,7 @@ internal fun WallpaperPageRoute(
                 viewModel.onEvent(WallpaperPageEvent.Picker(WallpaperEvent.PickPhoto(it.toString(), screenSidePx)))
             }
         }
+    PreviewSeedEffect(state, onSeed = { photo, seed -> viewModel.onEvent(WallpaperPageEvent.SeedFound(photo, seed)) })
     val colors = MaterialTheme.colorScheme
     // Other apps draw a pattern on its own fill: the theme's colors, as Pingogram draws it.
     val patternFill =

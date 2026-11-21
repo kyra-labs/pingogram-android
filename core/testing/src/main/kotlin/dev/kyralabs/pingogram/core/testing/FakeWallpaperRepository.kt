@@ -58,12 +58,12 @@ class FakeWallpaperRepository(
     override suspend fun setDefault(
         choice: WallpaperChoice,
         forDarkTheme: Boolean,
-    ): Outcome<Unit> {
+    ): Outcome<Long> {
         failure?.let { return Outcome.Failure(it) }
         defaultsSet += choice to forDarkTheme
         val set = wallpaperOf(choice)
         mutableDefaults.update { if (forDarkTheme) it.copy(dark = set) else it.copy(light = set) }
-        return Outcome.Success(Unit)
+        return Outcome.Success(set.id)
     }
 
     override suspend fun removeDefault(forDarkTheme: Boolean): Outcome<Unit> {

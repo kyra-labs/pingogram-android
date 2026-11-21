@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui.wallpaper
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
@@ -17,18 +18,23 @@ internal class WallpaperApplier(
     private val wallpapers: WallpaperRepository,
     private val appearance: AppearanceRepository,
 ) {
-    /** Sets [choice] for [forDarkTheme] (the account's) or as the chat's own, with [state]'s dimming. */
+    /**
+     * Sets [choice] for [forDarkTheme] (the account's) or as the chat's own, with [state]'s dimming; answers the id of
+     * the background set, null for a new photo set for a chat (Telegram does not say it there).
+     */
     suspend fun setPick(
         choice: WallpaperChoice,
         forDarkTheme: Boolean,
         state: WallpaperPageUiState,
         onlyForSelf: Boolean,
-    ): Outcome<Unit> =
+    ): Outcome<Long?> =
         if (chatId == null) {
             // The dimming stays on the device, so it goes first: a failed upload then changes nothing on Telegram.
             setAccountDimming(state).then { wallpapers.setDefault(choice, forDarkTheme) }
         } else {
-            wallpapers.setChatWallpaper(chatId, choice, state.dimming, onlyForSelf)
+            wallpapers
+                .setChatWallpaper(chatId, choice, state.dimming, onlyForSelf)
+                .map { (choice as? WallpaperChoice.Existing)?.wallpaper?.id }
         }
 
     /** Sets [state]'s draft with nothing picked: the reset, a theme color, or the dimming alone. */
@@ -81,5 +87,8 @@ internal class WallpaperApplier(
         }
 }
 
-private inline fun Outcome<Unit>.then(next: () -> Outcome<Unit>): Outcome<Unit> =
-    if (this is Outcome.Success) next() else this
+private inline fun <T> Outcome<Unit>.then(next: () -> Outcome<T>): Outcome<T> =
+    when (this) {
+        is Outcome.Success -> next()
+        is Outcome.Failure -> this
+    }

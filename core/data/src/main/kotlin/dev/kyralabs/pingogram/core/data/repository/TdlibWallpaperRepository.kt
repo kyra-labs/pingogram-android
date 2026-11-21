@@ -56,10 +56,11 @@ class TdlibWallpaperRepository
         override suspend fun setDefault(
             choice: WallpaperChoice,
             forDarkTheme: Boolean,
-        ): Outcome<Unit> {
+        ): Outcome<Long> {
             val (input, type) = choice.toInput()
             return client.request(TdApi.SetDefaultBackground(input, type, forDarkTheme), choice.timeout()).map { set ->
                 defaultStore.update { it.with(forDarkTheme, set.toWallpaper()) }
+                set.id
             }
         }
 

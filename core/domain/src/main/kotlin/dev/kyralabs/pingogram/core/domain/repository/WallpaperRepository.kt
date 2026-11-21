@@ -26,11 +26,14 @@ interface WallpaperRepository {
      */
     suspend fun installed(forDarkTheme: Boolean): Outcome<List<Wallpaper>>
 
-    /** Makes [choice] the account's wallpaper for [forDarkTheme], uploading a new photo first. */
+    /**
+     * Makes [choice] the account's wallpaper for [forDarkTheme], uploading a new photo first; answers the background's
+     * id on Telegram, a new photo's given by the upload.
+     */
     suspend fun setDefault(
         choice: WallpaperChoice,
         forDarkTheme: Boolean,
-    ): Outcome<Unit>
+    ): Outcome<Long>
 
     /** Removes the account's wallpaper for [forDarkTheme]; the theme-color one shows again. */
     suspend fun removeDefault(forDarkTheme: Boolean): Outcome<Unit>
