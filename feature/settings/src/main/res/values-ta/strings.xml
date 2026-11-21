@@ -1312,7 +1312,7 @@
     <string name="settings_home_auto_download_roaming">ரோமிங்கில் தானியங்கு பதிவிறக்கம்</string>
     <string name="settings_new_sticker_set">புதிய ஸ்டிக்கர் தொகுப்பு</string>
     <string name="settings_new_sticker_set_summary">உங்கள் புகைப்படங்களிலிருந்து உங்களுக்கெனத் தனித் தொகுப்பை உருவாக்குங்கள்</string>
-    <string name="settings_new_sticker_set_step_name">படி 1 / 2</string>
+    <string name="settings_new_sticker_set_step_name">படி 1 (மொத்தம் 2)</string>
     <string name="settings_new_sticker_set_name_text">அதற்கு ஒரு பெயரையும், மக்கள் அதைச் சேர்க்கத் திறக்கக்கூடிய இணைப்பையும் கொடுக்கவும்.</string>
     <string name="settings_new_sticker_set_title_label">பெயர்</string>
     <string name="settings_new_sticker_set_link_label">இணைப்பு</string>
