@@ -153,7 +153,8 @@ internal fun SettingsListDetail(
                 )
             }
         },
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
+        // The window's color between the panes; one pane covers it all, and paints what shows itself.
+        modifier = if (twoPanes) modifier.background(MaterialTheme.colorScheme.surfaceContainer) else modifier,
         defaultBackBehavior = BACK_BEHAVIOR,
         paneExpansionDragHandle = { state -> PaneDragHandle(state) },
         paneExpansionState = paneExpansionState,

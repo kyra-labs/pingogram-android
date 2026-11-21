@@ -25,7 +25,8 @@ import org.robolectric.annotation.Config
 /**
  * The title of the settings pages' top bar ([SettingsTopBar], `docs/DESIGN_SYSTEM.md` §13.10): `displaySmallWide` on
  * the bar's expanded row and `titleLargeWide` on its collapsed one, picked from the row the bar's title slot fills,
- * never from the bar's text styles. Compared by font family and weight, as a long title may get smaller.
+ * never from the bar's text styles; laid out only on the row that shows (`docs/PERFORMANCE.md`, "Overdraw"). Compared
+ * by font family and weight, as a long title may get smaller.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -39,30 +40,25 @@ class SettingsTopBarTest {
     private lateinit var typography: ExperimentalTypography
 
     @Test
-    fun `the expanded row's title is displaySmallWide and the collapsed row's titleLargeWide`() {
+    fun `at rest the title is laid out once, on the expanded row in displaySmallWide`() {
         setPage()
 
         val styles = titleStyles()
 
-        assertTrue(styles.any { it.matches(typography.displaySmallWide) })
-        assertTrue(styles.any { it.matches(typography.titleLargeWide) })
-        assertTrue(
-            styles.all {
-                it.matches(typography.displaySmallWide) ||
-                    it.matches(typography.titleLargeWide)
-            },
-        )
+        assertEquals(1, styles.size)
+        assertTrue("$styles", styles.single().matches(typography.displaySmallWide))
     }
 
     @Test
-    fun `scrolled up, the bar collapses to its titleLargeWide row`() {
+    fun `scrolled up, the bar collapses to its titleLargeWide row alone`() {
         setPage()
 
         composeRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         composeRule.waitForIdle()
 
-        val shown = titleStyles(shownOnly = true)
-        assertTrue("$shown", shown.isNotEmpty() && shown.all { it.matches(typography.titleLargeWide) })
+        val styles = titleStyles()
+        assertEquals(1, styles.size)
+        assertTrue("$styles", styles.single().matches(typography.titleLargeWide))
     }
 
     private fun setPage() {
@@ -76,12 +72,11 @@ class SettingsTopBarTest {
         }
     }
 
-    /** The styles the title is laid out in, one per row of the bar; with [shownOnly], of rows not collapsed away. */
-    private fun titleStyles(shownOnly: Boolean = false): List<TextStyle> =
+    /** The styles the title is laid out in, one per row of the bar that composes it. */
+    private fun titleStyles(): List<TextStyle> =
         composeRule
             .onAllNodesWithText(TITLE, useUnmergedTree = true)
             .fetchSemanticsNodes()
-            .filter { !shownOnly || it.boundsInRoot.height > 0f }
             .map { node ->
                 val results = mutableListOf<TextLayoutResult>()
                 node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
