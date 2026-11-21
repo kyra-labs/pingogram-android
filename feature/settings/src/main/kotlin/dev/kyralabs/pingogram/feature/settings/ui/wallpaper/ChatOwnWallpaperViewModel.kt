@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
+import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.WallpaperRepository
@@ -50,9 +52,17 @@ sealed interface ChatOwnWallpaperEvent {
         val forBoth: Boolean,
     ) : ChatOwnWallpaperEvent
 
-    /** How much the wallpaper dims in dark theme, in percent. */
+    /** How much the wallpaper dims in dark theme, in percent: previewed, and set with a pick when it is applied. */
     data class SetDimming(
         val percent: Int,
+    ) : ChatOwnWallpaperEvent
+
+    /**
+     * The slider settled: the chat's own wallpaper keeps the dimming previewed, for the people it is set for. A
+     * pattern is set again over [patternFill], the theme's colors, as Apply sets it.
+     */
+    data class SaveDimming(
+        val patternFill: List<Int>,
     ) : ChatOwnWallpaperEvent
 
     /** Removes the chat's own wallpaper: the account's shows in it again. */
@@ -128,6 +138,7 @@ class ChatOwnWallpaperViewModel
             when (event) {
                 is ChatOwnWallpaperEvent.SetForBoth -> choices.update { it.copy(forBoth = event.forBoth) }
                 is ChatOwnWallpaperEvent.SetDimming -> choices.update { it.copy(dimming = event.percent) }
+                is ChatOwnWallpaperEvent.SaveDimming -> saveDimming(event.patternFill)
                 ChatOwnWallpaperEvent.Reset -> reset()
             }
         }
@@ -136,6 +147,29 @@ class ChatOwnWallpaperViewModel
             val state = uiState.value
             picker.apply(patternFill) { choice, _ ->
                 wallpapers.setChatWallpaper(chatId, choice, state.dimming, onlyForSelf = !state.forBoth)
+            }
+        }
+
+        /**
+         * Sets the chat's own wallpaper again with the dimming previewed (td_api.tl `setChatBackground` keeps it per
+         * chat); nothing while a pick waits, which takes it when applied. A failure keeps the dimming there was.
+         */
+        private fun saveDimming(patternFill: List<Int>) {
+            val state = uiState.value
+            val own = state.own ?: return
+            if (state.picker.pending != null || state.dimming == own.darkThemeDimming) return
+            val wallpaper = own.wallpaper
+            val choice =
+                WallpaperChoice.Existing(
+                    wallpaper = wallpaper,
+                    isBlurred = (wallpaper as? Wallpaper.Photo)?.isBlurred == true,
+                    patternFill = patternFill,
+                )
+            viewModelScope.launch {
+                wallpapers.setChatWallpaper(chatId, choice, state.dimming, onlyForSelf = !state.forBoth).onFailure {
+                    choices.update { made -> made.copy(dimming = null) }
+                    showError(it)
+                }
             }
         }
 

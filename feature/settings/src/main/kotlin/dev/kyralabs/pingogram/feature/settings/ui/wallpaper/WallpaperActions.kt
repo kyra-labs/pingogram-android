@@ -22,6 +22,7 @@ internal class WallpaperActions(
     val onBlurred: (Boolean) -> Unit = {},
     val onRemove: () -> Unit = {},
     val onDimming: (percent: Int) -> Unit = {},
+    val onDimmingSettled: () -> Unit = {},
 )
 
 /**
