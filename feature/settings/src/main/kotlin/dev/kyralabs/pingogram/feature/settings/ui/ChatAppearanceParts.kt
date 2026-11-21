@@ -1,48 +1,29 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.ui.text.userContent
-import dev.kyralabs.pingogram.core.ui.theme.brush
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
-import dev.kyralabs.pingogram.core.ui.theme.popIn
-import dev.kyralabs.pingogram.core.ui.theme.popOut
-import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The parts of the Chat appearance page (docs/DESIGN_SYSTEM.md §6, "Chat appearance"): the preview and the chips.
 
@@ -119,60 +100,6 @@ private fun PreviewMessage(
                     ),
                 // Sample messages are what people write: they take their own direction, as in the conversation.
                 style = style.messageText.userContent,
-            )
-        }
-    }
-}
-
-/**
- * A wallpaper's chip, as the Theme page's ([ThemeChip]): a circle of `sizes.themeChip` filled with [wallpaper] as the
- * theme draws it (the conversation's `surface` with an outline for none). While [selected] it morphs into
- * `MaterialShapes.Cookie9Sided` on the default spatial spring (snapping with reduced motion), with a check in
- * `primaryContainer`. Screen readers hear a radio button named after the wallpaper; a pick ticks (`SegmentTick`).
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-internal fun WallpaperChip(
-    wallpaper: ChatWallpaper,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = MaterialTheme.colorScheme
-    val shape = rememberMorphShape(MaterialShapes.Circle, MaterialShapes.Cookie9Sided, morphed = selected)
-    val haptics = LocalHapticFeedback.current
-    val name = wallpaper.label()
-    Box(
-        modifier =
-            modifier
-                .size(MaterialTheme.sizes.themeChip)
-                .selectable(selected = selected, role = Role.RadioButton) {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    onClick()
-                }.semantics { contentDescription = name }
-                .clip(shape)
-                .background(wallpaper.brush(colors) ?: SolidColor(colors.surfaceContainerHighest)),
-        contentAlignment = Alignment.Center,
-    ) {
-        val motion = MaterialTheme.motionScheme
-        // The check pops in with the chip's morph, on the fast springs (docs/DESIGN_SYSTEM.md §5: chips).
-        AnimatedVisibility(selected, enter = popIn(motion), exit = popOut(motion)) {
-            Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_check),
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .padding(MaterialTheme.spacing.extraSmall)
-                            .size(IconButtonDefaults.smallIconSize),
-                )
-            }
-        }
-        AnimatedVisibility(!selected && wallpaper == ChatWallpaper.None, enter = popIn(motion), exit = popOut(motion)) {
-            Icon(
-                painter = painterResource(UiR.drawable.ic_close),
-                contentDescription = null,
-                tint = colors.onSurfaceVariant,
             )
         }
     }

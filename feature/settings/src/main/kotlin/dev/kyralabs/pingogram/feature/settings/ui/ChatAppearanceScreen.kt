@@ -1,16 +1,8 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -24,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -48,13 +39,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.AccountWallpaperChips
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PendingWallpaperActions
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PreviewWallpaper
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperEvent
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.selectedWallpaperId
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import kotlin.math.roundToInt
