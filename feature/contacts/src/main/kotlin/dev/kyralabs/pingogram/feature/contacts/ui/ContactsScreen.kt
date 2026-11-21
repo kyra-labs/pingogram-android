@@ -145,11 +145,7 @@ internal fun ContactsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ContactsBody(state, syncControls, callbacks, listState, contentPadding)
             // The list's end fades into the sheet behind the floating navigation bar, as the Chats tab's does.
             BottomFade(Modifier.align(Alignment.BottomCenter))

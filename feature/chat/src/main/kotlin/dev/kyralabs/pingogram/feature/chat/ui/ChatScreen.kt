@@ -348,11 +348,7 @@ private fun ChatScaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = jumpButton,
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             // The chat's own, the account's or the theme-color wallpaper, drawn behind the bars and the messages in a
             // layer of its own, so scrolling neither composes nor redraws it.
             ConversationWallpaperLayer(Modifier.matchParentSize())

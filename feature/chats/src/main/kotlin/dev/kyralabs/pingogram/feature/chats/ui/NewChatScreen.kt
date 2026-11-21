@@ -74,8 +74,10 @@ internal fun NewChatScreen(
                 // Laid out once and scaled as it grows: measuring the list anew in every frame made it stutter.
                 fixedLayout = true,
             ),
-        // The top bar's container; the list sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { NewChatTopBar(onBack) },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->

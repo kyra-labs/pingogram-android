@@ -145,7 +145,7 @@ internal fun BookmarkTagsScreen(
             )
         },
     ) { padding ->
-        ContentSheet(innerPadding = padding, paintsSurround = true) { contentPadding ->
+        ContentSheet(innerPadding = padding) { contentPadding ->
             when {
                 content == null -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }

@@ -79,7 +79,10 @@ internal fun StoryAlbumPickerScreen(
     val content = state as? StoryAlbumPickerUiState.Content
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { PickerTopBar(content, onClose) },
         bottomBar = { if (content != null && content.stories.isNotEmpty()) ConfirmBar(content, onEvent) },
         snackbarHost = { SnackbarHost(snackbars) },

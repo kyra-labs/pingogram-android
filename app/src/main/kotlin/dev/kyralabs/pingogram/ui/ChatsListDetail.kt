@@ -605,7 +605,10 @@ private val BACK_BEHAVIOR = BackNavigationBehavior.PopUntilCurrentDestinationCha
 internal fun NoChatSelected(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 title = {},

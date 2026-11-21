@@ -97,11 +97,7 @@ internal fun DirectMessagesScreen(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
                 ChatSearchField(query, placeholder = stringResource(R.string.direct_search))
                 FilterChips(state, onEvent)

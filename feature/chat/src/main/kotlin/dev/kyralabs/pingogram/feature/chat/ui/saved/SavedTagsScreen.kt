@@ -136,7 +136,7 @@ internal fun SavedTagScreen(
             }
         },
     ) { padding ->
-        ContentSheet(padding, Modifier.consumeWindowInsets(padding), paintsSurround = true) { contentPadding ->
+        ContentSheet(padding, Modifier.consumeWindowInsets(padding)) { contentPadding ->
             TaggedList(state.results, onEvent, contentPadding)
         }
     }

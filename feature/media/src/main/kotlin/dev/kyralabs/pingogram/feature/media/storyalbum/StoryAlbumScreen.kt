@@ -110,7 +110,10 @@ internal fun StoryAlbumScreen(
     }
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { AlbumTopBar(content?.name.orEmpty(), onBack, onAction.takeIf { content?.canEdit == true }) },
         snackbarHost = { SnackbarHost(snackbars) },
     ) { innerPadding ->

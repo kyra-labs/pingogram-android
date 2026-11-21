@@ -120,11 +120,7 @@ internal fun ForumTopicsScreen(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             TopicsBody(state.content, onEvent, onTopicEvent, onOpenTopic, listState, contentPadding)
         }
     }
