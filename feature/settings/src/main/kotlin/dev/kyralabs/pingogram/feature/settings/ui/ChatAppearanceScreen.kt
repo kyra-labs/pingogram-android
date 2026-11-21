@@ -1,16 +1,8 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -24,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -48,13 +39,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.AccountWallpaperChips
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PendingWallpaperActions
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PreviewWallpaper
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperEvent
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.selectedWallpaperId
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import kotlin.math.roundToInt
@@ -62,6 +47,7 @@ import kotlin.math.roundToInt
 /** The Chat appearance page: hoists [ChatAppearanceViewModel] and shows in snackbars what could not be saved. */
 @Composable
 internal fun ChatAppearanceRoute(
+    onOpenWallpaper: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatAppearanceViewModel = hiltViewModel(),
@@ -80,57 +66,32 @@ internal fun ChatAppearanceRoute(
             }
         }
     }
-    // Android's photo picker: no permission, and only the photo the user picks reaches the app. The photo is prepared
-    // at the screen's size, as it fills the screen behind a conversation in either orientation.
-    val screenSidePx = resources.displayMetrics.let { maxOf(it.widthPixels, it.heightPixels) }
-    val photoPicker =
-        rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString(), screenSidePx)) }
-        }
-    val colors = MaterialTheme.colorScheme
-    val wallpaperActions =
-        remember(viewModel, photoPicker, colors) {
-            WallpaperActions(
-                onTheme = { viewModel.onWallpaperEvent(WallpaperEvent.ShowTheme(it)) },
-                onPick = { viewModel.onWallpaperEvent(WallpaperEvent.Pick(it)) },
-                onPickPhoto = { photoPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
-                // Other apps draw a pattern on its own fill: the theme's colors, as Pingogram draws it.
-                onApply = { viewModel.onWallpaperEvent(WallpaperEvent.Apply(patternFill(colors))) },
-                onCancel = { viewModel.onWallpaperEvent(WallpaperEvent.Cancel) },
-                onRetry = { viewModel.onWallpaperEvent(WallpaperEvent.Retry) },
-                onBlurred = { viewModel.onWallpaperEvent(WallpaperEvent.SetBlurred(it)) },
-                onRemove = { viewModel.onWallpaperEvent(WallpaperEvent.Remove) },
-                onDimming = viewModel::setWallpaperDimming,
-            )
-        }
     ChatAppearanceScreen(
         state = state,
         onTextScale = viewModel::setTextScale,
         onBubbleCorners = viewModel::setBubbleCorners,
-        onWallpaper = viewModel::setWallpaper,
+        onOpenWallpaper = onOpenWallpaper,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
-        wallpaperActions = wallpaperActions,
     )
 }
 
 /**
  * Settings → Appearance → Chat appearance (`REQUIREMENTS.md` FR-S1, `docs/DESIGN_SYSTEM.md` §6 "Chat appearance"): a
  * live preview of a conversation ([ChatPreview]) in the theme's chat style, which follows every change at once; then
- * the message text size and the bubbles' corners as sliders through their steps (a `SegmentTick` per step), and the
- * wallpapers as chips ([WallpaperChip]) in a grid that wraps, one radio group for screen readers.
+ * the message text size and the bubbles' corners as sliders through their steps (a `SegmentTick` per step), and
+ * "Wallpaper", which opens the wallpaper page ([onOpenWallpaper]).
  */
 @Composable
 internal fun ChatAppearanceScreen(
     state: ChatAppearanceUiState,
     onTextScale: (Float) -> Unit,
     onBubbleCorners: (BubbleCorners) -> Unit,
-    onWallpaper: (ChatWallpaper) -> Unit,
+    onOpenWallpaper: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    wallpaperActions: WallpaperActions = WallpaperActions(),
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_chat_appearance),
@@ -147,7 +108,7 @@ internal fun ChatAppearanceScreen(
             }
 
             is ChatAppearanceUiState.Content -> {
-                ChatAppearanceContent(state, onTextScale, onBubbleCorners, onWallpaper, wallpaperActions)
+                ChatAppearanceContent(state, onTextScale, onBubbleCorners, onOpenWallpaper)
             }
         }
     }
@@ -158,21 +119,16 @@ private fun ChatAppearanceContent(
     state: ChatAppearanceUiState.Content,
     onTextScale: (Float) -> Unit,
     onBubbleCorners: (BubbleCorners) -> Unit,
-    onWallpaper: (ChatWallpaper) -> Unit,
-    actions: WallpaperActions,
+    onOpenWallpaper: () -> Unit,
 ) {
     val appearance = state.appearance
-    val picker = state.picker
-    // The picker opens on the theme the page shows in.
-    val dark = isDarkTheme()
-    LaunchedEffect(picker.forDarkTheme == null) { if (picker.forDarkTheme == null) actions.onTheme(dark) }
-    val set = picker.forDarkTheme?.let { state.account.forTheme(it) }
+    val set = state.account.forTheme(isDarkTheme())
     SettingsGroup {
         item { shapes ->
             SettingsSegment(shapes) {
                 // Clipped to the segment's corners, which the wallpaper would otherwise square off.
                 Box(Modifier.clip(shapes.shape)) {
-                    PreviewWallpaper(picker.pending, set, appearance.wallpaperDimming, Modifier.matchParentSize())
+                    PreviewWallpaper(null, set, appearance.wallpaperDimming, Modifier.matchParentSize())
                     ChatPreview(drawsWallpaper = false)
                 }
             }
@@ -182,14 +138,8 @@ private fun ChatAppearanceContent(
         item { shapes -> TextSizeSegment(appearance.textScale, shapes, onTextScale) }
         item { shapes -> BubbleCornersSegment(appearance.bubbleCorners, shapes, onBubbleCorners) }
     }
-    WallpaperGroup(state, set, onWallpaper, actions)
+    WallpaperGroup(appearance.wallpaper, set, onOpenWallpaper)
 }
-
-/** The theme's containers as 24-bit RGB: the fill other apps draw a pattern picked here on. */
-private fun patternFill(colors: ColorScheme): List<Int> =
-    listOf(colors.primaryContainer, colors.tertiaryContainer).map { it.toArgb() and RGB }
-
-private const val RGB = 0xFFFFFF
 
 /** Message text size: "Message text size" over the size in percent ("110%"), and a slider through its steps. */
 @Composable
@@ -303,7 +253,7 @@ private fun ChatAppearanceScreenPreview() {
             state = ChatAppearanceUiState.Content(ChatAppearance()),
             onTextScale = {},
             onBubbleCorners = {},
-            onWallpaper = {},
+            onOpenWallpaper = {},
             onBack = {},
         )
     }
@@ -323,7 +273,7 @@ private fun ChatAppearanceScreenCustomPreview() {
             state = ChatAppearanceUiState.Content(appearance),
             onTextScale = {},
             onBubbleCorners = {},
-            onWallpaper = {},
+            onOpenWallpaper = {},
             onBack = {},
         )
     }
@@ -337,7 +287,7 @@ private fun ChatAppearanceScreenLoadingPreview() {
             state = ChatAppearanceUiState.Loading,
             onTextScale = {},
             onBubbleCorners = {},
-            onWallpaper = {},
+            onOpenWallpaper = {},
             onBack = {},
         )
     }

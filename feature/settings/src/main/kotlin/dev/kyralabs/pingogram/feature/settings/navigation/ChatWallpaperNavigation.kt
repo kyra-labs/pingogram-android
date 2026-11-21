@@ -5,15 +5,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.ChatWallpaperRoute
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperRoute
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPageRoute
 
 /**
- * Adds a chat's own wallpaper page, [ChatWallpaperRoute] (owner decision 2026-11-20), to the graph: pushed above the
- * profile it is opened from. [onBack] leaves it.
+ * Adds a chat's own wallpaper page, [ChatWallpaperRoute] (ADR 0041: the account's wallpaper page for one chat), to the
+ * graph: pushed above the profile it is opened from. [onBack] leaves it.
  */
 fun NavGraphBuilder.chatWallpaperScreen(onBack: () -> Unit) {
     composable<ChatWallpaperRoute> { entry ->
-        ChatOwnWallpaperRoute(entry.toRoute<ChatWallpaperRoute>().chatId, onBack)
+        WallpaperPageRoute(entry.toRoute<ChatWallpaperRoute>().chatId, onBack)
     }
 }
 
