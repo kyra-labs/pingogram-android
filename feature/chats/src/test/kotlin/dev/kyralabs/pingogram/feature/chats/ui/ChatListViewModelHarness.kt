@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
@@ -106,6 +107,12 @@ abstract class ChatListViewModelHarness {
         dispatcher = StandardTestDispatcher(testScheduler),
         locale = { Locale.US },
     )
+
+    /** Runs what is due once the counts' pace ([COUNT_PACE]) has passed, so the last count changed shows. */
+    protected fun TestScope.afterCountPace() {
+        advanceTimeBy(COUNT_PACE)
+        runCurrent()
+    }
 
     protected fun TestScope.send(
         viewModel: ChatListViewModel,

@@ -364,7 +364,8 @@ class ChatListViewModel internal constructor(
         combine(
             listState,
             connectionRepository.connectionStatus,
-            combine(folderTabs, feedTab, ::Pair),
+            // The tabs' counts at the counts' pace, the tabs themselves at once; the rows follow every change.
+            combine(folderTabs, feedTab, ::Pair).distinctUntilChanged().atCountPace(shapeOf = ::tabsShape),
             archive,
             overlays,
         ) {
@@ -432,8 +433,8 @@ class ChatListViewModel internal constructor(
     /**
      * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
      * mention the user, the chats Catch-up would go through ([CatchUpChats]), and the signed-in user for its avatar.
-     * Apart from [uiState], so a count changing recomposes the header alone. Nothing in the archive, whose header has
-     * no status line.
+     * Apart from [uiState], so a count changing recomposes the header alone; at most one change every [COUNT_PACE]
+     * ([atCountPace]). Nothing in the archive, whose header has no status line.
      */
     val summary: StateFlow<ChatListSummary> =
         if (kind == ChatListKind.Archive) {
@@ -463,6 +464,7 @@ class ChatListViewModel internal constructor(
                     catchUpChats = catchUpCount,
                 )
             }.distinctUntilChanged()
+                .atCountPace()
                 .flowOn(dispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatListSummary())
         }
@@ -871,6 +873,11 @@ private fun feedTabOf(chats: List<Chat>): FeedTab? {
         FeedTab(channels.sumOf(Chat::unreadCount), channels.size)
     }
 }
+
+/** Which tabs there are, as they read without their counts: what [ChatListViewModel] shows at once. */
+private fun tabsShape(tabs: Pair<List<FolderTab>, FeedTab?>): Any =
+    tabs.first.map { tab -> if (tab is FolderTab.Folder) Triple(tab.id, tab.title, tab.iconName) else tab.folderId } to
+        (tabs.second != null)
 
 /** The Feed tab shows from this many channels (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"). */
 private const val FEED_TAB_MIN_CHANNELS = 2

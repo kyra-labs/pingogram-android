@@ -45,7 +45,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.ui.component.HiddenTitle
 import dev.kyralabs.pingogram.core.ui.component.RoundBackButton
+import dev.kyralabs.pingogram.core.ui.component.rememberTwoRowTitles
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
@@ -83,7 +85,7 @@ internal fun SettingsPageScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    actions: @Composable RowScope.() -> Unit = {},
+    actions: (@Composable RowScope.() -> Unit)? = null,
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -104,7 +106,7 @@ internal fun SettingsPageFrame(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    actions: @Composable RowScope.() -> Unit = {},
+    actions: (@Composable RowScope.() -> Unit)? = null,
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     body: @Composable (innerPadding: PaddingValues) -> Unit,
 ) {
@@ -158,24 +160,36 @@ internal fun SettingsTopBar(
     title: String,
     scrollBehavior: TopAppBarScrollBehavior,
     navigationIcon: @Composable () -> Unit = {},
-    actions: @Composable RowScope.() -> Unit = {},
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     // The bar's own insets match the compact margin; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
+    val titles = rememberTwoRowTitles(scrollBehavior)
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
-            title = { expanded -> SettingsTopBarTitle(title, expanded) },
+            title = { expanded ->
+                if (titles.shows(expanded)) {
+                    SettingsTopBarTitle(title, expanded)
+                } else {
+                    // The style SettingsTopBarTitle takes on that row.
+                    val wide = MaterialTheme.experimentalTypography
+                    HiddenTitle(if (expanded) wide.displaySmallWide else wide.titleLargeWide)
+                }
+            },
             modifier =
                 Modifier
                     .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                     .padding(horizontal = extraMargin),
             navigationIcon = navigationIcon,
+            // Nothing at the bar's end on a page without actions, not an empty row that takes the title's room.
             actions = {
-                Row(
-                    modifier = Modifier.padding(end = barEdgeInset()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = actions,
-                )
+                if (actions != null) {
+                    Row(
+                        modifier = Modifier.padding(end = barEdgeInset()),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = actions,
+                    )
+                }
             },
             collapsedHeight = TopAppBarDefaults.MediumAppBarCollapsedHeight,
             expandedHeight = settingsTopBarExpandedHeight(),
