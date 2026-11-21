@@ -208,12 +208,6 @@
     <string name="settings_power_saving_card_normal">كل شيء يعمل بشكل طبيعي</string>
     <string name="settings_privacy_checkup">فحص الخصوصية</string>
     <plurals name="settings_privacy_checkup_what">
-        <item quantity="zero">أشياء يمكن لأي شخص على Telegram رؤيتها</item>
-        <item quantity="one">شيء يمكن لأي شخص على Telegram رؤيته</item>
-        <item quantity="two">شيئان يمكن لأي شخص على Telegram رؤيتهما</item>
-        <item quantity="few">أشياء يمكن لأي شخص على Telegram رؤيتها</item>
-        <item quantity="many">شيئًا يمكن لأي شخص على Telegram رؤيته</item>
-        <item quantity="other">شيء يمكن لأي شخص على Telegram رؤيته</item>
     </plurals>
     <string name="settings_privacy_checkup_review">مراجعة</string>
     <string name="settings_privacy_checkup_not_now">ليس الآن</string>
