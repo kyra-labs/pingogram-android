@@ -81,7 +81,9 @@ class WallpaperPageViewModel
             }
 
         private val chat: Flow<WallpaperPageChat?> =
-            chatId?.let { id -> chats.chat(id).map { it?.let { chat -> WallpaperPageChat(chat.title, chat.photo) } } }
+            chatId?.let { id ->
+                chats.chat(id).map { it?.let { chat -> WallpaperPageChat(chat.id, chat.title, chat.photo) } }
+            }
                 ?: flowOf(null)
 
         private val premium: Flow<Boolean> =

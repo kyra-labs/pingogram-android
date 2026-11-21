@@ -54,9 +54,10 @@ data class WallpaperPageUiState(
         get() = !draft.isReset && (!saved.isDefault || hasChanges)
 }
 
-/** A chat's title and photo, for "Wallpaper for <name>" and the preview's top bar. */
+/** A chat's title and photo, for "Wallpaper for <name>" and the preview's top bar; [id] colors its placeholder. */
 @Immutable
 data class WallpaperPageChat(
+    val id: Long,
     val title: String,
     val photo: ProfilePhoto?,
 )

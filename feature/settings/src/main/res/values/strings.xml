@@ -136,6 +136,10 @@
     <string name="settings_chat_wallpaper_reset">Reset wallpaper</string>
     <string name="settings_chat_wallpaper_reset_summary">Show your account\'s wallpaper in this chat again</string>
     <string name="settings_chat_wallpaper_footer">Telegram\'s wallpapers and your photos are saved to your Telegram account, for light and dark theme apart, and show in your other Telegram apps too. The colors stay on this phone.</string>
+    <!-- The wallpaper page's preview: a sample contact's name, its date chip and the composer's hint. -->
+    <string name="settings_wallpaper_preview_name">Meera</string>
+    <string name="settings_wallpaper_preview_date">Today</string>
+    <string name="settings_wallpaper_preview_composer">Message</string>
     <string name="settings_color_theme">Theme</string>
     <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
     <string name="settings_color_theme_section_basic">Basic colors</string>
