@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -165,8 +166,8 @@ internal fun ChatListScreen(
     Box(modifier) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            // The top bar's container; the list sits on a sheet below it (ContentSheet).
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+            containerColor = Color.Transparent,
             topBar = {
                 ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, summary, headerActions)
             },
@@ -257,7 +258,7 @@ private fun ChatListBody(
     val showsFeedTab = uiState.feedTab != null && LocalChatSwipes.current.feedTab
     val showsTabs = uiState.kind == ChatListKind.Chats && (uiState.folderTabs.isNotEmpty() || showsFeedTab)
     val folderBar = remember { FolderBarSpace() }
-    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
+    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding), paintsSurround = true) { sheetPadding ->
         // Below the folder bar while it shows, read in the layout phase (FolderBarSpace).
         val listPadding =
             remember(sheetPadding, showsTabs) { if (showsTabs) folderBar.below(sheetPadding) else sheetPadding }
