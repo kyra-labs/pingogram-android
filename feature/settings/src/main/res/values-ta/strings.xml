@@ -208,8 +208,6 @@
     <string name="settings_power_saving_card_normal">அனைத்தும் வழக்கம்போல் இயங்கும்</string>
     <string name="settings_privacy_checkup">தனியுரிமைச் சரிபார்ப்பு</string>
     <plurals name="settings_privacy_checkup_what">
-        <item quantity="one">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய விஷயம்</item>
-        <item quantity="other">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய விஷயங்கள்</item>
     </plurals>
     <string name="settings_privacy_checkup_review">மதிப்பாய்வு செய்</string>
     <string name="settings_privacy_checkup_not_now">இப்போது வேண்டாம்</string>
