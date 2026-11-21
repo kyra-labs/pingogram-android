@@ -25,7 +25,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -96,7 +99,7 @@ internal fun WallpaperPageRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onPickPhoto = { photoPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
-        onApply = { viewModel.onEvent(WallpaperPageEvent.Apply(patternFill)) },
+        onApply = { forBoth -> viewModel.onEvent(WallpaperPageEvent.Apply(patternFill, forBoth)) },
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -105,20 +108,22 @@ internal fun WallpaperPageRoute(
 
 /**
  * The wallpaper page (ADR 0041, `docs/DESIGN_SYSTEM.md` §6 "Wallpaper"): back, "Wallpaper" or "Wallpaper for <name>"
- * and Apply (disabled until something changed) in the top bar; the large live preview ([WallpaperPagePreview]) and
- * "Reset to default"; then a panel with the options ([WallpaperOptions]) and the wallpapers' grid ([wallpaperGrid]),
- * in one lazy grid.
+ * and Apply (disabled until something changed; for a chat it asks whom for, [WallpaperApplySheet]) in the top bar;
+ * the large live preview ([WallpaperPagePreview]) and "Reset to default"; then a panel with the options
+ * ([WallpaperOptions]) and the wallpapers' grid ([wallpaperGrid]), in one lazy grid.
  */
 @Composable
 internal fun WallpaperPageScreen(
     state: WallpaperPageUiState,
     onEvent: (WallpaperPageEvent) -> Unit,
     onPickPhoto: () -> Unit,
-    onApply: () -> Unit,
+    onApply: (forBoth: Boolean) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    // A chat's Apply asks whom it is for first (WallpaperApplySheet); the account's applies at once.
+    var choosing by rememberSaveable { mutableStateOf(false) }
     val title =
         when {
             !state.isChat -> stringResource(R.string.settings_wallpaper_title)
@@ -131,7 +136,7 @@ internal fun WallpaperPageScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         actions = {
-            Button(onClick = onApply, enabled = state.canApply) {
+            Button(onClick = { if (state.isChat) choosing = true else onApply(false) }, enabled = state.canApply) {
                 Text(stringResource(R.string.settings_chat_wallpaper_apply))
             }
         },
@@ -139,6 +144,17 @@ internal fun WallpaperPageScreen(
         Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()), Alignment.TopCenter) {
             WallpaperPageGrid(state, innerPadding, onEvent, onPickPhoto)
         }
+    }
+    if (choosing) {
+        WallpaperApplySheet(
+            chatName = state.chat?.title,
+            canSetForBoth = state.canSetForBoth,
+            onApply = { forBoth ->
+                choosing = false
+                onApply(forBoth)
+            },
+            onDismiss = { choosing = false },
+        )
     }
 }
 

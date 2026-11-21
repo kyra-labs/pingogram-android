@@ -14,7 +14,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   of the conversation, your theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp
   at your screen's size), blur for photos and dimming in dark theme (30% to start). Nothing changes until you tap
   Apply, and "Reset to default" goes back to your theme's colors. Your account's wallpaper is saved to your Telegram
-  account for light and dark theme apart, so your other Telegram apps show it too; a chat's is for that chat alone.
+  account for light and dark theme apart, so your other Telegram apps show it too; a chat's is for you or, with
+  Telegram Premium, for both of you.
 - Make story albums on your own profile: Stories → New album, name it, pick its stories. In your own album, the ⋮ menu
   renames it, adds or removes stories, or deletes it (its stories stay on your profile).
 - With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,

@@ -31,8 +31,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The wallpaper page's controls: the title names the chat, Apply waits for a change, "Reset to default", the theme,
- * the dimming in dark theme, Blur for a photo, and "Choose a photo" with the note that a photo is uploaded.
+ * The wallpaper page's controls: the title names the chat, Apply waits for a change (for a chat it asks whom for, both
+ * people only with Telegram Premium), "Reset to default", the theme, the dimming in dark theme, Blur for a photo, and
+ * "Choose a photo" with the note that a photo is uploaded.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -52,7 +53,7 @@ class WallpaperPageScreenTest {
                     state = state,
                     onEvent = { events += it },
                     onPickPhoto = { events += "photos" },
-                    onApply = { events += "apply" },
+                    onApply = { events += "apply $it" },
                     onBack = {},
                 )
             }
@@ -75,10 +76,10 @@ class WallpaperPageScreenTest {
     }
 
     @Test
-    fun `a pick enables Apply, and Reset to default previews the default`() {
+    fun `the account's Apply applies at once, and Reset to default previews the default`() {
         setScreen(
             WallpaperPageUiState(
-                isChat = true,
+                isChat = false,
                 picker = WallpaperPickerState(pending = WallpaperChoice.Existing(PATTERN)),
             ),
         )
@@ -86,7 +87,32 @@ class WallpaperPageScreenTest {
         composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_apply)).assertIsEnabled().performClick()
         composeRule.onNodeWithText(string(R.string.settings_wallpaper_reset)).performScrollTo().performClick()
 
-        assertEquals(listOf("apply", WallpaperPageEvent.Reset), events)
+        assertEquals(listOf("apply false", WallpaperPageEvent.Reset), events)
+    }
+
+    @Test
+    fun `a chat's Apply asks whom for, and without Telegram Premium both is locked`() {
+        setScreen(ChatPicked)
+
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_apply)).performClick()
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_requires_premium)).assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_apply_for_both, "Meera")).assertIsNotEnabled()
+        composeRule.assertAccessible()
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_apply_for_me)).performClick()
+
+        assertEquals(listOf("apply false"), events)
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_apply_for_me)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `with Telegram Premium a chat's wallpaper can be applied for both people`() {
+        setScreen(ChatPicked.copy(canSetForBoth = true))
+
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_apply)).performClick()
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_requires_premium)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.settings_wallpaper_apply_for_both, "Meera")).performClick()
+
+        assertEquals(listOf("apply true"), events)
     }
 
     @Test
@@ -151,6 +177,13 @@ class WallpaperPageScreenTest {
 
     private companion object {
         const val LAST_DIMMING_STEP = 10f
+        val ChatPicked
+            get() =
+                WallpaperPageUiState(
+                    isChat = true,
+                    chat = WallpaperPageChat(5, "Meera", null),
+                    picker = WallpaperPickerState(pending = WallpaperChoice.Existing(PATTERN)),
+                )
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(11, 0)), intensity = 50, isInverted = false)
     }
