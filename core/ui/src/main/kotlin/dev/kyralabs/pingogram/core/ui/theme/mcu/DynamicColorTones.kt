@@ -82,8 +82,12 @@ private fun DynamicColor.contrastedTones(
         val nContrast = nContrastCurve.get(scheme.contrastLevel)
         val fContrast = fContrastCurve.get(scheme.contrastLevel)
         val decreasingContrast = scheme.contrastLevel < 0
-        if (Contrast.ratioOfTones(bgTone, nTone) < nContrast || decreasingContrast) nTone = foregroundTone(bgTone, nContrast)
-        if (Contrast.ratioOfTones(bgTone, fTone) < fContrast || decreasingContrast) fTone = foregroundTone(bgTone, fContrast)
+        if (Contrast.ratioOfTones(bgTone, nTone) < nContrast || decreasingContrast) {
+            nTone = foregroundTone(bgTone, nContrast)
+        }
+        if (Contrast.ratioOfTones(bgTone, fTone) < fContrast || decreasingContrast) {
+            fTone = foregroundTone(bgTone, fContrast)
+        }
     }
     return doubleArrayOf(nTone, fTone)
 }
@@ -104,7 +108,10 @@ private fun expanded(
     return doubleArrayOf(nTone, fTone)
 }
 
-/** The two tones moved out of 50–59: the nearer (and the farther with it), or only the farther unless they stay together. */
+/**
+ * The two tones moved out of 50–59: the nearer (and the farther with it), or only the farther unless they stay
+ * together.
+ */
 private fun outOfAwkwardZone(
     nearerTone: Double,
     fartherTone: Double,
@@ -119,8 +126,14 @@ private fun outOfAwkwardZone(
             val reach = nTone + pair.delta * expansionDir
             doubleArrayOf(nTone, if (expansionDir > 0) max(fartherTone, reach) else min(fartherTone, reach))
         }
-        fartherAwkward -> doubleArrayOf(nearerTone, if (expansionDir > 0) 60.0 else 49.0)
-        else -> doubleArrayOf(nearerTone, fartherTone)
+
+        fartherAwkward -> {
+            doubleArrayOf(nearerTone, if (expansionDir > 0) 60.0 else 49.0)
+        }
+
+        else -> {
+            doubleArrayOf(nearerTone, fartherTone)
+        }
     }
 }
 
@@ -164,8 +177,10 @@ private fun toneBetween(
     val darkOption = Contrast.darker(lower, desiredRatio)
     val availables = listOf(lightOption, darkOption).filter { it != -1.0 }
     val prefersLight = tonePrefersLightForeground(bgTone1) || tonePrefersLightForeground(bgTone2)
+    val answerContrasts =
+        minOf(Contrast.ratioOfTones(upper, answer), Contrast.ratioOfTones(lower, answer)) >= desiredRatio
     return when {
-        Contrast.ratioOfTones(upper, answer) >= desiredRatio && Contrast.ratioOfTones(lower, answer) >= desiredRatio -> answer
+        answerContrasts -> answer
         prefersLight -> if (lightOption < 0) 100.0 else lightOption
         availables.size == 1 -> availables[0]
         else -> if (darkOption < 0) 0.0 else darkOption

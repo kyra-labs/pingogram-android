@@ -12,18 +12,48 @@ class ContentSchemeTest {
     fun `picks the same palettes as SchemeContent, tones 40 and 90 of each`() {
         assertPalettes(
             0xFF2156C4,
-            0xFF2357C5, 0xFFDAE1FF, 0xFF4E5D88, 0xFFDAE1FF, 0xFF8B3BA2, 0xFFFCD7FF,
-            0xFF5D5E66, 0xFFE2E2EB, 0xFF5B5E6B, 0xFFDFE2F2, 0xFFBA1A1A, 0xFFFFDAD6,
+            0xFF2357C5,
+            0xFFDAE1FF,
+            0xFF4E5D88,
+            0xFFDAE1FF,
+            0xFF8B3BA2,
+            0xFFFCD7FF,
+            0xFF5D5E66,
+            0xFFE2E2EB,
+            0xFF5B5E6B,
+            0xFFDFE2F2,
+            0xFFBA1A1A,
+            0xFFFFDAD6,
         )
         assertPalettes(
             0xFFB4744B,
-            0xFF89502A, 0xFFFFDBC8, 0xFF765846, 0xFFFFDBC8, 0xFF606120, 0xFFE7E796,
-            0xFF655D58, 0xFFEDE0DA, 0xFF6B5B52, 0xFFF4DED3, 0xFFBA1A1A, 0xFFFFDAD6,
+            0xFF89502A,
+            0xFFFFDBC8,
+            0xFF765846,
+            0xFFFFDBC8,
+            0xFF606120,
+            0xFFE7E796,
+            0xFF655D58,
+            0xFFEDE0DA,
+            0xFF6B5B52,
+            0xFFF4DED3,
+            0xFFBA1A1A,
+            0xFFFFDAD6,
         )
         assertPalettes(
             0xFFCDDC39,
-            0xFF5B6300, 0xFFDDED49, 0xFF5D6227, 0xFFE2E89E, 0xFF016E0A, 0xFF98F987,
-            0xFF5F5F52, 0xFFE5E3D2, 0xFF5F604B, 0xFFE4E4CA, 0xFFBA1A1A, 0xFFFFDAD6,
+            0xFF5B6300,
+            0xFFDDED49,
+            0xFF5D6227,
+            0xFFE2E89E,
+            0xFF016E0A,
+            0xFF98F987,
+            0xFF5F5F52,
+            0xFFE5E3D2,
+            0xFF5F604B,
+            0xFFE4E4CA,
+            0xFFBA1A1A,
+            0xFFFFDAD6,
         )
     }
 
@@ -52,7 +82,14 @@ class ContentSchemeTest {
         val scheme = ContentScheme(Hct.fromInt(seed.toInt()), isDark = false, contrastLevel = 0.0)
         val palettes =
             with(scheme) {
-                listOf(primaryPalette, secondaryPalette, tertiaryPalette, neutralPalette, neutralVariantPalette, errorPalette)
+                listOf(
+                    primaryPalette,
+                    secondaryPalette,
+                    tertiaryPalette,
+                    neutralPalette,
+                    neutralVariantPalette,
+                    errorPalette,
+                )
             }
         assertEquals(
             expected.map { it.toInt() },
