@@ -46,9 +46,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.HiddenTitle
 import dev.kyralabs.pingogram.core.ui.component.performToggle
+import dev.kyralabs.pingogram.core.ui.component.rememberTwoRowTitles
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -132,7 +135,7 @@ internal fun ArchivePageScaffold(
 /**
  * Material's medium flexible top bar, built from [TwoRowsTopAppBar] as feature:settings' pages build it: back and
  * [title], transparent on the page's color, as wide as the page's column inside the same window margin, collapsing with
- * [scrollBehavior].
+ * [scrollBehavior]. Each row composes its title only while it can show (`docs/PERFORMANCE.md`, "Overdraw").
  */
 @Composable
 private fun ArchivePageTopBar(
@@ -142,9 +145,12 @@ private fun ArchivePageTopBar(
 ) {
     // The bar's own insets match the compact margin; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
+    val titles = rememberTwoRowTitles(scrollBehavior)
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
-            title = { expanded -> ArchivePageTitle(title, expanded) },
+            title = { expanded ->
+                if (titles.shows(expanded)) ArchivePageTitle(title, expanded) else HiddenTitle(titleStyle(expanded))
+            },
             modifier =
                 Modifier
                     .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
@@ -178,8 +184,7 @@ private fun ArchivePageTitle(
     title: String,
     expanded: Boolean,
 ) {
-    val typography = MaterialTheme.typography
-    val style = if (expanded) typography.headlineMediumEmphasized else typography.titleLargeEmphasized
+    val style = titleStyle(expanded)
     Text(
         text = title,
         modifier = Modifier.semantics { heading() },
@@ -189,6 +194,12 @@ private fun ArchivePageTitle(
         style = style,
     )
 }
+
+/** The style of the title on the bar's [expanded] row or its collapsed one. */
+@Composable
+@ReadOnlyComposable
+private fun titleStyle(expanded: Boolean): TextStyle =
+    if (expanded) MaterialTheme.typography.headlineMediumEmphasized else MaterialTheme.typography.titleLargeEmphasized
 
 /**
  * A group of rows, Material 3 Expressive's segmented list: [title] as a heading in `titleSmallEmphasized` and
