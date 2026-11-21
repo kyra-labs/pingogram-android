@@ -241,6 +241,7 @@ internal fun StepSlider(
     index: Int,
     shapes: ListItemShapes,
     onStep: (Int) -> Unit,
+    onSettled: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val value = labels[index]
@@ -268,6 +269,8 @@ internal fun StepSlider(
                     onStep(step)
                 }
             },
+            // Once a drag ends, or after a screen reader's or a key's step.
+            onValueChangeFinished = onSettled,
             modifier =
                 Modifier
                     .padding(

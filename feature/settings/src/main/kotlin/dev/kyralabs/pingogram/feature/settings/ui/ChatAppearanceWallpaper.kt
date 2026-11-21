@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -139,13 +140,7 @@ private fun SettingsGroupScope.wallpaperOptions(
     }
     if (picker.forDarkTheme == true) {
         item { shapes ->
-            StepSlider(
-                title = stringResource(R.string.settings_chat_wallpaper_dimming),
-                labels = dimmingLabels(),
-                index = state.appearance.wallpaperDimming / DIMMING_STEP,
-                shapes = shapes,
-                onStep = { actions.onDimming(it * DIMMING_STEP) },
-            )
+            WallpaperDimmingSlider(state.appearance.wallpaperDimming, shapes, actions.onDimming)
         }
     }
 }
@@ -156,6 +151,28 @@ private fun WallpaperChoice.blurred(): Boolean? =
         is WallpaperChoice.NewPhoto -> isBlurred
         is WallpaperChoice.Existing -> isBlurred.takeIf { wallpaper is Wallpaper.Photo }
     }
+
+/**
+ * "Dimming in dark theme": a slider from 0% to 100% in steps of [DIMMING_STEP] at [percent] (a value set elsewhere on
+ * its nearest step), telling [onDimming] each step dragged to and [onSettled] once the finger lets go. Chat
+ * appearance and a chat's own wallpaper page share it.
+ */
+@Composable
+internal fun WallpaperDimmingSlider(
+    percent: Int,
+    shapes: ListItemShapes,
+    onDimming: (percent: Int) -> Unit,
+    onSettled: () -> Unit = {},
+) {
+    StepSlider(
+        title = stringResource(R.string.settings_chat_wallpaper_dimming),
+        labels = dimmingLabels(),
+        index = ((percent + DIMMING_STEP / 2) / DIMMING_STEP).coerceIn(0, MAX_DIMMING_STEP),
+        shapes = shapes,
+        onStep = { onDimming(it * DIMMING_STEP) },
+        onSettled = onSettled,
+    )
+}
 
 /** 0% to 100% in steps of [DIMMING_STEP], in the user's locale. */
 @Composable
@@ -176,4 +193,5 @@ private val ThemeOptions = persistentListOf(false, true)
 
 /** The dimming slider's step, in percent. */
 private const val DIMMING_STEP = 10
+private const val MAX_DIMMING_STEP = ChatAppearance.MAX_WALLPAPER_DIMMING / DIMMING_STEP
 private const val PERCENT = 100.0

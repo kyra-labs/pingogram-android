@@ -128,6 +128,56 @@ class ChatOwnWallpaperViewModelTest {
         }
 
     @Test
+    fun `the slider previews the dimming, and the chat's own wallpaper keeps it once it settles`() =
+        runTest {
+            wallpapers.setChat(CHAT, ChatWallpaperOverride(PHOTO, darkThemeDimming = 30))
+            val viewModel = viewModel()
+
+            viewModel.onEvent(ChatOwnWallpaperEvent.SetDimming(50))
+            viewModel.onEvent(ChatOwnWallpaperEvent.SetDimming(60))
+            assertEquals(60, viewModel.uiState.value.dimming)
+            assertEquals(emptyList<Any>(), wallpapers.chatWallpapersSet)
+
+            viewModel.onEvent(ChatOwnWallpaperEvent.SaveDimming(emptyList()))
+
+            val set = wallpapers.chatWallpapersSet.single()
+            assertEquals(WallpaperChoice.Existing(PHOTO), set.choice)
+            assertEquals(60, set.darkThemeDimming)
+            assertEquals(true, set.onlyForSelf)
+            assertEquals(ChatWallpaperOverride(PHOTO, 60), viewModel.uiState.value.own)
+        }
+
+    @Test
+    fun `a dimming that cannot be saved goes back to the chat's and says why`() =
+        runTest {
+            wallpapers.setChat(CHAT, ChatWallpaperOverride(PHOTO, darkThemeDimming = 30))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            viewModel.onEvent(ChatOwnWallpaperEvent.SetDimming(70))
+            wallpapers.failure = DomainError.Network
+
+            viewModel.onEvent(ChatOwnWallpaperEvent.SaveDimming(emptyList()))
+
+            assertEquals(listOf(ChatOwnWallpaperEffect.ShowError(DomainError.Network)), effects)
+            assertEquals(30, viewModel.uiState.value.dimming)
+        }
+
+    @Test
+    fun `while a pick waits, the dimming goes with it when applied, not before`() =
+        runTest {
+            wallpapers.setChat(CHAT, ChatWallpaperOverride(PHOTO, darkThemeDimming = 30))
+            val viewModel = viewModel()
+            viewModel.onWallpaperEvent(WallpaperEvent.Pick(PHOTO))
+            viewModel.onEvent(ChatOwnWallpaperEvent.SetDimming(80))
+
+            viewModel.onEvent(ChatOwnWallpaperEvent.SaveDimming(emptyList()))
+            assertEquals(emptyList<Any>(), wallpapers.chatWallpapersSet)
+
+            viewModel.onWallpaperEvent(WallpaperEvent.Apply(emptyList()))
+            assertEquals(80, wallpapers.chatWallpapersSet.single().darkThemeDimming)
+        }
+
+    @Test
     fun `a failed upload keeps the wallpaper there was and says why`() =
         runTest {
             wallpapers.setChat(CHAT, ChatWallpaperOverride(PHOTO, darkThemeDimming = 0))

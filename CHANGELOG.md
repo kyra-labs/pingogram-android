@@ -11,7 +11,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - A private chat's profile has "Wallpaper for this chat": pick a wallpaper or a photo for that chat alone, for you or,
-  with Telegram Premium, for both of you, or reset it to your account's.
+  with Telegram Premium, for both of you, set how much it dims in dark theme (30% to start), or reset it to your
+  account's.
 - Make story albums on your own profile: Stories → New album, name it, pick its stories. In your own album, the ⋮ menu
   renames it, adds or removes stories, or deletes it (its stories stay on your profile).
 - Chat appearance → Wallpaper offers Telegram's wallpapers and patterns and your own photos (sharp at your screen's

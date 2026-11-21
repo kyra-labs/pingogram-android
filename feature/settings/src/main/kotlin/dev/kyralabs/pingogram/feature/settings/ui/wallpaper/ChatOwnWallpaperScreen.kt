@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
+import dev.kyralabs.pingogram.feature.settings.ui.WallpaperDimmingSlider
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
@@ -76,15 +77,16 @@ internal fun ChatOwnWallpaperRoute(
     val colors = MaterialTheme.colorScheme
     val actions =
         remember(viewModel, photoPicker, colors) {
+            // Other apps draw a pattern on its own fill: the theme's colors, as Pingogram draws it.
+            val patternFill = listOf(colors.primaryContainer, colors.tertiaryContainer).map { it.toArgb() and RGB }
             WallpaperActions(
                 onPick = { viewModel.onWallpaperEvent(WallpaperEvent.Pick(it)) },
                 onPickPhoto = { photoPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
-                onApply = {
-                    val fill = listOf(colors.primaryContainer, colors.tertiaryContainer).map { it.toArgb() and RGB }
-                    viewModel.onWallpaperEvent(WallpaperEvent.Apply(fill))
-                },
+                onApply = { viewModel.onWallpaperEvent(WallpaperEvent.Apply(patternFill)) },
                 onCancel = { viewModel.onWallpaperEvent(WallpaperEvent.Cancel) },
                 onRetry = { viewModel.onWallpaperEvent(WallpaperEvent.Retry) },
+                onDimming = { viewModel.onEvent(ChatOwnWallpaperEvent.SetDimming(it)) },
+                onDimmingSettled = { viewModel.onEvent(ChatOwnWallpaperEvent.SaveDimming(patternFill)) },
             )
         }
     ChatOwnWallpaperScreen(
@@ -101,7 +103,8 @@ internal fun ChatOwnWallpaperRoute(
 /**
  * "Wallpaper for this chat" (owner decision 2026-11-20, `docs/DESIGN_SYSTEM.md` §6): the sample conversation on the
  * chat's own wallpaper, or on the one picked; the account's installed wallpapers and "From your photos"; with Telegram
- * Premium, whether it is for both people; then Cancel and Apply for a pick, or "Reset" for the chat's own.
+ * Premium, whether it is for both people; its dimming in dark theme; then Cancel and Apply for a pick, or "Reset" for
+ * the chat's own.
  */
 @Composable
 internal fun ChatOwnWallpaperScreen(
@@ -140,8 +143,9 @@ internal fun ChatOwnWallpaperScreen(
 }
 
 /**
- * The installed wallpapers and the photo picker; with Telegram Premium, whether the wallpaper is for both people; then
- * Cancel and Apply for a pick, or "Reset wallpaper" for the chat's own.
+ * The installed wallpapers and the photo picker; with Telegram Premium, whether the wallpaper is for both people; the
+ * dimming in dark theme, kept with the chat's own wallpaper (owner decision 2026-11-21); then Cancel and Apply for a
+ * pick, or "Reset wallpaper" for the chat's own.
  */
 @Composable
 private fun ChatOwnWallpaperGroup(
@@ -180,6 +184,11 @@ private fun ChatOwnWallpaperGroup(
                         contentPadding = PaddingValues(MaterialTheme.spacing.large),
                     )
                 }
+            }
+        }
+        if (state.own != null || picker.pending != null) {
+            item { shapes ->
+                WallpaperDimmingSlider(state.dimming, shapes, actions.onDimming, actions.onDimmingSettled)
             }
         }
         picker.pending?.let { pending ->

@@ -1,10 +1,16 @@
 package dev.kyralabs.pingogram.feature.settings.ui.wallpaper
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
@@ -38,7 +44,11 @@ class ChatOwnWallpaperScreenTest {
             PingogramTheme(dynamicColor = false) {
                 ChatOwnWallpaperScreen(
                     state = state,
-                    actions = WallpaperActions(),
+                    actions =
+                        WallpaperActions(
+                            onDimming = { events += "dim $it" },
+                            onDimmingSettled = { events += "settled" },
+                        ),
                     onForBoth = { events += "both $it" },
                     onReset = { events += "reset" },
                     onBack = {},
@@ -66,6 +76,26 @@ class ChatOwnWallpaperScreenTest {
     }
 
     @Test
+    fun `the chat's own wallpaper has its dimming, which the slider changes and then keeps`() {
+        setScreen(ChatOwnWallpaperUiState(own = ChatWallpaperOverride(PHOTO, 30), dimming = 30))
+
+        composeRule
+            .onNodeWithContentDescription(string(R.string.settings_chat_wallpaper_dimming))
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "30%"))
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(LAST_DIMMING_STEP) }
+
+        assertEquals(listOf("dim 100", "settled"), events)
+    }
+
+    @Test
+    fun `without a wallpaper of the chat's own or a pick there is no dimming`() {
+        setScreen(ChatOwnWallpaperUiState())
+
+        composeRule.onNodeWithContentDescription(string(R.string.settings_chat_wallpaper_dimming)).assertDoesNotExist()
+    }
+
+    @Test
     fun `the chat's own wallpaper can be reset`() {
         setScreen(ChatOwnWallpaperUiState(own = ChatWallpaperOverride(PHOTO, 0)))
 
@@ -76,5 +106,6 @@ class ChatOwnWallpaperScreenTest {
 
     private companion object {
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
+        const val LAST_DIMMING_STEP = 10f
     }
 }
