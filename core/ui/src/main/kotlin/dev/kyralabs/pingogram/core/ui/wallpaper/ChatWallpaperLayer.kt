@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.isUnspecified
 import androidx.compose.ui.graphics.Brush
@@ -17,8 +19,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.toSize
 import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
@@ -48,6 +53,9 @@ import kotlin.math.max
  *   `onSurface` at its intensity; an inverted one shows in `primary` on `surfaceContainerLowest`.
  * - A fill draws its colors; a freeform gradient as a diagonal one through them.
  * - In dark theme a photo or a fill is dimmed by [darkThemeDimming] percent of `scrim`.
+ * - In a [frame] it covers the frame's box, and this box shows its part of it ([WallpaperFrame]): a conversation's
+ *   sheet below its top bar shows the part of the wallpaper the window has there. [blurred] draws a photo blurred
+ *   ([WallpaperBlur]) and a pattern's fill without its motif: what shows behind a conversation's top bar.
  *
  * It draws in its own layer, in the draw phase: scrolling the conversation neither composes nor redraws it, and the
  * loaded image arrives as one redraw.
@@ -57,8 +65,14 @@ fun ChatWallpaperLayer(
     wallpaper: Wallpaper?,
     darkThemeDimming: Int,
     modifier: Modifier = Modifier,
+    frame: WallpaperFrame? = null,
+    blurred: Boolean = false,
 ) {
-    WallpaperLayer(wallpaper, darkThemeDimming, wallpaper?.image?.let { TdlibFileImage(it.file.id) }, modifier)
+    // Blurred, a photo takes WallpaperBlur and a pattern its fill alone: what shows behind a conversation's top bar.
+    val shown = if (blurred && wallpaper is Wallpaper.Photo) wallpaper.copy(isBlurred = true) else wallpaper
+    val motif = !(blurred && wallpaper is Wallpaper.Pattern)
+    val data = shown?.image?.takeIf { motif }?.let { TdlibFileImage(it.file.id) }
+    WallpaperLayer(shown, darkThemeDimming, data, modifier, frame)
 }
 
 /**
@@ -72,9 +86,10 @@ fun PhotoPreviewWallpaperLayer(
     isBlurred: Boolean,
     darkThemeDimming: Int,
     modifier: Modifier = Modifier,
+    frame: WallpaperFrame? = null,
 ) {
     val photo = remember(isBlurred) { Wallpaper.Photo(PREVIEW_ID, PREVIEW_IMAGE, isBlurred) }
-    WallpaperLayer(photo, darkThemeDimming, File(path), modifier)
+    WallpaperLayer(photo, darkThemeDimming, File(path), modifier, frame)
 }
 
 /** [wallpaper] drawn with its image loaded from [data] (a [TdlibFileImage] or a local [File]); null for a fill. */
@@ -84,6 +99,7 @@ private fun WallpaperLayer(
     darkThemeDimming: Int,
     data: Any?,
     modifier: Modifier,
+    frame: WallpaperFrame? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val themeWallpaper = MaterialTheme.chatStyle.wallpaper
@@ -92,15 +108,36 @@ private fun WallpaperLayer(
     val dim = if (isDarkTheme()) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
     val look =
         remember(wallpaper, colors, themeWallpaper, dim) { WallpaperLook(wallpaper, colors, themeWallpaper, dim) }
+    // In a frame, the wallpaper covers the frame and this box shows its part of it: where the box sits in the frame
+    // is read after placement and in the draw phase only. Without one, it covers this box's width and the window's
+    // height from the box's top.
+    val placement = remember { mutableStateOf<FramePlacement?>(null) }
     Spacer(
         modifier
+            .then(frame?.let { Modifier.onGloballyPositioned { placement.value = it.placementIn(frame) } } ?: Modifier)
             .clipToBounds()
             .graphicsLayer()
             .drawWithCache {
-                val fill = look.fill(size)
-                onDrawBehind { look.draw(this, fill, painter, window.height.toFloat()) }
+                val placed = placement.value
+                val area = placed?.size ?: size
+                val coverHeight = placed?.size?.height ?: window.height.toFloat()
+                val fill = look.fill(area)
+                val offset = placed?.offset ?: Offset.Zero
+                onDrawBehind { translate(-offset.x, -offset.y) { look.draw(this, fill, painter, area, coverHeight) } }
             },
     )
+}
+
+/** Where a layer's box sits in its frame ([offset]) and the frame's [size]. */
+private data class FramePlacement(
+    val offset: Offset,
+    val size: Size,
+)
+
+/** Where this layer's box sits in [frame], or null while the frame is not placed. */
+private fun LayoutCoordinates.placementIn(frame: WallpaperFrame): FramePlacement? {
+    val frameBox = frame.coordinates?.takeIf { it.isAttached && isAttached } ?: return null
+    return FramePlacement(frameBox.localPositionOf(this, Offset.Zero), frameBox.size.toSize())
 }
 
 /** The image a photo or pattern draws; null for a fill. */
@@ -174,42 +211,45 @@ private class WallpaperLook(
         scope: DrawScope,
         fill: Brush?,
         painter: Painter?,
-        windowHeight: Float,
+        area: Size,
+        coverHeight: Float,
     ): Unit =
         with(scope) {
-            fill?.let { drawRect(it) }
-            if (painter != null) drawImage(painter, windowHeight)
+            fill?.let { drawRect(it, size = area) }
+            if (painter != null) drawImage(painter, area, coverHeight)
             if (dim > 0f && (wallpaper is Wallpaper.Photo || wallpaper is Wallpaper.Fill)) {
-                drawRect(colors.scrim, alpha = dim)
+                drawRect(colors.scrim, size = area, alpha = dim)
             }
         }
 
     /** A photo as it is; a pattern tinted at its intensity, `onSurface` on the fill or `primary` when inverted. */
     private fun DrawScope.drawImage(
         painter: Painter,
-        windowHeight: Float,
+        area: Size,
+        coverHeight: Float,
     ) {
         val filter =
             (wallpaper as? Wallpaper.Pattern)?.let { pattern ->
                 val ink = if (pattern.isInverted) colors.primary else colors.onSurface
                 ColorFilter.tint(ink.copy(alpha = pattern.intensity.coerceIn(0, PERCENT) / PERCENT_F))
             }
-        drawCover(painter, windowHeight, filter)
+        drawCover(painter, area, coverHeight, filter)
     }
 }
 
-/** [painter] covering this box's width and the [windowHeight] from the top, centered across; nothing until loaded. */
+/** [painter] covering the [area]'s width and [coverHeight] from the top, centered across; nothing until loaded. */
 private fun DrawScope.drawCover(
     painter: Painter,
-    windowHeight: Float,
+    area: Size,
+    coverHeight: Float,
     colorFilter: ColorFilter?,
 ) {
     val intrinsic = painter.intrinsicSize
     if (intrinsic.isUnspecified || intrinsic.width <= 0f || intrinsic.height <= 0f) return
-    val height = max(size.height, windowHeight)
-    val scale = max(size.width / intrinsic.width, height / intrinsic.height)
+    val height = max(area.height, coverHeight)
+    val scale = max(area.width / intrinsic.width, height / intrinsic.height)
     val drawn = Size(intrinsic.width * scale, intrinsic.height * scale)
-    translate((size.width - drawn.width) / 2, (height - drawn.height) / 2) {
+    translate((area.width - drawn.width) / 2, (height - drawn.height) / 2) {
         with(painter) { draw(drawn, colorFilter = colorFilter) }
     }
 }
