@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.TextAutoSize
@@ -12,8 +14,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.TopAppBarState
 import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -66,10 +74,12 @@ fun TabHeader(
     val collapsedStyle = wide.titleLargeWide
     // The bar insets its title by the compact margin itself; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
+    val titles = rememberTwoRowTitles(scrollBehavior)
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
             title = { expanded ->
-                title(if (expanded) expandedStyle else collapsedStyle)
+                val style = if (expanded) expandedStyle else collapsedStyle
+                if (titles.shows(expanded)) title(style) else HiddenTitle(style)
             },
             modifier =
                 Modifier
@@ -101,6 +111,54 @@ fun TabHeader(
             scrollBehavior = scrollBehavior,
         )
     }
+}
+
+/**
+ * Which titles of a two-row top app bar ([TwoRowsTopAppBar]) can show, as [scrollBehavior] collapses it
+ * (`docs/PERFORMANCE.md`, "Overdraw"): Material composes both rows' titles all the time, the collapsed one at alpha 0
+ * while the bar is expanded and the expanded one in a row of no height once it is collapsed. Each is composed only
+ * while it can show; the answers change only when the bar starts to collapse or ends collapsed, not as it scrolls.
+ */
+@Stable
+class TwoRowTitles internal constructor(
+    state: TopAppBarState,
+) {
+    private val collapsedShows by derivedStateOf { state.collapsedFraction > 0f }
+    private val expandedShows by derivedStateOf { state.collapsedFraction < 1f }
+
+    /** Whether the title of the [expanded] row, or the collapsed one, can show. */
+    fun shows(expanded: Boolean): Boolean = if (expanded) expandedShows else collapsedShows
+}
+
+/**
+ * A hidden title's room ([TwoRowTitles]): the height of one line of [style], measured once per style and density, with
+ * no text to compose, lay out or draw. Material sizes the collapsed row to its title at large font scales, hidden or
+ * not, so the bar keeps the height it had.
+ */
+@Composable
+fun HiddenTitle(style: TextStyle) {
+    val measurer = rememberTextMeasurer(cacheSize = 0)
+    val density = LocalDensity.current
+    val height =
+        remember(style, density) {
+            with(density) {
+                measurer
+                    .measure(HIDDEN_TITLE_SAMPLE, style, maxLines = 1)
+                    .size.height
+                    .toDp()
+            }
+        }
+    Spacer(Modifier.height(height))
+}
+
+/** The text whose line [HiddenTitle] measures: its height is the line's, whatever the title says. */
+private const val HIDDEN_TITLE_SAMPLE = " "
+
+/** [TwoRowTitles] for [scrollBehavior]'s bar. */
+@Composable
+fun rememberTwoRowTitles(scrollBehavior: TopAppBarScrollBehavior): TwoRowTitles {
+    val state = scrollBehavior.state
+    return remember(state) { TwoRowTitles(state) }
 }
 
 /**
