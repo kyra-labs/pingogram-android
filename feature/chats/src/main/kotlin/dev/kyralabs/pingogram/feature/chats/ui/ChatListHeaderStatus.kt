@@ -42,13 +42,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * Under the title: on the [expanded] row the connection pill while not connected, else the status line while
  * something is unread, and below them the Focus pill while a profile is on ([focus]); on the collapsed row only the
- * connection's state, in one line. [summary] is read here alone.
+ * connection's state, in one line. [summary] is read here alone. While the collapsed bar hides the expanded row
+ * ([expandedRowShows] false), the pill there keeps its place but its indicator stands still.
  */
 @Composable
 internal fun HeaderSubtitle(
     connection: ConnectionStatus,
     summary: () -> ChatListSummary,
     expanded: Boolean,
+    expandedRowShows: Boolean = true,
     focus: ChatListFocus? = null,
     onCatchUp: () -> Unit = {},
 ) {
@@ -58,7 +60,14 @@ internal fun HeaderSubtitle(
             Column {
                 // One slot for both, so the pill and the status line take each other's place, its size on the scheme.
                 StateCrossfade(targetState = notConnected, label = "headerSubtitle") { pill ->
-                    if (pill) ConnectionPill(connection) else StatusLine(summary(), onCatchUp)
+                    if (pill) {
+                        ConnectionPill(
+                            connection,
+                            animated = expandedRowShows,
+                        )
+                    } else {
+                        StatusLine(summary(), onCatchUp)
+                    }
                 }
                 if (focus != null) FocusPillSlot(focus)
             }
