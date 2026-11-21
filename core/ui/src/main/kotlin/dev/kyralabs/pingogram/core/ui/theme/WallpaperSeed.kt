@@ -17,11 +17,11 @@ private const val MAX_COLORS = 128
  */
 fun wallpaperSeed(pixels: IntArray): Int {
     val colors = QuantizerCelebi.quantize(pixels, MAX_COLORS)
-    val colorful = Score.score(colors, desired = 1, fallbackColorArgb = NO_SEED).first()
+    val colorful = Score.rank(colors, desired = 1, fallbackColorArgb = NO_SEED).first()
     return when {
         colorful != NO_SEED -> colorful
         colors.isEmpty() -> DEFAULT_SEED
-        else -> Score.score(colors, desired = 1, filter = false).first()
+        else -> Score.rank(colors, desired = 1, filter = false).first()
     }
 }
 
@@ -30,7 +30,7 @@ fun wallpaperSeed(pixels: IntArray): Int {
  * included, since a fill has no image to analyse.
  */
 fun fillSeed(colors: List<Int>): Int =
-    if (colors.isEmpty()) DEFAULT_SEED else Score.score(colors.associateWith { 1 }, desired = 1, filter = false).first()
+    if (colors.isEmpty()) DEFAULT_SEED else Score.rank(colors.associateWith { 1 }, desired = 1, filter = false).first()
 
 /** Score's own fallback, Google Blue, for a wallpaper without a pixel. */
 private const val DEFAULT_SEED = 0xFF4285F4.toInt()
