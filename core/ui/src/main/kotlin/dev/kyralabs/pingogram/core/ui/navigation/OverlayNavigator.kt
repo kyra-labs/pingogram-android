@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -150,7 +151,9 @@ fun rememberOverlayNavigator(navController: NavHostController): OverlayNavigator
  * ([OverlayNavigator]). Each overlay fades in and out on the default effects spring, in an [AnimatedVisibilityScope]
  * its content shares elements with (`ProvideNavAnimatedVisibilityScope`), and keeps its saved state while it is on the
  * back stack. While one shows, what is below takes no touches, no keyboard focus and is hidden from screen readers, as
- * below a dialog; it stays composed and drawn.
+ * below a dialog; it stays composed and drawn, unless the top overlay settled and covers it completely
+ * ([CoverBelow]): then it stays composed and measured but is not placed, so it draws nothing and no animation of it
+ * plays under the overlay (`docs/PERFORMANCE.md`, "Overdraw").
  *
  * While an overlay is drawn, until its way out ended, the host carries [OVERLAY_TEST_TAG]: an overlay's own content
  * leaves the semantics in the first frame of its way out, so the benchmarks wait for this tag to know it is gone.
@@ -177,20 +180,31 @@ fun OverlayHost(
     val saveableStateHolder = rememberSaveableStateHolder()
     // The overlays still to draw: those on the back stack, and above them those going out.
     val shown = remember(backStack, transitions) { backStack + transitions.filter { it !in backStack } }
+    // What each overlay says of the screen below; the top one's decides whether it is placed.
+    val covers = remember { OverlayCovers() }
+    val topCover = backStack.lastOrNull()?.let(covers::of)
     Box(if (shown.isEmpty()) modifier else modifier.testTag(OVERLAY_TEST_TAG)) {
-        Box(Modifier.fillMaxSize().then(if (backStack.isEmpty()) Modifier else Covered)) { below() }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(if (backStack.isEmpty()) Modifier else Covered)
+                .placedUnless { topCover?.hidesBelow == true },
+        ) { below() }
         shown.forEach { entry ->
             key(entry.id) {
-                OverlayEntry(
-                    navigator = navigator,
-                    entry = entry,
-                    visible = entry in backStack,
-                    restored = entry !in transitions,
-                    saveableStateHolder = saveableStateHolder,
-                )
+                CompositionLocalProvider(LocalOverlayCover provides covers.of(entry)) {
+                    OverlayEntry(
+                        navigator = navigator,
+                        entry = entry,
+                        visible = entry in backStack,
+                        restored = entry !in transitions,
+                        saveableStateHolder = saveableStateHolder,
+                    )
+                }
             }
         }
     }
+    SideEffect { covers.keepOnly(shown) }
 }
 
 /**
@@ -257,6 +271,7 @@ private fun OverlayEntry(
         }
     }
     val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
+    ShownInFullEffect(visible, state)
     if (settled) {
         LaunchedEffect(visible) { completeTransition(navigator, entry, visible, saveableStateHolder) }
     }
