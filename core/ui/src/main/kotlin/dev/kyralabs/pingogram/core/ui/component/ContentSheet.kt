@@ -30,8 +30,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 
 /**
  * The body of a screen whose top app bar sits on `surfaceContainer`, the `Scaffold`'s container color
- * (`docs/DESIGN_SYSTEM.md` §2.2, §4): a `surface` sheet with `extraLarge` top corners from the bottom of the bar to
- * the bottom of the window, Material 3 Expressive's rounded content container. What scrolls in it is clipped to it, so
+ * (`docs/DESIGN_SYSTEM.md` §2.2, §4): a `surface` sheet ([color]; clear where a conversation's wallpaper shows through)
+ * with `extraLarge` top corners from the bottom of the bar to the bottom of the window, Material 3 Expressive's
+ * rounded content container. What scrolls in it is clipped to it, so
  * content scrolls under its rounded corners instead of under the bar.
  *
  * [innerPadding] is the `Scaffold`'s: its top places the sheet, read in the layout phase, so a collapsing bar moves the
@@ -50,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 fun ContentSheet(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.surface,
     content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
 ) {
     val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
@@ -64,7 +66,7 @@ fun ContentSheet(
             .sheetSurround(innerPadding, corner, surround)
             .padding(sheetPadding)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface),
+            .background(color),
     ) { content(contentPadding) }
 }
 
