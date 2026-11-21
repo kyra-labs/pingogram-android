@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -156,6 +157,9 @@ internal fun ChatListTopBar(
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "focusPillRoom",
     )
+    // Whether any of the expanded row shows: once the bar is collapsed, the pill there is hidden and its indicator
+    // stops (`docs/PERFORMANCE.md` §4). Composes again only when that flips, not on every scrolled pixel.
+    val expandedRowShows by remember(scrollBehavior) { derivedStateOf { scrollBehavior.state.collapsedFraction < 1f } }
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // Behind the bar: what the user touches there stays the bar's.
         ConnectedAnnouncement(connection, Modifier.matchParentSize())
@@ -176,6 +180,7 @@ internal fun ChatListTopBar(
                             connection = connection,
                             summary = summary,
                             expanded = expanded,
+                            expandedRowShows = expandedRowShows,
                             focus = focus,
                             onCatchUp = { actions?.openCatchUp?.invoke() },
                         )
@@ -372,13 +377,15 @@ private fun ClearSelectionButton(onClick: () -> Unit) {
  * "Connecting…" and the like while not connected (`REQUIREMENTS.md` FR-L5): a pill in `surfaceContainerHighest` with
  * an expressive loading indicator, in the status line's place under the header's title. It grows in and out on the
  * motion scheme's springs, keeping its
- * last text while it leaves, and screen readers announce each change. Connected, it takes no space.
+ * last text while it leaves, and screen readers announce each change. Connected, it takes no space. Not [animated]
+ * (hidden), the indicator's place stays empty, so the pill keeps its size and draws no frames.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ConnectionPill(
     connection: ConnectionStatus,
     modifier: Modifier = Modifier,
+    animated: Boolean = true,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(
@@ -405,7 +412,8 @@ internal fun ConnectionPill(
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    LoadingIndicator(Modifier.size(MaterialTheme.sizes.inlineProgressIndicator))
+                    val indicator = Modifier.size(MaterialTheme.sizes.inlineProgressIndicator)
+                    if (animated) LoadingIndicator(indicator) else Spacer(indicator)
                     Text(
                         text = stringResource(status.labelRes()),
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
