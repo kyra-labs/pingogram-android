@@ -97,6 +97,7 @@ internal val BackedUpSettings: Set<String> =
         "appearance.chat.wallpaper",
         "appearance.chat.group_bubbles",
         "appearance.chat.wallpaper_dimming",
+        "appearance.chat.wallpaper_seed.",
         "auto_download.",
         "calls.data_saving",
         "chat.double_tap.incoming",

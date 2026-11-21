@@ -220,7 +220,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   dimming of `ChatAppearance.wallpaperDimming`) and drawn by `ChatWallpaperLayer` (`core:ui`): photos and patterns load through Coil from TDLib's files,
   decoded once at the window's size off the main thread and kept in its memory cache, a vector pattern by
   `VectorPatternDecoder` (an `ALPHA_8` mask the theme's colors tint), a blurred photo shrunk and blurred once by
-  `WallpaperBlur`; the layer draws in its own graphics layer, so scrolling neither composes nor redraws it.
+  `WallpaperBlur`; the layer draws in its own graphics layer, so scrolling neither composes nor redraws it. A photo
+  wallpaper's seed color (`wallpaperSeed`, `core:ui`: Material Color Utilities' Celebi and Score, ported in
+  `core:ui`'s `theme/mcu`; a fill's from its colors, `fillSeed`; a pattern, drawn in the theme's colors, has none) is
+  computed once and kept per Telegram background id (`WallpaperSeedRepository`, `appearance.chat.wallpaper_seed.<id>`, backed up), for the chat's colors
+  (`contentColorScheme`, `docs/adr/0041-chat-colors-from-the-wallpaper.md`).
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
