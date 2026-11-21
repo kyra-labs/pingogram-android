@@ -132,6 +132,13 @@ data object ColorThemeRoute
 data object ChatAppearanceRoute
 
 /**
+ * The account's wallpaper page (ADR 0041): its wallpaper for light and dark theme, previewed and then applied,
+ * `:feature:settings`, pushed above Chat appearance. A chat's own opens the same page ([ChatWallpaperRoute]).
+ */
+@Serializable
+data object WallpaperRoute
+
+/**
  * The app's language (`REQUIREMENTS.md` FR-S1, §6.4): the system's or one of the languages Pingogram ships,
  * `:feature:settings`, pushed above the Settings tab.
  */

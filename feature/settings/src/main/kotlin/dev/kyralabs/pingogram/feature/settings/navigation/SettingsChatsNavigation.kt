@@ -11,8 +11,10 @@ import dev.kyralabs.pingogram.core.navigation.SettingsChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SnippetsRoute
 import dev.kyralabs.pingogram.core.navigation.SwipeActionsRoute
 import dev.kyralabs.pingogram.core.navigation.TranscriptionSettingsRoute
+import dev.kyralabs.pingogram.core.navigation.WallpaperRoute
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPagePages
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageRoute
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPageRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
@@ -32,7 +34,7 @@ internal fun NavGraphBuilder.appearanceAndChatPages(
     chatPages(onOpen, onBack)
 }
 
-/** Appearance and the pages it opens with [onOpen]: the Theme page and Chat appearance. */
+/** Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance and its wallpaper page. */
 private fun NavGraphBuilder.appearancePages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
@@ -45,7 +47,10 @@ private fun NavGraphBuilder.appearancePages(
         )
     }
     settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
-    settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
+    settingsPage<ChatAppearanceRoute> {
+        ChatAppearanceScreenRoute(onOpenWallpaper = { onOpen(WallpaperRoute) }, onBack = onBack)
+    }
+    settingsPage<WallpaperRoute> { WallpaperPageRoute(chatId = null, onBack = onBack) }
 }
 
 /**

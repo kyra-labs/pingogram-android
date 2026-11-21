@@ -92,7 +92,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSet
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperScreen
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperUiState
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.InstalledWallpapers
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.SavedWallpaper
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPageScreen
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPageUiState
 import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
@@ -162,7 +165,24 @@ class SettingsAccessibilityChecksTest {
                 state = ChatAppearanceUiState.Content(ChatAppearance()),
                 onTextScale = {},
                 onBubbleCorners = {},
-                onWallpaper = {},
+                onOpenWallpaper = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun wallpaperPage() =
+        check {
+            WallpaperPageScreen(
+                state =
+                    WallpaperPageUiState(
+                        isChat = false,
+                        picker = WallpaperPickerState(forDarkTheme = true),
+                        saved = SavedWallpaper(wallpaper = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), false)),
+                    ),
+                onEvent = {},
+                onPickPhoto = {},
+                onApply = {},
                 onBack = {},
             )
         }

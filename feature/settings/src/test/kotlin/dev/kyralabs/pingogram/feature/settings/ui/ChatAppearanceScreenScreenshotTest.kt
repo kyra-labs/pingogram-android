@@ -37,16 +37,6 @@ class ChatAppearanceScreenScreenshotTest {
     @Test
     fun customLight() = capture("customLight", ThemeMode.Light, Custom)
 
-    /** A photo from the phone picked: the note that it is uploaded, then Cancel and Apply. */
-    @Test
-    fun pickedPhotoLight() =
-        capture(
-            "pickedPhotoLight",
-            ThemeMode.Light,
-            ChatAppearance(),
-            WallpaperPickerState(forDarkTheme = false, pending = WallpaperChoice.NewPhoto("/photo.jpg")),
-        )
-
     @Test
     fun tintDark() =
         capture(
@@ -94,7 +84,7 @@ class ChatAppearanceScreenScreenshotTest {
                 state = ChatAppearanceUiState.Loading,
                 onTextScale = {},
                 onBubbleCorners = {},
-                onWallpaper = {},
+                onOpenWallpaper = {},
                 onBack = {},
             )
         }
@@ -103,14 +93,13 @@ class ChatAppearanceScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         appearance: ChatAppearance,
-        picker: WallpaperPickerState = WallpaperPickerState(themeMode == ThemeMode.Dark),
         palette: ThemePalette = ThemePalette.Pingogram,
     ) = composeRule.captureScreen(javaClass, name, themeMode, palette = palette, chat = appearance) {
         ChatAppearanceScreen(
-            state = ChatAppearanceUiState.Content(appearance, picker = picker),
+            state = ChatAppearanceUiState.Content(appearance),
             onTextScale = {},
             onBubbleCorners = {},
-            onWallpaper = {},
+            onOpenWallpaper = {},
             onBack = {},
         )
     }
@@ -118,10 +107,10 @@ class ChatAppearanceScreenScreenshotTest {
     private fun captureAudit(variant: ScreenshotVariant) =
         composeRule.captureScreen(javaClass, variant.goldenName, variant, chat = Custom) {
             ChatAppearanceScreen(
-                state = ChatAppearanceUiState.Content(Custom, picker = WallpaperPickerState(forDarkTheme = false)),
+                state = ChatAppearanceUiState.Content(Custom),
                 onTextScale = {},
                 onBubbleCorners = {},
-                onWallpaper = {},
+                onOpenWallpaper = {},
                 onBack = {},
             )
         }
