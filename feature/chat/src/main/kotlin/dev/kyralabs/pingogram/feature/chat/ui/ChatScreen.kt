@@ -499,7 +499,8 @@ internal fun BoxScope.ChatBody(
                 onEvent,
                 if (pull != null) Modifier.pullAway(pull) else Modifier,
             )
-            if (pull != null) {
+            // At alpha 0 until pulled: composed only while it shows, not under every read channel's end.
+            if (pull != null && pull.isPulled) {
                 NextChannelIndicator(
                     pull = pull,
                     modifier =
