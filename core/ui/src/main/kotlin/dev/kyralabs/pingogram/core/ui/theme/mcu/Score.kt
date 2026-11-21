@@ -24,7 +24,7 @@ import kotlin.math.roundToInt
 
 /**
  * Ranks an image's colors for use as a theme's seed, as upstream's Score: colors of the hues that cover much of the
- * image and of a chroma near 48 score best; with [score]'s filter on, greys and hues that cover under 1% are left out.
+ * image and of a chroma near 48 score best; with [rank]'s filter on, greys and hues that cover under 1% are left out.
  * The chosen colors are as far apart in hue as their number allows.
  */
 internal object Score {
@@ -40,7 +40,7 @@ internal object Score {
      * Up to [desired] colors of [colorsToPopulation] (ARGB to pixel count, Celebi's result), best first; Google Blue
      * ([fallbackColorArgb]) when none is suitable.
      */
-    fun score(
+    fun rank(
         colorsToPopulation: Map<Int, Int>,
         desired: Int = 4,
         fallbackColorArgb: Int = FALLBACK_COLOR,
@@ -85,7 +85,12 @@ internal object Score {
         val proportion = hueExcitedProportions[sanitizeDegreesInt(hct.hue.roundToInt())]
         val filteredOut = filter && (hct.chroma < CUTOFF_CHROMA || proportion <= CUTOFF_EXCITED_PROPORTION)
         val chromaWeight = if (hct.chroma < TARGET_CHROMA) WEIGHT_CHROMA_BELOW else WEIGHT_CHROMA_ABOVE
-        return if (filteredOut) null else proportion * 100.0 * WEIGHT_PROPORTION + (hct.chroma - TARGET_CHROMA) * chromaWeight
+        return if (filteredOut) {
+            null
+        } else {
+            proportion * 100.0 * WEIGHT_PROPORTION +
+                (hct.chroma - TARGET_CHROMA) * chromaWeight
+        }
     }
 
     /** The best [desired] of [scored] that are at least some degrees apart, starting at 90° and settling for 15°. */

@@ -14,9 +14,9 @@ class ScoreTest {
 
         assertEquals(
             listOf(0xFF1FF526.toInt(), 0xFFD622F1.toInt(), 0xFFA8D3E8.toInt(), 0xFF7A675A.toInt()),
-            Score.score(clusters),
+            Score.rank(clusters),
         )
-        assertEquals(listOf(0xFF1FF526.toInt()), Score.score(clusters, desired = 1))
+        assertEquals(listOf(0xFF1FF526.toInt()), Score.rank(clusters, desired = 1))
     }
 
     @Test
@@ -32,7 +32,7 @@ class ScoreTest {
 
         assertEquals(
             listOf(0xFFFFEB3B.toInt(), 0xFFB4744B.toInt(), 0xFF2156C4.toInt(), 0xFFE91E63.toInt()),
-            Score.score(colors),
+            Score.rank(colors),
         )
     }
 
@@ -40,10 +40,10 @@ class ScoreTest {
     fun `greys alone give Google Blue, unless the filter is off`() {
         val greys = linkedMapOf(0xFF808080.toInt() to 100, 0xFF7F7F80.toInt() to 50)
 
-        assertEquals(listOf(0xFF4285F4.toInt()), Score.score(greys))
+        assertEquals(listOf(0xFF4285F4.toInt()), Score.rank(greys))
         assertEquals(
             listOf(0xFF808080.toInt(), 0xFF2156C4.toInt()),
-            Score.score(linkedMapOf(0xFF808080.toInt() to 100, 0xFF2156C4.toInt() to 5), filter = false),
+            Score.rank(linkedMapOf(0xFF808080.toInt() to 100, 0xFF2156C4.toInt() to 5), filter = false),
         )
     }
 
@@ -51,15 +51,33 @@ class ScoreTest {
     fun `tonal palettes give the same tones`() {
         assertTones(
             0xFF2156C4.toInt(),
-            0xFF000000, 0xFF001849, 0xFF2357C5, 0xFFB3C5FF, 0xFFDAE1FF, 0xFFFEFBFF, 0xFFFFFFFF,
+            0xFF000000,
+            0xFF001849,
+            0xFF2357C5,
+            0xFFB3C5FF,
+            0xFFDAE1FF,
+            0xFFFEFBFF,
+            0xFFFFFFFF,
         )
         assertTones(
             0xFFB4744B.toInt(),
-            0xFF000000, 0xFF321300, 0xFF89502A, 0xFFFFB68A, 0xFFFFDBC8, 0xFFFFFBFF, 0xFFFFFFFF,
+            0xFF000000,
+            0xFF321300,
+            0xFF89502A,
+            0xFFFFB68A,
+            0xFFFFDBC8,
+            0xFFFFFBFF,
+            0xFFFFFFFF,
         )
         assertTones(
             0xFFCDDC39.toInt(),
-            0xFF000000, 0xFF1A1D00, 0xFF5B6300, 0xFFC1D02C, 0xFFDDED49, 0xFFFCFFDA, 0xFFFFFFFF,
+            0xFF000000,
+            0xFF1A1D00,
+            0xFF5B6300,
+            0xFFC1D02C,
+            0xFFDDED49,
+            0xFFFCFFDA,
+            0xFFFFFFFF,
         )
     }
 
@@ -67,7 +85,10 @@ class ScoreTest {
     fun `a palette from a hue and chroma keys on that chroma nearest tone 50, yellow's tone 99 averaged`() {
         val yellow = TonalPalette.fromHueAndChroma(110.0, 40.0)
         assertEquals(0xFF7C7A24.toInt(), yellow.keyColor.toInt())
-        assertEquals(listOf(0xFFFFFCC8, 0xFFFFFEE4, 0xFFFFFFFF).map { it.toInt() }, listOf(98.0, 99.0, 100.0).map(yellow::tone))
+        assertEquals(
+            listOf(0xFFFFFCC8, 0xFFFFFEE4, 0xFFFFFFFF).map { it.toInt() },
+            listOf(98.0, 99.0, 100.0).map(yellow::tone),
+        )
 
         val blueGrey = TonalPalette.fromHueAndChroma(271.2, 16.0).keyColor
         assertEquals(0xFF71768B.toInt(), blueGrey.toInt())
