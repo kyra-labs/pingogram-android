@@ -75,6 +75,12 @@ fun TabHeader(
     // The bar insets its title by the compact margin itself; on wider windows it moves in with the content's.
     val extraMargin = windowMargin() - MaterialTheme.spacing.windowMarginCompact
     val titles = rememberTwoRowTitles(scrollBehavior)
+    // The expanded row's subtitle only while that row shows: collapsed, the row has no height. The collapsed row's
+    // stays, as Material sizes that row to what it holds.
+    val shownSubtitle: (@Composable (expanded: Boolean) -> Unit)? =
+        subtitle?.let { content ->
+            { expanded -> if (!expanded || titles.shows(expanded = true)) content(expanded) }
+        }
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
             title = { expanded ->
@@ -85,7 +91,7 @@ fun TabHeader(
                 Modifier
                     .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
                     .padding(horizontal = extraMargin),
-            subtitle = subtitle,
+            subtitle = shownSubtitle,
             navigationIcon = navigationIcon,
             actions = {
                 // The 48 dp circles have no touch target around them: they keep `spacing.small` apart, and the last

@@ -30,6 +30,9 @@ class TabHeaderTitlesTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val composed = mutableSetOf<String>()
+
+    /** The rows whose subtitle is composed: true for the expanded one. */
+    private val subtitles = mutableSetOf<Boolean>()
     private lateinit var scrollBehavior: TopAppBarScrollBehavior
 
     @Test
@@ -57,6 +60,16 @@ class TabHeaderTitlesTest {
         assertEquals(setOf(COLLAPSED), composed)
     }
 
+    @Test
+    fun `collapsed the expanded row's subtitle is not composed, and the collapsed row's is`() {
+        setHeader()
+        assertEquals(setOf(true, false), subtitles)
+
+        collapse(fraction = 1f)
+
+        assertEquals(setOf(false), subtitles)
+    }
+
     private fun setHeader() {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -71,6 +84,13 @@ class TabHeaderTitlesTest {
                             onDispose { composed -= row }
                         }
                         Text("Chats", style = style)
+                    },
+                    subtitle = { expanded ->
+                        DisposableEffect(expanded) {
+                            subtitles += expanded
+                            onDispose { subtitles -= expanded }
+                        }
+                        Text("3 unread")
                     },
                 )
             }
