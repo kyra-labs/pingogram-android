@@ -102,6 +102,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationBackdropBox
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationBarSlot
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaperLayer
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackEvent
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackSlot
@@ -284,7 +287,8 @@ internal fun ChatScreen(
 
 /**
  * The screen's [Scaffold]: the top bar (with the selection's count), the [bottomBar], the [jumpButton] and the
- * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu.
+ * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu. Over a
+ * Telegram wallpaper ([ConversationBackdropBox]) the wallpaper fills it, blurred behind the top bar.
  */
 @Suppress("LongParameterList") // The state, back, list, snackbars, what the bubbles share, search, connection, slots.
 @Composable
@@ -311,57 +315,62 @@ private fun ChatScaffold(
     overlay: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            Column {
-                SearchTopBarSlot(
-                    searching = search != null && selection == null,
-                    query = searchQuery,
-                    height = titleHeight(),
-                    onClose = { onEvent(ChatSearchEvent.Close) },
-                ) {
-                    ChatTopBar(
-                        header = state.header,
-                        onBack = onBack,
-                        selectedCount = selection?.messageIds?.size,
-                        onClearSelection = { onEvent(SelectionEvent.Clear) },
-                        onOpenProfile = onOpenProfile,
-                        onSecretChatEvent = onEvent,
-                        onOpenChatInfo = onOpenChatInfo,
-                        onSearch = { onEvent(ChatSearchEvent.Open) },
-                        topicAction = topicAction,
-                        connection = connection,
-                        onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
-                    )
+    // Over a Telegram wallpaper (docs/DESIGN_SYSTEM.md §13.5) the wallpaper fills the window, blurred behind the top
+    // bar, which takes the scheme of its brightness, and the sheet and the composer let it show through.
+    ConversationBackdropBox(modifier) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                ConversationBarSlot { barColor ->
+                    Column {
+                        SearchTopBarSlot(
+                            searching = search != null && selection == null,
+                            query = searchQuery,
+                            height = titleHeight(),
+                            onClose = { onEvent(ChatSearchEvent.Close) },
+                        ) {
+                            ChatTopBar(
+                                header = state.header,
+                                onBack = onBack,
+                                selectedCount = selection?.messageIds?.size,
+                                onClearSelection = { onEvent(SelectionEvent.Clear) },
+                                onOpenProfile = onOpenProfile,
+                                onSecretChatEvent = onEvent,
+                                onOpenChatInfo = onOpenChatInfo,
+                                onSearch = { onEvent(ChatSearchEvent.Open) },
+                                topicAction = topicAction,
+                                connection = connection,
+                                onSetMuted = { onEvent(ChatEvent.SetMuted(it)) },
+                                containerColor = barColor,
+                            )
+                        }
+                        // Saved Messages' and a forum's tabs, below its top bar as the folder tabs below the chat
+                        // list's; they grow in once loaded instead of pushing the conversation down at once.
+                        ConversationTabsSlot(LocalConversationTabs.current)
+                    }
                 }
-                // Saved Messages' and a forum's tabs, below its top bar as the folder tabs below the chat list's; they
-                // grow in once loaded instead of pushing the conversation down at once.
-                ConversationTabsSlot(LocalConversationTabs.current)
-            }
-        },
-        bottomBar = bottomBar,
-        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
-        // keeps the color it had on that container.
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = jumpButton,
-    ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            // The chat's own, the account's or the theme-color wallpaper, drawn behind the bars and the messages in a
-            // layer of its own, so scrolling neither composes nor redraws it.
-            ConversationWallpaperLayer(Modifier.matchParentSize())
-            Column(Modifier.fillMaxSize()) {
-                // What TDLib suggests about a chat someone new started, then a keyword alert's matches (board 30).
-                ConversationCards(contentPadding)
-                // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
-                state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
-                PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
-                TranslateBarSlot(state.translateBar, onEvent, contentPadding)
-                ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
-                WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
-                MessagesArea(state, onEvent, listState, bubbleResources, contentPadding, nextChannel, overlay)
+            },
+            bottomBar = bottomBar,
+            // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the
+            // content keeps the color it had on that container. Over a wallpaper, the sheet and its surround are clear.
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = jumpButton,
+        ) { innerPadding ->
+            // The messages' sheet on the conversation's wallpaper, which shows blurred around it over a Telegram one.
+            ConversationSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+                Column(Modifier.fillMaxSize()) {
+                    // What TDLib suggests about a chat someone new started, then a keyword alert's matches (board 30).
+                    ConversationCards(contentPadding)
+                    // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
+                    state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
+                    PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
+                    TranslateBarSlot(state.translateBar, onEvent, contentPadding)
+                    ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
+                    WelcomePackSlot(welcome, onWelcomeEvent, contentPadding)
+                    MessagesArea(state, onEvent, listState, bubbleResources, contentPadding, nextChannel, overlay)
+                }
             }
         }
     }

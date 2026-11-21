@@ -9,7 +9,9 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -39,8 +41,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -95,6 +99,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberRecordDrag
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationBackdrop
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 
@@ -168,7 +173,10 @@ internal fun ChatBottomBar(
     val drag = rememberRecordDrag()
     val suggestionsState = remember { CommandSuggestionsState() }
     val inlineState = remember { InlineResultsState() }
-    Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
+    // Over a Telegram wallpaper the composer floats on it (docs/DESIGN_SYSTEM.md §13.5): no bar behind the pill, the
+    // bars above it on a container of their own, the panels on the surface.
+    val floating = LocalConversationBackdrop.current != null && composer is ComposerUiState.Available
+    Surface(modifier = modifier, color = bottomBarColor(floating)) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
                 UnavailableLabel(composer.reason)
@@ -200,10 +208,18 @@ internal fun ChatBottomBar(
                             .wrapContentWidth()
                             .widthIn(max = MaterialTheme.sizes.bubbleMaxWidth),
                     ) {
-                        CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
-                        InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
-                        StickerSuggestionsInput(text, panel, onPanelEvent, onSendSticker, recording == null && usable)
-                        BarArea(composer.bar, onShowBarMessage, onCloseBar, onReplaceMedia)
+                        Column(Modifier.floatingBars(floating)) {
+                            CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
+                            InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
+                            StickerSuggestionsInput(
+                                text,
+                                panel,
+                                onPanelEvent,
+                                onSendSticker,
+                                recording == null && usable,
+                            )
+                            BarArea(composer.bar, onShowBarMessage, onCloseBar, onReplaceMedia)
+                        }
                         Composer(
                             composer,
                             text,
@@ -225,16 +241,19 @@ internal fun ChatBottomBar(
                     // A GIF from the panel takes the field's text as its caption, where the GIF tab's bar says.
                     val gifCaption = rememberGifCaptionChoice()
                     val gifCaptionBar = remember(gifCaption, text) { GifCaption(gifCaption) { !text.isEmpty } }
-                    PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
-                        // Not while editing: a sticker would be a new message.
-                        val stickers = composer.attachOptions.isNotEmpty()
-                        val sends =
-                            PanelSends(
-                                onSendSticker,
-                                { onSendAnimation(it, gifCaption.above) },
-                                gifCaptionBar,
-                            )
-                        ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
+                    // The panels keep the surface under a floating composer.
+                    Box(Modifier.panelSurface(floating)) {
+                        PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
+                            // Not while editing: a sticker would be a new message.
+                            val stickers = composer.attachOptions.isNotEmpty()
+                            val sends =
+                                PanelSends(
+                                    onSendSticker,
+                                    { onSendAnimation(it, gifCaption.above) },
+                                    gifCaptionBar,
+                                )
+                            ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
+                        }
                     }
                 }
             }

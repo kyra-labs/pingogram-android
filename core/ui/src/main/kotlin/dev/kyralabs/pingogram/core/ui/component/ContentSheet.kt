@@ -30,8 +30,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 
 /**
  * The body of a screen whose top app bar sits on `surfaceContainer`, the `Scaffold`'s container color
- * (`docs/DESIGN_SYSTEM.md` §2.2, §4): a `surface` sheet with `extraLarge` top corners from the bottom of the bar to
- * the bottom of the window, Material 3 Expressive's rounded content container. What scrolls in it is clipped to it, so
+ * (`docs/DESIGN_SYSTEM.md` §2.2, §4): a `surface` sheet ([color]; clear where a conversation's wallpaper shows through)
+ * with `extraLarge` top corners from the bottom of the bar to the bottom of the window, Material 3 Expressive's
+ * rounded content container. What scrolls in it is clipped to it, so
  * content scrolls under its rounded corners instead of under the bar.
  *
  * [innerPadding] is the `Scaffold`'s: its top places the sheet, read in the layout phase, so a collapsing bar moves the
@@ -42,14 +43,17 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  * The clip is [SheetShape]: a rounded rect with the same corners all round, its bottom corners below the sheet, so
  * Android clips to a round rect rather than a path, which the GPU draws without a clip mask.
  *
- * The sheet paints the `surfaceContainer` around it itself (above it, and behind its rounded corners), so its
- * `Scaffold` is transparent, with `onSurface` as its content color, and nothing full-screen lies under the sheet
- * (`docs/PERFORMANCE.md`, "Overdraw"): the window, then the sheet.
+ * The sheet paints the `surfaceContainer` around it itself ([surround]: above it, and behind its rounded corners; clear
+ * over a conversation's wallpaper, which shows there instead), so its `Scaffold` is transparent, with `onSurface` as
+ * its content color, and nothing full-screen lies under the sheet (`docs/PERFORMANCE.md`, "Overdraw"): the window,
+ * then the sheet.
  */
 @Composable
 fun ContentSheet(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.surface,
+    surround: Color = MaterialTheme.colorScheme.surfaceContainer,
     content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
 ) {
     val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
@@ -57,14 +61,13 @@ fun ContentSheet(
     val contentPadding = remember(innerPadding, gap) { innerPadding.withTop(gap) }
     val corner = MaterialTheme.shapes.extraLarge.topStart
     val shape = remember(corner) { SheetShape(corner) }
-    val surround = MaterialTheme.colorScheme.surfaceContainer
     Box(
         modifier
             .fillMaxSize()
             .sheetSurround(innerPadding, corner, surround)
             .padding(sheetPadding)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface),
+            .background(color),
     ) { content(contentPadding) }
 }
 
@@ -79,6 +82,7 @@ private fun Modifier.sheetSurround(
     color: Color,
 ): Modifier =
     drawBehind {
+        if (color.alpha == 0f) return@drawBehind
         val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
         drawRect(color, size = Size(size.width, bottom.coerceAtMost(size.height)))
     }

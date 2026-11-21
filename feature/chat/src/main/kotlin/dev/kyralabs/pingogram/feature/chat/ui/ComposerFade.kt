@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationBackdrop
 
 /**
  * The messages fading into the composer (`docs/DESIGN_SYSTEM.md` §6 "Composer"; owner request 2026-11-07), as the
@@ -63,6 +64,9 @@ internal fun BoxScope.MessagesBottom(
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
-    ComposerFade(listState, contentPadding.calculateBottomPadding(), Modifier.align(Alignment.BottomCenter))
+    // Over a Telegram wallpaper the composer floats on it: no fade into a bar that is not there.
+    if (LocalConversationBackdrop.current == null) {
+        ComposerFade(listState, contentPadding.calculateBottomPadding(), Modifier.align(Alignment.BottomCenter))
+    }
     TypingRowSlot(typing, contentPadding, Modifier.align(Alignment.BottomStart))
 }

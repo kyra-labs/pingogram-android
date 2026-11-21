@@ -68,6 +68,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- A chat with a wallpaper shows it across the whole screen: blurred behind the top bar, under the status bar, and
+  around a floating message box.
 - Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
   TDLib update it handles, instead of every part waking for every update.
 - Dragging the messages hides the keyboard, so you can read further up; what you typed stays in the composer. Jumping
