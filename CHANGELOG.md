@@ -101,6 +101,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- While a chat's photo wallpaper loads, or if it cannot, the messages and the top bar show the chat's own colors
+  instead of a flash of the window's color.
 - While the app catches up after opening, the chat list's counts (unread chats, Catch-up, mentions, the folder and
   Feed tabs) change at most four times a second, so the screen no longer redraws many times a second for seconds;
   chats in the list still update at once.
