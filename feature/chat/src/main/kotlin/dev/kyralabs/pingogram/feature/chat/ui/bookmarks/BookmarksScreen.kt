@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -176,7 +177,10 @@ internal fun BookmarksScreen(
     BackHandler(enabled = isSearching) { onEvent(BookmarksEvent.CloseSearch) }
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (isSearching) {
@@ -206,7 +210,7 @@ internal fun BookmarksScreen(
             }
         },
     ) { padding ->
-        ContentSheet(innerPadding = padding) { contentPadding ->
+        ContentSheet(innerPadding = padding, paintsSurround = true) { contentPadding ->
             when (state) {
                 BookmarksUiState.Loading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
