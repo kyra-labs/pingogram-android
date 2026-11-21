@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.ui.theme.wallpaperSeed
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /** Loads a downscaled copy of a photo wallpaper's pixels (ARGB) for its seed; null if it cannot be loaded. */
 fun interface WallpaperSeedPixels {
@@ -28,16 +29,23 @@ fun interface WallpaperSeedPixels {
 
 /**
  * [WallpaperSeedPixels] through the app's Coil image loader: Telegram's thumbnail of the background where it has one,
- * else the photo itself, at most [SEED_SIZE_PX] on a side, about the area Android analyses the system wallpaper at.
+ * else the photo itself, at most [SEED_SIZE_PX] on a side, about the area Android analyses the system wallpaper at;
+ * or, with [load] of a path, a photo on this device, picked and not applied yet, for the wallpaper page's preview.
  */
 class CoilWallpaperSeedPixels(
     private val context: Context,
 ) : WallpaperSeedPixels {
-    override suspend fun load(image: WallpaperImage): IntArray? {
+    override suspend fun load(image: WallpaperImage): IntArray? =
+        loadData(TdlibFileImage((image.thumbnail ?: image.file).id))
+
+    /** The pixels of the photo at [path] on this device (a picked photo's prepared copy); null if it cannot be read. */
+    suspend fun load(path: String): IntArray? = loadData(File(path))
+
+    private suspend fun loadData(data: Any): IntArray? {
         val request =
             ImageRequest
                 .Builder(context)
-                .data(TdlibFileImage((image.thumbnail ?: image.file).id))
+                .data(data)
                 .size(SEED_SIZE_PX)
                 .allowHardware(false)
                 .build()
