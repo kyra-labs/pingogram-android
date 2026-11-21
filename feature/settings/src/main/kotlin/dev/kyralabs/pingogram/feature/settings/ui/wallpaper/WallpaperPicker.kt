@@ -47,7 +47,7 @@ sealed interface InstalledWallpapers {
     ) : InstalledWallpapers
 }
 
-/** What the user does with the account's wallpapers in the "Wallpaper" group. */
+/** What the user does with the wallpaper picker on the wallpaper page; Apply and the reset are the page's own. */
 sealed interface WallpaperEvent {
     /** Picks for light or dark theme ([dark]); the page opens on the theme it shows in. */
     data class ShowTheme(
@@ -72,21 +72,10 @@ sealed interface WallpaperEvent {
     data class SetBlurred(
         val blurred: Boolean,
     ) : WallpaperEvent
-
-    /** Drops the pick. */
-    data object Cancel : WallpaperEvent
-
-    /** Applies the pick for the theme picked for, a pattern on [patternFill] (the theme's colors) for other apps. */
-    data class Apply(
-        val patternFill: List<Int>,
-    ) : WallpaperEvent
-
-    /** Removes the account's wallpaper for the theme picked for: the theme-color one shows again. */
-    data object Remove : WallpaperEvent
 }
 
 /**
- * Picking a wallpaper before applying it, for the Chat appearance page and a chat's own wallpaper: one of the account's
+ * Picking a wallpaper before applying it, for the wallpaper page (the account's and a chat's own): one of the account's
  * installed ones, or a photo from Android's photo picker, prepared as a JPEG copy ([PickedPhotoRepository]), blurred
  * or not; applying it hands it to the page's own way of setting it. Nothing changes until it is applied, and a failure
  * (an upload that did not finish, offline) keeps both the wallpaper there was and the pick, with [onError].

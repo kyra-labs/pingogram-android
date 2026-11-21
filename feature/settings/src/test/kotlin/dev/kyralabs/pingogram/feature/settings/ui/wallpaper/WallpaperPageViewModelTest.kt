@@ -161,7 +161,6 @@ class WallpaperPageViewModelTest {
         runTest {
             val viewModel = viewModel()
             viewModel.picker(WallpaperEvent.PickPhoto("content://phone", SCREEN_SIDE))
-            viewModel.picker(WallpaperEvent.Cancel)
             viewModel.picker(WallpaperEvent.PickPhoto("content://tablet", 3200))
 
             assertEquals(listOf(SCREEN_SIDE, 2560), photos.preparedSides)

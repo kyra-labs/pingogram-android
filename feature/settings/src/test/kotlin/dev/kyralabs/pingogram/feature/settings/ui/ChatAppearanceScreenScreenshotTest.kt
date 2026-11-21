@@ -1,15 +1,12 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
-import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

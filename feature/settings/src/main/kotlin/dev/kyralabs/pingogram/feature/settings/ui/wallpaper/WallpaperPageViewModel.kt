@@ -138,19 +138,6 @@ class WallpaperPageViewModel
                 is WallpaperEvent.SetBlurred -> {
                     setBlurred(event.blurred)
                 }
-
-                WallpaperEvent.Cancel -> {
-                    picker.cancel()
-                    draft.value = WallpaperDraft()
-                }
-
-                is WallpaperEvent.Apply -> {
-                    apply(event.patternFill, forBoth = false)
-                }
-
-                WallpaperEvent.Remove -> {
-                    reset()
-                }
             }
         }
 

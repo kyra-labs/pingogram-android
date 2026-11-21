@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import coil3.compose.AsyncImage
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -204,6 +205,17 @@ private fun Thumbnail(
         }
     }
 }
+
+/** The id of the wallpaper the grid shows as chosen: the one picked, else the account's for the theme picked for. */
+internal fun selectedWallpaperId(
+    pending: WallpaperChoice?,
+    set: Wallpaper?,
+): Long? =
+    when (pending) {
+        is WallpaperChoice.Existing -> pending.wallpaper.id
+        is WallpaperChoice.NewPhoto -> null
+        null -> set?.id
+    }
 
 /** A thumbnail's width to its height, a little less tall than a phone's screen so more of them fit. */
 private const val THUMBNAIL_ASPECT_RATIO = 3f / 4f
