@@ -44,7 +44,7 @@
     {
       "id": "material-color-utilities",
       "name": "Material Color Utilities",
-      "description": "Google's color science library; Pingogram's harmonized colors use its harmonize and CAM16 code, ported to Kotlin.",
+      "description": "Google's color science library, ported to Kotlin: harmonize and CAM16 for Pingogram's harmonized colors; HCT, the Celebi quantizer, Score, tonal palettes and SchemeContent's dynamic colors for the colors of a chat with a wallpaper.",
       "website": "https://github.com/material-foundation/material-color-utilities",
       "developers": ["Google"],
       "licenses": ["Apache-2.0"]

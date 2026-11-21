@@ -270,7 +270,8 @@ Pingogram is built on the work of others. Thank you:
 - [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex), by Google: SIL Open Font License 1.1.
 - [Material Symbols](https://fonts.google.com/icons), by Google: Apache License 2.0.
 - [Material Color Utilities](https://github.com/material-foundation/material-color-utilities), by Google, whose
-  harmonize and CAM16 code is ported to Kotlin: Apache License 2.0.
+  harmonize, CAM16 and HCT code, Celebi quantizer, Score, tonal palettes and SchemeContent's dynamic colors are ported
+  to Kotlin: Apache License 2.0.
 - [Unicode emoji data](https://www.unicode.org/emoji/), by Unicode, Inc.: Unicode License v3.
 - Every other library the app uses (Kotlin, AndroidX, Jetpack Compose, Media3 and the rest) is listed with its
   license in the app, under Settings → About → Open-source licenses. The build generates that list from the app's
