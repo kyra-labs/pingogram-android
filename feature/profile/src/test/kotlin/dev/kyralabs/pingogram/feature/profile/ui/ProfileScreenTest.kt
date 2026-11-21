@@ -49,6 +49,7 @@ class ProfileScreenTest {
     private val mediaEvents = mutableListOf<SharedMediaEvent>()
     private val opened = mutableListOf<String>()
     private var editedContacts = 0
+    private var wallpapersOpened = 0
 
     private fun setScreen(
         state: ProfileUiState = ProfilePreviewData.content,
@@ -57,6 +58,7 @@ class ProfileScreenTest {
         numbersHidden: Boolean = false,
         stories: ProfileStoriesSlot? = null,
         profileMusic: ProfileMusicSlot? = null,
+        withChatWallpaper: Boolean = false,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -76,6 +78,7 @@ class ProfileScreenTest {
                         onEditContact = if (withContactEditor) ({ editedContacts++ }) else null,
                         stories = stories,
                         profileMusic = profileMusic,
+                        onChatWallpaper = if (withChatWallpaper) ({ wallpapersOpened++ }) else null,
                     )
                 }
             }
@@ -280,6 +283,25 @@ class ProfileScreenTest {
         composeRule.onNode(hasContentDescription(string(R.string.profile_copy_phone))).performClick()
 
         assertEquals(listOf(ProfileEvent.CopyPhone), events)
+    }
+
+    @Test
+    fun `where the app has the page, a row opens the chat's own wallpaper`() {
+        setScreen(withChatWallpaper = true)
+
+        scrollTo(string(R.string.profile_chat_wallpaper))
+        composeRule.onNodeWithText(string(R.string.profile_chat_wallpaper)).performClick()
+
+        assertEquals(1, wallpapersOpened)
+        composeRule.assertAccessible()
+    }
+
+    @Test
+    fun `without the chat wallpaper page the row is left out`() {
+        setScreen()
+
+        scrollTo(string(R.string.profile_report))
+        composeRule.onNodeWithText(string(R.string.profile_chat_wallpaper)).assertDoesNotExist()
     }
 
     @Test
