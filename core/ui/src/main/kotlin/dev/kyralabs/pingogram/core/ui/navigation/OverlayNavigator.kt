@@ -181,8 +181,8 @@ fun OverlayHost(
     // The overlays still to draw: those on the back stack, and above them those going out.
     val shown = remember(backStack, transitions) { backStack + transitions.filter { it !in backStack } }
     // What each overlay says of the screen below; the top one's decides whether it is placed.
-    val covers = remember { HashMap<String, OverlayCover>() }
-    val topCover = backStack.lastOrNull()?.let { top -> covers.getOrPut(top.id) { OverlayCover() } }
+    val covers = remember { OverlayCovers() }
+    val topCover = backStack.lastOrNull()?.let(covers::of)
     Box(if (shown.isEmpty()) modifier else modifier.testTag(OVERLAY_TEST_TAG)) {
         Box(
             Modifier
@@ -192,18 +192,19 @@ fun OverlayHost(
         ) { below() }
         shown.forEach { entry ->
             key(entry.id) {
-                OverlayEntry(
-                    navigator = navigator,
-                    entry = entry,
-                    visible = entry in backStack,
-                    restored = entry !in transitions,
-                    saveableStateHolder = saveableStateHolder,
-                    cover = covers.getOrPut(entry.id) { OverlayCover() },
-                    onGone = { covers.remove(entry.id) },
-                )
+                CompositionLocalProvider(LocalOverlayCover provides covers.of(entry)) {
+                    OverlayEntry(
+                        navigator = navigator,
+                        entry = entry,
+                        visible = entry in backStack,
+                        restored = entry !in transitions,
+                        saveableStateHolder = saveableStateHolder,
+                    )
+                }
             }
         }
     }
+    SideEffect { covers.keepOnly(shown) }
 }
 
 /**
@@ -222,8 +223,6 @@ private fun OverlayEntry(
     visible: Boolean,
     restored: Boolean,
     saveableStateHolder: SaveableStateHolder,
-    cover: OverlayCover,
-    onGone: () -> Unit,
 ) {
     val destination = entry.destination as OverlayNavigator.Destination
     val gate = remember { OverlayEnterGate() }
@@ -266,15 +265,13 @@ private fun OverlayEntry(
                     compositingStrategy = CompositingStrategy.ModulateAlpha
                 }.overlayTouches(visible),
         ) {
-            CompositionLocalProvider(LocalOverlayEnterGate provides gate, LocalOverlayCover provides cover) {
+            CompositionLocalProvider(LocalOverlayEnterGate provides gate) {
                 entry.LocalOwnersProvider(saveableStateHolder) { destination.content(scope, entry) }
             }
         }
     }
     val settled = state.isIdle && (state.currentState == EnterExitState.Visible || gone)
-    // Shown in full, its fade in over and not going out: only then may it hide the screen below.
-    val shownInFull = visible && state.isIdle && state.currentState == EnterExitState.Visible
-    SideEffect { cover.shownInFull = shownInFull }
+    ShownInFullEffect(visible, state)
     if (settled) {
         LaunchedEffect(visible) { completeTransition(navigator, entry, visible, saveableStateHolder) }
     }
@@ -287,7 +284,6 @@ private fun OverlayEntry(
                     ?.value
                     .orEmpty()
             if (entry !in onBackStack) navigator.onTransitionComplete(entry)
-            onGone()
         }
     }
 }
@@ -391,40 +387,6 @@ private class OverlayEnterGate {
 }
 
 private val LocalOverlayEnterGate = staticCompositionLocalOf<OverlayEnterGate?> { null }
-
-/**
- * Says the overlay destination this is composed in hides the screen below completely while [opaque] (read in the
- * layout phase, so it can follow a drag): once the overlay is shown in full, the screen below is not placed then, and
- * draws nothing ([OverlayHost]). Nothing outside an overlay destination.
- */
-@Composable
-fun CoverBelow(opaque: () -> Boolean) {
-    val cover = LocalOverlayCover.current ?: return
-    DisposableEffect(cover, opaque) {
-        cover.opaque = opaque
-        onDispose { cover.opaque = NotOpaque }
-    }
-}
-
-/** What an overlay says of the screen below it ([CoverBelow]), and whether it is shown in full; main thread only. */
-private class OverlayCover {
-    var opaque: () -> Boolean by mutableStateOf(NotOpaque)
-    var shownInFull by mutableStateOf(false)
-
-    /** Whether the screen below shows nowhere: the overlay is shown in full and opaque. */
-    val hidesBelow: Boolean get() = shownInFull && opaque()
-}
-
-private val NotOpaque: () -> Boolean = { false }
-
-private val LocalOverlayCover = staticCompositionLocalOf<OverlayCover?> { null }
-
-/** Measured as ever, but placed, and so drawn, only while [hidden] is false; read in the layout phase. */
-private fun Modifier.placedUnless(hidden: () -> Boolean): Modifier =
-    layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        layout(placeable.width, placeable.height) { if (!hidden()) placeable.place(0, 0) }
-    }
 
 /** [OverlayHost]'s tag while an overlay is drawn, until its way out ended. */
 const val OVERLAY_TEST_TAG = "overlay"
