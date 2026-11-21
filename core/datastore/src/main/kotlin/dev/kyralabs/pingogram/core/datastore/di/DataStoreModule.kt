@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAccountNotificationsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreWallpaperSeedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreBackupSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
@@ -32,6 +33,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreViewerHintsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.WallpaperSeedRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
@@ -60,6 +62,9 @@ import javax.inject.Singleton
 interface DataStoreModule {
     @Binds
     fun appearanceRepository(repository: DataStoreAppearanceRepository): AppearanceRepository
+
+    @Binds
+    fun wallpaperSeedRepository(repository: DataStoreWallpaperSeedRepository): WallpaperSeedRepository
 
     @Binds
     fun notificationPromptRepository(repository: DataStoreNotificationPromptRepository): NotificationPromptRepository
