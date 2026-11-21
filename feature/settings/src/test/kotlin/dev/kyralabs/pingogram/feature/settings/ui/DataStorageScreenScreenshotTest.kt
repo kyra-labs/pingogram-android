@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.CallDataSaving
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ProxyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -91,6 +92,24 @@ class DataStorageScreenScreenshotTest {
     fun optionsFontScale200() =
         composeRule.captureScreen(javaClass, "optionsFontScale200", ThemeMode.Light) { Options() }
 
+    /** Network → Proxy with a saved proxy: a split row, its "Use proxy" switch on (connected through it). */
+    @Test
+    @Config(qualifiers = TALL)
+    fun proxyOnLight() = capture("proxyOnLight", ThemeMode.Light, withProxy(on = true))
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun proxyOnDark() = capture("proxyOnDark", ThemeMode.Dark, withProxy(on = true))
+
+    /** The same row with the switch off: the proxy is saved, Pingogram connects directly. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun proxyOffLight() = capture("proxyOffLight", ThemeMode.Light, withProxy(on = false))
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun proxyOffDark() = capture("proxyOffDark", ThemeMode.Dark, withProxy(on = false))
+
     @Test
     fun deleteDraftsDialogLight() =
         composeRule.captureScreen(javaClass, "deleteDraftsDialogLight", ThemeMode.Light) {
@@ -107,6 +126,12 @@ class DataStorageScreenScreenshotTest {
         }
 
     private val withDialog = SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true)
+
+    /** The page with a saved proxy, used ([on]) or not: the Proxy row then has its "Use proxy" switch. */
+    private fun withProxy(on: Boolean): DataStorageUiState {
+        val saved = ProxyPreviewStates.savedProxy.copy(isEnabled = on)
+        return SettingsPreviewData.storage.copy(proxy = saved.takeIf { on }, switchProxy = saved)
+    }
 
     private fun capture(
         name: String,

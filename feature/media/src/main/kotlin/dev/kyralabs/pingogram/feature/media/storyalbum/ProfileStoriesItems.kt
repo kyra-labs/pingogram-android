@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -20,11 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -32,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.ItemMotion
@@ -51,7 +58,9 @@ typealias ProfileStoriesItems = LazyGridScope.(margin: Dp, motion: ItemMotion) -
  * A profile's Stories tab (owner decision 2026-11-20, `docs/DESIGN_SYSTEM.md` §6 "Story albums") for chat [chatId],
  * read once the tab is [active], as the items the profile adds to its own grid below its tabs (`feature:profile`
  * cannot use this module, so `:app` hands it over). A story tile plays the profile's stories from it ([onOpenStory]),
- * an album cover opens the album ([onOpenAlbum]). Its own view model, keyed by the chat.
+ * an album cover opens the album ([onOpenAlbum]). On the user's own profile, "New album" asks for the album's name
+ * ([AlbumNameDialog]) and goes on to picking its stories ([onCreateAlbum]); the tab is read again as it shows again.
+ * Its own view model, keyed by the chat.
  */
 @Composable
 fun rememberProfileStoriesItems(
@@ -59,15 +68,40 @@ fun rememberProfileStoriesItems(
     active: Boolean,
     onOpenStory: (storyId: Int) -> Unit,
     onOpenAlbum: (albumId: Int) -> Unit,
+    onCreateAlbum: (name: String) -> Unit = {},
     viewModel: ProfileStoriesViewModel = hiltViewModel(key = "profileStories-$chatId"),
 ): ProfileStoriesItems {
     LaunchedEffect(viewModel, chatId, active) { if (active) viewModel.start(chatId) }
+    // Not on the first start, which reads the tab already.
+    val starts = remember { intArrayOf(0) }
+    LifecycleStartEffect(viewModel) {
+        if (starts[0]++ > 0) viewModel.onEvent(ProfileStoriesEvent.Refresh)
+        onStopOrDispose {}
+    }
+    var naming by rememberSaveable { mutableStateOf(false) }
+    val currentOnCreateAlbum by rememberUpdatedState(onCreateAlbum)
+    if (naming) {
+        AlbumNameDialog(
+            title = R.string.story_album_new_title,
+            confirm = R.string.story_album_new_next,
+            onConfirm = { name ->
+                naming = false
+                currentOnCreateAlbum(name)
+            },
+            onDismiss = { naming = false },
+        )
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnOpenStory by rememberUpdatedState(onOpenStory)
     val currentOnOpenAlbum by rememberUpdatedState(onOpenAlbum)
     val actions =
         remember(viewModel) {
-            ProfileStoriesActions(viewModel::onEvent, { currentOnOpenStory(it) }, { currentOnOpenAlbum(it) })
+            ProfileStoriesActions(
+                viewModel::onEvent,
+                { currentOnOpenStory(it) },
+                { currentOnOpenAlbum(it) },
+                onNewAlbum = { naming = true },
+            )
         }
     val sizePx = with(LocalDensity.current) { (MaterialTheme.sizes.sharedMediaCell * 2).roundToPx() }
     return remember(state, actions, sizePx) {
@@ -86,6 +120,7 @@ class ProfileStoriesActions(
     val onEvent: (ProfileStoriesEvent) -> Unit,
     val onOpenStory: (storyId: Int) -> Unit,
     val onOpenAlbum: (albumId: Int) -> Unit,
+    val onNewAlbum: () -> Unit = {},
 )
 
 /**
@@ -114,6 +149,12 @@ internal fun LazyGridScope.profileStories(
         }
 
         is ProfileStoriesUiState.Content -> {
+            if (state.canCreateAlbum) {
+                fullSpan(
+                    NEW_ALBUM,
+                    motion,
+                ) { NewAlbumButton(actions.onNewAlbum, Modifier.padding(horizontal = margin)) }
+            }
             if (state.albums.isNotEmpty()) {
                 fullSpan(ALBUMS, motion) {
                     StoryAlbumsContent(
@@ -215,6 +256,22 @@ private fun StoriesError(
     }
 }
 
+/** "New album" on the user's own Stories tab: a tonal button with the add symbol, at the start of the grid. */
+@Composable
+private fun NewAlbumButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        shapes = ButtonDefaults.shapes(),
+        modifier = modifier.padding(top = MaterialTheme.spacing.medium),
+    ) {
+        Icon(painterResource(UiR.drawable.ic_add), contentDescription = null)
+        Text(stringResource(R.string.story_album_new), Modifier.padding(start = MaterialTheme.spacing.small))
+    }
+}
+
 /** A full-width item that comes, moves and goes on [motion]'s springs, as the profile's tabs' items do. */
 private fun LazyGridScope.fullSpan(
     key: String,
@@ -229,5 +286,6 @@ private fun LazyGridScope.fullSpan(
 // Keys and content types, prefixed as they share the profile's grid with its other items.
 private const val STATE = "stories:state"
 private const val ALBUMS = "stories:albums"
+private const val NEW_ALBUM = "stories:new-album"
 private const val STORY = "stories:story:"
 private const val FOOTER = "stories:footer"

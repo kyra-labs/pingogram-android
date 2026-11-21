@@ -27,6 +27,8 @@ sealed interface ProfileStoriesUiState {
         val loadingMore: Boolean = false,
         /** Why the next page failed, until it is asked for again. */
         val moreError: DomainError? = null,
+        /** The profile is the user's own and has stories: "New album" shows. */
+        val canCreateAlbum: Boolean = false,
     ) : ProfileStoriesUiState {
         /** Every story on the profile is loaded. */
         val endReached: Boolean get() = stories.size >= totalCount

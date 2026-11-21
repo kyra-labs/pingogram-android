@@ -21,7 +21,7 @@ internal fun DiagnosticReport.toText(description: String): String =
         append(crashText())
         appendLine()
         appendLine()
-        append(logText(log))
+        append(logText(log, logIsErrorsOnly))
     }.trimEnd()
 
 private fun DiagnosticReport.crashText(): String {
@@ -29,11 +29,16 @@ private fun DiagnosticReport.crashText(): String {
     return "Last crash: ${Instant.ofEpochMilli(crash.timeMillis)} on thread ${crash.thread}\n${crash.trace}"
 }
 
-private fun logText(lines: List<String>): String =
+/** [lines] of TDLib's log; "errors only" just when the build logs only errors ([errorsOnly]: release). */
+private fun logText(
+    lines: List<String>,
+    errorsOnly: Boolean,
+): String =
     if (lines.isEmpty()) {
         "TDLib log: empty"
     } else {
-        "TDLib log, last ${lines.size} lines (errors only):\n${lines.joinToString("\n")}"
+        val level = if (errorsOnly) "errors only" else "errors, warnings and information"
+        "TDLib log, last ${lines.size} lines ($level):\n${lines.joinToString("\n")}"
     }
 
 /**
@@ -58,7 +63,7 @@ internal fun DiagnosticReport.issueUrl(description: String): String {
         val logs =
             listOfNotNull(
                 crashPart,
-                logText(log.takeLast(logLines)).takeIf { logLines > 0 },
+                logText(log.takeLast(logLines), logIsErrorsOnly).takeIf { logLines > 0 },
             ).joinToString("\n\n")
         val url = if (logs.isEmpty()) base else "$base&logs=${encode(logs)}"
         if (url.length <= MAX_URL_LENGTH || logLines == 0) return url

@@ -6,7 +6,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -21,11 +23,11 @@ class AndroidDiagnosticsRepositoryTest {
     private val crash get() = dir.resolve("diagnostics/last_crash.txt")
     private val log get() = dir.resolve("tdlib/logs/tdlib.log")
 
-    private fun repository() =
+    private fun repository(isDebug: Boolean = false) =
         AndroidDiagnosticsRepository(
             crashFile = crash,
             tdlibLog = log,
-            app = AppInfo("0.5.0", 5_000_002, "gms", isDebug = false),
+            app = AppInfo("0.5.0", 5_000_002, "gms", isDebug = isDebug),
             device = "Example Phone 9, Android 16 (API 36), arm64-v8a",
             now = { 42L },
             io = dispatcher,
@@ -41,6 +43,13 @@ class AndroidDiagnosticsRepositoryTest {
             assertEquals(42L, report.generatedAtMillis)
             assertNull(report.crash)
             assertEquals(emptyList<String>(), report.log)
+        }
+
+    @Test
+    fun `says the log holds errors only in release builds, which log nothing else`() =
+        runTest(dispatcher) {
+            assertTrue(repository(isDebug = false).report().logIsErrorsOnly)
+            assertFalse(repository(isDebug = true).report().logIsErrorsOnly)
         }
 
     @Test

@@ -34,6 +34,11 @@ internal fun ProfileStoriesGrid(
 @Composable
 private fun ProfileStoriesPreview() = PingogramPreview { ProfileStoriesGrid(StoryAlbumPreviewData.profileStories) }
 
+@Preview(name = "Stories tab, the user's own")
+@Composable
+private fun ProfileStoriesOwnPreview() =
+    PingogramPreview { ProfileStoriesGrid(StoryAlbumPreviewData.profileStories.copy(canCreateAlbum = true)) }
+
 @Preview(name = "Stories tab, next page failed")
 @Composable
 private fun ProfileStoriesMoreFailedPreview() =

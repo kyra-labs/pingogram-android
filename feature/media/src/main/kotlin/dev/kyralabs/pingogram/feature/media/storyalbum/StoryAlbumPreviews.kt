@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.media.R
 
 @Preview(name = "Albums on a profile")
 @Composable
@@ -21,6 +22,17 @@ private fun StoryAlbumsPreview() =
 @Preview(name = "Album")
 @Composable
 private fun StoryAlbumPreview() = AlbumPreview(StoryAlbumPreviewData.album)
+
+@Preview(name = "Album, the user's own")
+@Composable
+private fun StoryAlbumOwnPreview() = AlbumPreview(StoryAlbumPreviewData.album.copy(canEdit = true))
+
+@Preview(name = "Album, renaming")
+@Composable
+private fun AlbumNameDialogPreview() =
+    PingogramPreview {
+        AlbumNameContent(R.string.story_album_rename_title, R.string.story_album_save, {}, {}, initial = "Hampi trip")
+    }
 
 @Preview(name = "Album, loading more")
 @Composable

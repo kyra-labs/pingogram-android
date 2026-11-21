@@ -26,6 +26,9 @@ class ProfileStoriesScreenshotTest {
     fun storiesLight() = capture(StoryAlbumPreviewData.profileStories)
 
     @Test
+    fun storiesOwnLight() = capture(StoryAlbumPreviewData.profileStories.copy(canCreateAlbum = true))
+
+    @Test
     fun storiesDark() = capture(StoryAlbumPreviewData.profileStories, ThemeMode.Dark)
 
     @Test

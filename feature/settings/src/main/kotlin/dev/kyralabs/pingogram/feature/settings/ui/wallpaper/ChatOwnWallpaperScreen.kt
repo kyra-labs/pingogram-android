@@ -67,9 +67,11 @@ internal fun ChatOwnWallpaperRoute(
     // The installed wallpapers suggested for the theme the page shows in; a chat has one wallpaper for both.
     val dark = isDarkTheme()
     LaunchedEffect(dark) { viewModel.onWallpaperEvent(WallpaperEvent.ShowTheme(dark)) }
+    // Prepared at the screen's size, as it fills the screen behind the conversation in either orientation.
+    val screenSidePx = resources.displayMetrics.let { maxOf(it.widthPixels, it.heightPixels) }
     val photoPicker =
         rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString())) }
+            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString(), screenSidePx)) }
         }
     val colors = MaterialTheme.colorScheme
     val actions =

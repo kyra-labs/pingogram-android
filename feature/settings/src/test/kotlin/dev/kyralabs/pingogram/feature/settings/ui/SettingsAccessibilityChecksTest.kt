@@ -6,10 +6,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
+import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -85,6 +89,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.stickers.create.NewStickerSetU
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
 import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsPreviewData
 import dev.kyralabs.pingogram.feature.settings.ui.transcription.TranscriptionSettingsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperScreen
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.ChatOwnWallpaperUiState
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.InstalledWallpapers
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
+import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperPickerState
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import kotlinx.collections.immutable.persistentListOf
@@ -154,6 +163,24 @@ class SettingsAccessibilityChecksTest {
                 onTextScale = {},
                 onBubbleCorners = {},
                 onWallpaper = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun chatOwnWallpaper() =
+        check {
+            val photo = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
+            ChatOwnWallpaperScreen(
+                state =
+                    ChatOwnWallpaperUiState(
+                        own = ChatWallpaperOverride(photo, darkThemeDimming = 30),
+                        picker = WallpaperPickerState(installed = InstalledWallpapers.Loaded(persistentListOf(photo))),
+                        canSetForBoth = true,
+                    ),
+                actions = WallpaperActions(),
+                onForBoth = {},
+                onReset = {},
                 onBack = {},
             )
         }

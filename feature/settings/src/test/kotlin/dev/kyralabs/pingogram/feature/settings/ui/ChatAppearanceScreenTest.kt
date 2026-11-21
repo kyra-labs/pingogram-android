@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import dev.kyralabs.pingogram.core.domain.model.AccountWallpapers
 import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
@@ -72,17 +73,21 @@ class ChatAppearanceScreenTest {
             onApply = { wallpaperEvents += "apply" },
             onCancel = { wallpaperEvents += "cancel" },
             onRetry = { wallpaperEvents += "retry" },
+            onBlurred = { wallpaperEvents += "blur $it" },
+            onRemove = { wallpaperEvents += "remove" },
+            onDimming = { wallpaperEvents += "dim $it" },
         )
 
     private fun setScreen(
         appearance: ChatAppearance = ChatAppearance(),
         picker: WallpaperPickerState = WallpaperPickerState(forDarkTheme = false),
+        account: AccountWallpapers = AccountWallpapers(),
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false, chat = appearance) {
                 CompositionLocalProvider(LocalHapticFeedback provides haptics) {
                     ChatAppearanceScreen(
-                        state = ChatAppearanceUiState.Content(appearance, picker = picker),
+                        state = ChatAppearanceUiState.Content(appearance, account, picker),
                         onTextScale = { scales += it },
                         onBubbleCorners = { corners += it },
                         onWallpaper = { wallpapers += it },
@@ -145,6 +150,39 @@ class ChatAppearanceScreenTest {
     }
 
     @Test
+    fun `a picked photo can be blurred, a pattern cannot`() {
+        setScreen(picker = WallpaperPickerState(forDarkTheme = false, pending = WallpaperChoice.Existing(PHOTO)))
+
+        composeRule
+            .onNodeWithText(string(R.string.settings_chat_wallpaper_blur))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(listOf("blur true"), wallpaperEvents)
+    }
+
+    @Test
+    fun `the account's wallpaper can be removed, and dark theme's dimmed`() {
+        setScreen(
+            appearance = ChatAppearance(wallpaperDimming = 30),
+            picker = WallpaperPickerState(forDarkTheme = true),
+            account = AccountWallpapers(dark = PHOTO),
+        )
+
+        composeRule
+            .onNodeWithText(string(R.string.settings_chat_wallpaper_remove))
+            .performScrollTo()
+            .performClick()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.settings_chat_wallpaper_dimming))
+            .performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "30%"))
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(LAST_DIMMING_STEP) }
+
+        assertEquals(listOf("remove", "dim 100"), wallpaperEvents)
+    }
+
+    @Test
     fun `installed wallpapers that cannot load offer to try again`() {
         setScreen(picker = WallpaperPickerState(forDarkTheme = false, installed = InstalledWallpapers.Failed))
 
@@ -200,6 +238,8 @@ class ChatAppearanceScreenTest {
     }
 
     private companion object {
+        const val LAST_DIMMING_STEP = 10f
+
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(20, 0), isVector = true), 50, false)
 
