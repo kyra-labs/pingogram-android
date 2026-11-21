@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -169,7 +168,13 @@ internal fun SettingsTopBar(
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         TwoRowsTopAppBar(
             title = { expanded ->
-                if (titles.shows(expanded)) SettingsTopBarTitle(title, expanded) else HiddenTitle(titleStyle(expanded))
+                if (titles.shows(expanded)) {
+                    SettingsTopBarTitle(title, expanded)
+                } else {
+                    // The style SettingsTopBarTitle takes on that row.
+                    val wide = MaterialTheme.experimentalTypography
+                    HiddenTitle(if (expanded) wide.displaySmallWide else wide.titleLargeWide)
+                }
             },
             modifier =
                 Modifier
@@ -208,7 +213,8 @@ internal fun SettingsTopBarTitle(
     title: String,
     expanded: Boolean,
 ) {
-    val style = titleStyle(expanded)
+    val wide = MaterialTheme.experimentalTypography
+    val style = if (expanded) wide.displaySmallWide else wide.titleLargeWide
     Text(
         text = title,
         modifier = Modifier.semantics { heading() },
@@ -217,13 +223,6 @@ internal fun SettingsTopBarTitle(
         autoSize = TextAutoSize.StepBased(maxFontSize = style.fontSize),
         style = style,
     )
-}
-
-/** The style of [SettingsTopBarTitle] on the [expanded] row or the collapsed one. */
-@Composable
-private fun titleStyle(expanded: Boolean): TextStyle {
-    val wide = MaterialTheme.experimentalTypography
-    return if (expanded) wide.displaySmallWide else wide.titleLargeWide
 }
 
 /**
