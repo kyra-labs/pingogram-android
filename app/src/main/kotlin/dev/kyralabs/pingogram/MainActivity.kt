@@ -13,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -21,9 +22,11 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -376,8 +379,13 @@ class MainActivity : ComponentActivity() {
             contrast = settings.contrast,
             amoled = settings.amoled,
             chat = settings.chat,
-            content = content,
-        )
+        ) {
+            // The one full-screen layer behind the pages (docs/PERFORMANCE.md, "Overdraw"): the window in the theme's
+            // background, where the navigation scaffold painted it over the launch theme's color before.
+            val background = MaterialTheme.colorScheme.background
+            LaunchedEffect(background) { window.setBackgroundDrawable(background.toArgb().toDrawable()) }
+            content()
+        }
     }
 
     /** Sets the splash screen theme of the next starts; the system keeps it, through a call to it. */

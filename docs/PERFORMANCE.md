@@ -303,6 +303,19 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - `WindowInsets` handled by `Scaffold` once; no per-item inset reads.
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below.
 
+### Overdraw
+
+- One opaque full-screen layer per screen. The window paints the theme's `background`
+  (`MainActivity`); the navigation scaffold is transparent. A page adds a full-screen color only
+  where it differs from what is under it, and a layer that another opaque one covers completely is
+  transparent or goes.
+- Targets in "Debug GPU overdraw": an empty page's background at most 2× (blue), rows and cards one
+  layer above it (at most 3×), the system bars' areas no deeper than the page.
+- Nothing hidden keeps room or work: no empty slot laid out, no node at alpha 0, zero size or behind
+  an opaque surface that still composes, measures, draws or animates.
+- Making a layer transparent keeps the pixels: goldens do not change. If one does, the layer showed
+  somewhere; find where instead of re-recording.
+
 ## 6. Battery & background
 
 - No polling; TDLib's connection is the only wakeup source. No `AlarmManager`, no periodic
@@ -833,3 +846,4 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - [ ] Images request explicit sizes; stickers respect the concurrency cap
 - [ ] TDLib calls are suspendable, batched, and cancel when the screen leaves
 - [ ] Macrobenchmark for the affected screen unchanged or improved
+- [ ] No new full-screen opaque layer under another one (§5, "Overdraw")
