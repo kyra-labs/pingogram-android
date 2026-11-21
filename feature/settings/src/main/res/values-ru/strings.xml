@@ -208,10 +208,6 @@
     <string name="settings_power_saving_card_normal">Всё воспроизводится как обычно</string>
     <string name="settings_privacy_checkup">Проверка конфиденциальности</string>
     <plurals name="settings_privacy_checkup_what">
-        <item quantity="one">элемент, видимый всем в Telegram</item>
-        <item quantity="few">элемента, видимых всем в Telegram</item>
-        <item quantity="many">элементов, видимых всем в Telegram</item>
-        <item quantity="other">элементов, видимых всем в Telegram</item>
     </plurals>
     <string name="settings_privacy_checkup_review">Проверить</string>
     <string name="settings_privacy_checkup_not_now">Не сейчас</string>
