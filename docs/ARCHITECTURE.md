@@ -222,8 +222,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `VectorPatternDecoder` (an `ALPHA_8` mask the theme's colors tint), a blurred photo shrunk and blurred once by
   `WallpaperBlur`; the layer draws in its own graphics layer, so scrolling neither composes nor redraws it. A photo
   wallpaper's seed color (`wallpaperSeed`, `core:ui`: Material Color Utilities' Celebi and Score, ported in
-  `core:ui`'s `theme/mcu`; a pattern's or a fill's from its colors, `fillSeed`) is computed once and kept per Telegram
-  background id (`WallpaperSeedRepository`, `appearance.chat.wallpaper_seed.<id>`, backed up), for the chat's colors
+  `core:ui`'s `theme/mcu`; a fill's from its colors, `fillSeed`; a pattern, drawn in the theme's colors, has none) is
+  computed once and kept per Telegram background id (`WallpaperSeedRepository`, `appearance.chat.wallpaper_seed.<id>`, backed up), for the chat's colors
   (`contentColorScheme`, `docs/adr/0041-chat-colors-from-the-wallpaper.md`).
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the

@@ -26,8 +26,8 @@ fun wallpaperSeed(pixels: IntArray): Int {
 }
 
 /**
- * The seed of a pattern's or a fill's [colors] (ARGB, the colors it is drawn in): the one Score prefers, greys
- * included, since a fill has no image to analyse.
+ * The seed of a fill's [colors] (ARGB, the colors it is drawn in): the one Score prefers, greys included, since a fill
+ * has no image to analyse. A pattern has none: it is drawn in the theme's own colors, so its chat keeps them.
  */
 fun fillSeed(colors: List<Int>): Int =
     if (colors.isEmpty()) DEFAULT_SEED else Score.rank(colors.associateWith { 1 }, desired = 1, filter = false).first()
