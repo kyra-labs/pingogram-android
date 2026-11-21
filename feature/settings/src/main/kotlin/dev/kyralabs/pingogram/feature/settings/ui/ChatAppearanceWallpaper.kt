@@ -1,30 +1,15 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.ListItemShapes
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
-import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
-import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.AccountWallpaperChips
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.PendingWallpaperActions
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.WallpaperActions
-import dev.kyralabs.pingogram.feature.settings.ui.wallpaper.selectedWallpaperId
-import kotlinx.collections.immutable.persistentListOf
 import java.text.NumberFormat
 
 /**
