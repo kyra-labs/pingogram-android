@@ -23,6 +23,12 @@ sealed interface WallpaperPageEvent {
     /** Previews the default: no wallpaper, the theme's colors, 30% dimming. */
     data object Reset : WallpaperPageEvent
 
+    /** The [seed] of [photo], found from its pixels, for the preview's colors and to keep with Apply. */
+    data class SeedFound(
+        val photo: SeedPhoto,
+        val seed: Int,
+    ) : WallpaperPageEvent
+
     /**
      * Sets what is previewed, a pattern on [patternFill] (the theme's colors, 24-bit RGB) for the other apps; a chat's
      * for both people with [forBoth], which needs Telegram Premium, else for the user alone.

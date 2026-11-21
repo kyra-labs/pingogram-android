@@ -174,7 +174,7 @@ internal class WallpaperPicker(
      */
     fun apply(
         patternFill: List<Int>,
-        set: suspend (WallpaperChoice, forDarkTheme: Boolean) -> Outcome<Unit>,
+        set: suspend (WallpaperChoice, forDarkTheme: Boolean) -> Outcome<*>,
     ) {
         val current = state.value
         val choice = current.pending ?: return

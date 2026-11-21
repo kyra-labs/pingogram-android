@@ -27,5 +27,5 @@ internal fun PreviewWallpaper(
 }
 
 /** The picked wallpaper as it will be set: a photo blurred as picked. */
-private fun WallpaperChoice.Existing.shown(): Wallpaper =
+internal fun WallpaperChoice.Existing.shown(): Wallpaper =
     (wallpaper as? Wallpaper.Photo)?.copy(isBlurred = isBlurred) ?: wallpaper

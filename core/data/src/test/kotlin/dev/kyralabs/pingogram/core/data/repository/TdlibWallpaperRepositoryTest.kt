@@ -90,7 +90,7 @@ class TdlibWallpaperRepositoryTest {
                     false,
                 )
 
-            assertEquals(Outcome.Success(Unit), set)
+            assertEquals(Outcome.Success(2L), set)
             assertEquals(pattern, repository.defaults.value.light)
             with(client.sentOf<TdApi.SetDefaultBackground>().single()) {
                 assertEquals(2L, (background as TdApi.InputBackgroundRemote).backgroundId)
@@ -103,12 +103,13 @@ class TdlibWallpaperRepositoryTest {
         }
 
     @Test
-    fun `uploads a new photo, blurred, for dark theme`() =
+    fun `uploads a new photo, blurred, for dark theme, and answers its id`() =
         runTest {
             client.on(TdApi.SetDefaultBackground::class, TdResult.Success(photoBackground(id = 9, blurred = true)))
 
-            repository().setDefault(WallpaperChoice.NewPhoto("/cache/wallpaper.jpg", isBlurred = true), true)
+            val set = repository().setDefault(WallpaperChoice.NewPhoto("/cache/wallpaper.jpg", isBlurred = true), true)
 
+            assertEquals(Outcome.Success(9L), set)
             with(client.sentOf<TdApi.SetDefaultBackground>().single()) {
                 val file = (background as TdApi.InputBackgroundLocal).background as TdApi.InputFileLocal
                 assertEquals("/cache/wallpaper.jpg", file.path)
