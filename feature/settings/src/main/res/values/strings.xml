@@ -124,6 +124,11 @@
     <string name="settings_chat_wallpaper_upload_note">Your photo is uploaded to Telegram, so it\'s your wallpaper in your other Telegram apps too.</string>
     <string name="settings_chat_wallpaper_cancel">Cancel</string>
     <string name="settings_chat_wallpaper_apply">Apply</string>
+    <string name="settings_chat_wallpaper_blur">Blur</string>
+    <string name="settings_chat_wallpaper_blur_summary">Softens the photo behind your messages</string>
+    <string name="settings_chat_wallpaper_remove">Remove wallpaper</string>
+    <string name="settings_chat_wallpaper_remove_summary">Go back to the theme\'s colors</string>
+    <string name="settings_chat_wallpaper_dimming">Dimming in dark theme</string>
     <string name="settings_chat_wallpaper_title">Wallpaper for this chat</string>
     <string name="settings_chat_wallpaper_own_footer">It shows in this chat instead of your Telegram account\'s wallpaper. Set for both of you, the other person sees it too.</string>
     <string name="settings_chat_wallpaper_for_me">Only for me</string>

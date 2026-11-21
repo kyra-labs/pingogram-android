@@ -43,8 +43,4 @@ internal fun NavGraphBuilder.stories(
         onDone = { navController.popBackStack<StoryAlbumPickerRoute>(inclusive = true) },
         onClose = { navController.popBackStack<StoryAlbumPickerRoute>(inclusive = true) },
     )
-    storyAlbumPickerScreen(
-        onDone = { navController.popBackStack<StoryAlbumPickerRoute>(inclusive = true) },
-        onClose = { navController.popBackStack<StoryAlbumPickerRoute>(inclusive = true) },
-    )
 }

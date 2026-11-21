@@ -5,16 +5,22 @@ import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 
 /**
  * A [PickedPhotoRepository] that answers [preparePhoto] with what [onPreparePhoto] gives (by default a copy path in
- * the upload cache named after the URI) and records what was [discarded].
+ * the upload cache named after the URI) and records what was [prepared], at which longer side ([preparedSides]), and
+ * what was [discarded].
  */
 class FakePickedPhotoRepository : PickedPhotoRepository {
     var onPreparePhoto: suspend (String) -> Outcome<String> = { uri -> Outcome.Success("/cache/uploads/$uri.jpg") }
 
     val prepared = mutableListOf<String>()
+    val preparedSides = mutableListOf<Int>()
     val discarded = mutableListOf<String>()
 
-    override suspend fun preparePhoto(uri: String): Outcome<String> {
+    override suspend fun preparePhoto(
+        uri: String,
+        maxSidePx: Int,
+    ): Outcome<String> {
         prepared += uri
+        preparedSides += maxSidePx
         return onPreparePhoto(uri)
     }
 

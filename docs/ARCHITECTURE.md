@@ -1717,7 +1717,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Picked photos (Edit profile, a new group or channel, a group's or channel's info): `core:domain`'s
   `PickedPhotoRepository` (`AndroidPickedPhotoRepository`, `core:data`) is the one place that prepares them, as picked
   photos are prepared for sending (`AttachmentPreparer`: copied into `uploads/`, decoded and written anew as an
-  upright JPEG without metadata), at most `PickedPhotoLimits.MAX_SIDE_PX` (1280 px) on the longer side; anything
+  upright JPEG without metadata), at most `PickedPhotoLimits.MAX_SIDE_PX` (1280 px) on the longer side, or for a
+  wallpaper at the screen's size up to `PickedPhotoLimits.WALLPAPER_MAX_SIDE_PX` (2560 px); anything
   Android cannot decode as a still image is refused (`DomainError.PhotoInvalid`). The caller discards the copy once
   TDLib answered; one left behind goes with the upload cache's cleaning. `core:ui`'s `PhotoEditor` (with `PhotoTask`)
   draws the photo with its buttons and progress for Edit profile and the chat info's edit page; uploads with progress

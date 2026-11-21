@@ -10,10 +10,13 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 interface PickedPhotoRepository {
     /**
      * Copies the image at [uri] (the photo picker's content URI, as a string) into the app's upload cache as an upright
-     * JPEG without metadata, at most `PickedPhotoLimits.MAX_SIDE_PX` on its longer side: its path.
+     * JPEG without metadata, at most [maxSidePx] on its longer side: its path.
      * `DomainError.PhotoInvalid` for what cannot be read as an image. The copy stays until [discardPhoto].
      */
-    suspend fun preparePhoto(uri: String): Outcome<String>
+    suspend fun preparePhoto(
+        uri: String,
+        maxSidePx: Int = PickedPhotoLimits.MAX_SIDE_PX,
+    ): Outcome<String>
 
     /**
      * Deletes [path], a copy [preparePhoto] made, in the background: once TDLib uploaded it or failed to, or when
@@ -30,4 +33,10 @@ object PickedPhotoLimits {
      * resolution.
      */
     const val MAX_SIDE_PX = 1280
+
+    /**
+     * The longer side of a wallpaper photo at most: it is prepared at the screen's size, as it fills the screen behind
+     * a conversation, and no larger than this however large the screen (owner decision 2026-11-20).
+     */
+    const val WALLPAPER_MAX_SIDE_PX = 2560
 }

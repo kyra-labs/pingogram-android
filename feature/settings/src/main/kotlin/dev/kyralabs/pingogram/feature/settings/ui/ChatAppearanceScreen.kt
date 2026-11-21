@@ -80,10 +80,12 @@ internal fun ChatAppearanceRoute(
             }
         }
     }
-    // Android's photo picker: no permission, and only the photo the user picks reaches the app.
+    // Android's photo picker: no permission, and only the photo the user picks reaches the app. The photo is prepared
+    // at the screen's size, as it fills the screen behind a conversation in either orientation.
+    val screenSidePx = resources.displayMetrics.let { maxOf(it.widthPixels, it.heightPixels) }
     val photoPicker =
         rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString())) }
+            uri?.let { viewModel.onWallpaperEvent(WallpaperEvent.PickPhoto(it.toString(), screenSidePx)) }
         }
     val colors = MaterialTheme.colorScheme
     val wallpaperActions =
@@ -96,6 +98,9 @@ internal fun ChatAppearanceRoute(
                 onApply = { viewModel.onWallpaperEvent(WallpaperEvent.Apply(patternFill(colors))) },
                 onCancel = { viewModel.onWallpaperEvent(WallpaperEvent.Cancel) },
                 onRetry = { viewModel.onWallpaperEvent(WallpaperEvent.Retry) },
+                onBlurred = { viewModel.onWallpaperEvent(WallpaperEvent.SetBlurred(it)) },
+                onRemove = { viewModel.onWallpaperEvent(WallpaperEvent.Remove) },
+                onDimming = viewModel::setWallpaperDimming,
             )
         }
     ChatAppearanceScreen(
@@ -230,7 +235,7 @@ private fun BubbleCornersSegment(
  * Screen readers hear the slider by [title] with the step's label as its state.
  */
 @Composable
-private fun StepSlider(
+internal fun StepSlider(
     title: String,
     labels: List<String>,
     index: Int,

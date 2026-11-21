@@ -15,7 +15,6 @@ import dev.kyralabs.pingogram.core.data.attachment.MediaProcessor
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
-import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoLimits
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -27,10 +26,9 @@ import javax.inject.Singleton
 /**
  * [PickedPhotoRepository] on the app's upload cache ([UploadFiles]). A picked image is prepared as picked photos are
  * for sending ([AttachmentPreparer], on [io]): copied, decoded and written anew as an upright JPEG without metadata
- * (the location included), here at most [PickedPhotoLimits.MAX_SIDE_PX] on its longer side. What Android cannot decode
- * as a still image (a video, a GIF, another file) is deleted at once and refused. Copies are deleted in the app's
- * [scope], so a screen that leaves meanwhile leaves nothing behind; those of earlier runs go with the upload cache's
- * own cleaning.
+ * (the location included), at most the longer side asked for. What Android cannot decode as a still image (a video,
+ * a GIF, another file) is deleted at once and refused. Copies are deleted in the app's [scope], so a screen that leaves
+ * meanwhile leaves nothing behind; those of earlier runs go with the upload cache's own cleaning.
  *
  * Nothing about the images or their paths is logged.
  */
@@ -52,9 +50,12 @@ class AndroidPickedPhotoRepository internal constructor(
 
     private val preparer = AttachmentPreparer(files, content, media)
 
-    override suspend fun preparePhoto(uri: String): Outcome<String> =
+    override suspend fun preparePhoto(
+        uri: String,
+        maxSidePx: Int,
+    ): Outcome<String> =
         withContext(io) {
-            when (val prepared = preparer.prepare(uri, AttachmentKind.Media, PickedPhotoLimits.MAX_SIDE_PX)) {
+            when (val prepared = preparer.prepare(uri, AttachmentKind.Media, maxSidePx)) {
                 is Outcome.Failure -> {
                     Outcome.Failure(DomainError.PhotoInvalid)
                 }

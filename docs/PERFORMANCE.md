@@ -370,6 +370,26 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - The features after v2.3.0 (backup, the Channel feed, the settings redesign, wallpapers, story albums; 2026-11-20,
     `docs/adr/0040-apk-budget-after-v2-3-0.md`) took arm64-v8a to 51.0 MB and universal to 124.7 MB, with no native
     library changed. The owner raised the budgets to 53 MB and 128 MB, leaving about 2 and 3.3 MB.
+  - The size audit ADR 0040 asks for (2026-11-20), arm64-v8a `fossBenchmarkRelease`, v2.3.0 against `main` at #792:
+    53,185,363 → 53,487,291 bytes (50.72 → 51.01 MB, +0.29 MB). In the APK: dex +255 KB (8.17 → 8.42 MB),
+    `resources.arsc` +19 KB, resource files +18 KB; the native libraries, the font and the assets did not change.
+    - Dex by package, before compression (R8 inlines and merges across packages, so these are approximate): the app's
+      own modules +550 KB (7.06 → 7.61 MB), the libraries −106 KB. `feature:settings` +214 KB (Chats page #739,
+      Backup & restore #703, snippets #671), `feature:chat` +141 KB (playback speed #676, round videos #670, links and
+      dates in message actions #654 and #667), `core:data` +93 KB (encrypted backups #683, snippets #659, the update
+      router #768 and #772), `feature:chats` +43 KB (the Channel feed's menu, reactions, cards and search, #705, #730,
+      #685 and #735); `feature:calls` −125 KB, kotlinx.coroutines −52 KB. Of the libraries, Compose UI grew by
+      104 KB and Guava by 84 KB (Media3's own use of it); no dependency changed, more of them is reached.
+    - Looked at and kept: the 287 drawables (164 KB) are all vectors, the largest 4.5 KB (the wordmark), and
+      byte-identical resource files add up to 9 KB, most of them Glance's. 886 of the 912 layouts are Glance's
+      (289 KB), which the home-screen widget needs. `raw/open_source_licenses` (54 KB) already stores each license
+      text once. The license files under `META-INF` stay.
+    - Keep rules: `app/proguard-rules.pro` has a single `-dontwarn`. The broad ones come with the AARs, and JNI needs
+      what they keep: TDLib's `-keep class org.drinkless.tdlib.** { *; }` (847 KB of dex, every `TdApi` class with
+      its fields and constructors) and the call engine's `org.webrtc.**` (247 KB).
+    - Trim: the minified variants leave out the library files only tools read (`META-INF/*.version`,
+      `DebugProbesKt.bin`, `kotlin/**.kotlin_builtins`, 114 files), build-logic's `DEBUG_ONLY_METADATA`: −34,365
+      bytes on each APK, arm64-v8a 53,487,291 → 53,452,926.
   - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
     code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
     its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two

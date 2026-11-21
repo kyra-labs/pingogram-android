@@ -108,7 +108,7 @@ class ChatAppearanceViewModel
                 is WallpaperEvent.ShowTheme -> picker.showTheme(event.dark)
                 WallpaperEvent.Retry -> picker.retry()
                 is WallpaperEvent.Pick -> picker.pick(event.wallpaper)
-                is WallpaperEvent.PickPhoto -> picker.pickPhoto(event.uri)
+                is WallpaperEvent.PickPhoto -> picker.pickPhoto(event.uri, event.screenSidePx)
                 is WallpaperEvent.SetBlurred -> picker.setBlurred(event.blurred)
                 WallpaperEvent.Cancel -> picker.cancel()
                 is WallpaperEvent.Apply -> picker.apply(event.patternFill, wallpaperRepository::setDefault)

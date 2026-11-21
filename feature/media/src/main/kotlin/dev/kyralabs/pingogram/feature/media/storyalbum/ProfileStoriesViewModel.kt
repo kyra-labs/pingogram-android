@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Story
 import dev.kyralabs.pingogram.core.domain.model.StoryAlbum
 import dev.kyralabs.pingogram.core.domain.repository.StoryAlbumRepository
+import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -29,20 +30,24 @@ import javax.inject.Inject
  * album), and the stories it keeps on its profile, [PAGE_SIZE] at a time as the grid nears its end
  * ([ProfileStoriesEvent.LoadMore]), each with its day in the zone and language of the moment. Neither stories nor
  * albums is [ProfileStoriesUiState.Empty]; a failed first page is an error to retry, and failed albums are left out.
+ * On the user's own profile with stories, an album can be created ([ProfileStoriesUiState.Content.canCreateAlbum]);
+ * coming back to the tab reads it again quietly ([ProfileStoriesEvent.Refresh]), as albums may have changed meanwhile.
  */
 @HiltViewModel
 class ProfileStoriesViewModel internal constructor(
     private val albums: StoryAlbumRepository,
+    private val users: UserRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
-    private val locale: () -> Locale,
+    private val locale: () -> Locale = Locale::getDefault,
 ) : ViewModel() {
     @Inject
     constructor(
         albums: StoryAlbumRepository,
+        users: UserRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
-    ) : this(albums, clock, timePatterns, Locale::getDefault)
+    ) : this(albums, users, clock, timePatterns, Locale::getDefault)
 
     private val state = MutableStateFlow<ProfileStoriesUiState>(ProfileStoriesUiState.Loading)
     val uiState: StateFlow<ProfileStoriesUiState> = state.asStateFlow()
@@ -72,11 +77,18 @@ class ProfileStoriesViewModel internal constructor(
                     loadMore(chatId, retry = true)
                 }
             }
+
+            ProfileStoriesEvent.Refresh -> {
+                if (state.value !is ProfileStoriesUiState.Loading) load(chatId, quietly = true)
+            }
         }
     }
 
-    private fun load(chatId: Long) {
-        state.value = ProfileStoriesUiState.Loading
+    private fun load(
+        chatId: Long,
+        quietly: Boolean = false,
+    ) {
+        if (!quietly) state.value = ProfileStoriesUiState.Loading
         viewModelScope.launch {
             coroutineScope {
                 val tiles = async { albumTiles(chatId) }
@@ -84,7 +96,7 @@ class ProfileStoriesViewModel internal constructor(
                 state.value =
                     when (page) {
                         is Outcome.Failure -> {
-                            ProfileStoriesUiState.Error(page.error)
+                            if (quietly) state.value else ProfileStoriesUiState.Error(page.error)
                         }
 
                         is Outcome.Success -> {
@@ -92,7 +104,13 @@ class ProfileStoriesViewModel internal constructor(
                             if (page.value.stories.isEmpty() && shown.isEmpty()) {
                                 ProfileStoriesUiState.Empty
                             } else {
-                                ProfileStoriesUiState.Content(shown, mapped(page.value.stories), page.value.totalCount)
+                                ProfileStoriesUiState.Content(
+                                    albums = shown,
+                                    stories = mapped(page.value.stories),
+                                    totalCount = page.value.totalCount,
+                                    // A private chat's id is its user's: the user's own profile.
+                                    canCreateAlbum = users.myUserId.value == chatId && page.value.stories.isNotEmpty(),
+                                )
                             }
                         }
                     }

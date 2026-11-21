@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.navigation.ProfileRoute
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToNewStoryAlbum
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToProfileStoryViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryAlbum
 import dev.kyralabs.pingogram.feature.media.profilemusic.ProfileMusicSection
@@ -106,6 +107,7 @@ private fun profileStories(navController: NavHostController): ProfileStoriesSlot
             active = active,
             onOpenStory = { storyId -> navController.navigateToProfileStoryViewer(chatId, storyId) },
             onOpenAlbum = { albumId -> navController.navigateToStoryAlbum(chatId, albumId) },
+            onCreateAlbum = { name -> navController.navigateToNewStoryAlbum(chatId, name) },
         )
     }
 
