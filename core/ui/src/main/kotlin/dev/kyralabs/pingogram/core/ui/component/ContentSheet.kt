@@ -22,7 +22,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -43,15 +42,14 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  * The clip is [SheetShape]: a rounded rect with the same corners all round, its bottom corners below the sheet, so
  * Android clips to a round rect rather than a path, which the GPU draws without a clip mask.
  *
- * With [paintsSurround], the sheet paints the `surfaceContainer` around it itself (above it, and behind its rounded
- * corners), so its `Scaffold` is transparent and nothing full-screen lies under the sheet (`docs/PERFORMANCE.md`,
- * "Overdraw"): the window, then the sheet.
+ * The sheet paints the `surfaceContainer` around it itself (above it, and behind its rounded corners), so its
+ * `Scaffold` is transparent, with `onSurface` as its content color, and nothing full-screen lies under the sheet
+ * (`docs/PERFORMANCE.md`, "Overdraw"): the window, then the sheet.
  */
 @Composable
 fun ContentSheet(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
-    paintsSurround: Boolean = false,
     content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
 ) {
     val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
@@ -59,7 +57,7 @@ fun ContentSheet(
     val contentPadding = remember(innerPadding, gap) { innerPadding.withTop(gap) }
     val corner = MaterialTheme.shapes.extraLarge.topStart
     val shape = remember(corner) { SheetShape(corner) }
-    val surround = if (paintsSurround) MaterialTheme.colorScheme.surfaceContainer else Color.Unspecified
+    val surround = MaterialTheme.colorScheme.surfaceContainer
     Box(
         modifier
             .fillMaxSize()
@@ -73,20 +71,16 @@ fun ContentSheet(
 /**
  * [color] above the sheet that [innerPadding]'s top places, down to the end of its rounded corners: what shows around
  * them is the color the corners were drawn over before, to the pixel. Read in the draw phase, so a collapsing bar
- * redraws it without recomposing or measuring. Nothing while [color] is unspecified.
+ * redraws it without recomposing or measuring.
  */
 private fun Modifier.sheetSurround(
     innerPadding: PaddingValues,
     corner: CornerSize,
     color: Color,
 ): Modifier =
-    if (color.isUnspecified) {
-        this
-    } else {
-        drawBehind {
-            val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
-            drawRect(color, size = Size(size.width, bottom.coerceAtMost(size.height)))
-        }
+    drawBehind {
+        val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
+        drawRect(color, size = Size(size.width, bottom.coerceAtMost(size.height)))
     }
 
 /**
@@ -119,7 +113,10 @@ internal class SheetShape(
 @Composable
 private fun ContentSheetPreview() {
     PingogramPreview {
-        Scaffold(containerColor = MaterialTheme.colorScheme.surfaceContainer) { innerPadding ->
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ) { innerPadding ->
             ContentSheet(innerPadding) { contentPadding ->
                 Text(text = "Content", modifier = Modifier.padding(contentPadding))
             }

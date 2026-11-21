@@ -103,8 +103,10 @@ internal fun FeedScreen(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbars) },
-        // The top bar's container; the list sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             if (searching) {
                 FeedSearchBar(query, onClose = closeSearch)

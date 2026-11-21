@@ -126,11 +126,7 @@ internal fun ScheduledMessagesScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ScheduledBody(state, onEvent, listState, contentPadding)
         }
     }

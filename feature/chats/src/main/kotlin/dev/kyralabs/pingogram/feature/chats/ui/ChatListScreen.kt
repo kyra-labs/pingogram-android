@@ -260,7 +260,7 @@ private fun ChatListBody(
     val showsFeedTab = uiState.feedTab != null && LocalChatSwipes.current.feedTab
     val showsTabs = uiState.kind == ChatListKind.Chats && (uiState.folderTabs.isNotEmpty() || showsFeedTab)
     val folderBar = remember { FolderBarSpace() }
-    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding), paintsSurround = true) { sheetPadding ->
+    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
         // Below the folder bar while it shows, read in the layout phase (FolderBarSpace).
         val listPadding =
             remember(sheetPadding, showsTabs) { if (showsTabs) folderBar.below(sheetPadding) else sheetPadding }

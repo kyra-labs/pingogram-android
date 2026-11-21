@@ -159,11 +159,7 @@ internal fun EditContactScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
-        ContentSheet(
-            innerPadding,
-            Modifier.consumeWindowInsets(innerPadding),
-            paintsSurround = true,
-        ) { contentPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             when (state) {
                 EditContactUiState.Loading -> {
                     val description = stringResource(R.string.contacts_edit_loading)

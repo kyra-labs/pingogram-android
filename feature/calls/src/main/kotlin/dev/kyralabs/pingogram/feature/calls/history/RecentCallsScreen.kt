@@ -92,7 +92,10 @@ internal fun RecentCallsScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { RecentCallsTopBar(onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = { StartCallButton(listState, onStartCall) },
