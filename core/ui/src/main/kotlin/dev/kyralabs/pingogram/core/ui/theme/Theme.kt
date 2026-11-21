@@ -116,7 +116,7 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
  * What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme], whether its surfaces are true
  * black ([amoledBlack]: dark with AMOLED black on), and whether it is [dark].
  */
-private data class ThemeSettings(
+internal data class ThemeSettings(
     val dynamicColor: Boolean,
     val palette: ThemePalette,
     val contrast: Contrast,
@@ -126,7 +126,7 @@ private data class ThemeSettings(
     val dark: Boolean = false,
 )
 
-private val LocalThemeSettings =
+internal val LocalThemeSettings =
     staticCompositionLocalOf {
         ThemeSettings(
             dynamicColor = true,
@@ -174,7 +174,7 @@ private fun Configuration.fontWeightAdjustmentOrZero(): Int =
         0
     }
 
-private val ExpressiveMotionScheme = MotionScheme.expressive()
+internal val ExpressiveMotionScheme = MotionScheme.expressive()
 private val DefaultSpacing = PingogramSpacing()
 private val DefaultSizes = PingogramSizes()
 
