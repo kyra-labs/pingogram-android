@@ -88,12 +88,12 @@ internal fun ChatTopBar(
     topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
     onSetMuted: (Boolean) -> Unit = {},
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
-    val colors = MaterialTheme.colorScheme
     val barColors =
         TopAppBarDefaults.topAppBarColors(
-            containerColor = colors.surfaceContainer,
-            scrolledContainerColor = colors.surfaceContainer,
+            containerColor = containerColor,
+            scrolledContainerColor = containerColor,
         )
     // The last action's 40 dp circle ends on the window margin, mirroring back's arrow, which starts on it
     // (docs/DESIGN_SYSTEM.md §7): the bar keeps spacing.extraSmall, the button's touch target another.
