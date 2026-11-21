@@ -266,9 +266,11 @@
     <string name="settings_power_saving_card_normal">Everything plays normally</string>
     <!-- Experimental UI (docs/DESIGN_SYSTEM.md §13.10): the card at the top of Privacy and security -->
     <string name="settings_privacy_checkup">Privacy checkup</string>
+    <!-- How many privacy settings are open to everybody. %1$d is the count, drawn large where it stands in the
+         sentence: keep it in every form, before or after the words as the language needs. -->
     <plurals name="settings_privacy_checkup_what">
-        <item quantity="one">thing anyone on Telegram can see</item>
-        <item quantity="other">things anyone on Telegram can see</item>
+        <item quantity="one">%1$d thing anyone on Telegram can see</item>
+        <item quantity="other">%1$d things anyone on Telegram can see</item>
     </plurals>
     <string name="settings_privacy_checkup_review">Review</string>
     <string name="settings_privacy_checkup_not_now">Not now</string>

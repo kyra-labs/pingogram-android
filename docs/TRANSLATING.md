@@ -37,7 +37,11 @@ Every user-visible text is a string resource in its module's `res/values/strings
   of a screen reader's description are joined with `core:ui`'s `spokenList` (`list_separator`, which languages
   translate).
 - **Positional placeholders** (`%1$s`, `%2$d`), even when there is one, so translations can reorder them.
-- **Plurals** (`<plurals>`) for every count, with `one` and `other` in English; never `if (count == 1)`.
+- **Plurals** (`<plurals>`) for every count, with `one` and `other` in English; never `if (count == 1)`. Every item
+  includes the count's placeholder, even where a screen draws the number on its own: in Russian, Arabic and others,
+  `one` and `few` cover several numbers (1, 21, 31…), so a form without the number is wrong there and fails Lint's
+  `ImpliedQuantity`. To draw the count apart (large, say), split the formatted sentence at it, as the Privacy checkup
+  card does (`CountSentence`).
 - **Translator comments** (`<!-- … -->` above a string or a group) where a string is ambiguous: where it shows, what
   each placeholder holds, how long it may be.
 - **`translatable="false"`** for the brand (Pingogram) and technical strings (URLs, the `t.me/` prefix); a format of

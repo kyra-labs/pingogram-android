@@ -89,7 +89,13 @@ private fun CheckupCard(
         contentColor = colors.onPrimaryContainer,
     ) {
         Column(Modifier.padding(spacing.large), verticalArrangement = Arrangement.spacedBy(spacing.medium)) {
-            val description = resources.getQuantityString(R.plurals.settings_privacy_checkup_what, open.size)
+            // The count is drawn large, between the words a language puts before and after it.
+            val locale = resources.configuration.locales[0]
+            val sentence =
+                splitAtCount(
+                    resources.getQuantityString(R.plurals.settings_privacy_checkup_what, open.size, open.size),
+                    String.format(locale, "%d", open.size),
+                )
             Column(
                 Modifier.semantics(mergeDescendants = true) { heading() },
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
@@ -102,8 +108,13 @@ private fun CheckupCard(
                     horizontalArrangement = Arrangement.spacedBy(spacing.medium),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(open.size.toString(), style = MaterialTheme.experimentalTypography.displaySmallCondensed)
-                    Text(description, style = MaterialTheme.typography.titleMediumEmphasized)
+                    if (sentence.before.isNotEmpty()) {
+                        Text(sentence.before, style = MaterialTheme.typography.titleMediumEmphasized)
+                    }
+                    Text(sentence.count, style = MaterialTheme.experimentalTypography.displaySmallCondensed)
+                    if (sentence.after.isNotEmpty()) {
+                        Text(sentence.after, style = MaterialTheme.typography.titleMediumEmphasized)
+                    }
                 }
             }
             CheckupTags(open)
