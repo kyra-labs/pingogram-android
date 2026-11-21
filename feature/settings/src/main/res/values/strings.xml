@@ -133,6 +133,11 @@
     <string name="settings_wallpaper_summary_photo">Photo</string>
     <string name="settings_wallpaper_summary_pattern">Pattern</string>
     <string name="settings_wallpaper_summary_fill">Colors</string>
+    <string name="settings_wallpaper_apply_title">Apply wallpaper</string>
+    <string name="settings_wallpaper_apply_for_me">Apply for me</string>
+    <string name="settings_wallpaper_apply_for_both">Apply for me and %1$s</string>
+    <string name="settings_wallpaper_apply_for_both_unnamed">Apply for both of you</string>
+    <string name="settings_wallpaper_requires_premium">Requires Telegram Premium</string>
     <!-- The wallpaper page's preview: a sample contact's name, its date chip and the composer's hint. -->
     <string name="settings_wallpaper_preview_name">Meera</string>
     <string name="settings_wallpaper_preview_date">Today</string>
