@@ -392,7 +392,7 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
             assertNull(viewModel.state.feedTab)
 
             chats.setChats(ChatListType.Main, channel(1, unread = 5), chat(2, unreadCount = 9), channel(3, unread = 3))
-            runCurrent()
+            afterCountPace()
 
             assertEquals(FeedTab(unreadCount = 8, channelCount = 2), viewModel.state.feedTab)
         }

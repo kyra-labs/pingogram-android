@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import dev.kyralabs.pingogram.MainActivityUiState
@@ -223,11 +225,15 @@ internal fun BoxScope.LinkHandling(
         OpenShareEffect(navController, uiState, shareToOpen, onOpen = openFromOutside, onHandled = onShareOpened)
         ShareNotices(snackbars)
     }
+    // The insets pad the snackbar, not the host: with none showing, the host takes no room (no column of the insets'
+    // height down the middle of every page).
     SnackbarHost(
         hostState = snackbars,
-        modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.safeDrawing.union(floatingToolbarInsets())),
-    )
+        modifier = Modifier.align(Alignment.BottomCenter).testTag(APP_SNACKBAR_HOST_TEST_TAG),
+    ) { data ->
+        Snackbar(data, Modifier.windowInsetsPadding(WindowInsets.safeDrawing.union(floatingToolbarInsets())))
+    }
 }
+
+/** The app's snackbar host, which tests find by it. */
+internal const val APP_SNACKBAR_HOST_TEST_TAG = "app_snackbar_host"

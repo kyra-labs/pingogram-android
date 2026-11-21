@@ -99,6 +99,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- While the app catches up after opening, the chat list's counts (unread chats, Catch-up, mentions, the folder and
+  Feed tabs) change at most four times a second, so the screen no longer redraws many times a second for seconds;
+  chats in the list still update at once.
 - With the chat list scrolled while connecting or updating, the hidden connection pill no longer keeps redrawing
   the screen, which used battery and slowed opening the app and scrolling.
 - The feedback report of a debug build no longer calls TDLib's log "errors only": debug builds log warnings and

@@ -188,7 +188,8 @@ internal fun ChatsListDetail(
     val keyboard = rememberPaneKeyboard()
     val paneExpansionState = rememberPaneExpansionState(keyProvider = value, anchors = ListPaneExpansionAnchors)
     val extraWidth = rememberExtraPaneWidth()
-    Box(modifier.background(MaterialTheme.colorScheme.surfaceContainer)) {
+    // The window's color between the panes; one pane covers it all, and paints what shows itself.
+    Box(if (twoPanes) modifier.background(MaterialTheme.colorScheme.surfaceContainer) else modifier) {
         NavigableListDetailPaneScaffold(
             navigator = navigator,
             listPane = {

@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
@@ -217,6 +218,9 @@ fun PingogramApp(
                             RailPrimaryActions(adaptiveType, currentTab, newChatOpen, openNewChat, openNewContact)
                         }
                     },
+                    // The window paints the theme's background behind the pages (MainActivity), so the scaffold
+                    // adds no full-screen layer of the same color (docs/PERFORMANCE.md, "Overdraw").
+                    containerColor = Color.Transparent,
                 ) {
                     Box(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(

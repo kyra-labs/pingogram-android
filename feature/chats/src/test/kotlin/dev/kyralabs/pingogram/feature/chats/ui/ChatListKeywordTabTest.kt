@@ -34,11 +34,11 @@ class ChatListKeywordTabTest : ChatListViewModelHarness() {
             assertEquals(2, viewModel.state.folderTabs.size)
 
             showTab()
-            runCurrent()
+            afterCountPace()
             assertEquals(FolderTab.KeywordAlerts(chatCount = 1), viewModel.state.folderTabs.last())
 
             hits()
-            runCurrent()
+            afterCountPace()
             assertEquals(2, viewModel.state.folderTabs.size)
         }
 

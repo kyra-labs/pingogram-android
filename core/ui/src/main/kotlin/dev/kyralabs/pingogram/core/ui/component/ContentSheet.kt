@@ -15,11 +15,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -39,11 +42,16 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  *
  * The clip is [SheetShape]: a rounded rect with the same corners all round, its bottom corners below the sheet, so
  * Android clips to a round rect rather than a path, which the GPU draws without a clip mask.
+ *
+ * With [paintsSurround], the sheet paints the `surfaceContainer` around it itself (above it, and behind its rounded
+ * corners), so its `Scaffold` is transparent and nothing full-screen lies under the sheet (`docs/PERFORMANCE.md`,
+ * "Overdraw"): the window, then the sheet.
  */
 @Composable
 fun ContentSheet(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    paintsSurround: Boolean = false,
     content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
 ) {
     val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
@@ -51,14 +59,35 @@ fun ContentSheet(
     val contentPadding = remember(innerPadding, gap) { innerPadding.withTop(gap) }
     val corner = MaterialTheme.shapes.extraLarge.topStart
     val shape = remember(corner) { SheetShape(corner) }
+    val surround = if (paintsSurround) MaterialTheme.colorScheme.surfaceContainer else Color.Unspecified
     Box(
         modifier
             .fillMaxSize()
+            .sheetSurround(innerPadding, corner, surround)
             .padding(sheetPadding)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surface),
     ) { content(contentPadding) }
 }
+
+/**
+ * [color] above the sheet that [innerPadding]'s top places, down to the end of its rounded corners: what shows around
+ * them is the color the corners were drawn over before, to the pixel. Read in the draw phase, so a collapsing bar
+ * redraws it without recomposing or measuring. Nothing while [color] is unspecified.
+ */
+private fun Modifier.sheetSurround(
+    innerPadding: PaddingValues,
+    corner: CornerSize,
+    color: Color,
+): Modifier =
+    if (color.isUnspecified) {
+        this
+    } else {
+        drawBehind {
+            val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
+            drawRect(color, size = Size(size.width, bottom.coerceAtMost(size.height)))
+        }
+    }
 
 /**
  * A sheet's shape that rises from the bottom of the window: [corner] at the top, square at the bottom edge. Its outline
