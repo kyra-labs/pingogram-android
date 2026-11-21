@@ -397,12 +397,16 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
       byte-identical resource files add up to 9 KB, most of them Glance's. 886 of the 912 layouts are Glance's
       (289 KB), which the home-screen widget needs. `raw/open_source_licenses` (54 KB) already stores each license
       text once. The license files under `META-INF` stay.
-    - Keep rules: `app/proguard-rules.pro` has a single `-dontwarn`. The broad ones come with the AARs, and JNI needs
-      what they keep: TDLib's `-keep class org.drinkless.tdlib.** { *; }` (847 KB of dex, every `TdApi` class with
-      its fields and constructors) and the call engine's `org.webrtc.**` (247 KB).
-    - Trim: the minified variants leave out the library files only tools read (`META-INF/*.version`,
-      `DebugProbesKt.bin`, `kotlin/**.kotlin_builtins`, 114 files), build-logic's `DEBUG_ONLY_METADATA`: −34,365
-      bytes on each APK, arm64-v8a 53,487,291 → 53,452,926.
+    - Keep rules: the broad ones came with the AARs. The call engine's `org.webrtc.**` (247 KB of dex) stays, as its
+      JNI needs it. TDLib's `-keep class org.drinkless.tdlib.** { *; }` kept every `TdApi` constructor (847 KB of
+      dex), though `libtdjni` calls none; `app/proguard-rules.pro` now keeps only what it uses (`docs/TDLIB.md`
+      "Build strategy").
+    - Trims, each measured on its own against `main`:
+      - The minified variants leave out the library files only tools read (`META-INF/*.version`,
+        `DebugProbesKt.bin`, `kotlin/**.kotlin_builtins`, 114 files), build-logic's `DEBUG_ONLY_METADATA`: −34,365
+        bytes on each APK, arm64-v8a 53,487,291 → 53,452,926.
+      - TDLib's narrower keep rules: TDLib's dex 847 → 666 KB, −98,362 bytes on each APK, arm64-v8a 53,488,091 →
+        53,389,729.
   - Round video messages (2026-10-25, `docs/adr/0032-round-video-messages.md`) add CameraX's `camera-video` (Java
     code only, no native library; CameraX's core was in the app already, for the QR code scanner). R8 keeps a part of
     its classes, expected well under 0.5 MB of dex. Not measured on the build machine, whose disk was too full for two
