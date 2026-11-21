@@ -40,8 +40,8 @@ Compose's `dynamicColorScheme` only reads the system's result. Pingogram already
 4. **The seed is computed once and kept.** A photo's seed comes from Celebi and Score on a downscaled copy, off the main
    thread, when the wallpaper is applied; for a wallpaper someone else set on a chat, the first time that chat opens.
    It is kept on the device, keyed by the Telegram background's id, and backed up with the other wallpaper settings,
-   so opening a chat never quantizes an image. Patterns and colors take their seed from their fill colors, which needs
-   no image.
+   so opening a chat never quantizes an image. A fill takes its seed from its colors, which needs no image; a pattern
+   is drawn in the theme's colors and keeps the theme's.
 5. **A blurred top bar, blurred once.** The conversation's wallpaper fills the screen, behind the status bar. The top
    bar shows the wallpaper's top slice blurred; the blur is computed once, at the screen's size, when the wallpaper
    is drawn the first time, and cached, on every Android version. There is no live backdrop blur: `RenderEffect`
