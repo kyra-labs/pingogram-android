@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatOwnWallpaperViewModelTest {
     private val wallpapers = FakeWallpaperRepository(installedWallpapers = listOf(PHOTO))
-    private val users = Users()
+    private val users = PremiumUsers(ME)
 
     @BeforeEach
     fun setUp() {
@@ -196,37 +196,6 @@ class ChatOwnWallpaperViewModelTest {
             )
             assertEquals(true, viewModel.uiState.value.picker.pending is WallpaperChoice.NewPhoto)
         }
-
-    /** The logged-in user, Telegram Premium while [premium] is. */
-    private class Users : UserRepository {
-        val premium = MutableStateFlow(false)
-        override val myUserId: StateFlow<Long?> = MutableStateFlow(ME)
-        override val users: Flow<ImmutableMap<Long, User>> = premium.map { persistentMapOf(ME to me(it)) }
-
-        override fun user(id: Long): Flow<User?> = premium.map { if (id == ME) me(it) else null }
-
-        override suspend fun getUser(id: Long): Outcome<User> = Outcome.Failure(DomainError.NotFound)
-
-        private fun me(premium: Boolean) =
-            User(
-                id = ME,
-                firstName = "Ada",
-                lastName = "",
-                usernames = persistentListOf(),
-                phoneNumber = "",
-                status = UserStatus.Empty,
-                profilePhoto = null,
-                isVerified = false,
-                isScam = false,
-                isFake = false,
-                isPremium = premium,
-                isContact = false,
-                isMutualContact = false,
-                isSupport = false,
-                type = UserType.Regular,
-                haveAccess = true,
-            )
-    }
 
     private companion object {
         const val CHAT = 7L
