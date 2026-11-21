@@ -151,8 +151,10 @@ internal fun EditContactScreen(
     val title = stringResource(if (adding) R.string.contacts_add_to_contacts else R.string.contacts_edit_title)
     Scaffold(
         modifier = modifier,
-        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { ContactFormTopBar(title, onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),

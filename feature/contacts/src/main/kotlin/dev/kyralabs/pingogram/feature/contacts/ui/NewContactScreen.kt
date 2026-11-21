@@ -147,8 +147,10 @@ internal fun NewContactScreen(
         )
     Scaffold(
         modifier = modifier,
-        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = { ContactFormTopBar(stringResource(R.string.contacts_add), onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),

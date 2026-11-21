@@ -133,8 +133,10 @@ internal fun ContactsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it; the content
+        // keeps the color it had on that container.
         containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             ContactsTopBar(state.content, scrollBehavior, searchFocus, onOpenMyQrCode, onScanQrCode) {
                 onEvent(ContactsEvent.Invite)
