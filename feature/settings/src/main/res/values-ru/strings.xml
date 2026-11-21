@@ -207,8 +207,6 @@
     <string name="settings_power_saving_card_saving">Сейчас экономится заряд</string>
     <string name="settings_power_saving_card_normal">Всё воспроизводится как обычно</string>
     <string name="settings_privacy_checkup">Проверка конфиденциальности</string>
-    <plurals name="settings_privacy_checkup_what">
-    </plurals>
     <string name="settings_privacy_checkup_review">Проверить</string>
     <string name="settings_privacy_checkup_not_now">Не сейчас</string>
     <string name="settings_storage_used_on_device">занято на этом устройстве</string>
