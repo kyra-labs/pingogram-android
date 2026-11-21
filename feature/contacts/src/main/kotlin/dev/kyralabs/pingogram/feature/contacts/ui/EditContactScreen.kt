@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
@@ -150,13 +151,17 @@ internal fun EditContactScreen(
     val title = stringResource(if (adding) R.string.contacts_add_to_contacts else R.string.contacts_edit_title)
     Scaffold(
         modifier = modifier,
-        // The top bar's container; the form sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+        containerColor = Color.Transparent,
         topBar = { ContactFormTopBar(title, onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        ContentSheet(
+            innerPadding,
+            Modifier.consumeWindowInsets(innerPadding),
+            paintsSurround = true,
+        ) { contentPadding ->
             when (state) {
                 EditContactUiState.Loading -> {
                     val description = stringResource(R.string.contacts_edit_loading)

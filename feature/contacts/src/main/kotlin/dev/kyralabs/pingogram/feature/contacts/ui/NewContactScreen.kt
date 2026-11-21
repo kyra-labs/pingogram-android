@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -146,13 +147,17 @@ internal fun NewContactScreen(
         )
     Scaffold(
         modifier = modifier,
-        // The top bar's container; the form sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The sheet paints the top bar's container around itself (ContentSheet), so nothing lies under it.
+        containerColor = Color.Transparent,
         topBar = { ContactFormTopBar(stringResource(R.string.contacts_add), onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        ContentSheet(
+            innerPadding,
+            Modifier.consumeWindowInsets(innerPadding),
+            paintsSurround = true,
+        ) { contentPadding ->
             val motion = MaterialTheme.motionScheme
             Column(
                 modifier =
