@@ -22,6 +22,7 @@ package dev.kyralabs.pingogram.core.ui.theme.mcu
 
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
@@ -89,7 +90,11 @@ internal object HctSolver {
         val gA = (460.0 * p2 - 891.0 * a - 261.0 * b) / 1403.0
         val bA = (460.0 * p2 - 220.0 * a - 6300.0 * b) / 1403.0
         val scaled =
-            doubleArrayOf(inverseChromaticAdaptation(rA), inverseChromaticAdaptation(gA), inverseChromaticAdaptation(bA))
+            doubleArrayOf(
+                inverseChromaticAdaptation(rA),
+                inverseChromaticAdaptation(gA),
+                inverseChromaticAdaptation(bA),
+            )
         return matrixMultiply(scaled, LINRGB_FROM_SCALED_DISCOUNT)
     }
 
@@ -112,4 +117,20 @@ private class HueTerms(
     val p1: Double =
         0.25 * (cos(hueRadians + 2.0) + 3.8) * (50000.0 / 13.0) * ViewingConditions.DEFAULT.nc *
             ViewingConditions.DEFAULT.ncb
+}
+
+/** The CAM16 hue, in radians, of a linear RGB color. */
+internal fun hueOf(linrgb: DoubleArray): Double {
+    val scaledDiscount = matrixMultiply(linrgb, SCALED_DISCOUNT_FROM_LINRGB)
+    val rA = chromaticAdaptation(scaledDiscount[0])
+    val gA = chromaticAdaptation(scaledDiscount[1])
+    val bA = chromaticAdaptation(scaledDiscount[2])
+    val a = (11.0 * rA + -12.0 * gA + bA) / 11.0
+    val b = (rA + gA - 2.0 * bA) / 9.0
+    return atan2(b, a)
+}
+
+private fun chromaticAdaptation(component: Double): Double {
+    val af = abs(component).pow(0.42)
+    return signum(component) * 400.0 * af / (af + 27.13)
 }

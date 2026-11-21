@@ -22,7 +22,6 @@ package dev.kyralabs.pingogram.core.ui.theme.mcu
 
 import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.pow
@@ -40,17 +39,6 @@ internal fun bisectToLimit(
         if (segment.left[axis] != segment.right[axis]) segment.narrow(axis, targetHue)
     }
     return DoubleArray(3) { (segment.left[it] + segment.right[it]) / 2 }
-}
-
-/** The CAM16 hue, in radians, of a linear RGB color. */
-internal fun hueOf(linrgb: DoubleArray): Double {
-    val scaledDiscount = matrixMultiply(linrgb, SCALED_DISCOUNT_FROM_LINRGB)
-    val rA = chromaticAdaptation(scaledDiscount[0])
-    val gA = chromaticAdaptation(scaledDiscount[1])
-    val bA = chromaticAdaptation(scaledDiscount[2])
-    val a = (11.0 * rA + -12.0 * gA + bA) / 11.0
-    val b = (rA + gA - 2.0 * bA) / 9.0
-    return atan2(b, a)
 }
 
 /** Two points of the gamut's edge whose hues enclose the target's; [narrow] moves them closer. */
@@ -140,11 +128,6 @@ private fun nthVertex(
             else -> doubleArrayOf(coordA, coordB, (y - coordA * Y_FROM_LINR - coordB * Y_FROM_LING) / Y_FROM_LINB) to 2
         }
     return vertex.takeIf { vertex[solved] in 0.0..100.0 }
-}
-
-private fun chromaticAdaptation(component: Double): Double {
-    val af = abs(component).pow(0.42)
-    return signum(component) * 400.0 * af / (af + 27.13)
 }
 
 private fun areInCyclicOrder(
