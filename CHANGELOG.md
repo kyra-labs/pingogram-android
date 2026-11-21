@@ -10,14 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- A private chat's profile has "Wallpaper for this chat": pick a wallpaper or a photo for that chat alone, for you or,
-  with Telegram Premium, for both of you, set how much it dims in dark theme (30% to start), or reset it to your
-  account's.
+- One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
+  of the conversation, your theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp
+  at your screen's size), blur for photos and dimming in dark theme (30% to start). Nothing changes until you tap
+  Apply, and "Reset to default" goes back to your theme's colors. Your account's wallpaper is saved to your Telegram
+  account for light and dark theme apart, so your other Telegram apps show it too; a chat's is for that chat alone.
 - Make story albums on your own profile: Stories → New album, name it, pick its stories. In your own album, the ⋮ menu
   renames it, adds or removes stories, or deletes it (its stories stay on your profile).
-- Chat appearance → Wallpaper offers Telegram's wallpapers and patterns and your own photos (sharp at your screen's
-  size), blurred if you like and dimmed in dark theme (30% to start), previewed before you apply them. They're saved
-  to your Telegram account, so your other Telegram apps show them too.
 - With a keyboard, the arrow keys move between the Feed's posts and Enter opens one; each post has a More button,
   and the Menu key opens its menu too.
 - Chats show the wallpaper set for your Telegram account, for light and dark theme, and a chat's own wallpaper when
@@ -68,8 +67,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
   TDLib update it handles, instead of every part waking for every update.
-- Chat appearance → Wallpaper chooses for light or dark theme, and its preview shows the wallpaper your Telegram
-  account has for it; picking a theme color removes that wallpaper for the theme.
 - Dragging the messages hides the keyboard, so you can read further up; what you typed stays in the composer. Jumping
   to a message and new messages arriving leave the keyboard up.
 - Screen readers call the round button beside channel posts "Share"; the message's actions still say "Forward".
