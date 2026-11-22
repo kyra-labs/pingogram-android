@@ -43,31 +43,20 @@ import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperFrame
 import dev.kyralabs.pingogram.core.ui.wallpaper.wallpaperFrame
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.ChatPreview
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The wallpaper page's live preview (ADR 0041): a conversation shaped like a phone's screen, on the wallpaper the page
  * shows (the pick, else what is set, over the account's theme-color one), with its top bar (the chat's photo and name,
- * or a sample's), a date chip, the sample messages and the composer pill, in the wallpaper's colors
- * ([WallpaperColorsTheme] of [WallpaperPageUiState.seed], its scheme made on [colorsDispatcher]). No status bar. Screen
- * readers hear one description; the names and messages are samples, user content.
+ * or a sample's), a date chip, the sample messages and the composer pill, in the wallpaper's colors (the page's
+ * [WallpaperColorsTheme]). No status bar. Screen readers hear one description; the names and messages are samples,
+ * user content.
  */
 @Composable
 internal fun WallpaperPagePreview(
     state: WallpaperPageUiState,
     modifier: Modifier = Modifier,
-    colorsDispatcher: CoroutineDispatcher = Dispatchers.Default,
-) {
-    WallpaperColorsTheme(state.seed, colorsDispatcher) { PreviewContent(state, modifier) }
-}
-
-@Composable
-private fun PreviewContent(
-    state: WallpaperPageUiState,
-    modifier: Modifier,
 ) {
     val description = stringResource(R.string.settings_chat_preview)
     val frame = rememberWallpaperFrame()

@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.testing.assertAccessible
+import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.fillSeed
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
@@ -86,7 +87,7 @@ class WallpaperPagePreviewScreenshotTest {
                 Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center,
             ) {
-                WallpaperPagePreview(state, colorsDispatcher = Dispatchers.Unconfined)
+                WallpaperColorsTheme(state.seed, Dispatchers.Unconfined) { WallpaperPagePreview(state) }
             }
         }
         composeRule.assertAccessible()
