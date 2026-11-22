@@ -5,13 +5,17 @@ import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
@@ -19,8 +23,9 @@ import kotlinx.coroutines.withContext
  * [contentColorScheme] of [seed] in the enclosing [PingogramTheme]'s light or dark, contrast level and AMOLED black,
  * with the bubbles' and the conversation's colors ([PingogramColors]) made from it. A null [seed] (no wallpaper, or one
  * whose seed is not known yet) keeps the enclosing colors exactly. The scheme is computed once per seed and look, on
- * [dispatcher], and kept; meanwhile the enclosing colors show, and a change cross-fades as a theme change does. The
- * typography, shapes, category colors and chat style stay the enclosing theme's.
+ * [dispatcher], and kept; meanwhile the enclosing colors show. One that arrives while the conversation opens (the
+ * first [OPENING_MILLIS], as a seed kept on the device loads) shows at once; a change after that cross-fades as a
+ * theme change does. The typography, shapes, category colors and chat style stay the enclosing theme's.
  */
 @Composable
 fun WallpaperColorsTheme(
@@ -36,9 +41,18 @@ fun WallpaperColorsTheme(
     }
     val enclosing = MaterialTheme.colorScheme
     val enclosingColors = LocalPingogramColors.current
+    // A crossfade gives every frame a new scheme, recomposing all that reads colors: while the conversation opens,
+    // the first scheme (after a cold start, made as the stored seed loads) snaps in instead of fading over its first
+    // frames (docs/PERFORMANCE.md §4).
+    var opening by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(OPENING_MILLIS)
+        opening = false
+    }
     // Without a scheme the enclosing one shows as it is, cross-fading with the app's theme; the transition still
-    // follows it, so a scheme that arrives fades in from the colors on screen.
-    val transition = animateColorScheme(target ?: enclosing, ExpressiveMotionScheme.defaultEffectsSpec())
+    // follows it, so a scheme that arrives once the conversation is open fades in from the colors on screen.
+    val transition =
+        animateColorScheme(target ?: enclosing, ExpressiveMotionScheme.defaultEffectsSpec(), snap = opening)
     val colorScheme = if (target == null) enclosing else transition
     val colors =
         remember(colorScheme, enclosingColors, settings.dark) {
@@ -93,3 +107,9 @@ internal object WallpaperSchemes {
 
     private const val LOAD_FACTOR = 0.75f
 }
+
+/**
+ * How long a conversation counts as opening for [WallpaperColorsTheme]: about its pane's slide in, on the default
+ * spatial spring.
+ */
+internal const val OPENING_MILLIS = 500L

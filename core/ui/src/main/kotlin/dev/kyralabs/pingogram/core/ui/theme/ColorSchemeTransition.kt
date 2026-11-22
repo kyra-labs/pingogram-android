@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.lerp
  * [target], cross-fading to it from the scheme shown before whenever it changes (a theme, dynamic color, contrast or
  * AMOLED setting): every color role moves on [animationSpec], the motion scheme's default effects spring for color
  * (`docs/DESIGN_SYSTEM.md` §5). A change during a crossfade continues from the colors on screen. The first scheme
- * shows at once.
+ * shows at once, and so does a change while [snap] is true.
  *
  * Each frame of a crossfade is a new [ColorScheme], which recomposes what reads colors: only while the colors change,
  * after a user changed a setting.
@@ -27,9 +27,10 @@ import androidx.compose.ui.graphics.lerp
 internal fun animateColorScheme(
     target: ColorScheme,
     animationSpec: FiniteAnimationSpec<Float>,
+    snap: Boolean = false,
 ): ColorScheme {
     val transition = remember { ColorSchemeTransition(target) }
-    LaunchedEffect(target) { transition.animateTo(target, animationSpec) }
+    LaunchedEffect(target) { transition.animateTo(target, animationSpec, snap) }
     return transition.current
 }
 
@@ -48,12 +49,17 @@ private class ColorSchemeTransition(
     suspend fun animateTo(
         target: ColorScheme,
         animationSpec: FiniteAnimationSpec<Float>,
+        snap: Boolean,
     ) {
         if (target == to) return
-        from = current
+        from = if (snap) target else current
         to = target
-        progress.snapTo(0f)
-        progress.animateTo(1f, animationSpec)
+        if (snap) {
+            progress.snapTo(1f)
+        } else {
+            progress.snapTo(0f)
+            progress.animateTo(1f, animationSpec)
+        }
     }
 }
 
