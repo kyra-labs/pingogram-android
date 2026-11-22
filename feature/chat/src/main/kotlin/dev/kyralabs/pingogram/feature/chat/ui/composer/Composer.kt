@@ -99,7 +99,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberRecordDrag
-import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationBackdrop
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 
@@ -173,10 +172,9 @@ internal fun ChatBottomBar(
     val drag = rememberRecordDrag()
     val suggestionsState = remember { CommandSuggestionsState() }
     val inlineState = remember { InlineResultsState() }
-    // Over a Telegram wallpaper the composer floats on it (docs/DESIGN_SYSTEM.md §13.5): no bar behind the pill, the
-    // bars above it on a container of their own, the panels on the surface.
-    val floating = LocalConversationBackdrop.current != null && composer is ComposerUiState.Available
-    Surface(modifier = modifier, color = bottomBarColor(floating)) {
+    // The composer floats over the messages (docs/DESIGN_SYSTEM.md §6): no bar behind it in any state, the bars above
+    // the pill on a card of their own, an open panel on the surface.
+    Surface(modifier = modifier, color = Color.Transparent) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
                 UnavailableLabel(composer.reason)
@@ -208,7 +206,7 @@ internal fun ChatBottomBar(
                             .wrapContentWidth()
                             .widthIn(max = MaterialTheme.sizes.bubbleMaxWidth),
                     ) {
-                        Column(Modifier.floatingBars(floating)) {
+                        Column(Modifier.composerBars()) {
                             CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
                             InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
                             StickerSuggestionsInput(
@@ -241,19 +239,16 @@ internal fun ChatBottomBar(
                     // A GIF from the panel takes the field's text as its caption, where the GIF tab's bar says.
                     val gifCaption = rememberGifCaptionChoice()
                     val gifCaptionBar = remember(gifCaption, text) { GifCaption(gifCaption) { !text.isEmpty } }
-                    // The panels keep the surface under a floating composer.
-                    Box(Modifier.panelSurface(floating)) {
-                        PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
-                            // Not while editing: a sticker would be a new message.
-                            val stickers = composer.attachOptions.isNotEmpty()
-                            val sends =
-                                PanelSends(
-                                    onSendSticker,
-                                    { onSendAnimation(it, gifCaption.above) },
-                                    gifCaptionBar,
-                                )
-                            ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
-                        }
+                    PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
+                        // Not while editing: a sticker would be a new message.
+                        val stickers = composer.attachOptions.isNotEmpty()
+                        val sends =
+                            PanelSends(
+                                onSendSticker,
+                                { onSendAnimation(it, gifCaption.above) },
+                                gifCaptionBar,
+                            )
+                        ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
                     }
                 }
             }
@@ -263,7 +258,10 @@ internal fun ChatBottomBar(
     }
 }
 
-/** Why the user cannot write here ([reason]), centred in `onSurfaceVariant`, above the keyboard and system bars. */
+/**
+ * Why the user cannot write here ([reason]), centred in `onSurfaceVariant` on a card of its own over the messages
+ * ([composerBars]), above the keyboard and system bars.
+ */
 @Composable
 private fun UnavailableLabel(reason: UiText) {
     Text(
@@ -271,6 +269,8 @@ private fun UnavailableLabel(reason: UiText) {
         modifier =
             Modifier
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
+                .padding(bottom = MaterialTheme.spacing.small)
+                .composerBars()
                 .fillMaxWidth()
                 .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.large),
         color = MaterialTheme.colorScheme.onSurfaceVariant,

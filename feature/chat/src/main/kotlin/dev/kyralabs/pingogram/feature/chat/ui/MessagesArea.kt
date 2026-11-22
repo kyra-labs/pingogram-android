@@ -39,7 +39,7 @@ internal fun ColumnScope.MessagesArea(
             },
     ) {
         ChatBody(state, onEvent, listState, bubbleResources, contentPadding.withTypingRoom(state.typing), nextChannel)
-        MessagesBottom(state.typing, listState, contentPadding)
+        MessagesBottom(state.typing, contentPadding)
         overlay()
         ChatDropZone(
             drop,

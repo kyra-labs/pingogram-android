@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -247,12 +248,13 @@ internal fun ComposerEmojiPanel(
 }
 
 /**
- * The space below the composer: the keyboard's and the navigation bar's (`safeDrawing`), or, while the panel is shown,
- * the panel's [content] in at least the keyboard's last height ([panelHeight]) and as much as the keyboard takes while
- * it comes and goes, so the composer stays where it is. Opened or closed with no keyboard involved, the panel's height
- * grows from the navigation bar's and shrinks back to it ([ComposerPanelState.shown]); [content] keeps its full height
- * meanwhile and is clipped, so it is not measured anew in every frame. Its height is read in the layout phase, never in
- * composition: a keyboard that animates in or out, or the panel growing, only lays it out again.
+ * The space below the composer: the keyboard's and the navigation bar's (`safeDrawing`), clear, or, while the panel is
+ * shown, the panel's [content] on `surface` in at least the keyboard's last height ([panelHeight]) and as much as the
+ * keyboard takes while it comes and goes, so the composer stays where it is. Opened or closed with no keyboard
+ * involved, the panel's height grows from the navigation bar's and shrinks back to it ([ComposerPanelState.shown]);
+ * [content] keeps its full height meanwhile and is clipped, so it is not measured anew in every frame. Its height is
+ * read in the layout phase, never in composition: a keyboard that animates in or out, or the panel growing, only lays
+ * it out again.
  */
 @Composable
 internal fun PanelArea(
@@ -268,7 +270,16 @@ internal fun PanelArea(
             panel.searching -> bottom.add(WindowInsets(bottom = searchBandHeight())).union(panelInsets(panel, full))
             else -> bottom.union(panelInsets(panel, full))
         }
-    Box(Modifier.fillMaxWidth().clipToBounds().windowInsetsBottomHeight(insets)) {
+    // The surface only under an open panel: closed, the place is the navigation bar's, where the messages and the
+    // wallpaper run under the composer to the window's edge.
+    val surface = if (shown) Modifier.background(MaterialTheme.colorScheme.surface) else Modifier
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .windowInsetsBottomHeight(insets)
+            .then(surface),
+    ) {
         if (shown) {
             // Searching, the keyboard comes up below the panel's own field: the content stays above it.
             val below = if (panel.searching) bottom else WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)

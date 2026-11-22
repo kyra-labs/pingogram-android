@@ -15,13 +15,13 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The messages fading into the composer ([ComposerFade], `docs/DESIGN_SYSTEM.md` §6 "Composer"): once the list is
- * scrolled away from its newest message, in every look the audit asks for (§12). At rest on the newest message the
- * fade does not show, which every other golden of the conversation keeps.
+ * The messages scrolling under the floating composer (`docs/DESIGN_SYSTEM.md` §6 "Composer", owner decision
+ * 2026-11-22): no bar behind the pill, so once the list is scrolled away from its newest message the messages show
+ * around the pill and under the navigation bar, in every look the audit asks for (§12).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
-class ComposerFadeScreenshotTest {
+class ComposerOverMessagesScreenshotTest {
     @get:Rule(order = 0)
     val componentActivity = ComponentActivityRegistration()
 
@@ -56,7 +56,7 @@ class ComposerFadeScreenshotTest {
             }
         }
         composeRule.waitForIdle()
-        // A little older than the newest message: the messages run under the fade.
+        // A little older than the newest message: the messages run under the composer.
         composeRule.runOnIdle { runBlocking { listState.scrollToItem(0, SCROLLED) } }
         composeRule.waitForIdle()
         captureScreenRoboImage(goldenPath(javaClass, "scrolled.${variant.goldenName}"))
