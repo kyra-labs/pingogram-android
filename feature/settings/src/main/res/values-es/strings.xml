@@ -1616,4 +1616,9 @@
     <string name="backup_restored_other_account">Restaurado. Los datos de otra cuenta se quedan en la copia.</string>
     <string name="backup_restore_newer">Esta copia es de una versión más reciente de Pingogram. Actualiza la aplicación para restaurarla.</string>
     <string name="backup_restore_not_backup">Este archivo no es una copia de Pingogram o está dañado.</string>
+    <plurals name="settings_privacy_checkup_what">
+        <item quantity="one">%1$d cosa que cualquiera en Telegram puede ver</item>
+        <item quantity="many">%1$d de cosas que cualquiera en Telegram puede ver</item>
+        <item quantity="other">%1$d cosas que cualquiera en Telegram puede ver</item>
+    </plurals>
 </resources>
