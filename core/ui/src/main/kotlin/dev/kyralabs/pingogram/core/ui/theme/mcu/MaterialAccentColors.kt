@@ -25,18 +25,40 @@ import kotlin.math.max
 
 /**
  * The accent roles of the 2021 color spec, as upstream's ColorSpecDelegateImpl2021 defines them for SchemeContent
- * (a fidelity variant, not monochrome): the primary container keeps the source color's tone, the secondary and
- * tertiary containers stay as colorful as their palettes allow, and the text on each container keeps 4.5:1.
+ * (not monochrome). With [ContentScheme.fidelity] the primary container keeps the source color's tone, the secondary
+ * and tertiary containers stay as colorful as their palettes allow, and the text on each container keeps 4.5:1;
+ * without it each container is at tone 30 (dark) or 90 (light) and its text at 90 or 30, as for upstream's
+ * non-fidelity variants.
  */
 internal object MaterialAccentColors {
     /** The secondary container's tone: the tone nearest 90 (light) or 30 (dark) that reaches the palette's chroma. */
     private fun secondaryContainerTone(scheme: ContentScheme): Double =
-        findDesiredChromaByTone(
-            scheme.secondaryPalette.hue,
-            scheme.secondaryPalette.chroma,
-            if (scheme.isDark) 30.0 else 90.0,
-            byDecreasingTone = !scheme.isDark,
-        )
+        if (scheme.fidelity) {
+            findDesiredChromaByTone(
+                scheme.secondaryPalette.hue,
+                scheme.secondaryPalette.chroma,
+                containerTone(scheme),
+                byDecreasingTone = !scheme.isDark,
+            )
+        } else {
+            containerTone(scheme)
+        }
+
+    /** A container's standard tone: 30 in dark, 90 in light. */
+    private fun containerTone(scheme: ContentScheme): Double = if (scheme.isDark) 30.0 else 90.0
+
+    /** The tone of the text on a container at [containerTone]: 4.5:1 with fidelity, else 90 in dark and 30 in light. */
+    private fun onContainerTone(
+        scheme: ContentScheme,
+        containerTone: Double,
+    ): Double =
+        if (scheme.fidelity) {
+            foregroundTone(containerTone, 4.5)
+        } else if (scheme.isDark) {
+            90.0
+        } else {
+            30.0
+        }
 
     /**
      * From [tone], the tone that brings [hue] nearest [chroma], moving toward darker ([byDecreasingTone]) or lighter
@@ -88,7 +110,7 @@ internal object MaterialAccentColors {
         DynamicColor(
             name = "primary_container",
             palette = { it.primaryPalette },
-            tone = { it.sourceColorHct.tone },
+            tone = { if (it.fidelity) it.sourceColorHct.tone else containerTone(it) },
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
@@ -99,7 +121,7 @@ internal object MaterialAccentColors {
         DynamicColor(
             name = "on_primary_container",
             palette = { it.primaryPalette },
-            tone = { foregroundTone(primaryContainer.tone(it), 4.5) },
+            tone = { onContainerTone(it, primaryContainer.tone(it)) },
             background = { primaryContainer },
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 11.0),
         )
@@ -148,7 +170,7 @@ internal object MaterialAccentColors {
         DynamicColor(
             name = "on_secondary_container",
             palette = { it.secondaryPalette },
-            tone = { foregroundTone(secondaryContainer.tone(it), 4.5) },
+            tone = { onContainerTone(it, secondaryContainer.tone(it)) },
             background = { secondaryContainer },
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 11.0),
         )
@@ -177,7 +199,13 @@ internal object MaterialAccentColors {
         DynamicColor(
             name = "tertiary_container",
             palette = { it.tertiaryPalette },
-            tone = { DislikeAnalyzer.fixIfDisliked(it.tertiaryPalette.getHct(it.sourceColorHct.tone)).tone },
+            tone = {
+                if (it.fidelity) {
+                    DislikeAnalyzer.fixIfDisliked(it.tertiaryPalette.getHct(it.sourceColorHct.tone)).tone
+                } else {
+                    containerTone(it)
+                }
+            },
             isBackground = true,
             background = MaterialSurfaceColors::highestSurface,
             contrastCurve = ContrastCurve(1.0, 1.0, 3.0, 4.5),
@@ -188,7 +216,7 @@ internal object MaterialAccentColors {
         DynamicColor(
             name = "on_tertiary_container",
             palette = { it.tertiaryPalette },
-            tone = { foregroundTone(tertiaryContainer.tone(it), 4.5) },
+            tone = { onContainerTone(it, tertiaryContainer.tone(it)) },
             background = { tertiaryContainer },
             contrastCurve = ContrastCurve(3.0, 4.5, 7.0, 11.0),
         )
