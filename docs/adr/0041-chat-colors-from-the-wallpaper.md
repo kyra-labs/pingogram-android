@@ -27,9 +27,11 @@ Compose's `dynamicColorScheme` only reads the system's result. Pingogram already
    only informs: Pingogram shows no purchase flow.
 2. **Per-chat colors from the wallpaper, no color picker.** A conversation with a wallpaper uses a color scheme made
    from the wallpaper's seed color: bubbles, accents, links, the composer, the send button, the jump-to-bottom button
-   and date chips. Everything outside that conversation keeps the user's color theme. The scheme is MCU's
-   `SchemeContent` (spec 2021, as the color themes), which keeps the colors close to the image, for light and dark
-   theme and the three contrast levels; AMOLED applies on top as it does to every scheme. A chat without a wallpaper
+   and date chips. Everything outside that conversation keeps the user's color theme. The scheme has MCU's
+   `SchemeContent` palettes (spec 2021, as the color themes), which keep the colors close to the image, for light and
+   dark theme and the three contrast levels, with its containers at the standard tones, 30 in dark and 90 in light,
+   rather than the seed's own: a bright wallpaper gives deep containers in dark theme (owner decision 2026-11-22).
+   AMOLED applies on top as it does to every scheme. A chat without a wallpaper
    keeps today's colors exactly.
 3. **Port MCU, no new dependency.** The rest of MCU 0.4.0 that this needs is ported to Kotlin in `core:ui`, next to
    `Harmonize.kt`: HCT (with the analytic solver), the Celebi quantizer (Wu, then weighted k-means) and Score, tonal

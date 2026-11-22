@@ -13,17 +13,19 @@ import dev.kyralabs.pingogram.core.ui.theme.mcu.MaterialFixedColors as Fixed
 import dev.kyralabs.pingogram.core.ui.theme.mcu.MaterialSurfaceColors as Surface
 
 /**
- * The color scheme Material makes from [seed] to keep the colors close to it (SchemeContent, the 2021 color spec, as
- * the color themes are generated: `docs/adr/0041-chat-colors-from-the-wallpaper.md`), for [dark] theme at [contrast].
- * A conversation with a wallpaper takes its colors from the wallpaper's seed this way. Every role is computed, so it
- * takes a few milliseconds: compute it off the main thread and keep it.
+ * The color scheme Material makes from [seed] to keep the colors close to it (SchemeContent's palettes, the 2021 color
+ * spec, as the color themes are generated: `docs/adr/0041-chat-colors-from-the-wallpaper.md`), for [dark] theme at
+ * [contrast], with its containers at the standard tones (30 dark, 90 light) rather than the seed's own, so a bright
+ * wallpaper gives deep containers in dark theme (owner decision 2026-11-22). A conversation with a wallpaper takes its
+ * colors from the wallpaper's seed this way. Every role is computed, so it takes a few milliseconds: compute it off
+ * the main thread and keep it.
  */
 fun contentColorScheme(
     seed: Color,
     dark: Boolean,
     contrast: Contrast,
 ): ColorScheme {
-    val scheme = ContentScheme(Hct.fromInt(seed.toArgb()), dark, contrast.level)
+    val scheme = ContentScheme(Hct.fromInt(seed.toArgb()), dark, contrast.level, fidelity = false)
     val role: (DynamicColor) -> Color = { Color(it.getArgb(scheme)) }
     return lightColorScheme(
         primary = role(Accent.primary),

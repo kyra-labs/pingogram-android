@@ -7,15 +7,16 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * [contentColorScheme] fills every role of Compose's color scheme with SchemeContent's color for that role, as
- * material-color-utilities 0.4.0 makes it; the expected colors were printed by that library, in [ROLES]' order.
+ * [contentColorScheme] fills every role of Compose's color scheme with SchemeContent's palettes and its containers at
+ * the standard tones, as material-color-utilities 0.4.0 makes them (its DynamicScheme given SchemeContent's palettes
+ * and a non-fidelity variant); the expected colors were printed by that library, in [ROLES]' order.
  */
 class ContentColorSchemeTest {
     @Test
     fun `fills every role from SchemeContent, light at standard contrast`() {
         assertScheme(
             contentColorScheme(Color(0xFFB4744B), dark = false, Contrast.Standard),
-            "864E28 FFFFFF A3663E FFFBFF FFB68A 765846 FFFFFF FED4BD 795A48 5E5F1D FFFFFF 777834 FFFBFF FFF8F5 " +
+            "89502A FFFFFF FFDBC8 6C3915 FFB68A 765846 FFFFFF FFDBC8 5C4130 606120 FFFFFF E7E796 484908 FFF8F5 " +
                 "201A17 FFF8F5 201A17 F4DED3 52443C 89502A 362F2B FBEEE8 BA1A1A FFFFFF FFDAD6 93000A 85746A D7C2B8 " +
                 "000000 FFF8F5 F8EBE5 F2E6E0 EDE0DA FEF1EB FFFFFF E4D8D2 FFDBC8 FFB68A 321300 6C3915 FFDBC8 E6BEA8 " +
                 "2B1608 5C4130 E7E796 CACB7D 1C1D00 484908",
@@ -30,6 +31,17 @@ class ContentColorSchemeTest {
                 "E2E2EB 11131A FFFFFF 434653 FFFFFF B3C5FF E2E2EB 000000 FFECE9 000000 FFAEA4 220001 EDEFFF BFC2D1 " +
                 "000000 4E5058 2E3037 393B43 45464E 1D1F26 000000 11131A DAE1FF B3C5FF 000000 000E33 DAE1FF B6C5F6 " +
                 "000000 000E33 FCD7FF F2AFFF 000000 23002F",
+        )
+    }
+
+    @Test
+    fun `a bright seed gives deep containers in dark theme, not its own tone`() {
+        assertScheme(
+            contentColorScheme(Color(0xFFE07040), dark = true, Contrast.Standard),
+            "FFB599 5A1C00 7F2B00 FFDBCE A04113 FBB79C 4E2513 693A27 FFDBCE D0CB43 333200 4B4900 ECE85C 1B110D " +
+                "F2DED8 1B110D F2DED8 56423B DDC0B6 FFB599 F2DED8 3A2E29 FFB4AB 690005 93000A FFDAD6 A58B82 56423B " +
+                "000000 433632 281D19 332723 3E322E 241915 150C09 1B110D FFDBCE FFB599 370E00 7F2B00 FFDBCE FBB79C " +
+                "341003 693A27 ECE85C D0CB43 1E1D00 4B4900",
         )
     }
 

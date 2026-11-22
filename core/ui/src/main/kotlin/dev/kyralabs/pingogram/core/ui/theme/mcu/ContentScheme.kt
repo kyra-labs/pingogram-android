@@ -23,15 +23,18 @@ package dev.kyralabs.pingogram.core.ui.theme.mcu
 import kotlin.math.max
 
 /**
- * A scheme that keeps the source color, as upstream's SchemeContent: its primary container is [sourceColorHct] itself,
- * adjusted for light or dark ([isDark]), and its tertiary is an analogous color of the same temperature step, so the
- * colors stay close to an image's. [contrastLevel] is 0 (standard), 0.5 (medium) or 1 (high). Its roles' colors come
- * from `MaterialDynamicColors`.
+ * A scheme that keeps the source color, as upstream's SchemeContent: its palettes are [sourceColorHct]'s hue and
+ * chroma, its tertiary an analogous color of the same temperature step, so the colors stay close to an image's.
+ * [contrastLevel] is 0 (standard), 0.5 (medium) or 1 (high). With [fidelity] (upstream's SchemeContent) the primary
+ * container is the source color itself, adjusted for light or dark ([isDark]); without it the containers take the
+ * standard tones, 30 in dark and 90 in light, as upstream's non-fidelity variants do. Its roles' colors come from
+ * `MaterialDynamicColors`.
  */
 internal class ContentScheme(
     val sourceColorHct: Hct,
     val isDark: Boolean,
     val contrastLevel: Double,
+    val fidelity: Boolean = true,
 ) {
     val primaryPalette: TonalPalette = TonalPalette.fromHueAndChroma(sourceColorHct.hue, sourceColorHct.chroma)
 

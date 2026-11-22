@@ -69,6 +69,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- In a chat with a wallpaper, your bubbles and the colored buttons take a deep shade of the wallpaper's color instead
+  of its brightness, so a bright photo no longer makes them pale in dark theme.
 - The message box floats over the messages in every chat: they scroll on under it, with no bar behind it, and a chat's
   wallpaper now runs under the navigation bar too.
 - A chat with a wallpaper shows it across the whole screen: blurred behind the top bar, under the status bar, and
