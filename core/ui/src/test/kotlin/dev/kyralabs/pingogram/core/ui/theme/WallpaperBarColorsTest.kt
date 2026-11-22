@@ -29,7 +29,14 @@ class WallpaperBarColorsTest {
                 val schemes =
                     SEEDS.map { contentColorScheme(Color(it), dark, contrast) } +
                         themeColorScheme(ThemePalette.Pingogram, dark, contrast)
-                for (scheme in schemes) check(scheme, bar, greyOf(luminance), "luminance $luminance dark=$dark $contrast")
+                for (scheme in schemes) {
+                    check(
+                        scheme,
+                        bar,
+                        greyOf(luminance),
+                        "luminance $luminance dark=$dark $contrast",
+                    )
+                }
             }
         }
     }

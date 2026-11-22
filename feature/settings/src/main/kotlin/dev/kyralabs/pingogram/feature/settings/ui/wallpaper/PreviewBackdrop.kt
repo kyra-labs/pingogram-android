@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarColors
+import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -30,7 +31,6 @@ import dev.kyralabs.pingogram.core.ui.theme.wallpaperBarColors
 import dev.kyralabs.pingogram.core.ui.wallpaper.WallpaperFrame
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
-import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 
 /**
  * How the preview's top bar shows over a Telegram wallpaper or a picked photo (`docs/DESIGN_SYSTEM.md` §13.5), as the

@@ -170,7 +170,8 @@ private fun wallpaperPainter(
     barBlur: Boolean,
 ): Painter {
     val context = LocalPlatformContext.current
-    val request = remember(wallpaper, data, window, barBlur) { wallpaperRequest(context, wallpaper, data, window, barBlur) }
+    val request =
+        remember(wallpaper, data, window, barBlur) { wallpaperRequest(context, wallpaper, data, window, barBlur) }
     return rememberAsyncImagePainter(request)
 }
 
