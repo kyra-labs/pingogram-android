@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -11,9 +14,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import kotlinx.collections.immutable.toImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonColors
-import androidx.compose.material3.MaterialTheme
 
 // The composer's pill start (`docs/DESIGN_SYSTEM.md` §13.5).
 

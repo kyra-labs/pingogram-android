@@ -11,8 +11,10 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,8 +37,6 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
-import androidx.compose.material3.IconButtonColors
-import androidx.compose.material3.MaterialTheme
 
 // The buttons of the composer: sending, with its menu of other ways to send, saving an edit, and those in the pill.
 

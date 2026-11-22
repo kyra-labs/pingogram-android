@@ -111,7 +111,8 @@ class PingogramColorsTest {
             val scheme = brandColorScheme(dark, Contrast.Standard)
             val colors = pingogramColors(scheme, dark)
 
-            assertEquals(scheme.surfaceContainerHigh, colors.incomingBubble.container)
+            // Owner decision 2026-11-22: near-black, barely tinted in dark theme, the same role in light.
+            assertEquals(scheme.surfaceContainerLow, colors.incomingBubble.container)
             assertEquals(scheme.onSurface, colors.incomingBubble.content)
             assertEquals(scheme.onSurfaceVariant, colors.incomingBubble.secondaryContent)
             assertEquals(scheme.surfaceContainerHighest, colors.incomingBubble.block)
