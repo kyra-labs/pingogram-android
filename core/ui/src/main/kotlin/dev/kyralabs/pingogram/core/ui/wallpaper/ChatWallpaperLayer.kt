@@ -30,6 +30,7 @@ import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import coil3.request.transformations
 import coil3.size.Scale
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
@@ -183,7 +184,8 @@ private fun wallpaperPainter(
 /**
  * Coil's request for [wallpaper]'s image from [data] at [size] (the window's), filling it: a vector pattern through
  * [VectorPatternDecoder], a blurred photo through [WallpaperBlur], and with [barBlur] through the top bar's stronger
- * [WallpaperBlur.Bar].
+ * [WallpaperBlur.Bar]. A photo to blur is decoded in software and fitted to the blur's square ([BLUR_SIDE_PX]): the
+ * blur reads its pixels, which a hardware bitmap would first copy back from the GPU, and needs no more of them.
  */
 internal fun wallpaperRequest(
     context: PlatformContext,
@@ -199,10 +201,18 @@ internal fun wallpaperRequest(
         .scale(Scale.FILL)
         .apply {
             if (wallpaper.image?.isVector == true) decoderFactory(VectorPatternDecoder.Factory())
-            if (wallpaper is Wallpaper.Photo && barBlur) {
-                transformations(WallpaperBlur.Bar)
-            } else if (wallpaper is Wallpaper.Photo && wallpaper.isBlurred) {
-                transformations(WallpaperBlur.Photo)
+            val blur =
+                when {
+                    wallpaper !is Wallpaper.Photo -> null
+                    barBlur -> WallpaperBlur.Bar
+                    wallpaper.isBlurred -> WallpaperBlur.Photo
+                    else -> null
+                }
+            if (blur != null) {
+                transformations(blur)
+                allowHardware(false)
+                size(BLUR_SIDE_PX, BLUR_SIDE_PX)
+                scale(Scale.FIT)
             }
         }.build()
 

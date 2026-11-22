@@ -23,7 +23,7 @@ internal class WallpaperBlur private constructor(
         input: Bitmap,
         size: Size,
     ): Bitmap {
-        val scale = min(1f, BLUR_SIDE / max(input.width, input.height))
+        val scale = min(1f, BLUR_SIDE_PX.toFloat() / max(input.width, input.height))
         val width = (input.width * scale).roundToInt().coerceAtLeast(1)
         val height = (input.height * scale).roundToInt().coerceAtLeast(1)
         val small = input.scale(width, height)
@@ -47,5 +47,5 @@ internal class WallpaperBlur private constructor(
     }
 }
 
-/** The square a blurred wallpaper fits before its blur, in pixels. */
-private const val BLUR_SIDE = 450f
+/** The square a blurred wallpaper fits before its blur, in pixels; its photo is decoded about that size. */
+internal const val BLUR_SIDE_PX = 450
