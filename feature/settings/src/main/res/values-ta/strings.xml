@@ -1573,4 +1573,8 @@
         <item quantity="one">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய %1$d விஷயம்</item>
         <item quantity="other">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய %1$d விஷயங்கள்</item>
     </plurals>
+    <string name="settings_color_theme_pingogram" translatable="false"></string>
+    <string name="settings_about_app_name" translatable="false"></string>
+    <string name="settings_color_theme_status"></string>
+    <string name="settings_proxy_address" translatable="false"></string>
 </resources>
