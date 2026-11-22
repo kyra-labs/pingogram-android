@@ -69,6 +69,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- The message box floats over the messages in every chat: they scroll on under it, with no bar behind it, and a chat's
+  wallpaper now runs under the navigation bar too.
 - A chat with a wallpaper shows it across the whole screen: blurred behind the top bar, under the status bar, and
   around a floating message box.
 - Pingogram uses less of the phone's processor while it runs: each part of the app now wakes only for the kinds of
