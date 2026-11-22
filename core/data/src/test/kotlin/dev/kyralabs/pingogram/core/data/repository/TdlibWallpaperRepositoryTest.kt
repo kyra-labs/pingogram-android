@@ -10,18 +10,26 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** The account's wallpapers and the chats' own, from TDLib's updates, and setting and removing them. */
+/**
+ * The account's wallpapers and the chats' own, from TDLib's updates and the chats' service messages, and setting and
+ * removing them, shown at once where the wallpaper is known.
+ */
 class TdlibWallpaperRepositoryTest {
     private val client = FakeTdlibClient()
 
@@ -189,9 +197,63 @@ class TdlibWallpaperRepositoryTest {
             assertFalse(client.sentOf<TdApi.DeleteChatBackground>().single().restorePrevious)
         }
 
+    @Test
+    fun `a chat's flow shows a wallpaper on Telegram as soon as it is set`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.SetChatBackground::class, TdResult.Success(TdApi.Ok()))
+            val photo = Wallpaper.Photo(1, PHOTO_IMAGE, isBlurred = false)
+
+            repository.setChatWallpaper(7, WallpaperChoice.Existing(photo, isBlurred = true), 40, onlyForSelf = true)
+
+            assertEquals(ChatWallpaperOverride(photo.copy(isBlurred = true), 40), repository.chatWallpaper(7).first())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `a new photo set for Saved Messages shows when its service message arrives`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.SetChatBackground::class, TdResult.Success(TdApi.Ok()))
+            val shown = mutableListOf<ChatWallpaperOverride?>()
+            val dispatcher = UnconfinedTestDispatcher(testScheduler)
+            backgroundScope.launch(dispatcher) { repository.chatWallpaper(ME).toList(shown) }
+
+            repository.setChatWallpaper(ME, WallpaperChoice.NewPhoto("/cache/photo.jpg"), 30, onlyForSelf = true)
+            client.emit(TdApiFixtures.updateNewMessage(setBackground(ME, photoBackground(id = 9), onlyForSelf = true)))
+
+            val photo = ChatWallpaperOverride(Wallpaper.Photo(9, PHOTO_IMAGE, isBlurred = false), 30)
+            assertEquals(listOf(null, photo), shown)
+        }
+
+    @Test
+    fun `another's wallpaper for both shows from their service message, and other messages change nothing`() =
+        runTest {
+            val repository = repository()
+            val forBoth = setBackground(7, patternBackground(id = 2), onlyForSelf = false)
+            client.emit(TdApiFixtures.updateNewMessage(forBoth))
+            val before = repository.chatWallpaper(7).first()
+
+            client.emit(TdApiFixtures.updateNewMessage(TdApiFixtures.message(chatId = 7)))
+
+            assertEquals(Wallpaper.Pattern(2, PATTERN_IMAGE, intensity = 50, isInverted = true), before?.wallpaper)
+            assertSame(before, repository.chatWallpaper(7).first())
+        }
+
     private companion object {
+        const val ME = 1L
         val PHOTO_IMAGE = WallpaperImage(FileRef(60, 1_024), thumbnail = FileRef(61, 1_024))
         val PATTERN_IMAGE = WallpaperImage(FileRef(70, 1_024), isVector = true)
+
+        /** A `messageChatSetBackground` in chat [chatId], setting [background] dimmed by 30%. */
+        fun setBackground(
+            chatId: Long,
+            background: TdApi.Background,
+            onlyForSelf: Boolean,
+        ) = TdApiFixtures.message(
+            chatId = chatId,
+            content = TdApi.MessageChatSetBackground(0, TdApi.ChatBackground(background, 30), onlyForSelf),
+        )
 
         fun background(
             id: Long,
