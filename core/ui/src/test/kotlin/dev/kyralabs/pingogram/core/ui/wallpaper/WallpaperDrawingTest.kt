@@ -50,7 +50,7 @@ class WallpaperDrawingTest {
                 drawRect(900f, 0f, 1800f, 900f, Paint().apply { color = android.graphics.Color.WHITE })
             }
 
-            val blurred = WallpaperBlur.transform(photo, CoilSize.ORIGINAL)
+            val blurred = WallpaperBlur.Photo.transform(photo, CoilSize.ORIGINAL)
 
             assertEquals(450 to 225, blurred.width to blurred.height)
             val edge = android.graphics.Color.red(blurred.getPixel(225, 112))

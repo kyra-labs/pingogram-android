@@ -10,14 +10,15 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * The blur of a blurred photo wallpaper (`docs/TDLIB.md` "Backgrounds"): the photo downscaled to fit a 450 × 450
- * square, then blurred with the spread of a box of radius 12, as a Gaussian, which leaves no box's steps. Coil runs it
- * once, off the main thread, and keeps the small result in its memory cache under the photo's key and this one; the
- * wallpaper draws it scaled up.
+ * A blurred wallpaper (`docs/TDLIB.md` "Backgrounds"): the photo downscaled to fit a 450 × 450 square, then blurred
+ * with a Gaussian of [sigma], which leaves no box's steps. Coil runs it once, off the main thread, and keeps the small
+ * result in its memory cache under the photo's key and [cacheKey]; the wallpaper draws it scaled up. [Photo] is a
+ * blurred photo wallpaper's blur, [Bar] the stronger one behind a conversation's top bar (owner decision 2026-11-22).
  */
-internal object WallpaperBlur : Transformation() {
-    override val cacheKey: String = "wallpaper-blur"
-
+internal class WallpaperBlur private constructor(
+    override val cacheKey: String,
+    private val sigma: Float,
+) : Transformation() {
     override suspend fun transform(
         input: Bitmap,
         size: Size,
@@ -30,16 +31,21 @@ internal object WallpaperBlur : Transformation() {
         small.getPixels(pixels, 0, width, 0, 0, width, height)
         if (small !== input) small.recycle()
         return Bitmap.createBitmap(
-            gaussianBlur(pixels, width, height, BLUR_SIGMA),
+            gaussianBlur(pixels, width, height, sigma),
             width,
             height,
             Bitmap.Config.ARGB_8888,
         )
     }
+
+    companion object {
+        /** A blurred photo wallpaper: the spread of a box blur of radius 12 (25 pixels wide), √((25² − 1) / 12). */
+        val Photo = WallpaperBlur("wallpaper-blur", sigma = 7.21f)
+
+        /** Behind a top bar: the spread of a box blur of radius 32 (65 pixels wide), √((65² − 1) / 12). */
+        val Bar = WallpaperBlur("wallpaper-bar-blur", sigma = 18.76f)
+    }
 }
 
 /** The square a blurred wallpaper fits before its blur, in pixels. */
 private const val BLUR_SIDE = 450f
-
-/** The spread of a box blur of radius 12 (25 pixels wide) as a Gaussian's sigma: √((25² − 1) / 12). */
-private const val BLUR_SIGMA = 7.21f

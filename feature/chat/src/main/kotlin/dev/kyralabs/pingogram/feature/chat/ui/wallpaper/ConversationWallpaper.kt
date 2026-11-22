@@ -19,14 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarColors
-import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.wallpaperBarColors
 import dev.kyralabs.pingogram.core.ui.wallpaper.ChatWallpaperLayer
-import dev.kyralabs.pingogram.core.ui.wallpaper.StatusBarIcons
 import dev.kyralabs.pingogram.core.ui.wallpaper.WallpaperFrame
 import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperFrame
-import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperTopLuminance
 import dev.kyralabs.pingogram.core.ui.wallpaper.wallpaperFrame
 
 /**
@@ -53,15 +50,14 @@ internal fun ConversationWallpaperLayer(
 }
 
 /**
- * How a conversation shows over its Telegram wallpaper (`docs/DESIGN_SYSTEM.md` §13.5, owner decision 2026-11-21): the
- * wallpaper fills the window ([frame]), the top bar shows it blurred in the scheme of its top's brightness ([bar]: the
- * theme's until a photo's is measured) and the conversation's colors ([seed]), and the composer floats over it.
+ * How a conversation shows over its Telegram wallpaper (`docs/DESIGN_SYSTEM.md` §13.5, owner decisions 2026-11-21 and
+ * 2026-11-22): the wallpaper fills the window ([frame]), the top bar shows it blurred under the theme's washed surface
+ * ([bar]), in the conversation's colors, and the composer floats over it.
  */
 @Immutable
 internal class ConversationBackdrop(
     val frame: WallpaperFrame,
     val bar: WallpaperBarColors,
-    val seed: Int?,
 )
 
 /** The conversation's [ConversationBackdrop]; null where it has no Telegram wallpaper, which keeps today's look. */
@@ -70,11 +66,8 @@ internal fun rememberConversationBackdrop(): ConversationBackdrop? {
     val dark = isDarkTheme()
     val shown = LocalConversationWallpaper.current.forTheme(dark)
     val frame = rememberWallpaperFrame()
-    val luminance = rememberWallpaperTopLuminance(shown.wallpaper, shown.darkThemeDimming)
-    val bar = wallpaperBarColors(luminance ?: if (dark) 0f else 1f)
-    return remember(shown.wallpaper, frame, bar, shown.seed) {
-        shown.wallpaper?.let { ConversationBackdrop(frame, bar, shown.seed) }
-    }
+    val bar = wallpaperBarColors(dark)
+    return remember(shown.wallpaper, frame, bar) { shown.wallpaper?.let { ConversationBackdrop(frame, bar) } }
 }
 
 /** The [ConversationBackdrop] the conversation's parts draw for; null for today's look. */
@@ -82,8 +75,8 @@ internal val LocalConversationBackdrop = staticCompositionLocalOf<ConversationBa
 
 /**
  * [content] given the conversation's backdrop ([rememberConversationBackdrop]): where it has a Telegram wallpaper, in
- * the window's [WallpaperFrame], with the status bar's icons for its top and [LocalConversationBackdrop] set for the
- * parts below; elsewhere as today.
+ * the window's [WallpaperFrame], with [LocalConversationBackdrop] set for the parts below; elsewhere as today. The
+ * status bar's icons stay the theme's.
  */
 @Composable
 internal fun ConversationBackdropBox(
@@ -91,7 +84,6 @@ internal fun ConversationBackdropBox(
     content: @Composable (ConversationBackdrop?) -> Unit,
 ) {
     val backdrop = rememberConversationBackdrop()
-    StatusBarIcons(backdrop?.bar?.darkStatusBarIcons)
     Box(modifier.then(backdrop?.let { Modifier.wallpaperFrame(it.frame) } ?: Modifier)) {
         CompositionLocalProvider(LocalConversationBackdrop provides backdrop) { content(backdrop) }
     }
@@ -121,24 +113,18 @@ private fun ConversationBarBackdrop(innerPadding: PaddingValues) {
             blurred = true,
             placeholder = placeholder,
         )
-        WallpaperBarTheme(backdrop.bar, backdrop.seed) {
-            Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
-        }
+        Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
     }
 }
 
 /**
- * The top bar's slot: over a wallpaper, [content] in the scheme of its top's brightness and the conversation's colors,
- * clear over the washed blur ([ConversationBackdropBox]); elsewhere as today, on `surfaceContainer`.
+ * The top bar's slot: over a wallpaper, [content] clear over the washed blur ([ConversationBarBackdrop]), in the
+ * theme's `onSurface`; elsewhere as today, on `surfaceContainer`.
  */
 @Composable
 internal fun ConversationBarSlot(content: @Composable (barColor: Color) -> Unit) {
     val backdrop = LocalConversationBackdrop.current
-    if (backdrop == null) {
-        content(MaterialTheme.colorScheme.surfaceContainer)
-    } else {
-        WallpaperBarTheme(backdrop.bar, backdrop.seed) { content(Color.Transparent) }
-    }
+    content(if (backdrop == null) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
 }
 
 /**
