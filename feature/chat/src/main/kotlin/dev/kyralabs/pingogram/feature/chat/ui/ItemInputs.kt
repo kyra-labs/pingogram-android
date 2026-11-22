@@ -83,7 +83,7 @@ internal fun ItemSources.inputsOf(
         date = date,
         kind = chatKind,
         sender = refOf(message.sender),
-        members = (memberIdsOf(message.content) + birthdayRecipientOf(message)).map(users::get),
+        members = (memberIdsOf(message.content, message.chatId) + birthdayRecipientOf(message)).map(users::get),
         chats = chatIdsOf(message.content).map(::chatRefOf),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
@@ -165,15 +165,20 @@ private fun ItemSources.chatRefOf(chatId: Long): ChatRef? =
 
 /**
  * The users the content names besides its sender, whose names it shows: a service message's member, who ticked a
- * checklist's tasks, a giveaway's winners.
+ * checklist's tasks, a giveaway's winners; and a wallpaper set for both people of the private chat [chatId], its other
+ * person, whose id is the chat's (td_api.tl `chatTypePrivate`), so "You set a new wallpaper for you and Ada" names her
+ * even before any message of hers is loaded.
  */
-
-internal fun memberIdsOf(content: MessageContent): List<Long> =
+internal fun memberIdsOf(
+    content: MessageContent,
+    chatId: Long? = null,
+): List<Long> =
     when (content) {
         is MessageContent.Service -> {
             when (val action = content.action) {
                 is ServiceAction.MembersAdded -> listOfNotNull(action.userIds.singleOrNull())
                 is ServiceAction.MemberRemoved -> listOf(action.userId)
+                is ServiceAction.WallpaperSet -> listOfNotNull(chatId.takeIf { !action.onlyForSelf })
                 else -> emptyList()
             }
         }
