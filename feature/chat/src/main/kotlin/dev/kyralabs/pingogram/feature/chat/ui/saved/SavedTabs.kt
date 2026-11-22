@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -99,7 +100,8 @@ internal fun SavedTabs(
                             Modifier
                                 .animateWidth(interactionSource)
                                 .onPlaced { scroll.buttonBounds[index] = it.boundsInParent() }
-                                .semantics { role = Role.Tab },
+                                .semantics { role = Role.Tab }
+                                .then(if (tab.topicId == null) Modifier.testTag(SAVED_TAB_ALL_TEST_TAG) else Modifier),
                         shapes = connectedShapes(index, tabs.lastIndex),
                         colors = colors,
                         interactionSource = interactionSource,
@@ -189,3 +191,6 @@ internal fun ConversationTabsSlot(tabs: (@Composable () -> Unit)?) {
     if (tabs != null) last[0] = tabs
     GrowingVisibility(visible = tabs != null) { last[0]?.invoke() }
 }
+
+/** The "All" tab, which the Baseline Profile's journeys pick first (benchmark's SavedJourneys.kt). */
+private const val SAVED_TAB_ALL_TEST_TAG = "saved_tab_all"

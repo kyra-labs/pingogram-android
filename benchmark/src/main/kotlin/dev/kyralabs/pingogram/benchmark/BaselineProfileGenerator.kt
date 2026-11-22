@@ -37,6 +37,7 @@ class BaselineProfileGenerator {
             startActivityAndWait()
             scrollChatList()
             openSavedMessages()
+            showAllSavedMessages()
             scrollConversation()
             returnToChatList()
             openSavedMessages()

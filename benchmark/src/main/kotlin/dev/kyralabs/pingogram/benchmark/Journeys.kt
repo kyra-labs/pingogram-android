@@ -49,16 +49,18 @@ internal fun MacrobenchmarkScope.openSavedMessages(): UiObject2 {
 /**
  * Goes back to the chat list from wherever the app is (a conversation, the Bookmarks page or Catch-up the last
  * iteration opened), up to [BACK_PRESSES] times. It first waits for one of those screens or the chat list, and presses
- * back only while one of those screens shows: right after a start the app may still be loading (slower without a
- * profile), and back on the chat list's screen would close it.
+ * back only while one of those screens shows and the chat list does not: right after a start the app may still be
+ * loading (slower without a profile), and back on the chat list's screen would close it. The chat list shows while a
+ * conversation slides away after a back (the panes animate) and beside it on a wide window, so after each press it
+ * waits a moment for the chat list instead of pressing again on a conversation that is leaving.
  */
 internal fun MacrobenchmarkScope.returnToChatList() {
     var presses = 0
     while (presses < BACK_PRESSES) {
         device.wait(Until.hasObject(By.res(KNOWN_SCREEN)), TIMEOUT_MS)
-        if (!device.hasObject(By.res(SCREEN_ABOVE_CHAT_LIST))) break
+        if (device.hasObject(By.res(CHAT_LIST)) || !device.hasObject(By.res(SCREEN_ABOVE_CHAT_LIST))) break
         device.pressBack()
-        device.waitForIdle()
+        device.wait(Until.hasObject(By.res(CHAT_LIST)), BACK_WAIT_MS)
         presses++
     }
     waitForChatList()
@@ -70,19 +72,24 @@ internal fun MacrobenchmarkScope.messageList(): UiObject2 =
         ?: screenMissing("No conversation open after $TIMEOUT_MS ms.")
 
 /**
- * What [find] returns once it shows at the same place twice [SETTLE_STEP_MS] apart, found again each time, or null
- * once [find] finds nothing. A tap or a long press on something still moving under the finger reads as a scroll, and
- * one on a node the app has replaced meanwhile throws `StaleObjectException`.
+ * What [find] returns once it shows at the same place for [stillLooks] looks in a row after the first, [SETTLE_STEP_MS]
+ * apart, found again each time, or null once [find] finds nothing. A tap or a long press on something still moving
+ * under the finger reads as a scroll, and one on a node the app has replaced meanwhile throws `StaleObjectException`.
  */
-internal fun settledObject(find: () -> UiObject2?): UiObject2? {
+internal fun settledObject(
+    stillLooks: Int = 1,
+    find: () -> UiObject2?,
+): UiObject2? {
     var found = find()
     var bounds: Rect? = found?.visibleBounds
+    var still = 0
     var looks = 1
     while (found != null && looks < SETTLE_TRIES) {
         SystemClock.sleep(SETTLE_STEP_MS)
         val again = find()
         val againBounds = again?.visibleBounds
-        if (againBounds == bounds) return again
+        still = if (againBounds == bounds) still + 1 else 0
+        if (still >= stillLooks) return again
         found = again
         bounds = againBounds
         looks++
@@ -101,41 +108,71 @@ internal fun MacrobenchmarkScope.screenMissing(message: String): Nothing {
     error(message)
 }
 
-/** Flings the open conversation up to older messages, loading them on the way, and back down. */
+/**
+ * Flings the open conversation up to older messages, loading them on the way, and back down, within the part of the
+ * list the messages show in ([setMessageGestureMargins]).
+ */
 internal fun MacrobenchmarkScope.scrollConversation() {
-    fling(Direction.UP) { messageList() }
-    fling(Direction.DOWN) { messageList() }
+    fling(Direction.UP, margins = { setMessageGestureMargins(it) }) { messageList() }
+    fling(Direction.DOWN, margins = { setMessageGestureMargins(it) }) { messageList() }
 }
 
 /**
- * [FLINGS] flings in [direction] of the list [find] returns, each followed by a wait until the app is idle. The list is
- * found again before each fling: scrolling can replace its node, and a fling on the old one throws
- * `StaleObjectException`.
+ * [FLINGS] flings in [direction] of the list [find] returns, each followed by a wait until the app is idle, inside the
+ * [margins] set on it: by default clear of the system's back gesture along the sides. The list is found again before
+ * each fling: scrolling can replace its node, and a fling on the old one throws `StaleObjectException`.
  */
 internal fun MacrobenchmarkScope.fling(
     direction: Direction,
+    margins: (UiObject2) -> Unit = { it.setGestureMargin(device.displayWidth / GESTURE_MARGIN_FRACTION) },
     find: () -> UiObject2,
 ) {
     repeat(FLINGS) {
         val list = find()
-        // Clear of the system's back gesture along the sides.
-        list.setGestureMargin(device.displayWidth / GESTURE_MARGIN_FRACTION)
+        margins(list)
         list.fling(direction)
         device.waitForIdle()
     }
 }
 
-// The tags in feature:chats (ChatListScreen.kt) and feature:chat (ChatScreen.kt).
+/**
+ * Margins for a gesture on the open conversation's [list] that keep it where the messages show. The list starts below
+ * the top bar (the sheet it scrolls in does, `ContentSheet`), but reaches the window's bottom: the composer floats over
+ * its end, and a gesture starting on it would focus or scroll the field instead of the messages. So the bottom margin
+ * clears the composer's field by the side margin, clear of the system's back gesture (or a [COVERED_FRACTION] of the
+ * list where it shows none), the sides and the top keep that margin, and at least a [MIN_GESTURE_FRACTION] of the list
+ * is left for the gesture.
+ */
+private fun MacrobenchmarkScope.setMessageGestureMargins(list: UiObject2) {
+    val side = device.displayWidth / GESTURE_MARGIN_FRACTION
+    val bounds = list.visibleBounds
+    val composerTop = device.findObject(By.res(COMPOSER_FIELD))?.visibleBounds?.top
+    val covered = composerTop?.let { bounds.bottom - it } ?: (bounds.height() / COVERED_FRACTION)
+    val bottom = (covered + side).coerceAtMost(bounds.height() - side - bounds.height() / MIN_GESTURE_FRACTION)
+    list.setGestureMargins(side, side, side, bottom.coerceAtLeast(side))
+}
+
+// The tags in feature:chats (ChatListScreen.kt) and feature:chat (ChatScreen.kt, ComposerField.kt).
 private const val CHAT_LIST = "chat_list"
 private const val SAVED_MESSAGES = "saved_messages"
 private const val MESSAGE_LIST = "message_list"
+private const val COMPOSER_FIELD = "composer_field"
 
 /** How long the journeys wait for a screen: TDLib may still be loading after a cold start. */
 private const val TIMEOUT_MS = 10_000L
 
+/** How long [returnToChatList] waits for the chat list after a back before it looks again. */
+private const val BACK_WAIT_MS = 2_000L
+
 private const val FLINGS = 3
 private const val BACK_PRESSES = 3
 private const val GESTURE_MARGIN_FRACTION = 5
+
+/** How much of a conversation's list the composer is taken to cover where its field does not show: a quarter. */
+private const val COVERED_FRACTION = 4
+
+/** How much of a list a gesture keeps at least, whatever its margins: a third. */
+private const val MIN_GESTURE_FRACTION = 3
 
 /** How often, and how many times, [settledObject] and the keyboard check (MessageJourneys.kt) look before they act. */
 internal const val SETTLE_STEP_MS = 150L

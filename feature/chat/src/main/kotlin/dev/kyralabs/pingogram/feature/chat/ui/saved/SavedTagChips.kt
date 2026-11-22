@@ -48,6 +48,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -110,7 +111,7 @@ internal fun SavedTagChips(
             selected = state.selected == null,
             onClick = { onSelect(null) },
             label = { Text(stringResource(R.string.saved_tab_all)) },
-            modifier = Modifier.semantics { role = Role.RadioButton },
+            modifier = Modifier.semantics { role = Role.RadioButton }.testTag(SAVED_TAGS_ALL_TEST_TAG),
             shapes = FilterChipDefaults.shapes(),
         )
         state.tags.forEach { tag ->
@@ -152,3 +153,6 @@ internal fun SavedTagChip.name(): String {
     val emoji = (reaction as? ReactionType.Emoji)?.emoji ?: stringResource(R.string.saved_tags_custom_emoji)
     return if (label.isEmpty()) emoji else "$emoji $label"
 }
+
+/** The "All" chip, which the Baseline Profile's journeys pick first (benchmark's SavedJourneys.kt). */
+private const val SAVED_TAGS_ALL_TEST_TAG = "saved_tags_all"

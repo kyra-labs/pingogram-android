@@ -36,20 +36,36 @@ internal fun MacrobenchmarkScope.skipCatchUpCards() {
 
 /**
  * Opens the Bookmarks page through Saved Messages' card and returns its list, or null where Saved Messages shows no
- * card: it shows once a message is bookmarked. The card is tapped once it has stopped moving ([settledObject]), as
- * Saved Messages' messages load around it, and once more if the page does not open.
+ * card: it shows once a message is bookmarked, and on "All" only, so Saved Messages is shown on "All" first
+ * ([showAllSavedMessages]), whichever tab it was left on. The card sits in the top bar below the topic tabs and the
+ * tags, which grow in above it as they load and push it down: it is tapped once it has stayed still for
+ * [CARD_STILL_LOOKS] looks ([settledObject]), at a point below those rows ([tapBelowSavedRows]), and once more, on
+ * "All" again, if the page does not open.
  */
 internal fun MacrobenchmarkScope.openBookmarks(): UiObject2? {
     openSavedMessages()
+    showAllSavedMessages()
     if (!device.wait(Until.hasObject(By.res(SAVED_BOOKMARKS)), CHIP_TIMEOUT_MS)) return null
     var page: UiObject2? = null
     var taps = 0
     while (page == null && taps < CARD_TAPS) {
-        settledObject { device.findObject(By.res(SAVED_BOOKMARKS)) }?.click()
+        if (taps > 0) showAllSavedMessages()
+        settledObject(CARD_STILL_LOOKS) { device.findObject(By.res(SAVED_BOOKMARKS)) }?.let { tapBelowSavedRows(it) }
         page = device.wait(Until.findObject(By.res(BOOKMARKS_LIST)), TIMEOUT_MS)
         taps++
     }
     return page ?: screenMissing("The Bookmarks page did not open within $TIMEOUT_MS ms.")
+}
+
+/**
+ * Taps [card] in the middle of its visible part below Saved Messages' tabs and tags ([savedRowsBottom]), so never on a
+ * tab or a chip, which would show another tab or a tag's messages and take the card away. Nothing where the rows
+ * cover all of it.
+ */
+private fun MacrobenchmarkScope.tapBelowSavedRows(card: UiObject2) {
+    val bounds = card.visibleBounds
+    val top = maxOf(bounds.top, savedRowsBottom() ?: bounds.top)
+    if (top < bounds.bottom) device.click(bounds.centerX(), (top + bounds.bottom) / 2)
 }
 
 /** The open Bookmarks page's cards, found afresh: a list found in an earlier block may be stale. */
@@ -81,3 +97,9 @@ private const val CARDS = 3
 
 /** How many times [openBookmarks] taps Saved Messages' card before it gives up. */
 private const val CARD_TAPS = 2
+
+/**
+ * How many looks in a row Saved Messages' card stays still before [openBookmarks] taps it: about a second
+ * ([SETTLE_STEP_MS] apart), as the rows above it may still be growing in.
+ */
+private const val CARD_STILL_LOOKS = 6

@@ -70,6 +70,7 @@ class ConversationScrollBenchmark {
             setupBlock = {
                 coldStart()
                 openSavedMessages()
+                showAllSavedMessages()
             },
         ) {
             scrollConversation()
