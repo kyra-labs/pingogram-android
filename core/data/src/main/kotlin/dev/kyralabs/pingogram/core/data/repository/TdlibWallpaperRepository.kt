@@ -128,12 +128,15 @@ private fun reduceChats(
         else -> state
     }
 
-/** The background a new `messageChatSetBackground` set for its chat; this same map for any other message. */
+/**
+ * The background a new `messageChatSetBackground` set for its chat, if it is ours: set for both people, or by the
+ * user; one the other person set for themselves alone stays theirs. This same map for any other message.
+ */
 private fun PersistentMap<Long, ChatWallpaperOverride>.withServiceMessage(
     message: TdApi.Message,
 ): PersistentMap<Long, ChatWallpaperOverride> {
     val set = message.content as? TdApi.MessageChatSetBackground ?: return this
-    return withChat(message.chatId, set.background)
+    return if (!set.onlyForSelf || message.isOutgoing) withChat(message.chatId, set.background) else this
 }
 
 private fun PersistentMap<Long, ChatWallpaperOverride>.withChat(

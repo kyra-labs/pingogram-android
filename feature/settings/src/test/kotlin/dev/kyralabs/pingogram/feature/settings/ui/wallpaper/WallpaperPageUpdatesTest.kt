@@ -96,7 +96,8 @@ class WallpaperPageUpdatesTest {
 
             page.applyPick(WallpaperEvent.PickPhoto("content://photo", SCREEN_SIDE))
             val set = TdApi.MessageChatSetBackground(0, TdApi.ChatBackground(photoBackground(id = 9), 30), true)
-            client.emit(TdApiFixtures.updateNewMessage(TdApiFixtures.message(chatId = ME, content = set)))
+            val mine = TdApiFixtures.message(chatId = ME, content = set, isOutgoing = true)
+            client.emit(TdApiFixtures.updateNewMessage(mine))
 
             assertEquals(9L, page.shown?.id)
             assertNull(page.uiState.value.picker.pending)

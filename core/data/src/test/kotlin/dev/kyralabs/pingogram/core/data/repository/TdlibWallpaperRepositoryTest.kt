@@ -220,7 +220,8 @@ class TdlibWallpaperRepositoryTest {
             backgroundScope.launch(dispatcher) { repository.chatWallpaper(ME).toList(shown) }
 
             repository.setChatWallpaper(ME, WallpaperChoice.NewPhoto("/cache/photo.jpg"), 30, onlyForSelf = true)
-            client.emit(TdApiFixtures.updateNewMessage(setBackground(ME, photoBackground(id = 9), onlyForSelf = true)))
+            val mine = setBackground(ME, photoBackground(id = 9), onlyForSelf = true, isOutgoing = true)
+            client.emit(TdApiFixtures.updateNewMessage(mine))
 
             val photo = ChatWallpaperOverride(Wallpaper.Photo(9, PHOTO_IMAGE, isBlurred = false), 30)
             assertEquals(listOf(null, photo), shown)
@@ -240,19 +241,46 @@ class TdlibWallpaperRepositoryTest {
             assertSame(before, repository.chatWallpaper(7).first())
         }
 
+    @Test
+    fun `the other person's wallpaper for themselves alone stays theirs, one for both and the user's own apply`() =
+        runTest {
+            val repository = repository()
+
+            suspend fun emit(message: TdApi.Message) = client.emit(TdApiFixtures.updateNewMessage(message))
+
+            emit(setBackground(7, photoBackground(id = 1), onlyForSelf = false))
+            val forBoth = repository.chatWallpaper(7).first()
+            emit(setBackground(7, patternBackground(id = 2), onlyForSelf = true))
+            val afterTheirs = repository.chatWallpaper(7).first()
+            emit(setBackground(7, photoBackground(id = 3), onlyForSelf = true, isOutgoing = true))
+
+            assertEquals(1L, forBoth?.wallpaper?.id)
+            assertSame(forBoth, afterTheirs)
+            assertEquals(
+                3L,
+                repository
+                    .chatWallpaper(7)
+                    .first()
+                    ?.wallpaper
+                    ?.id,
+            )
+        }
+
     private companion object {
         const val ME = 1L
         val PHOTO_IMAGE = WallpaperImage(FileRef(60, 1_024), thumbnail = FileRef(61, 1_024))
         val PATTERN_IMAGE = WallpaperImage(FileRef(70, 1_024), isVector = true)
 
-        /** A `messageChatSetBackground` in chat [chatId], setting [background] dimmed by 30%. */
+        /** A `messageChatSetBackground` in [chatId] setting [background] dimmed by 30%, the user's if [isOutgoing]. */
         fun setBackground(
             chatId: Long,
             background: TdApi.Background,
             onlyForSelf: Boolean,
+            isOutgoing: Boolean = false,
         ) = TdApiFixtures.message(
             chatId = chatId,
             content = TdApi.MessageChatSetBackground(0, TdApi.ChatBackground(background, 30), onlyForSelf),
+            isOutgoing = isOutgoing,
         )
 
         fun background(
