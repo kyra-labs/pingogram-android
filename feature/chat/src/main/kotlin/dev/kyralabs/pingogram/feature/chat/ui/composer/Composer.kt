@@ -63,6 +63,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -460,8 +461,8 @@ private fun ComposerPill(
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
     val hasText = canSend.value
-    // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerHigh, the attach "+" a primary circle followed by the
-    // camera, no gallery button (the attach menu's first option).
+    // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerLow in dark theme (surfaceContainerHigh in light), the
+    // attach "+" and the camera plain icons, no gallery button (the attach menu's first option).
     ComposerField(
         text = text,
         onSend = onSend,
@@ -469,7 +470,7 @@ private fun ComposerPill(
         onFocusChanged = onFocusChanged,
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = pillColor(),
         leadingIcons = pillLeadingIcons(composer, hasText, attach, bots.onMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
@@ -589,3 +590,8 @@ private val PREVIEW_TEXT =
             TextEntity(19, 4, TextEntityType.TextUrl("https://example.org")),
         ),
     )
+
+/** The pill's container: `surfaceContainerLow` in dark theme, `surfaceContainerHigh` in light (§13.5). */
+@Composable
+private fun pillColor(): Color =
+    if (isDarkTheme()) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerHigh

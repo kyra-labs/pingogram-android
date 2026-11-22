@@ -11,8 +11,10 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -76,6 +78,7 @@ internal fun SendButton(
                     .semantics { customActions = actions },
             enabled = enabled,
             shapes = sendShapes(),
+            colors = composerActionColors(),
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
@@ -191,6 +194,7 @@ internal fun SaveEditButton(onSave: () -> Unit) {
         onClick = onSave,
         modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
         shapes = composerActionShapes(),
+        colors = composerActionColors(),
     ) {
         Icon(
             painter = painterResource(UiR.drawable.ic_check),
@@ -247,3 +251,14 @@ internal fun SendOptionsMenu(
 
 /** The send button, for `benchmark/`'s journeys. */
 internal const val SEND_BUTTON_TEST_TAG = "composer_send"
+
+/**
+ * The composer's round button (send, save an edit, and the microphone or camera at rest): `primaryContainer` with
+ * `onPrimaryContainer`, a deep container with a light icon in dark theme (owner decision 2026-11-22).
+ */
+@Composable
+internal fun composerActionColors(): IconButtonColors =
+    IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
