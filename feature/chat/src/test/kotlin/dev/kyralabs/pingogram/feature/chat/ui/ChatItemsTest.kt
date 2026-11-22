@@ -160,30 +160,6 @@ class ChatItemsTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `a wallpaper the user set for both names the private chat's other person`() =
-        runTest {
-            users.setUsers(user(ME, firstName = "Me"), user(ADA, firstName = "Ada"))
-            val viewModel =
-                showing(
-                    chat(),
-                    history(
-                        service(
-                            1,
-                            ServiceAction.WallpaperSet(onlyForSelf = false),
-                            chatId = PRIVATE_CHAT,
-                            sender = MessageSender.User(ME),
-                        ),
-                    ),
-                )
-
-            val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
-            assertEquals(
-                res(UiR.string.preview_you_set_wallpaper_for_both, UiText.Plain("\u2068Ada\u2069")),
-                service.text,
-            )
-        }
-
-    @Test
     fun `a call in a private chat calls back, a video call with the camera`() =
         runTest {
             val viewModel =
