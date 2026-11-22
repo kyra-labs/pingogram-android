@@ -218,6 +218,12 @@
     <string name="preview_you_hid_topic">You hid the topic</string>
     <string name="preview_unhid_topic">%1$s unhid the topic</string>
     <string name="preview_you_unhid_topic">You unhid the topic</string>
+    <!-- A service message in a private chat: the current user set a new wallpaper for this chat, seen by them alone. -->
+    <string name="preview_you_set_wallpaper">You set a new wallpaper for this chat</string>
+    <!-- A service message in a private chat: %1$s, the other person's name, set a new wallpaper for this chat. -->
+    <string name="preview_set_wallpaper">%1$s set a new wallpaper for this chat</string>
+    <!-- A service message in a private chat: the current user set a new wallpaper for both people; %1$s is the other person's name. -->
+    <string name="preview_you_set_wallpaper_for_both">You set a new wallpaper for you and %1$s</string>
     <string name="preview_took_screenshot">%1$s took a screenshot</string>
     <string name="preview_you_took_screenshot">You took a screenshot</string>
     <string name="preview_call_outgoing">Outgoing call</string>

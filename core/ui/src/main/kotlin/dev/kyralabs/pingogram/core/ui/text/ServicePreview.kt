@@ -40,6 +40,10 @@ internal fun serviceText(
             groupCallText(action)
         }
 
+        is ServiceAction.WallpaperSet -> {
+            wallpaperSetText(action, actor) { memberName(message.chatId, name) }
+        }
+
         is ServiceAction.ForumTopicCreated,
         is ServiceAction.ForumTopicEdited,
         is ServiceAction.ForumTopicClosedToggled,
@@ -289,6 +293,21 @@ private class Actor(
         vararg args: Any,
     ): UiText = if (byMe) UiText.resource(mine, *args) else UiText.resource(theirs, name, *args)
 }
+
+/**
+ * A new wallpaper for the chat, by [actor]: "You set a new wallpaper for this chat", "Alice set …"; set for both people
+ * by the current user, it names the other ([otherName]: in a private chat, the user whose id is the chat's).
+ */
+private fun wallpaperSetText(
+    action: ServiceAction.WallpaperSet,
+    actor: Actor,
+    otherName: () -> UiText,
+): UiText =
+    when {
+        !actor.byMe -> UiText.resource(R.string.preview_set_wallpaper, actor.name)
+        action.onlyForSelf -> UiText.resource(R.string.preview_you_set_wallpaper)
+        else -> UiText.resource(R.string.preview_you_set_wallpaper_for_both, otherName())
+    }
 
 /** Joining shows as adding oneself; adding the current user reads "added you". */
 private fun membersAddedText(

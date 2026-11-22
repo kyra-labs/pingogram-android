@@ -101,6 +101,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- A new wallpaper set for a chat shows as "You set a new wallpaper for this chat", "Alice set a new wallpaper for this
+  chat" or "You set a new wallpaper for you and Alice", in the chat and in the chat list, instead of "Chat event".
 - While a chat's photo wallpaper loads, or if it cannot, the messages and the top bar show the chat's own colors
   instead of a flash of the window's color.
 - While the app catches up after opening, the chat list's counts (unread chats, Catch-up, mentions, the folder and

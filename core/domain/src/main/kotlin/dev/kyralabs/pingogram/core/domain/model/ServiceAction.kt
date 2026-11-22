@@ -104,6 +104,14 @@ sealed interface ServiceAction {
     data object ContactRegistered : ServiceAction
 
     /**
+     * The sender set a new wallpaper for the chat (td_api.tl `messageChatSetBackground`): for themselves alone with
+     * [onlyForSelf], else for both people in the private chat.
+     */
+    data class WallpaperSet(
+        val onlyForSelf: Boolean,
+    ) : ServiceAction
+
+    /**
      * The sender suggested [birthdate] as the other user's birthday (td_api.tl `messageSuggestBirthdate`), which the
      * receiver may keep on their profile. `toString()` leaves the date out.
      */
