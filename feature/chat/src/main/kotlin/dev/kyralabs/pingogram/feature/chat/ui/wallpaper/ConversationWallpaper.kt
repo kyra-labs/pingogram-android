@@ -1,10 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui.wallpaper
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -15,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -25,6 +24,8 @@ import dev.kyralabs.pingogram.core.ui.wallpaper.ChatWallpaperLayer
 import dev.kyralabs.pingogram.core.ui.wallpaper.WallpaperFrame
 import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperFrame
 import dev.kyralabs.pingogram.core.ui.wallpaper.wallpaperFrame
+import kotlin.math.ceil
+import kotlin.math.floor
 
 /**
  * The conversation's wallpaper, which `ChatRoute` provides from [ChatWallpaperViewModel]; the theme-color one alone
@@ -36,7 +37,7 @@ internal val LocalConversationWallpaper = compositionLocalOf { ConversationWallp
  * The wallpaper behind the conversation's bars and messages (`docs/DESIGN_SYSTEM.md` §6 "Chat appearance"): the chat's
  * own, else the account's for the theme dimmed as Chat appearance says in dark theme, else the theme-color one. In
  * [frame], the conversation's window, it draws its part of the window's wallpaper; [blurred], the copy behind the top
- * bar; [placeholder], what shows until a photo is drawn where no theme-color wallpaper is chosen.
+ * bar, with its [wash]; [placeholder], what shows until a photo is drawn where no theme-color wallpaper is chosen.
  */
 @Composable
 internal fun ConversationWallpaperLayer(
@@ -44,9 +45,10 @@ internal fun ConversationWallpaperLayer(
     frame: WallpaperFrame? = null,
     blurred: Boolean = false,
     placeholder: Color = Color.Unspecified,
+    wash: Color = Color.Unspecified,
 ) {
     val shown = LocalConversationWallpaper.current.forTheme(isDarkTheme())
-    ChatWallpaperLayer(shown.wallpaper, shown.darkThemeDimming, modifier, frame, blurred, placeholder)
+    ChatWallpaperLayer(shown.wallpaper, shown.darkThemeDimming, modifier, frame, blurred, placeholder, wash)
 }
 
 /**
@@ -90,31 +92,39 @@ internal fun ConversationBackdropBox(
 }
 
 /**
- * Over a Telegram wallpaper, what shows behind the top bar: the wallpaper blurred and washed, from the window's top to
- * the end of the messages' sheet's rounded corners ([innerPadding]'s top, as `ContentSheet` places the sheet), the only
- * place it shows, so the messages read as a rounded container below the bar. Clipped in the draw phase, so a collapsing
- * bar redraws it without recomposing, and nothing of it is drawn under the sheet's opaque wallpaper. Nothing elsewhere.
+ * Over a Telegram wallpaper, what shows behind the top bar: the wallpaper blurred and washed (the wash in the same
+ * layer, in a photo's one draw), from the window's top to the end of the messages' sheet's rounded corners
+ * ([innerPadding]'s top, as `ContentSheet` places the sheet), the only place it shows, so the messages read as a
+ * rounded container below the bar. Clipped in the draw phase, so a collapsing bar redraws it without recomposing. Below
+ * the bar's bottom only the two corners keep it: between them the sheet's opaque wallpaper covers every pixel, so the
+ * copy is clipped out there (whole pixels inside the sheet, one clear of its top edge and of its corners, so nothing it
+ * showed changes), with rect clips, which the GPU applies without a mask (`docs/PERFORMANCE.md`, "Overdraw").
  */
 @Composable
 private fun ConversationBarBackdrop(innerPadding: PaddingValues) {
     val backdrop = LocalConversationBackdrop.current ?: return
     val corner = MaterialTheme.shapes.extraLarge.topStart
-    Box(
+    // Until a photo is drawn, the bar's color without a wallpaper, not the window's.
+    val placeholder = MaterialTheme.colorScheme.surfaceContainer
+    ConversationWallpaperLayer(
         Modifier.fillMaxSize().drawWithContent {
-            val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
-            clipRect(bottom = bottom) { this@drawWithContent.drawContent() }
+            val barBottom = innerPadding.calculateTopPadding().toPx()
+            val radius = corner.toPx(size, this)
+            clipRect(bottom = barBottom + radius) {
+                clipRect(
+                    left = ceil(radius) + 1,
+                    top = ceil(barBottom) + 1,
+                    right = floor(size.width - radius) - 1,
+                    bottom = size.height,
+                    clipOp = ClipOp.Difference,
+                ) { this@drawWithContent.drawContent() }
+            }
         },
-    ) {
-        // Until a photo is drawn, the bar's color without a wallpaper, not the window's.
-        val placeholder = MaterialTheme.colorScheme.surfaceContainer
-        ConversationWallpaperLayer(
-            Modifier.matchParentSize(),
-            backdrop.frame,
-            blurred = true,
-            placeholder = placeholder,
-        )
-        Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
-    }
+        backdrop.frame,
+        blurred = true,
+        placeholder = placeholder,
+        wash = backdrop.bar.wash(),
+    )
 }
 
 /**
