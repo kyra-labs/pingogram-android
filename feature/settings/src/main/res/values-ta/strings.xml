@@ -1569,4 +1569,8 @@
     <string name="backup_restored_other_account">மீட்டெடுக்கப்பட்டது. மற்றொரு கணக்கின் தரவு காப்புப்பிரதியிலேயே இருக்கும்.</string>
     <string name="backup_restore_newer">இந்தக் காப்புப்பிரதி Pingogram-இன் புதிய பதிப்பிலிருந்து வந்தது. இதை மீட்டெடுக்க செயலியைப் புதுப்பிக்கவும்.</string>
     <string name="backup_restore_not_backup">இந்தக் கோப்பு Pingogram காப்புப்பிரதி அல்ல, அல்லது சேதமடைந்துள்ளது.</string>
+    <plurals name="settings_privacy_checkup_what">
+        <item quantity="one">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய %1$d விஷயம்</item>
+        <item quantity="other">Telegram-இல் யார் வேண்டுமானாலும் பார்க்கக்கூடிய %1$d விஷயங்கள்</item>
+    </plurals>
 </resources>
