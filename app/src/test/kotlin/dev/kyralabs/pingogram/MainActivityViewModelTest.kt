@@ -18,10 +18,12 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
+import dev.kyralabs.pingogram.startup.SplashStateTrace
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -63,15 +65,33 @@ class MainActivityViewModelTest {
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
     private fun TestScope.viewModel(
         appearanceRepository: FakeAppearanceRepository = appearance,
+        authRepository: TdlibAuthRepository =
+            TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+        trace: SplashStateTrace = SplashStateTrace.None,
     ): MainActivityViewModel =
         MainActivityViewModel(
-            TdlibAuthRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+            authRepository,
             appearanceRepository,
             appLock,
             passcodes,
             timeSource,
             lazyOf(chatLock),
+            trace,
         ).also { runCurrent() }
+
+    /** The sections still open, and those ended, in order. */
+    private class RecordingSplashStateTrace : SplashStateTrace {
+        val open = mutableSetOf<String>()
+        val ended = mutableListOf<String>()
+
+        override fun begin(name: String) {
+            open += name
+        }
+
+        override fun end(name: String) {
+            if (open.remove(name)) ended += name
+        }
+    }
 
     private suspend fun TestScope.tdlib(state: TdApi.AuthorizationState) {
         client.emitAuthorizationState(state)
@@ -184,6 +204,57 @@ class MainActivityViewModelTest {
             tdlib(TdApiFixtures.waitPhoneNumber())
 
             assertFalse(viewModel.keepSplashScreen())
+        }
+
+    @Test
+    fun `knows the login from TDLib's current step without waiting for the login steps`() =
+        runTest {
+            // The login steps' dispatcher never gets to run, as Default busy with the start's other work.
+            val busy = StandardTestDispatcher(TestCoroutineScheduler())
+            val viewModel = viewModel(authRepository = TdlibAuthRepository(client, backgroundScope, busy, timeSource))
+            assertTrue(viewModel.keepSplashScreen())
+
+            // TDLib reported Ready; its update has not reached the login steps.
+            client.authState.value = AuthState.Ready
+
+            assertFalse(viewModel.keepSplashScreen())
+            assertEquals(MainActivityUiState.SignedIn, viewModel.state)
+        }
+
+    @Test
+    fun `stays signed in as the login steps catch up with TDLib's current step`() =
+        runTest {
+            val viewModel = viewModel()
+            client.authState.value = AuthState.Ready
+            assertFalse(viewModel.keepSplashScreen())
+
+            viewModel.uiState.test {
+                assertEquals(MainActivityUiState.SignedIn, awaitItem())
+                // The steps TDLib reported before Ready, then Ready itself, arrive late.
+                client.emit(TdApi.UpdateAuthorizationState(TdApiFixtures.waitTdlibParameters()))
+                client.emit(TdApi.UpdateAuthorizationState(TdApiFixtures.ready()))
+                runCurrent()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `traces when each state the splash screen waits for becomes known`() =
+        runTest {
+            val trace = RecordingSplashStateTrace()
+            val unread = FakeAppearanceRepository()
+            appLock.setState(LockState.Unknown)
+            viewModel(unread, trace = trace)
+            assertEquals(setOf("PG:loginKnown", "PG:appearanceKnown", "PG:lockKnown"), trace.open)
+
+            appLock.setState(LockState.Unlocked)
+            runCurrent()
+            tdlib(TdApiFixtures.ready())
+            unread.save(AppearanceSettings())
+            runCurrent()
+
+            assertEquals(listOf("PG:lockKnown", "PG:loginKnown", "PG:appearanceKnown"), trace.ended)
+            assertEquals(emptySet<String>(), trace.open)
         }
 
     @Test

@@ -1,10 +1,13 @@
 package dev.kyralabs.pingogram.core.notifications
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.graphics.Typeface
 import android.text.Spanned
 import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
+import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.messageNotification
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.notificationGroup
@@ -38,6 +41,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 
 /** From TDLib's notification updates to the notifications Android shows ([NotificationRenderer]). */
 @RunWith(RobolectricTestRunner::class)
@@ -402,6 +406,44 @@ class NotificationRendererTest {
 
             assertNotSame(shown, next.posted(7))
             assertEquals(Notification.GROUP_ALERT_SUMMARY, next.posted(7)!!.groupAlertBehavior)
+        }
+
+    @Test
+    fun `a restored group that changed is posted again only after the first frame`() =
+        runTest {
+            val earlier = started()
+            earlier.client.emit(updateActiveNotifications(notificationGroup(groupId = 7, chatId = 100)))
+            runCurrent()
+            val shown = earlier.posted(7)!!
+
+            val firstFrame = FirstFrameGate()
+            val next = started(NotificationsHarness(this, firstFrame = firstFrame))
+            val changed = notificationGroup(groupId = 7, chatId = 100).apply { totalCount = 3 }
+            next.client.emit(updateActiveNotifications(changed))
+            runCurrent()
+            assertSame(shown, next.posted(7))
+
+            firstFrame.open()
+            runCurrent()
+            assertNotSame(shown, next.posted(7))
+        }
+
+    @Test
+    fun `channels nothing posts to any more go only after the first frame`() =
+        runTest {
+            val firstFrame = FirstFrameGate()
+            val harness = NotificationsHarness(this, firstFrame = firstFrame)
+            val manager = harness.context.getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(
+                NotificationChannel("calls", "Calls", NotificationManager.IMPORTANCE_HIGH),
+            )
+            started(harness)
+            assertFalse(shadowOf(manager).isChannelDeleted("calls"))
+
+            firstFrame.open()
+            runCurrent()
+
+            assertTrue(shadowOf(manager).isChannelDeleted("calls"))
         }
 
     @Test

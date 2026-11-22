@@ -68,6 +68,10 @@ class TdlibAuthRepository(
             }.map { state -> state.toAuthStep(receivedAt = firstSeen.markOf(state.timeoutPayload())) }
             .flowOn(dispatcher)
 
+    // The client sets authState as TDLib reports a step, before the update goes to the router and its subscribers.
+    override fun currentStep(): AuthStep =
+        client.authState.value.let { state -> state.toAuthStep(receivedAt = firstSeen.markOf(state.timeoutPayload())) }
+
     override suspend fun setPhoneNumber(phoneNumber: String): Outcome<Unit> =
         client
             .authRequest(TdApi.SetAuthenticationPhoneNumber(phoneNumber, phoneNumberAuthenticationSettings()))

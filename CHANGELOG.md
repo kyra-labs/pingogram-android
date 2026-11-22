@@ -111,6 +111,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
+  start-up work, so the app opens faster again.
 - A new wallpaper set for a chat shows as "You set a new wallpaper for this chat", "Alice set a new wallpaper for this
   chat" or "You set a new wallpaper for you and Alice", in the chat and in the chat list, instead of "Chat event".
 - While a chat's photo wallpaper loads, or if it cannot, the messages and the top bar show the chat's own colors

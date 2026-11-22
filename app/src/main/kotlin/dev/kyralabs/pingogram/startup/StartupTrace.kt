@@ -32,6 +32,14 @@ internal object StartupTrace {
      */
     const val READ_SETTINGS = "app.readSettings"
 
+    /**
+     * From the main view model's creation until each state the splash screen waits for is known: async sections
+     * ([SplashStateTrace]), so a trace shows which one it waited for.
+     */
+    const val LOGIN_KNOWN = "PG:loginKnown"
+    const val APPEARANCE_KNOWN = "PG:appearanceKnown"
+    const val LOCK_KNOWN = "PG:lockKnown"
+
     inline fun <T> section(
         name: String,
         block: () -> T,

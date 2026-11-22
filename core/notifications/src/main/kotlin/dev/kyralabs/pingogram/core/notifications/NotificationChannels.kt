@@ -160,7 +160,7 @@ enum class PingogramChannel(
  * Creates the [PingogramChannel]s, the one place that decides which exist (the notification settings of a later
  * milestone will add their per-chat channels here). Creating an existing channel changes only its name and
  * description, never what the user set, so [ensureCreated] runs at every start: a few binder calls, no disk access of
- * ours.
+ * ours. Deleting the channels nothing posts to any more ([deleteUnused]) can wait until after the first frame.
  *
  * Every account on the device has its message channels (`docs/adr/0031-multiple-accounts.md`); while more than one is
  * signed in, each account's are in a channel group of their own named after it, as Telegram's are, so the system
@@ -179,7 +179,7 @@ class NotificationChannels
 
         /**
          * The channels of the accounts in [slots], in channel groups named [names] (by slot) while it holds more than
-         * one account; deletes those of the slots that are gone.
+         * one account; [deleteUnused] deletes those of the slots that are gone.
          */
         fun ensureCreated(
             slots: List<Int>,
@@ -204,14 +204,30 @@ class NotificationChannels
                         listOf(channel(channel, channel.id, group = null))
                     }
                 }
-            manager.createNotificationChannelsCompat(channels)
-            OBSOLETE_CHANNELS.forEach(manager::deleteNotificationChannel)
-            for (gone in 1 until DeviceAccountLimits.MAX_ACCOUNTS_WITH_PREMIUM) {
-                if (gone in slots) continue
-                PingogramChannel.entries.filter { it.perAccount }.forEach {
-                    manager.deleteNotificationChannel(it.idFor(gone))
+            synchronized(this) {
+                manager.createNotificationChannelsCompat(channels)
+                createdFor = slots
+            }
+        }
+
+        /** The slots of the last [ensureCreated]; changed under this object's lock with the channels themselves. */
+        private var createdFor: List<Int> = listOf(0)
+
+        /**
+         * Deletes the obsolete channels and those of the slots the last [ensureCreated] did not name, with their
+         * groups: a binder call each, more than a dozen at every start, none of which the first frame needs.
+         */
+        fun deleteUnused() {
+            val manager = NotificationManagerCompat.from(context)
+            synchronized(this) {
+                OBSOLETE_CHANNELS.forEach(manager::deleteNotificationChannel)
+                for (gone in 1 until DeviceAccountLimits.MAX_ACCOUNTS_WITH_PREMIUM) {
+                    if (gone in createdFor) continue
+                    PingogramChannel.entries.filter { it.perAccount }.forEach {
+                        manager.deleteNotificationChannel(it.idFor(gone))
+                    }
+                    manager.deleteNotificationChannelGroup(groupId(gone))
                 }
-                manager.deleteNotificationChannelGroup(groupId(gone))
             }
         }
 

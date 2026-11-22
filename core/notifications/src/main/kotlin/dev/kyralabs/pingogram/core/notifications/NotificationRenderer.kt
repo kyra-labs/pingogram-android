@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.focus.FocusGate
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -99,12 +101,16 @@ class NotificationRenderer
 
         /**
          * Creates the channels and starts rendering; call once per process. Returns at once: both run on the
-         * application scope, off the main thread, the channels first.
+         * application scope, off the main thread, the channels first. Unused channels go after the first frame.
          */
         fun start() {
             scope.launch {
                 channels.ensureCreated()
                 accounts.collect(::follow)
+            }
+            scope.launch {
+                parts.firstFrame.await()
+                channelSlots.filterNotNull().collect { channels.deleteUnused() }
             }
         }
 
@@ -138,6 +144,9 @@ class NotificationRenderer
 
         private val list = MutableStateFlow<List<NotificationAccount>>(emptyList())
 
+        /** The slots whose channels [accountNames] made last; null before it did. */
+        private val channelSlots = MutableStateFlow<List<Int>?>(null)
+
         /**
          * The first names of the signed-in accounts while there are several, by slot (none with one), each change
          * also making the channels of the accounts on the device, grouped and named after them.
@@ -152,6 +161,7 @@ class NotificationRenderer
                 .map { (slots, signedIn) ->
                     val names = signedIn.takeIf { it.size > 1 }.orEmpty().toMap()
                     channels.ensureCreated(slots, names.mapValues { it.value.fullName })
+                    channelSlots.value = slots
                     names.mapValues { it.value.shortName }
                 }.distinctUntilChanged()
                 .shareIn(scope, SharingStarted.Eagerly, replay = 1)
@@ -223,6 +233,8 @@ internal class AccountNotificationParts
         val appearance: AppearanceRepository,
         @param:Dispatcher(IO) val ioDispatcher: CoroutineDispatcher,
         val focus: FocusGate,
+        /** Re-posting what TDLib restored waits for the first frame: it pushes conversation shortcuts. */
+        val firstFrame: FirstFrameGate,
     )
 
 /**
@@ -261,6 +273,7 @@ internal class AccountNotificationRenderer(
 ) {
     private val builder = parts.builder
     private val focus = parts.focus
+    private val firstFrame = parts.firstFrame
     private val shortcuts = parts.shortcuts.of(account.slot)
     private val factory =
         ConversationNotificationFactory(
@@ -407,9 +420,18 @@ internal class AccountNotificationRenderer(
         // A group seen first now, quietly: TDLib restoring the last run's groups.
         val restored = now.visible && previous == null && !alert
         when {
-            restored && earlier.isStillShown(group, accountName) -> Unit
-            now.visible -> post(group, alert)
-            previous?.visible == true -> manager.cancel(groupTag, group.id)
+            restored && earlier.isStillShown(group, accountName) -> {
+                return
+            }
+
+            now.visible -> {
+                if (restored) firstFrame.await()
+                post(group, alert)
+            }
+
+            previous?.visible == true -> {
+                manager.cancel(groupTag, group.id)
+            }
         }
     }
 
