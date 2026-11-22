@@ -69,6 +69,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- Scrolling a chat with a photo wallpaper is smoother.
 - The voice message button shows a sound wave instead of a microphone.
 - Over a wallpaper, the top bar follows your theme: a dark, strongly blurred bar in dark theme and a light one in light
   theme, whatever the photo's brightness.

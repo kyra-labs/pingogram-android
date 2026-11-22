@@ -311,6 +311,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   transparent or goes.
 - Targets in "Debug GPU overdraw": an empty page's background at most 2× (blue), rows and cards one
   layer above it (at most 3×), the system bars' areas no deeper than the page.
+- Over a photo wallpaper the photo is the page's layer, painted once per pixel: its dark-theme dim
+  and the top bar's wash are a color filter in its draw (`dimAndWashMatrix`), never rects over it, so
+  the messages' area and the bar are each the window plus one layer (blue). The bar's blurred copy
+  shows only behind the bar and the sheet's two rounded corners; under the opaque sheet it is clipped
+  out with rect clips (never a path, which the GPU turns into a mask every frame).
 - Nothing hidden keeps room or work: no empty slot laid out, no node at alpha 0, zero size or behind
   an opaque surface that still composes, measures, draws or animates.
 - Making a layer transparent keeps the pixels: goldens do not change. If one does, the layer showed
