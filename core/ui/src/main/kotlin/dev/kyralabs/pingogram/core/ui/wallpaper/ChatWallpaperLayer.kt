@@ -55,7 +55,10 @@ import kotlin.math.max
  * - A pattern takes the theme's colors as its fill (the theme-color wallpaper, else primary to tertiary) and shows in
  *   `onSurface` at its intensity; an inverted one shows in `primary` on `surfaceContainerLowest`.
  * - A fill draws its colors; a freeform gradient as a diagonal one through them.
- * - In dark theme a photo or a fill is dimmed by [darkThemeDimming] percent of `scrim`.
+ * - In dark theme a photo or a fill is dimmed by [darkThemeDimming] percent of `scrim`, then washed with [wash] where
+ *   it is specified (a conversation's top bar). Once a photo shows, both are a color filter in its one draw, so each
+ *   pixel of it is painted once (`docs/PERFORMANCE.md`, "Overdraw"); a fill, a pattern and a photo still loading get
+ *   them drawn over.
  * - [placeholder] is what the box would show without this wallpaper, e.g. a conversation's sheet's `surface`, so the
  *   window's color never shows through it; unspecified, nothing.
  * - In a [frame] it covers the frame's box, and this box shows its part of it ([WallpaperFrame]): a conversation's
@@ -73,11 +76,12 @@ fun ChatWallpaperLayer(
     frame: WallpaperFrame? = null,
     blurred: Boolean = false,
     placeholder: Color = Color.Unspecified,
+    wash: Color = Color.Unspecified,
 ) {
     // Blurred, a photo takes the bar's stronger blur and a pattern its fill alone: what shows behind a top bar.
     val motif = !(blurred && wallpaper is Wallpaper.Pattern)
     val data = wallpaper?.image?.takeIf { motif }?.let { TdlibFileImage(it.file.id) }
-    WallpaperLayer(wallpaper, darkThemeDimming, data, modifier, frame, placeholder, barBlur = blurred)
+    WallpaperLayer(wallpaper, darkThemeDimming, data, modifier, frame, placeholder, barBlur = blurred, wash = wash)
 }
 
 /**
@@ -100,7 +104,7 @@ fun PhotoPreviewWallpaperLayer(
 
 /**
  * [wallpaper] drawn with its image loaded from [data] (a [TdlibFileImage] or a local [File]); null for a fill. A photo
- * takes the top bar's stronger blur with [barBlur].
+ * takes the top bar's stronger blur with [barBlur]; [wash] goes over it all.
  */
 @Composable
 private fun WallpaperLayer(
@@ -111,6 +115,7 @@ private fun WallpaperLayer(
     frame: WallpaperFrame? = null,
     placeholder: Color = Color.Unspecified,
     barBlur: Boolean = false,
+    wash: Color = Color.Unspecified,
 ) {
     val colors = MaterialTheme.colorScheme
     val themeWallpaper = MaterialTheme.chatStyle.wallpaper
@@ -118,8 +123,8 @@ private fun WallpaperLayer(
     val painter = if (wallpaper != null && data != null) wallpaperPainter(wallpaper, data, window, barBlur) else null
     val dim = if (isDarkTheme()) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
     val look =
-        remember(wallpaper, colors, themeWallpaper, dim, placeholder) {
-            WallpaperLook(wallpaper, colors, themeWallpaper, dim, placeholder)
+        remember(wallpaper, colors, themeWallpaper, dim, placeholder, wash) {
+            WallpaperLook(wallpaper, colors, themeWallpaper, dim, placeholder, wash)
         }
     // In a frame, the wallpaper covers the frame and this box shows its part of it: where the box sits in the frame
     // is read after placement and in the draw phase only. Without one, it covers this box's width and the window's
@@ -203,7 +208,7 @@ internal fun wallpaperRequest(
 
 /**
  * How [wallpaper] draws with this theme's [colors], the [themeWallpaper] (else [placeholder]) under a photo until it is
- * drawn, and its [dim] of `scrim`.
+ * drawn, its [dim] of `scrim` and the [wash] over it.
  */
 private class WallpaperLook(
     private val wallpaper: Wallpaper?,
@@ -211,7 +216,12 @@ private class WallpaperLook(
     private val themeWallpaper: Brush?,
     private val dim: Float,
     private val placeholder: Color,
+    private val wash: Color,
 ) {
+    /** The dim and the wash as one filter on a photo's draw: the same pixels as drawing them over it. */
+    private val photoFilter: ColorFilter? =
+        dimAndWashMatrix(colors.scrim, dim, wash)?.let(ColorFilter::colorMatrix)
+
     /** What the box is filled with before any image, sized to it. */
     fun fill(size: Size): Brush? =
         when (wallpaper) {
@@ -242,16 +252,22 @@ private class WallpaperLook(
         painter: Painter?,
         area: Size,
         coverHeight: Float,
-    ): Unit =
+    ) {
+        // A photo is opaque and covers the area once drawn: its fill shows only until then, and its dim and wash are
+        // in its draw (photoFilter) rather than two more layers over all of it.
+        if (wallpaper is Wallpaper.Photo && painter != null && painter.hasImage()) {
+            scope.drawCover(painter, area, coverHeight, photoFilter)
+            return
+        }
         with(scope) {
-            // A photo is opaque and covers the area once drawn: its fill shows only until then.
-            val photoShows = wallpaper is Wallpaper.Photo && painter?.hasImage() == true
-            if (!photoShows) fill?.let { drawRect(it, size = area) }
+            fill?.let { drawRect(it, size = area) }
             if (painter != null) drawImage(painter, area, coverHeight)
             if (dim > 0f && (wallpaper is Wallpaper.Photo || wallpaper is Wallpaper.Fill)) {
                 drawRect(colors.scrim, size = area, alpha = dim)
             }
+            if (wash.isSpecified) drawRect(wash, size = area)
         }
+    }
 
     /** A photo as it is; a pattern tinted at its intensity, `onSurface` on the fill or `primary` when inverted. */
     private fun DrawScope.drawImage(
