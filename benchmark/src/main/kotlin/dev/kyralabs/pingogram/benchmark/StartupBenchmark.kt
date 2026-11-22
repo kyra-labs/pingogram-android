@@ -16,7 +16,8 @@ import org.junit.runner.RunWith
 /**
  * Cold and warm start of the launcher activity, the startup budgets in `docs/PERFORMANCE.md` §1, with the app's own
  * startup sections (§2): Hilt's injection of the application (`app.inject`, cold starts only), the activity's
- * `onCreate` (`main.onCreate`) and the wait for the settings behind the splash screen (`main.awaitSettings`).
+ * `onCreate` (`main.onCreate`), the wait for the settings behind the splash screen (`main.awaitSettings`), and when
+ * each state the splash screen waits for became known (`PG:loginKnown`, `PG:appearanceKnown`, `PG:lockKnown`).
  *
  * `CompilationNone` is the worst case, a fresh install with nothing precompiled. `BaselineProfile` is what users
  * get from the shipped Baseline Profile, so it fails until one has been generated (`:app:generateBaselineProfile`).
@@ -45,6 +46,7 @@ class StartupBenchmark {
             if (startupMode == StartupMode.COLD) add(TraceSectionMetric(APP_INJECT))
             add(TraceSectionMetric(ACTIVITY_CREATE))
             add(TraceSectionMetric(AWAIT_SETTINGS))
+            SPLASH_STATES.forEach { add(TraceSectionMetric(it)) }
         }
 
     private fun baselineProfile() = CompilationMode.Partial(BaselineProfileMode.Require)
@@ -74,3 +76,4 @@ class StartupBenchmark {
 private const val APP_INJECT = "app.inject"
 private const val ACTIVITY_CREATE = "main.onCreate"
 private const val AWAIT_SETTINGS = "main.awaitSettings"
+private val SPLASH_STATES = listOf("PG:loginKnown", "PG:appearanceKnown", "PG:lockKnown")

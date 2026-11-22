@@ -5,6 +5,7 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.SecretChatLinkPreviews
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -39,6 +40,8 @@ internal class NotificationsHarness(
     scope: TestScope,
     val client: FakeTdlibClient = FakeTdlibClient(),
     val slot: Int = 0,
+    /** Open, as after the first frame, unless a test holds it shut. */
+    val firstFrame: FirstFrameGate = FirstFrameGate().apply { open() },
 ) {
     val context: Application = RuntimeEnvironment.getApplication()
     private val dispatcher = StandardTestDispatcher(scope.testScheduler)
@@ -75,6 +78,7 @@ internal class NotificationsHarness(
             appearance = FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
             ioDispatcher = dispatcher,
             focus = focus,
+            firstFrame = firstFrame,
         )
 
     /** Whether each slot shows its notifications ("Notifications from all accounts"); every slot does at first. */

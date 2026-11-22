@@ -22,6 +22,12 @@ interface AuthRepository {
      */
     val authStep: Flow<AuthStep>
 
+    /**
+     * TDLib's current step, read at once, without waiting for [authStep]'s collectors or anything ahead of them. It
+     * skips steps, so it answers what the step is now (the splash screen asks), never how the steps went.
+     */
+    fun currentStep(): AuthStep
+
     /** Sends a login code to [phoneNumber] (international format, `+` and digits). Also changes the number. */
     suspend fun setPhoneNumber(phoneNumber: String): Outcome<Unit>
 

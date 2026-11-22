@@ -59,6 +59,16 @@ class TdlibAuthRepositoryTest {
         }
 
     @Test
+    fun `currentStep is TDLib's step as reported, before the update reaches the router`() =
+        runTest {
+            val repository = repository()
+            // The client set it; nothing has run the router or the dispatcher since.
+            client.authState.value = AuthState.Ready
+
+            assertEquals(AuthStep.Ready, repository.currentStep())
+        }
+
+    @Test
     fun `authStep ignores other updates`() =
         runTest {
             repository().authStep.test {

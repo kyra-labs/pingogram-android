@@ -34,6 +34,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.account.AccountMenuViewModel
 import dev.kyralabs.pingogram.account.AccountRestart
 import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
@@ -66,6 +67,7 @@ import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
 import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
 import dev.kyralabs.pingogram.startup.StartupTrace
+import dev.kyralabs.pingogram.startup.doOnFirstDraw
 import dev.kyralabs.pingogram.tile.FocusTile
 import dev.kyralabs.pingogram.ui.DemoFrame
 import dev.kyralabs.pingogram.ui.LockableApp
@@ -176,6 +178,10 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var accountRestart: AccountRestart
 
+    /** Holds back start-up work that can wait until the window drew its first frame. */
+    @Inject
+    lateinit var firstFrame: FirstFrameGate
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
@@ -220,6 +226,8 @@ class MainActivity : ComponentActivity() {
                     start(intent.takeIf { savedInstanceState == null })
                 }
             languageApplied = followAppLanguage()
+            // None draws while the splash screen holds the frames back.
+            window.decorView.doOnFirstDraw(firstFrame::open)
             setContent {
                 val appearance by viewModel.appearance.collectAsStateWithLifecycle()
                 val lock by viewModel.lock.collectAsStateWithLifecycle()

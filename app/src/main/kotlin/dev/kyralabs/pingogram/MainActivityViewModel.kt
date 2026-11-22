@@ -12,13 +12,20 @@ import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
+import dev.kyralabs.pingogram.startup.SplashStateTrace
+import dev.kyralabs.pingogram.startup.StartupTrace.APPEARANCE_KNOWN
+import dev.kyralabs.pingogram.startup.StartupTrace.LOCK_KNOWN
+import dev.kyralabs.pingogram.startup.StartupTrace.LOGIN_KNOWN
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
@@ -34,12 +41,13 @@ import kotlin.time.TimeSource
  */
 @HiltViewModel
 class MainActivityViewModel internal constructor(
-    authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
     appearanceRepository: AppearanceRepository,
     private val appLockRepository: AppLockRepository,
     passcodeRepository: PasscodeRepository,
     timeSource: TimeSource,
     private val chatLock: Lazy<ChatLockRepository>,
+    private val splashTrace: SplashStateTrace = SplashStateTrace.None,
 ) : ViewModel() {
     // The locked chats are the shown account's, which the account registry names; asked for when the app first leaves
     // the screen, not while the activity is made, so its creation never waits for the registry's file
@@ -58,14 +66,15 @@ class MainActivityViewModel internal constructor(
         passcodeRepository,
         TimeSource.Monotonic,
         lazy { chatLock.get() },
+        SplashStateTrace.Platform(),
     )
 
     private val createdAt = timeSource.markNow()
 
-    val uiState: StateFlow<MainActivityUiState> =
-        authRepository.authStep
-            .mapNotNull { it.toMainActivityUiState() }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, MainActivityUiState.Loading)
+    private val mutableUiState = MutableStateFlow<MainActivityUiState>(MainActivityUiState.Loading)
+
+    /** Whether the account is logged in, from the login steps or, for the splash screen, TDLib's current step. */
+    val uiState: StateFlow<MainActivityUiState> = mutableUiState.asStateFlow()
 
     /**
      * The Appearance settings, then every change; null until they are read, which takes a few milliseconds on the IO
@@ -80,6 +89,25 @@ class MainActivityViewModel internal constructor(
      * settings, from the same file), then whether the lock screen shows instead of the app (`REQUIREMENTS.md` FR-S1).
      */
     val lock: StateFlow<LockState> = appLockRepository.state
+
+    init {
+        listOf(LOGIN_KNOWN, APPEARANCE_KNOWN, LOCK_KNOWN).forEach(splashTrace::begin)
+        viewModelScope.launch {
+            authRepository.authStep.mapNotNull { it.toMainActivityUiState() }.collect { mutableUiState.value = it }
+        }
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            uiState.first { it != MainActivityUiState.Loading }
+            splashTrace.end(LOGIN_KNOWN)
+        }
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            appearance.first { it != null }
+            splashTrace.end(APPEARANCE_KNOWN)
+        }
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            lock.first { it != LockState.Unknown }
+            splashTrace.end(LOCK_KNOWN)
+        }
+    }
 
     /** Whether the app's content stays out of the recent apps: a passcode is set, with "Hide content" on. */
     val hideContent: StateFlow<Boolean> =
@@ -180,8 +208,17 @@ class MainActivityViewModel internal constructor(
      * unknown, but no longer than [SPLASH_SCREEN_TIMEOUT] after this view model was created (`docs/PERFORMANCE.md` §2).
      * After that, `PingogramApp` shows progress for a login state still unknown, and the window's background stands in
      * for settings still being read. The splash screen asks before every frame it holds back.
+     *
+     * While [AuthRepository.authStep] has not brought the login state, it takes TDLib's current step: the steps come
+     * through the update router and the `Default` dispatcher, which the rest of a cold start keeps busy. Only
+     * `Initializing`, which changes nothing, comes before TDLib's first step, so the steps that follow agree with it.
      */
     fun keepSplashScreen(): Boolean {
+        if (uiState.value == MainActivityUiState.Loading) {
+            authRepository.currentStep().toMainActivityUiState()?.let {
+                mutableUiState.compareAndSet(MainActivityUiState.Loading, it)
+            }
+        }
         val unknown =
             uiState.value == MainActivityUiState.Loading || appearance.value == null || lock.value == LockState.Unknown
         return unknown && createdAt.elapsedNow() < SPLASH_SCREEN_TIMEOUT

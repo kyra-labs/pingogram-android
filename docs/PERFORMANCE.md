@@ -30,8 +30,15 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 
 - `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber` and the
   Appearance settings are read from DataStore (a few ms), **or** 300 ms, whichever is first; then
-  render cached chats immediately. The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over the app's first
+  render cached chats immediately. The splash screen reads TDLib's current step (`AuthRepository.currentStep`), which
+  the client sets as TDLib reports it, rather than waiting for the login steps' flow, which comes through the update
+  router (§3) and `Default`, both busy at a cold start. Each state it waits for has an async trace section from the
+  main view model's creation until it is known (`PG:loginKnown`, `PG:appearanceKnown`, `PG:lockKnown`), which
+  `StartupBenchmark` reports. The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over the app's first
   frame and holds nothing back; the splash theme for the next start is handed to the system off the main thread.
+- Start-up binder calls the first frame does not need wait until the window drew it (`FirstFrameGate`; 3 s in a
+  process that shows no activity): deleting the notification channels of accounts that left the device, and posting
+  again, with its conversation shortcut, a restored notification Android no longer shows.
 - Hilt: `@Singleton` only for `TdlibClient`, repositories and DataStore; everything else
   scoped. No heavy work in `Application.onCreate()`; use `App Startup` initializers that are
   lazy except TDLib. WorkManager starts on demand (its App Startup initializer is removed; `PingogramApplication` is
