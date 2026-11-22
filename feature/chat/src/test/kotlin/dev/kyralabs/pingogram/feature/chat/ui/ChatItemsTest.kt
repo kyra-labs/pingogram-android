@@ -177,7 +177,10 @@ class ChatItemsTest : ChatViewModelHarness() {
                 )
 
             val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
-            assertEquals(res(UiR.string.preview_you_set_wallpaper_for_both, UiText.Plain("\u2068Ada\u2069")), service.text)
+            assertEquals(
+                res(UiR.string.preview_you_set_wallpaper_for_both, UiText.Plain("\u2068Ada\u2069")),
+                service.text,
+            )
         }
 
     @Test
