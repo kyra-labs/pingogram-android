@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
+import dev.kyralabs.pingogram.core.ui.theme.fillSeed
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
@@ -14,6 +15,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.MEDIUM
 import dev.kyralabs.pingogram.feature.settings.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.settings.ui.captureScreen
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,8 +24,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the wallpaper page: the account's in light and dark theme (dark with its dimming), a chat's with a pick
- * waiting for Apply, while the wallpapers load and when they cannot, and the audit's looks (AMOLED, high contrast,
- * right to left, a medium window, twice the font size).
+ * waiting for Apply, the whole page in the pick's colors, while the wallpapers load and when they cannot, and the
+ * audit's looks (AMOLED, high contrast, right to left, a medium window, twice the font size).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -86,7 +88,14 @@ class WallpaperPageScreenshotTest {
 
     @Composable
     private fun Screen(state: WallpaperPageUiState) {
-        WallpaperPageScreen(state = state, onEvent = {}, onPickPhoto = {}, onApply = {}, onBack = {})
+        WallpaperPageScreen(
+            state = state,
+            onEvent = {},
+            onPickPhoto = {},
+            onApply = {},
+            onBack = {},
+            colorsDispatcher = Dispatchers.Unconfined,
+        )
     }
 
     private companion object {
@@ -103,6 +112,7 @@ class WallpaperPageScreenshotTest {
                         installed = Installed,
                         pending = WallpaperChoice.Existing(FILL),
                     ),
+                seed = fillSeed(FILL.colors.map { it or (0xFF shl 24) }),
             )
 
         fun account(dark: Boolean) =

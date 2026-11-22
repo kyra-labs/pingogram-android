@@ -45,11 +45,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageFrame
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -111,7 +114,8 @@ internal fun WallpaperPageRoute(
  * The wallpaper page (ADR 0041, `docs/DESIGN_SYSTEM.md` §6 "Wallpaper"): back, "Wallpaper" or "Wallpaper for <name>"
  * and Apply (disabled until something changed; for a chat it asks whom for, [WallpaperApplySheet]) in the top bar;
  * the large live preview ([WallpaperPagePreview]) and "Reset to default"; then a panel with the options
- * ([WallpaperOptions]) and the wallpapers' grid ([wallpaperGrid]), in one lazy grid.
+ * ([WallpaperOptions]) and the wallpapers' grid ([wallpaperGrid]), in one lazy grid. All of it in the colors of the
+ * wallpaper it previews ([WallpaperColorsTheme], its scheme made on [colorsDispatcher]).
  */
 @Composable
 internal fun WallpaperPageScreen(
@@ -122,6 +126,7 @@ internal fun WallpaperPageScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    colorsDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     // A chat's Apply asks whom it is for first (WallpaperApplySheet); the account's applies at once.
     var choosing by rememberSaveable { mutableStateOf(false) }
@@ -131,31 +136,34 @@ internal fun WallpaperPageScreen(
             state.chat == null -> stringResource(R.string.settings_chat_wallpaper_title)
             else -> stringResource(R.string.settings_wallpaper_title_chat, state.chat.title)
         }
-    SettingsPageFrame(
-        title = title,
-        onBack = onBack,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        actions = {
-            Button(onClick = { if (state.isChat) choosing = true else onApply(false) }, enabled = state.canApply) {
-                Text(stringResource(R.string.settings_chat_wallpaper_apply))
-            }
-        },
-    ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()), Alignment.TopCenter) {
-            WallpaperPageGrid(state, innerPadding, onEvent, onPickPhoto)
-        }
-    }
-    if (choosing) {
-        WallpaperApplySheet(
-            chatName = state.chat?.title,
-            canSetForBoth = state.canSetForBoth,
-            onApply = { forBoth ->
-                choosing = false
-                onApply(forBoth)
+    // The whole page, its sheet included, takes the colors of the wallpaper it previews, cross-fading as they change.
+    WallpaperColorsTheme(state.seed, colorsDispatcher) {
+        SettingsPageFrame(
+            title = title,
+            onBack = onBack,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            actions = {
+                Button(onClick = { if (state.isChat) choosing = true else onApply(false) }, enabled = state.canApply) {
+                    Text(stringResource(R.string.settings_chat_wallpaper_apply))
+                }
             },
-            onDismiss = { choosing = false },
-        )
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()), Alignment.TopCenter) {
+                WallpaperPageGrid(state, innerPadding, onEvent, onPickPhoto)
+            }
+        }
+        if (choosing) {
+            WallpaperApplySheet(
+                chatName = state.chat?.title,
+                canSetForBoth = state.canSetForBoth,
+                onApply = { forBoth ->
+                    choosing = false
+                    onApply(forBoth)
+                },
+                onDismiss = { choosing = false },
+            )
+        }
     }
 }
 

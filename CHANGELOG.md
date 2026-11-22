@@ -11,11 +11,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Added
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
-  of the conversation in the colors it will take from the wallpaper, your theme's colors and Telegram's wallpapers and
-  patterns in one grid, "Choose a photo" (sharp at your screen's size), blur for photos and dimming in dark theme (30%
-  to start). Nothing changes until you tap Apply, and "Reset to default" goes back to your theme's colors. Your
-  account's wallpaper is saved to your Telegram account for light and dark theme apart, so your other Telegram apps
-  show it too; a chat's is for you or, with Telegram Premium, for both of you.
+  of the conversation, the whole page in the colors the conversation will take from the wallpaper you pick, your
+  theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp at your screen's size),
+  blur for photos and dimming in dark theme (30% to start). Nothing changes until you tap Apply, and "Reset to
+  default" goes back to your theme's colors. Your account's wallpaper is saved to your Telegram account for light and
+  dark theme apart, so your other Telegram apps show it too; a chat's is for you or, with Telegram Premium, for both
+  of you.
 - A chat with a photo or a colors wallpaper takes its colors from it: bubbles, links, the message box and its buttons
   match the wallpaper, in light and dark theme and with high contrast. Other chats keep your color theme.
 - Make story albums on your own profile: Stories → New album, name it, pick its stories. In your own album, the ⋮ menu
