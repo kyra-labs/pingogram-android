@@ -1621,4 +1621,8 @@
         <item quantity="many">%1$d de cosas que cualquiera en Telegram puede ver</item>
         <item quantity="other">%1$d cosas que cualquiera en Telegram puede ver</item>
     </plurals>
+    <string name="settings_color_theme_pingogram" translatable="false"></string>
+    <string name="settings_about_app_name" translatable="false"></string>
+    <string name="settings_color_theme_status"></string>
+    <string name="settings_proxy_address" translatable="false"></string>
 </resources>
