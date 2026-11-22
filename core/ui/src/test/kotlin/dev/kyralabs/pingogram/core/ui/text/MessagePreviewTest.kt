@@ -200,6 +200,20 @@ class MessagePreviewTest {
     // Service messages
 
     @Test
+    fun aNewWallpaperNamesWhoSetItAndWhomItIsFor() {
+        val forMe = ServiceAction.WallpaperSet(onlyForSelf = true)
+        val forBoth = ServiceAction.WallpaperSet(onlyForSelf = false)
+        val mineForBoth = message(MessageContent.Service(forBoth), MessageSender.User(ME), true).copy(chatId = BOB)
+
+        assertEquals("You set a new wallpaper for this chat", service(forMe, MessageSender.User(ME), true))
+        assertEquals("\u2068Alice\u2069 set a new wallpaper for this chat", service(forBoth))
+        assertEquals(
+            "You set a new wallpaper for you and \u2068Bob\u2069",
+            messagePreviewText(mineForBoth, ME, ::name).resolve(resources),
+        )
+    }
+
+    @Test
     fun serviceMessagesNameTheirSenderOrYou() {
         assertEquals("\u2068Alice\u2069 joined the group", service(ServiceAction.MemberJoined))
         assertEquals("You joined the group", service(ServiceAction.MemberJoined, MessageSender.User(ME), true))

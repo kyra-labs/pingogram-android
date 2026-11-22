@@ -76,6 +76,15 @@ class ServiceActionMappersTest {
     }
 
     @Test
+    fun `a new wallpaper for the chat keeps whether it is for the sender alone`() {
+        val forSelf = TdApi.MessageChatSetBackground(0, TdApi.ChatBackground(null, 30), true).action()
+        val forBoth = TdApi.MessageChatSetBackground(5, TdApi.ChatBackground(null, 0), false).action()
+
+        assertEquals(ServiceAction.WallpaperSet(onlyForSelf = true), forSelf)
+        assertEquals(ServiceAction.WallpaperSet(onlyForSelf = false), forBoth)
+    }
+
+    @Test
     fun `forum topic events map to their action, not to another event`() {
         val actions =
             listOf(
@@ -292,6 +301,7 @@ class ServiceActionMappersTest {
                 "MessageInviteVideoChatParticipants",
                 "MessageChatSetMessageAutoDeleteTime",
                 "MessageContactRegistered",
+                "MessageChatSetBackground",
                 "MessageCustomServiceAction",
                 "MessageChecklistTasksDone",
                 "MessageChecklistTasksAdded",

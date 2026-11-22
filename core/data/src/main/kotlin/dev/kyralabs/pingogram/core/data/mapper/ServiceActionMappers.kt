@@ -43,6 +43,10 @@ internal fun TdApi.MessageContent.toServiceAction(
             ServiceAction.PhotoDeleted
         }
 
+        is TdApi.MessageChatSetBackground -> {
+            ServiceAction.WallpaperSet(onlyForSelf)
+        }
+
         // A user who joins a public group adds themselves.
         is TdApi.MessageChatAddMembers -> {
             if (memberUserIds.singleOrNull() == sender.userId) {
@@ -190,7 +194,6 @@ internal val OTHER_SERVICE_CONTENTS: Set<Class<out TdApi.MessageContent>> =
         TdApi.MessageChatOwnerChanged::class.java,
         TdApi.MessageChatOwnerLeft::class.java,
         TdApi.MessageChatRemovedFromCommunity::class.java,
-        TdApi.MessageChatSetBackground::class.java,
         TdApi.MessageChatSetTheme::class.java,
         TdApi.MessageChatShared::class.java,
         TdApi.MessageDirectMessagePriceChanged::class.java,
