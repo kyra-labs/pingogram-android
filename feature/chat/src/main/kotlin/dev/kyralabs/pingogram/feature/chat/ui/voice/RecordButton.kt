@@ -88,7 +88,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The composer's microphone in the send button's place while the field is empty (`docs/DESIGN_SYSTEM.md` §6
- * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `tertiaryContainer`,
+ * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `primaryContainer`,
  * which morphs into a wide `primary` pill while it records, its icon giving way to a
  * [LinearWavyProgressIndicator] whose waves rise and fall with the voice ([RecordingMeter.level]); locked, the pill
  * sends. Its colors cross-fade on the motion scheme's effects spring. Switched to round video messages
@@ -192,7 +192,7 @@ private fun recordInputOf(
 }
 
 /**
- * The record button's colors (M-034): `tertiaryContainer` while it is the microphone or the camera ([mic]), `primary`
+ * The record button's colors (M-034): `primaryContainer` while it is the microphone or the camera ([mic]), `primary`
  * while it records, its container cross-fading on the motion scheme's default effects spring. The fade is read in the
  * draw phase ([fadingContainer]), so it recomposes nothing: the button draws its own container at rest (with its press
  * morph) and a transparent one while the fade runs, which this draws behind it in the button's resting shape instead.
@@ -226,14 +226,14 @@ private class RecordButtonColors(
 @Composable
 private fun rememberRecordButtonColors(mic: Boolean): RecordButtonColors {
     val colorScheme = MaterialTheme.colorScheme
-    val target = if (mic) colorScheme.tertiaryContainer else colorScheme.primary
+    val target = if (mic) colorScheme.primaryContainer else colorScheme.primary
     val container =
         animateColorAsState(
             targetValue = target,
             animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
             label = "recordButtonContainer",
         )
-    val micContent = colorScheme.onTertiaryContainer
+    val micContent = colorScheme.onPrimaryContainer
     val recordingContent = colorScheme.onPrimary
     return remember(mic, container, target, micContent, recordingContent) {
         RecordButtonColors(mic, container, target, micContent, recordingContent)

@@ -101,6 +101,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberRecordDrag
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
+import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 
 /**
  * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, FR-C6, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where
@@ -460,8 +461,8 @@ private fun ComposerPill(
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
     val hasText = canSend.value
-    // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerHigh, the attach "+" a primary circle followed by the
-    // camera, no gallery button (the attach menu's first option).
+    // `docs/DESIGN_SYSTEM.md` §13.5: the pill on surfaceContainerLow in dark theme (surfaceContainerHigh in light), the
+    // attach "+" and the camera plain icons, no gallery button (the attach menu's first option).
     ComposerField(
         text = text,
         onSend = onSend,
@@ -469,7 +470,8 @@ private fun ComposerPill(
         onFocusChanged = onFocusChanged,
         modifier = modifier.focusRequester(focusRequester),
         placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor =
+            if (isDarkTheme()) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainerHigh,
         leadingIcons = pillLeadingIcons(composer, hasText, attach, bots.onMenu),
         trailingIcons = {
             botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }

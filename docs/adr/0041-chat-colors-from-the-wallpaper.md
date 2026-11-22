@@ -31,8 +31,9 @@ Compose's `dynamicColorScheme` only reads the system's result. Pingogram already
    `SchemeContent` palettes (spec 2021, as the color themes), which keep the colors close to the image, for light and
    dark theme and the three contrast levels, with its containers at the standard tones, 30 in dark and 90 in light,
    rather than the seed's own: a bright wallpaper gives deep containers in dark theme (owner decision 2026-11-22).
-   AMOLED applies on top as it does to every scheme. A chat without a wallpaper
-   keeps today's colors exactly.
+   AMOLED applies on top as it does to every scheme. A chat without a wallpaper takes the same roles from the color
+   theme's scheme (outgoing bubbles and the send button in `primaryContainer`, incoming bubbles in
+   `surfaceContainerLow`; owner decision 2026-11-22), so a chat looks the same family everywhere.
 3. **Port MCU, no new dependency.** The rest of MCU 0.4.0 that this needs is ported to Kotlin in `core:ui`, next to
    `Harmonize.kt`: HCT (with the analytic solver), the Celebi quantizer (Wu, then weighted k-means) and Score, tonal
    palettes, the dislike analyzer, the temperature cache, contrast, and dynamic colors with the 2021 spec's roles

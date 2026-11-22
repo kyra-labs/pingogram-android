@@ -109,7 +109,7 @@ internal fun pingogramColors(
                 colorScheme = colorScheme,
                 roles =
                     BubbleRoles(
-                        container = colorScheme.surfaceContainerHigh,
+                        container = colorScheme.surfaceContainerLow,
                         content = colorScheme.onSurface,
                         secondaryContent = colorScheme.onSurfaceVariant,
                         block = colorScheme.surfaceContainerHighest,

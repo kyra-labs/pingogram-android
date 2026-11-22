@@ -35,6 +35,8 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
+import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.MaterialTheme
 
 // The buttons of the composer: sending, with its menu of other ways to send, saving an edit, and those in the pill.
 
@@ -76,6 +78,7 @@ internal fun SendButton(
                     .semantics { customActions = actions },
             enabled = enabled,
             shapes = sendShapes(),
+            colors = composerActionColors(),
         ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
@@ -191,6 +194,7 @@ internal fun SaveEditButton(onSave: () -> Unit) {
         onClick = onSave,
         modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
         shapes = composerActionShapes(),
+        colors = composerActionColors(),
     ) {
         Icon(
             painter = painterResource(UiR.drawable.ic_check),
@@ -247,3 +251,14 @@ internal fun SendOptionsMenu(
 
 /** The send button, for `benchmark/`'s journeys. */
 internal const val SEND_BUTTON_TEST_TAG = "composer_send"
+
+/**
+ * The composer's round button (send, save an edit, and the microphone or camera at rest): `primaryContainer` with
+ * `onPrimaryContainer`, a deep container with a light icon in dark theme (owner decision 2026-11-22).
+ */
+@Composable
+internal fun composerActionColors(): IconButtonColors =
+    IconButtonDefaults.filledIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    )
