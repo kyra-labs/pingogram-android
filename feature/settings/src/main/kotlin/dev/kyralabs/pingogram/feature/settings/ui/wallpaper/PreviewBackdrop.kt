@@ -23,20 +23,18 @@ import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarColors
-import dev.kyralabs.pingogram.core.ui.theme.WallpaperBarTheme
+import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.wallpaperBarColors
 import dev.kyralabs.pingogram.core.ui.wallpaper.WallpaperFrame
-import dev.kyralabs.pingogram.core.ui.wallpaper.rememberPhotoTopLuminance
-import dev.kyralabs.pingogram.core.ui.wallpaper.rememberWallpaperTopLuminance
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * How the preview's top bar shows over a Telegram wallpaper or a picked photo (`docs/DESIGN_SYSTEM.md` §13.5), as the
- * conversation's does: the wallpaper of [frame], the preview, blurred, in the scheme of its top's brightness ([bar]).
+ * conversation's does: the wallpaper of [frame], the preview, blurred under the theme's washed surface ([bar]).
  */
 @Immutable
 internal class PreviewBackdrop(
@@ -46,7 +44,7 @@ internal class PreviewBackdrop(
 
 /**
  * The preview's [PreviewBackdrop] in [frame]; null where it shows no Telegram wallpaper nor a picked photo (a
- * theme-color one), which keeps the bar on `surfaceContainer`. Until a photo's top is measured, the theme's own.
+ * theme-color one), which keeps the bar on `surfaceContainer`.
  */
 @Composable
 internal fun rememberPreviewBackdrop(
@@ -54,21 +52,15 @@ internal fun rememberPreviewBackdrop(
     frame: WallpaperFrame,
 ): PreviewBackdrop? {
     val picked = state.picker.pending as? WallpaperChoice.NewPhoto
-    val luminance =
-        if (picked != null) {
-            rememberPhotoTopLuminance(picked.path, state.dimming)
-        } else {
-            rememberWallpaperTopLuminance(state.previewedWallpaper, state.dimming)
-        }
-    val bar = wallpaperBarColors(luminance ?: if (isDarkTheme()) 0f else 1f)
+    val bar = wallpaperBarColors(isDarkTheme())
     val shown = picked != null || state.previewedWallpaper != null
     return remember(shown, frame, bar) { if (shown) PreviewBackdrop(frame, bar) else null }
 }
 
 /**
  * The preview's top bar: back, the chat's photo and name, or a sample's for the account's wallpaper. Over a
- * [backdrop], the wallpaper blurred and washed behind it, drawn in its bounds only, and its colors in the scheme of
- * the wallpaper's top and the wallpaper's own ([WallpaperPageUiState.seed]); else on `surfaceContainer`.
+ * [backdrop], the wallpaper blurred and washed behind it, drawn in its bounds only, in the wallpaper's colors
+ * ([WallpaperPageUiState.seed]); else on `surfaceContainer`.
  */
 @Composable
 internal fun PreviewTopBar(
@@ -89,7 +81,7 @@ internal fun PreviewTopBar(
             frame = backdrop.frame,
             blurred = true,
         )
-        WallpaperBarTheme(backdrop.bar, state.seed) {
+        WallpaperColorsTheme(state.seed) {
             Spacer(Modifier.matchParentSize().background(backdrop.bar.wash()))
             PreviewTopBarRow(state.chat, Color.Transparent)
         }

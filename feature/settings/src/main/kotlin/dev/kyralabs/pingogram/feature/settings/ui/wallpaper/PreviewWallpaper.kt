@@ -24,7 +24,7 @@ internal fun PreviewWallpaper(
 ) {
     when (pending) {
         is WallpaperChoice.NewPhoto -> {
-            PhotoPreviewWallpaperLayer(pending.path, blurred || pending.isBlurred, dimming, modifier, frame)
+            PhotoPreviewWallpaperLayer(pending.path, pending.isBlurred, dimming, modifier, frame, blurred)
         }
 
         is WallpaperChoice.Existing -> {

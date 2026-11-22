@@ -74,17 +74,16 @@ fun ChatWallpaperLayer(
     blurred: Boolean = false,
     placeholder: Color = Color.Unspecified,
 ) {
-    // Blurred, a photo takes WallpaperBlur and a pattern its fill alone: what shows behind a conversation's top bar.
-    val shown = if (blurred && wallpaper is Wallpaper.Photo) wallpaper.copy(isBlurred = true) else wallpaper
+    // Blurred, a photo takes the bar's stronger blur and a pattern its fill alone: what shows behind a top bar.
     val motif = !(blurred && wallpaper is Wallpaper.Pattern)
-    val data = shown?.image?.takeIf { motif }?.let { TdlibFileImage(it.file.id) }
-    WallpaperLayer(shown, darkThemeDimming, data, modifier, frame, placeholder)
+    val data = wallpaper?.image?.takeIf { motif }?.let { TdlibFileImage(it.file.id) }
+    WallpaperLayer(wallpaper, darkThemeDimming, data, modifier, frame, placeholder, barBlur = blurred)
 }
 
 /**
  * The photo at [path] on this device, not uploaded yet, as [ChatWallpaperLayer] draws a photo wallpaper: what the
  * wallpaper picker shows before the user applies it. Blurred with [isBlurred], dimmed by [darkThemeDimming] in dark
- * theme.
+ * theme; [blurred], with the stronger blur a top bar shows ([ChatWallpaperLayer]).
  */
 @Composable
 fun PhotoPreviewWallpaperLayer(
@@ -93,12 +92,16 @@ fun PhotoPreviewWallpaperLayer(
     darkThemeDimming: Int,
     modifier: Modifier = Modifier,
     frame: WallpaperFrame? = null,
+    blurred: Boolean = false,
 ) {
     val photo = remember(isBlurred) { Wallpaper.Photo(PREVIEW_ID, PREVIEW_IMAGE, isBlurred) }
-    WallpaperLayer(photo, darkThemeDimming, File(path), modifier, frame)
+    WallpaperLayer(photo, darkThemeDimming, File(path), modifier, frame, barBlur = blurred)
 }
 
-/** [wallpaper] drawn with its image loaded from [data] (a [TdlibFileImage] or a local [File]); null for a fill. */
+/**
+ * [wallpaper] drawn with its image loaded from [data] (a [TdlibFileImage] or a local [File]); null for a fill. A photo
+ * takes the top bar's stronger blur with [barBlur].
+ */
 @Composable
 private fun WallpaperLayer(
     wallpaper: Wallpaper?,
@@ -107,11 +110,12 @@ private fun WallpaperLayer(
     modifier: Modifier,
     frame: WallpaperFrame? = null,
     placeholder: Color = Color.Unspecified,
+    barBlur: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     val themeWallpaper = MaterialTheme.chatStyle.wallpaper
     val window = LocalWindowInfo.current.containerSize
-    val painter = if (wallpaper != null && data != null) wallpaperPainter(wallpaper, data, window) else null
+    val painter = if (wallpaper != null && data != null) wallpaperPainter(wallpaper, data, window, barBlur) else null
     val dim = if (isDarkTheme()) darkThemeDimming.coerceIn(0, PERCENT) / PERCENT_F else 0f
     val look =
         remember(wallpaper, colors, themeWallpaper, dim, placeholder) {
@@ -163,21 +167,25 @@ private fun wallpaperPainter(
     wallpaper: Wallpaper,
     data: Any,
     window: IntSize,
+    barBlur: Boolean,
 ): Painter {
     val context = LocalPlatformContext.current
-    val request = remember(wallpaper, data, window) { wallpaperRequest(context, wallpaper, data, window) }
+    val request =
+        remember(wallpaper, data, window, barBlur) { wallpaperRequest(context, wallpaper, data, window, barBlur) }
     return rememberAsyncImagePainter(request)
 }
 
 /**
  * Coil's request for [wallpaper]'s image from [data] at [size] (the window's), filling it: a vector pattern through
- * [VectorPatternDecoder], a blurred photo through [WallpaperBlur].
+ * [VectorPatternDecoder], a blurred photo through [WallpaperBlur], and with [barBlur] through the top bar's stronger
+ * [WallpaperBlur.Bar].
  */
 internal fun wallpaperRequest(
     context: PlatformContext,
     wallpaper: Wallpaper,
     data: Any,
     size: IntSize,
+    barBlur: Boolean = false,
 ): ImageRequest =
     ImageRequest
         .Builder(context)
@@ -186,7 +194,11 @@ internal fun wallpaperRequest(
         .scale(Scale.FILL)
         .apply {
             if (wallpaper.image?.isVector == true) decoderFactory(VectorPatternDecoder.Factory())
-            if (wallpaper is Wallpaper.Photo && wallpaper.isBlurred) transformations(WallpaperBlur)
+            if (wallpaper is Wallpaper.Photo && barBlur) {
+                transformations(WallpaperBlur.Bar)
+            } else if (wallpaper is Wallpaper.Photo && wallpaper.isBlurred) {
+                transformations(WallpaperBlur.Photo)
+            }
         }.build()
 
 /**

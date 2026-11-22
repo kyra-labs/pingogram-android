@@ -69,6 +69,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- Over a wallpaper, the top bar follows your theme: a dark, strongly blurred bar in dark theme and a light one in light
+  theme, whatever the photo's brightness.
 - Messages you receive sit on a darker, quieter bubble, and the message box is calmer: a plain "+" and camera, and
   the send and microphone button in a deep shade of the chat's color.
 - In a chat with a wallpaper, your bubbles and the colored buttons take a deep shade of the wallpaper's color instead

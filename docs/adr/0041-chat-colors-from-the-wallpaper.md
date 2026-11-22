@@ -45,12 +45,14 @@ Compose's `dynamicColorScheme` only reads the system's result. Pingogram already
    It is kept on the device, keyed by the Telegram background's id, and backed up with the other wallpaper settings,
    so opening a chat never quantizes an image. A fill takes its seed from its colors, which needs no image; a pattern
    is drawn in the theme's colors and keeps the theme's.
-5. **A blurred top bar, blurred once.** The conversation's wallpaper fills the screen, behind the status bar. The top
-   bar shows the wallpaper's top slice blurred; the blur is computed once, at the screen's size, when the wallpaper
-   is drawn the first time, and cached, on every Android version. There is no live backdrop blur: `RenderEffect`
-   exists only from Android 12 and blurs on every frame. The messages scroll in a rounded container below the bar,
-   never under it. The composer floats as a solid pill over the wallpaper. The status bar's icons are light or dark
-   from the brightness of the wallpaper's top.
+5. **A blurred top bar, blurred once.** The conversation's wallpaper fills the screen, behind the status bar and under
+   the navigation bar. The top bar shows the wallpaper's top slice under a strong blur, computed once, at the screen's
+   size, when the wallpaper is drawn the first time, and cached, on every Android version. There is no live backdrop
+   blur: `RenderEffect` exists only from Android 12 and blurs on every frame. The bar follows the theme, not the
+   wallpaper's brightness (owner decision 2026-11-22): the theme's `surface` is washed over the blur, a dark scrim in
+   dark theme and a light one in light theme, and the title, its icons and the status bar's icons are the theme's
+   `onSurface`. The messages scroll in a rounded container below the bar, never under it. The composer floats over
+   the messages: only the pill and its button are drawn, in every chat.
 
 ## Consequences
 
