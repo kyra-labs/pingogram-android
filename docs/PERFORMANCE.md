@@ -431,7 +431,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   generate and benchmark commands; without it Gradle uninstalls the app after the run and the next
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
-  `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+  `MainActivity` shows as resource ids (`testTagsAsResourceId`). Whatever state the app was left in, the journeys
+  run the same: they show Saved Messages on "All" (its "All" tab and tag chip, `SavedJourneys.kt`) before they
+  scroll it or tap its Bookmarks card, fling a conversation only where its messages show (clear of the composer
+  floating over the list's end), tap the card below the tabs and tags that grow in above it, and never press back
+  while the chat list shows.
 - Catch-up and the Bookmarks page (`benchmark/.../ToolJourneys.kt`, 2026-11-16) read no chat either: Catch-up shows
   the unread chats without marking them, and the journeys step through its cards with "Skip" only (never "Mark as
   read", "Reply in place" or "Open chat"); the Bookmarks page opens from Saved Messages' card. The Baseline Profile's
