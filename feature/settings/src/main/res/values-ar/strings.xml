@@ -1757,4 +1757,12 @@
     <string name="backup_restored_other_account">تمت الاستعادة. وتبقى بيانات حساب آخر في النسخة الاحتياطية.</string>
     <string name="backup_restore_newer">هذه النسخة الاحتياطية من إصدار أحدث من Pingogram. حدّث التطبيق لاستعادتها.</string>
     <string name="backup_restore_not_backup">هذا الملف ليس نسخة احتياطية من Pingogram، أو أنه تالف.</string>
+    <plurals name="settings_privacy_checkup_what">
+        <item quantity="zero">%1$d أشياء يمكن لأي شخص على Telegram رؤيتها</item>
+        <item quantity="one">%1$d شيء يمكن لأي شخص على Telegram رؤيته</item>
+        <item quantity="two">%1$d شيئان يمكن لأي شخص على Telegram رؤيتهما</item>
+        <item quantity="few">%1$d أشياء يمكن لأي شخص على Telegram رؤيتها</item>
+        <item quantity="many">%1$d شيئًا يمكن لأي شخص على Telegram رؤيته</item>
+        <item quantity="other">%1$d شيء يمكن لأي شخص على Telegram رؤيته</item>
+    </plurals>
 </resources>
