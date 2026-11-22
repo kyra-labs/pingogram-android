@@ -1663,4 +1663,10 @@
     <string name="backup_restored_other_account">Восстановлено. Данные другого аккаунта остаются в копии.</string>
     <string name="backup_restore_newer">Эта копия создана в более новой версии Pingogram. Обновите приложение, чтобы восстановить её.</string>
     <string name="backup_restore_not_backup">Этот файл не является копией Pingogram или повреждён.</string>
+    <plurals name="settings_privacy_checkup_what">
+        <item quantity="one">%1$d элемент, видимый всем в Telegram</item>
+        <item quantity="few">%1$d элемента, видимых всем в Telegram</item>
+        <item quantity="many">%1$d элементов, видимых всем в Telegram</item>
+        <item quantity="other">%1$d элементов, видимых всем в Telegram</item>
+    </plurals>
 </resources>
