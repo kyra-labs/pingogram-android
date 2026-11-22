@@ -257,7 +257,7 @@ private enum class ButtonFace {
     Send,
 }
 
-/** The microphone or camera icon, the wavy level of the voice in [meter], or the send icon of a [video] message. */
+/** The voice face (`graphic_eq`) or the camera, the wavy level of the voice in [meter], or a [video] message's send. */
 @Composable
 private fun RecordButtonFace(
     face: ButtonFace,
@@ -274,7 +274,7 @@ private fun RecordButtonFace(
                         ) {
                             R.drawable.ic_videocam_filled
                         } else {
-                            UiR.drawable.ic_mic_filled
+                            UiR.drawable.ic_graphic_eq
                         },
                     ),
                 contentDescription = null,
