@@ -29,8 +29,9 @@ import kotlin.time.Duration.Companion.minutes
 /**
  * [WallpaperRepository] on TDLib (`docs/TDLIB.md` "Backgrounds"): two [TdlibUpdateCache] stores, the account's
  * wallpapers from `updateDefaultBackground` (sent for both themes at start and on every change) and the chats' own from
- * `updateNewChat` and `updateChatBackground`, holding only the chats that have one. A change also applies TDLib's
- * answer at once, so the picker does not wait for the update.
+ * `updateNewChat`, `updateChatBackground` and each new `messageChatSetBackground`, holding only the chats that have
+ * one. A change also applies what is known at once (TDLib's answer, or a wallpaper already on Telegram), so the page
+ * and the conversation do not wait for an update.
  */
 @AccountScoped
 class TdlibWallpaperRepository
@@ -79,7 +80,12 @@ class TdlibWallpaperRepository
             val dimming = darkThemeDimming.coerceIn(0, MAX_DIMMING)
             return client
                 .request(TdApi.SetChatBackground(chatId, input, type, dimming, onlyForSelf), choice.timeout())
-                .map {}
+                .map {
+                    // TDLib answers only Ok, and announces the new background with the chat's service message
+                    // (a new photo's only there); `updateChatBackground` can wait for the user's full info to reload.
+                    val set = (choice as? WallpaperChoice.Existing)?.shown() ?: return@map
+                    chatStore.update { it.putting(chatId, ChatWallpaperOverride(set, dimming)) }
+                }
         }
 
         override suspend fun removeChatWallpaper(chatId: Long): Outcome<Unit> =
@@ -87,6 +93,10 @@ class TdlibWallpaperRepository
                 chatStore.update { it.removing(chatId) }
             }
     }
+
+/** The wallpaper as this choice sets it: a photo blurred as picked. */
+private fun WallpaperChoice.Existing.shown(): Wallpaper =
+    (wallpaper as? Wallpaper.Photo)?.copy(isBlurred = isBlurred) ?: wallpaper
 
 /** A new photo uploads first, which can take minutes on a slow network; anything else is a plain request. */
 private fun WallpaperChoice.timeout(): Duration =
@@ -114,8 +124,17 @@ private fun reduceChats(
     when (update) {
         is TdApi.UpdateNewChat -> state.withChat(update.chat.id, update.chat.background)
         is TdApi.UpdateChatBackground -> state.withChat(update.chatId, update.background)
+        is TdApi.UpdateNewMessage -> state.withServiceMessage(update.message)
         else -> state
     }
+
+/** The background a new `messageChatSetBackground` set for its chat; this same map for any other message. */
+private fun PersistentMap<Long, ChatWallpaperOverride>.withServiceMessage(
+    message: TdApi.Message,
+): PersistentMap<Long, ChatWallpaperOverride> {
+    val set = message.content as? TdApi.MessageChatSetBackground ?: return this
+    return withChat(message.chatId, set.background)
+}
 
 private fun PersistentMap<Long, ChatWallpaperOverride>.withChat(
     chatId: Long,
@@ -137,6 +156,6 @@ private val UPLOAD_TIMEOUT = 10.minutes
 /** The updates its store's reducer handles. */
 private val WALLPAPER_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateDefaultBackground::class)
 
-/** The updates [reduceChats] handles. */
+/** The updates [reduceChats] handles; of new messages, only `messageChatSetBackground` changes anything. */
 private val CHAT_WALLPAPER_UPDATES: Set<KClass<out TdApi.Update>> =
-    setOf(TdApi.UpdateChatBackground::class, TdApi.UpdateNewChat::class)
+    setOf(TdApi.UpdateChatBackground::class, TdApi.UpdateNewChat::class, TdApi.UpdateNewMessage::class)

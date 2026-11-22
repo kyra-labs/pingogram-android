@@ -285,7 +285,10 @@ Chat wallpapers are the account's, synced to its other apps (owner decision 2026
   private and secret chats with non-deleted users (and in boosted channels and groups, which Pingogram does not offer);
   for both people (`only_for_self` false) only with Telegram Premium, else Telegram refuses.
   `deleteChatBackground(chat_id, restore_previous)`; restoring belongs to a `messageChatSetBackground` service
-  message, so Pingogram passes false.
+  message, so Pingogram passes false. `setChatBackground` answers only `ok`, and `updateChatBackground` can wait
+  until the user's full info reloads, so `TdlibWallpaperRepository` also takes the chat's background from each new
+  `messageChatSetBackground(old_background_message_id, background, only_for_self)` (`updateNewMessage`; a new
+  photo's background is known only there) and shows a wallpaper already on Telegram as soon as it is set.
 - A failed upload or download leaves the background there was: Pingogram changes nothing until TDLib answers.
 
 ## Compliance notes (must read)
