@@ -5,7 +5,6 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.datastore.DataStoreAiEditorConsentRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreCleanLinksRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDirectShareRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreIdVisibilityRepository
@@ -14,7 +13,6 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsReposit
 import dev.kyralabs.pingogram.core.datastore.DataStoreLockedChatIdsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.AiEditorConsentRepository
-import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
@@ -47,9 +45,6 @@ interface ChatPrivacyModule {
 
     @Binds
     fun incognitoKeyboardRepository(repository: DataStoreIncognitoKeyboardRepository): IncognitoKeyboardRepository
-
-    @Binds
-    fun cleanLinksRepository(repository: DataStoreCleanLinksRepository): CleanLinksRepository
 
     @Binds
     fun directShareRepository(repository: DataStoreDirectShareRepository): DirectShareRepository
