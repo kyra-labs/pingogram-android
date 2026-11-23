@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -257,7 +258,8 @@ internal fun RadioItem(
  * in its thumb while on) with a `ToggleOn` or `ToggleOff` haptic, and screen readers hear it as a switch. The
  * clickable list item rather than its toggleable variant, which screen readers would call a checkbox and which would
  * show the row as selected while on. Not [enabled] (a setting that matters only while another is on), it stays in
- * place at Material's disabled alpha, not tappable, and screen readers hear it as disabled.
+ * place at Material's disabled alpha, not tappable, and screen readers hear it as disabled. With an [icon], in a
+ * group whose other rows have theirs, it leads the row as theirs do ([SettingsItemIcon]).
  */
 @Composable
 internal fun SwitchItem(
@@ -267,6 +269,7 @@ internal fun SwitchItem(
     shapes: ListItemShapes,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    @DrawableRes icon: Int? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -282,6 +285,7 @@ internal fun SwitchItem(
                 role = Role.Switch
                 toggleableState = ToggleableState(checked)
             },
+        leadingContent = icon?.let { { SettingsItemIcon(it, enabled = enabled) } },
         trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
         supportingContent = { Text(summary) },
         colors = settingsRowColors(),

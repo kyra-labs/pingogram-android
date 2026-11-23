@@ -55,6 +55,7 @@ internal fun PrivacySecurityRoute(
     phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
+    incognitoKeyboardViewModel: IncognitoKeyboardViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
@@ -65,6 +66,7 @@ internal fun PrivacySecurityRoute(
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
+    val incognitoKeyboard by incognitoKeyboardViewModel.enabled.collectAsStateWithLifecycle()
     val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val drafts by draftsViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,6 +78,7 @@ internal fun PrivacySecurityRoute(
         frequentContactsViewModel.errors,
         idVisibilityViewModel.errors,
         directShareViewModel.errors,
+        incognitoKeyboardViewModel.errors,
     )
     LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
@@ -105,6 +108,8 @@ internal fun PrivacySecurityRoute(
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
         idsShown = idsShown,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
+        incognitoKeyboard = incognitoKeyboard,
+        onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
         drafts = drafts,
@@ -115,7 +120,8 @@ internal fun PrivacySecurityRoute(
 /**
  * Privacy and security (`REQUIREMENTS.md` FR-S1), its groups in the owner's order of 2026-11-19 below the privacy
  * checkup:
- * - Security: whether 2-step verification is on, passkeys, whether the passcode lock is on, locked chats, blocked
+ * - Security: whether 2-step verification is on, passkeys, whether the passcode lock is on, locked chats, each opening
+ *   its page; "Incognito keyboard" ([incognitoKeyboard], off by default, `REQUIREMENTS.md` FR-X7), a switch; blocked
  *   users and devices with their counts, and connected websites, each opening its page;
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
@@ -148,6 +154,8 @@ internal fun PrivacySecurityScreen(
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
     idsShown: Boolean? = null,
     onIdsShownChange: (Boolean) -> Unit = {},
+    incognitoKeyboard: Boolean? = null,
+    onIncognitoKeyboardChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
     drafts: DataOptionsUiState = DataOptionsUiState(),
@@ -172,7 +180,7 @@ internal fun PrivacySecurityScreen(
                 // One child of the page with the section below it, so the gap it holds goes with it.
                 Column {
                     PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
-                    SecuritySection(state, onOpen)
+                    SecuritySection(state, onOpen, incognitoKeyboard, onIncognitoKeyboardChange)
                 }
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
@@ -279,6 +287,8 @@ private fun PrivacySettingItem(
 private fun SecuritySection(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
+    incognitoKeyboard: Boolean?,
+    onIncognitoKeyboardChange: (Boolean) -> Unit,
 ) {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     SettingsGroup(title = stringResource(R.string.settings_section_security)) {
@@ -305,6 +315,7 @@ private fun SecuritySection(
             )
         }
         lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
+        incognitoKeyboard?.let { incognitoKeyboardItem(it, onIncognitoKeyboardChange) }
         item { shapes ->
             BlockedUsersItem(state.blockedCount, numbers, shapes) { onOpen(PrivacySecurityPage.BlockedUsers) }
         }
@@ -366,7 +377,13 @@ private fun TwoStepVerificationItem(
 @Composable
 private fun PrivacySecurityScreenPreview() {
     PingogramPreview {
-        PrivacySecurityScreen(state = SettingsPreviewData.privacySecurity, onEvent = {}, onOpen = {}, onBack = {})
+        PrivacySecurityScreen(
+            state = SettingsPreviewData.privacySecurity,
+            onEvent = {},
+            onOpen = {},
+            onBack = {},
+            incognitoKeyboard = false,
+        )
     }
 }
 

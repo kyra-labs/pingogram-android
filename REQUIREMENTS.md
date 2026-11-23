@@ -274,6 +274,10 @@ decision 2026-11-23).
   Daily or Weekly (Weekly by default once a folder is picked), while charging or the battery is not low, keeping the
   newest 3 files, encrypted with the key of the last backup's password kept in the Android Keystore (never the
   password). Nothing is sent anywhere.
+- FR-X7 Should: **Incognito keyboard** (owner decision 2026-11-23). Settings → Privacy and security → "Incognito
+  keyboard", off by default: every text field asks the keyboard not to learn from what is typed
+  (`IME_FLAG_NO_PERSONALIZED_LEARNING`), through one helper around the app; a secret chat's fields always ask. A
+  keyboard may ignore the request; nothing else changes.
 
 ## 6. Non-functional requirements
 
