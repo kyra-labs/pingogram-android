@@ -438,6 +438,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Regenerate the Baseline + Startup Profile with `./gradlew :app:generateBaselineProfile` (device on
   API 33+, or rooted on API 28+) and commit `app/src/main/generated/baselineProfiles/`; both
   flavors ship it. Do this before benchmarking: the `*BaselineProfile` benchmarks require a profile.
+  First delete `benchmark/build/intermediates/baselineprofiles/` (or run `./gradlew :benchmark:clean`): with
+  `mergeIntoMain`, the plugin merges every per-test profile it finds there into the new one, so rules for deleted
+  code would otherwise stay. A fresh profile names none of the code a recent change removed.
 - The journeys (`benchmark/.../Journeys.kt`) need a signed-in app: past the start they scroll the
   chat list and open and scroll Saved Messages. They open no other chat, because opening one marks its
   messages as read, so give Saved Messages a few screens of messages with media. Sign in once:
