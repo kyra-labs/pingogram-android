@@ -158,7 +158,7 @@ private fun ComposerPill() {
         }
         Surface(shape = CircleShape, color = colors.primaryContainer, contentColor = colors.onPrimaryContainer) {
             Icon(
-                painter = painterResource(UiR.drawable.ic_mic),
+                painter = painterResource(UiR.drawable.ic_graphic_eq),
                 contentDescription = null,
                 modifier = Modifier.padding(spacing.medium),
             )
