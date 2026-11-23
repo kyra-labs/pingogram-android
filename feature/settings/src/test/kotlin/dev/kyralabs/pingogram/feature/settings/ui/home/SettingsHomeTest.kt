@@ -121,6 +121,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds a single setting by its name and opens its page`() {
+        show()
+        search("incognito")
+
+        composeRule.onNode(hasText(string(R.string.settings_incognito_keyboard)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)
@@ -304,8 +314,17 @@ class SettingsHomeTest {
         val resources = RuntimeEnvironment.getApplication().resources
         val found = searchEntries(SearchEntries, "PRÍVACY security", resources, Locale.US)
         assertEquals(HomeDestination.Page(SettingsPage.PrivacySecurity), found.first().destination)
-        // The pages above Privacy and security, whose summary names it, follow it.
-        val above = found.drop(1).map { (it.destination as HomeDestination.SubPage).subPage.parent }.toSet()
+        // The pages above Privacy and security and its settings found by name, whose summary names it, follow it.
+        val above =
+            found
+                .drop(1)
+                .map { entry ->
+                    when (val destination = entry.destination) {
+                        is HomeDestination.SubPage -> destination.subPage.parent
+                        is HomeDestination.Page -> destination.page
+                        else -> null
+                    }
+                }.toSet()
         assertEquals(setOf(SettingsPage.PrivacySecurity), above)
         assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "  ", resources, Locale.US))
     }

@@ -72,6 +72,25 @@ class PrivacySecurityScreenScreenshotTest {
             phoneNumbersHidden = true,
         )
 
+    /** "Incognito keyboard" on, in the Security group (REQUIREMENTS.md FR-X7); the other captures show it off. */
+    @Test
+    fun incognitoKeyboardOnLight() =
+        capture(
+            "incognitoKeyboardOnLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            incognitoKeyboard = true,
+        )
+
+    @Test
+    fun incognitoKeyboardOnDark() =
+        capture(
+            "incognitoKeyboardOnDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            incognitoKeyboard = true,
+        )
+
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
     @Config(qualifiers = TALL)
@@ -178,6 +197,7 @@ class PrivacySecurityScreenScreenshotTest {
         contactSync: ContactSyncStatus = ContactSyncStatus.Off,
         secretChatPreviews: Boolean = false,
         phoneNumbersHidden: Boolean = false,
+        incognitoKeyboard: Boolean = false,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -187,6 +207,7 @@ class PrivacySecurityScreenScreenshotTest {
             contactSync = contactSync,
             secretChatPreviews = secretChatPreviews,
             phoneNumbersHidden = phoneNumbersHidden,
+            incognitoKeyboard = incognitoKeyboard,
         )
     }
 }

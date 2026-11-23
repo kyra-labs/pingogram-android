@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [2.4.0] - 2026-11-23
 
 ### Added
+- Incognito keyboard: Settings → Privacy and security asks your keyboard not to learn from what you type in
+  Pingogram; secret chats always ask.
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
   of the conversation, the whole page in the colors the conversation will take from the wallpaper you pick, your
   theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp at your screen's size),

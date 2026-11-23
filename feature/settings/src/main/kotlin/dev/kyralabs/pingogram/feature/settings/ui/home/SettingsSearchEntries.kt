@@ -8,10 +8,30 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * What settings search looks through (`docs/DESIGN_SYSTEM.md` §13.9): every group's entries, Edit profile and the
- * user's QR code, then the pages above them ([SubPageEntries]).
+ * user's QR code, the pages above them ([SubPageEntries]), then single settings found by their own names
+ * ([SettingEntries]).
  */
 internal val SearchEntries: List<HomeEntry> by lazy {
-    HomeGroups.flatMap { it.entries } + AccountEntries + SubPageEntries
+    HomeGroups.flatMap { it.entries } + AccountEntries + SubPageEntries + SettingEntries
+}
+
+/**
+ * Settings that search finds by their own names, not only by their page's (owner decision 2026-11-23: every toggle of
+ * `REQUIREMENTS.md` §5.10): each with its page's title as its summary (where it is) and its page's icon. A tap opens
+ * the page it is on.
+ */
+internal val SettingEntries: List<HomeEntry> by lazy {
+    listOf(
+        setting(SettingsPage.PrivacySecurity, R.string.settings_incognito_keyboard),
+    )
+}
+
+private fun setting(
+    page: SettingsPage,
+    @StringRes title: Int,
+): HomeEntry {
+    val parent = parentEntry(page)
+    return HomeEntry(HomeDestination.Page(page), title, parent.title, parent.icon)
 }
 
 /** Edit profile and the user's QR code, which the account card opens rather than a group. */

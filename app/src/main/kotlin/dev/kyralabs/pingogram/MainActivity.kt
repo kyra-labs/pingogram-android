@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
@@ -50,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
+import dev.kyralabs.pingogram.core.ui.text.IncognitoKeyboard
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
@@ -79,6 +81,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -164,6 +167,15 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
 
+    /** Whether text fields ask the keyboard not to learn ([IncognitoKeyboard], Privacy and security). */
+    @Inject
+    lateinit var incognitoKeyboard: IncognitoKeyboardRepository
+
+    /** Privacy and security's settings the whole app follows on screen, read once the activity composes. */
+    private val screenPrivacy by lazy {
+        combine(phoneNumberVisibility.hidden, incognitoKeyboard.enabled, ::ScreenPrivacy)
+    }
+
     /**
      * The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). Lazy: they are
      * the shown account's, which the account registry names, so injecting them made the activity wait for the
@@ -232,14 +244,14 @@ class MainActivity : ComponentActivity() {
                 val appearance by viewModel.appearance.collectAsStateWithLifecycle()
                 val lock by viewModel.lock.collectAsStateWithLifecycle()
                 val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
-                // Read with the Appearance settings, from the same file: waiting for it costs nothing, and a value that
-                // changed after the first frame would compose the whole app again (a static composition local).
-                val phoneNumbersHiddenSetting by phoneNumberVisibility.hidden
-                    .collectAsStateWithLifecycle(initialValue = null)
+                // Read with the Appearance settings, from the same file: waiting for it costs nothing, a value that
+                // changed after the first frame would compose the whole app again (a static composition local), and no
+                // field starts taking input before the keyboard is told whether to learn.
+                val screenPrivacySetting by screenPrivacy.collectAsStateWithLifecycle(initialValue = null)
                 val settings = appearance
-                val phoneNumbersHidden = phoneNumbersHiddenSetting
+                val privacy = screenPrivacySetting
                 val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
-                if (settings != null && phoneNumbersHidden != null && lockAndLanguageKnown) {
+                if (settings != null && privacy != null && lockAndLanguageKnown) {
                     SideEffect(awaitSettingsTrace::end)
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
@@ -260,19 +272,22 @@ class MainActivity : ComponentActivity() {
                             LocalCallStarter provides calls,
                             // A chat's voice chat bar and its info page's voice chat row (feature:calls).
                             LocalVoiceChats provides calls,
-                            LocalPhoneNumbersHidden provides phoneNumbersHidden,
+                            LocalPhoneNumbersHidden provides privacy.phoneNumbersHidden,
                             LocalIsDemo provides isDemo,
                             // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
                             LocalLockedChatGate provides lockedChatGate,
                         ) {
-                            DemoFrame(isDemo) {
-                                LockableApp(
-                                    locked = locked,
-                                    lockScreen = { AppLockRoute() },
-                                    modifier = Modifier.semantics { testTagsAsResourceId = true },
-                                ) {
-                                    // No switcher in the demo: its graph is no account (docs/adr/0034).
-                                    App(uiState, viewModel, links, shares, accountMenu.takeUnless { isDemo })
+                            // Every text field, the lock screen's too (REQUIREMENTS.md FR-X7).
+                            IncognitoKeyboard(privacy.incognitoKeyboard) {
+                                DemoFrame(isDemo) {
+                                    LockableApp(
+                                        locked = locked,
+                                        lockScreen = { AppLockRoute() },
+                                        modifier = Modifier.semantics { testTagsAsResourceId = true },
+                                    ) {
+                                        // No switcher in the demo: its graph is no account (docs/adr/0034).
+                                        App(uiState, viewModel, links, shares, accountMenu.takeUnless { isDemo })
+                                    }
                                 }
                             }
                         }
@@ -401,6 +416,12 @@ class MainActivity : ComponentActivity() {
     private suspend fun persistSplashScreenTheme(
         @StyleRes theme: Int,
     ) = withContext(io) { splashScreen.setSplashScreenTheme(theme) }
+
+    /** Whether phone numbers are hidden on screen, and whether text fields ask the keyboard not to learn. */
+    private data class ScreenPrivacy(
+        val phoneNumbersHidden: Boolean,
+        val incognitoKeyboard: Boolean,
+    )
 
     private companion object {
         // enableEdgeToEdge()'s own scrims behind three-button navigation where the system draws none (before Android
