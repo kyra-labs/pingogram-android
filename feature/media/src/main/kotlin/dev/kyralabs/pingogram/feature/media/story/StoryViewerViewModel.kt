@@ -254,7 +254,7 @@ class StoryViewerViewModel internal constructor(
             position,
             shown,
             timeline.state,
-            combine(chrome, me, currentChat(), userRepository.users, ::Extras),
+            combine(chrome, me, currentChat(), userRepository.profiles, ::Extras),
         ) { pages, position, shown, timeline, extras ->
             stateOf(pages, position, shown, timeline, extras)
         }.distinctUntilChanged()

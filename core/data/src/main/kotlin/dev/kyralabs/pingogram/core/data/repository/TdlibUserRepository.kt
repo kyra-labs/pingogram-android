@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toUser
 import dev.kyralabs.pingogram.core.data.mapper.toUserStatus
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.pick
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
@@ -48,6 +49,13 @@ class TdlibUserRepository
         override val users: Flow<ImmutableMap<Long, User>> =
             store.state.map { it.users }.distinctUntilChanged { old, new -> old === new }
 
+        // A status change keeps the profiles' map.
+        override val profiles: Flow<ImmutableMap<Long, User>> =
+            store.state.map { it.profiles }.distinctUntilChanged { old, new -> old === new }
+
+        override fun users(ids: Set<Long>): Flow<ImmutableMap<Long, User>> =
+            users.map { all -> all.pick(ids) }.distinctUntilChanged()
+
         override fun user(id: Long): Flow<User?> = store.state.map { it.users[id] }.distinctUntilChanged()
 
         override suspend fun getUser(id: Long): Outcome<User> {
@@ -61,6 +69,8 @@ class TdlibUserRepository
 private data class UserCache(
     val users: PersistentMap<Long, User> = persistentMapOf(),
     val myUserId: Long? = null,
+    /** [users] as of each one's last profile change: a status change does not touch it ([UserRepository.profiles]). */
+    val profiles: PersistentMap<Long, User> = persistentMapOf(),
 ) {
     fun reduce(update: TdApi.Update): UserCache =
         when (update) {
@@ -70,7 +80,8 @@ private data class UserCache(
 
             is TdApi.UpdateUserStatus -> {
                 val user = users[update.userId] ?: return this
-                withUser(user.copy(status = update.status.toUserStatus()))
+                val changed = user.copy(status = update.status.toUserStatus())
+                if (changed == user) this else copy(users = users.putting(user.id, changed))
             }
 
             is TdApi.UpdateOption -> {
@@ -85,7 +96,17 @@ private data class UserCache(
         }
 
     private fun withUser(user: User): UserCache =
-        if (users[user.id] == user) this else copy(users = users.putting(user.id, user))
+        if (users[user.id] == user) {
+            this
+        } else {
+            // The profile keeps its map while only the status differs from it.
+            val profile = profiles[user.id]
+            val sameProfile = profile != null && profile.copy(status = user.status) == user
+            copy(
+                users = users.putting(user.id, user),
+                profiles = if (sameProfile) profiles else profiles.putting(user.id, user),
+            )
+        }
 }
 
 private const val MY_ID_OPTION = "my_id"

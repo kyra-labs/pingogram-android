@@ -123,6 +123,56 @@ class TdlibUserRepositoryTest {
         }
 
     @Test
+    fun `profiles keep their map when only a status changes`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 1, status = TdApi.UserStatusRecently(false))))
+
+            repository.profiles.test {
+                awaitItem()
+
+                client.emit(updateUserStatus(userId = 1, status = TdApiFixtures.onlineStatus(expires = 1_000)))
+                // The whole user again, its status alone changed.
+                client.emit(updateUser(user(id = 1, status = TdApiFixtures.onlineStatus(expires = 2_000))))
+
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `profiles change with a user's profile`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 1, firstName = "Ada")))
+
+            repository.profiles.test {
+                awaitItem()
+
+                client.emit(updateUser(user(id = 1, firstName = "Grace")))
+
+                assertEquals("Grace", awaitItem()[1]?.firstName)
+            }
+        }
+
+    @Test
+    fun `users of some ids change only with those users, status included`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 1)))
+            client.emit(updateUser(user(id = 2)))
+
+            repository.users(setOf(1)).test {
+                assertEquals(setOf(1L), awaitItem().keys)
+
+                client.emit(updateUserStatus(userId = 2, status = TdApiFixtures.onlineStatus(expires = 1_000)))
+                expectNoEvents()
+
+                client.emit(updateUserStatus(userId = 1, status = TdApiFixtures.onlineStatus(expires = 1_000)))
+                assertEquals(UserStatus.Online(expiresAtEpochSeconds = 1_000), awaitItem()[1]?.status)
+            }
+        }
+
+    @Test
     fun `users emits nothing for updates that change no user`() =
         runTest {
             val repository = repository()

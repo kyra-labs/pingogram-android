@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.TextFindings
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -165,6 +166,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -1179,7 +1181,7 @@ class ChatViewModel internal constructor(
 
     private val people: Flow<ChatPeople> =
         combine(
-            userRepository.users,
+            shownUsers(chat.map { (it as? ChatLookup.Found)?.chat?.userId }, userRepository),
             userRepository.myUserId,
             referencedChats,
             senderRoles(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, searchRepositories.members),

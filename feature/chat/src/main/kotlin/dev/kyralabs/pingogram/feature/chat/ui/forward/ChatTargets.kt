@@ -97,7 +97,8 @@ internal class ChatTargets(
                 .debounce { if (it.isEmpty()) 0L else DEBOUNCE_MILLIS }
                 .distinctUntilChanged()
                 .flatMapLatest { text -> if (text.isEmpty()) mainChats() else searchChats(text) }
-        val people = combine(users.users, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
+        // Who may receive and how they are named: profiles, which no one's going online changes.
+        val people = combine(users.profiles, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
         // Locked chats not opened with the passcode are never offered (docs/adr/0029-locked-chats.md).
         val shown =
             combine(found, preferences.hidden) { found, hidden ->
