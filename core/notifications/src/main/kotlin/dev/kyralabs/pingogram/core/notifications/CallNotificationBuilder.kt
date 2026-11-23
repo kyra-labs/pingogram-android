@@ -150,6 +150,22 @@ class CallNotificationBuilder
                     }
                 }.build()
 
+        /**
+         * What the call's foreground service shows the moment it starts, before [incoming], [ongoing] or [voiceChat]
+         * is built (they look the caller or the chat up): Android wants it in the foreground at once. Silent, with
+         * [status] if there is one; replaced within moments.
+         */
+        fun placeholder(
+            status: String?,
+            content: PendingIntent,
+        ): Notification =
+            base(PingogramChannel.OngoingCalls, content)
+                .setContentText(status)
+                .setSilent(true)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .build()
+
         private fun base(
             channel: PingogramChannel,
             content: PendingIntent,
