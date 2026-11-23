@@ -10,6 +10,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.EmojiSupportMatch
+import androidx.compose.ui.text.PlatformParagraphStyle
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.createFontFamilyResolver
@@ -80,7 +83,12 @@ internal object NavigationLabelWidths {
     /** Forgets every width, for tests. */
     fun clear() = widths.clear()
 
-    /** Measures the labels' width of [key] with [measurer], keeping nothing. */
+    /**
+     * Measures the labels' width of [key] with [measurer], keeping nothing, without emoji support: Compose's emoji
+     * status makes its snapshot state on the first paragraph with emoji support, on that paragraph's thread. Made by
+     * [warmUp] after a composition took its snapshot, it could not be read in that composition, and the first frame
+     * measuring the labels as well ([labelsFit]) threw. The labels hold no emoji, so the width is the same.
+     */
     fun measure(
         key: Key,
         measurer: TextMeasurer,
@@ -90,9 +98,22 @@ internal object NavigationLabelWidths {
             style: TextStyle,
         ): Int = measurer.measure(label, style, maxLines = 1).size.width
 
-        val plain = key.labels.map { width(it, key.label) }
-        val growth = key.labels.indices.maxOf { width(key.labels[it], key.emphasized) - plain[it] }
+        val labelStyle = key.label.withoutEmojiSupport()
+        val emphasizedStyle = key.emphasized.withoutEmojiSupport()
+        val plain = key.labels.map { width(it, labelStyle) }
+        val growth = key.labels.indices.maxOf { width(key.labels[it], emphasizedStyle) - plain[it] }
         return plain.sum() + growth
+    }
+
+    private fun TextStyle.withoutEmojiSupport(): TextStyle {
+        val paragraph = platformStyle?.paragraphStyle ?: PlatformParagraphStyle.Default
+        return copy(
+            platformStyle =
+                PlatformTextStyle(
+                    spanStyle = platformStyle?.spanStyle,
+                    paragraphStyle = PlatformParagraphStyle(EmojiSupportMatch.None, paragraph.includeFontPadding),
+                ),
+        )
     }
 
     /** Bold text's weight adjustment (Android 12+), as `PingogramTheme` passes it to the typography. */

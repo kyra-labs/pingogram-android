@@ -61,7 +61,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     two styles, which made it slower without a baseline profile after #494 (`StartupBenchmark` with
     `CompilationMode.None`: cold +19%, the warm first frame +18–22%). The width is kept for the process, so a warm start
     measures nothing; a first frame that asks for other labels or styles (high contrast, another language before
-    Android 13) measures them itself, the same way, so the tabs never switch between names and icons after.
+    Android 13) measures them itself, the same way, so the tabs never switch between names and icons after. Both
+    measure without emoji support (the labels hold none): Compose's emoji status makes its snapshot state on the first
+    paragraph that asks for it, on that paragraph's thread, and a composition that took its snapshot before cannot read
+    it, so the warm-up must make no snapshot state the first frame reads.
   - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
