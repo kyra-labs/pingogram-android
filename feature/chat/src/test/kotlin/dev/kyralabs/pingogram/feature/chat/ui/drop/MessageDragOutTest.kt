@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
+import dev.kyralabs.pingogram.feature.chat.ui.ChatTransfers
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.GroupPosition
 import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
@@ -63,11 +64,14 @@ class MessageDragOutTest {
                 isLoadingOlder = false,
                 olderError = null,
             ),
-        fileStates =
-            downloaded
-                .mapValues { (_, path) ->
-                    FileState.Downloaded(path, size = 1) as FileState
-                }.toImmutableMap(),
+        transfers =
+            ChatTransfers.of(
+                fileStates =
+                    downloaded
+                        .mapValues { (_, path) ->
+                            FileState.Downloaded(path, size = 1) as FileState
+                        }.toImmutableMap(),
+            ),
         shortcuts = MessageShortcuts(canForward = canForward),
     )
 

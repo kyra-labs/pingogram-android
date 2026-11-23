@@ -42,7 +42,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
-import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
@@ -62,7 +61,6 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
-import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.birthday.BirthdaySuggestionRow
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntroArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
@@ -109,7 +107,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaperLay
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackEvent
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackSlot
 import dev.kyralabs.pingogram.feature.chat.ui.welcome.WelcomePackUi
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableList
 
@@ -150,7 +147,7 @@ import kotlinx.collections.immutable.toImmutableList
  *   toggles the user's reaction; swiping a bubble toward the end replies to it ([swipeToReply]).
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
  *   files show in their preview, a new poll in its form ([AttachSheets]). Sending them now scrolls to the newest
- *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.uploads]).
+ *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.transfers]).
  * - **Selection mode** ([ChatUiState.selection]): the top bar shows how many messages are selected with a close
  *   button, the bubbles a check, and the selection toolbar ([SelectionBottomBar]) takes the composer's place, which
  *   leaves with the keyboard. Back (predictive, the toolbar following the gesture) and the close button leave it.
@@ -542,7 +539,7 @@ private fun MessageList(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val fileStates = state.fileStates
+    val transfers = state.transfers.collect()
     val playback = state.playback
     val checks = rememberRowChecks(state.selection?.messageIds)
     val jumpState = bubbleResources.jump
@@ -573,7 +570,7 @@ private fun MessageList(
         }
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, checks)
+            ChatItemRow(item, transfers, playback, bubbleResources, onEvent, itemModifier, checks)
         }
         val header = state.header
         if (header?.secret != null && content.reachedStart) {
@@ -622,17 +619,16 @@ private fun LazyListScope.pagesState(
 }
 
 /**
- * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
- * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message. In
- * selection mode ([RowChecks.selectedIds] not null) a bubble shows whether it is selected: an album's when any of its
- * items is.
+ * One entry of the list: a message with the state of its file and the uploads of its messages being sent, each read
+ * from [transfers] by the bubble alone, and its playback (only the message in the player has one), a service message,
+ * a date, the unread divider or a sponsored message. In selection mode ([RowChecks.selectedIds] not null) a bubble
+ * shows whether it is selected: an album's when any of its items is.
  */
 @Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
 private fun ChatItemRow(
     item: ChatItem,
-    fileStates: ImmutableMap<Int, FileState>,
-    uploads: ImmutableMap<Long, MessageUpload>,
+    transfers: TransferStates,
     playback: MessagePlayback?,
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
@@ -642,7 +638,7 @@ private fun ChatItemRow(
     val selectedIds = checks?.selectedIds
     when (item) {
         is ChatItem.Bubble -> {
-            val fileState = item.content.downloadableFileId?.let(fileStates::get)
+            val fileState = transfers.fileState(item.content.downloadableFileId)
             val bubblePlayback = playback?.takeIf { it.messageId == item.id }?.playback ?: Playback.Stopped
             MessageBubbleRow(
                 bubble = item,
@@ -651,7 +647,7 @@ private fun ChatItemRow(
                 resources = bubbleResources,
                 onEvent = onEvent,
                 modifier = modifier,
-                uploads = item.uploadsIn(uploads),
+                uploads = transfers.uploadsOf(item),
                 selection = selectedIds?.let { ids -> item.selectionIn(ids) },
                 check = checks?.checkedIds?.let { ids -> item.selectionIn(ids) },
                 reveal = checks?.reveal,
