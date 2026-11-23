@@ -251,7 +251,7 @@ class SettingsHomeTest {
                 SettingsPage.Appearance,
                 R.string.settings_appearance,
                 R.string.settings_appearance_summary,
-                R.drawable.ic_shield,
+                R.drawable.ic_shield_filled,
             )
         val onThisPhone = OnThisPhoneGroup
         val groups = listOf(HomeGroup(onThisPhone.title, listOf(tool), onThisPhone.category, onThisPhone.footer))
