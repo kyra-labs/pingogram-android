@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreAiEditorConsentRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDirectShareRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreIdVisibilityRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreIncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLockedChatIdsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AiEditorConsentRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeclinedBirthdaysRepository
 import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
+import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
@@ -40,6 +42,9 @@ interface ChatPrivacyModule {
 
     @Binds
     fun idVisibilityRepository(repository: DataStoreIdVisibilityRepository): IdVisibilityRepository
+
+    @Binds
+    fun incognitoKeyboardRepository(repository: DataStoreIncognitoKeyboardRepository): IncognitoKeyboardRepository
 
     @Binds
     fun directShareRepository(repository: DataStoreDirectShareRepository): DirectShareRepository
