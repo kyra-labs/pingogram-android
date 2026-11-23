@@ -73,7 +73,8 @@ class BlockedUsersViewModel
             combine(
                 list,
                 lookedUp,
-                userRepository.users,
+                // Names and photos: profiles, which no one's going online changes.
+                userRepository.profiles,
                 groupRepository.supergroups,
             ) { list, lookedUp, users, groups ->
                 list.toUiState { sender -> item(sender, lookedUp, users, groups, sender in list.unblocking) }

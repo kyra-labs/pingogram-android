@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.TextFindings
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -165,6 +166,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -1179,7 +1181,7 @@ class ChatViewModel internal constructor(
 
     private val people: Flow<ChatPeople> =
         combine(
-            userRepository.users,
+            shownUsers(chat.map { (it as? ChatLookup.Found)?.chat?.userId }, userRepository),
             userRepository.myUserId,
             referencedChats,
             senderRoles(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, searchRepositories.members),
@@ -1920,3 +1922,23 @@ private fun DomainError?.toContent(): ChatContent =
 
 /** This set without [id] if it holds it, else with it. */
 private fun PersistentSet<Long>.toggling(id: Long): PersistentSet<Long> = if (id in this) removing(id) else adding(id)
+
+/**
+ * The users as a conversation shows them: profiles, which no one's going online changes, with the other side of a
+ * private chat ([partnerId], null in groups) live, whose status the header shows. Every user's status change re-ran
+ * the whole history before (`docs/PERFORMANCE.md`).
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun shownUsers(
+    partnerId: Flow<Long?>,
+    users: UserRepository,
+): Flow<ImmutableMap<Long, User>> =
+    partnerId.distinctUntilChanged().flatMapLatest { id ->
+        if (id == null) {
+            users.profiles
+        } else {
+            combine(users.profiles, users.user(id)) { profiles, partner ->
+                if (partner == null) profiles else profiles.toPersistentMap().putting(partner.id, partner)
+            }
+        }
+    }

@@ -134,7 +134,8 @@ class ShareTargetShortcuts
                 combine(chatRepository.chatList(ChatListType.Main), chatLock.lockedChatIds) { chats, locked ->
                     if (locked.isEmpty()) chats else chats.filterNot { it.id in locked }
                 },
-                userRepository.users,
+                // Names and icons: profiles, which no one's going online changes.
+                userRepository.profiles,
                 userRepository.myUserId,
                 groupRepository.basicGroups,
                 groupRepository.supergroups,

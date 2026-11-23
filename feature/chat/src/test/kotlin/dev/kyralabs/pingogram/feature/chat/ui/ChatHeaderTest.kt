@@ -55,6 +55,17 @@ class ChatHeaderTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `the other side going online shows at once`() =
+        runTest {
+            val viewModel = privateChat(UserStatus.Recently)
+
+            users.setUsers(user(ADA, firstName = "Ada", status = UserStatus.Online(NOW.epochSecond + 60)))
+            runCurrent()
+
+            assertEquals(status(res(UiR.string.user_status_online)), viewModel.subtitle)
+        }
+
+    @Test
     fun `an online status that expired counts as last seen when it expired`() =
         runTest {
             val viewModel = privateChat(UserStatus.Online(expiresAtEpochSeconds = NOW.minusSeconds(10).epochSecond))

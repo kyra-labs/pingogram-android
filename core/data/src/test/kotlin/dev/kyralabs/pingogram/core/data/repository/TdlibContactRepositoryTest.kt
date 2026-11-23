@@ -5,12 +5,15 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AddContactResult
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.formattedText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUserStatus
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CompletableDeferred
@@ -37,7 +40,7 @@ class TdlibContactRepositoryTest {
     private fun TestScope.repository(): TdlibContactRepository {
         val users = TdlibUserRepository(client, backgroundScope)
         val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
-        return TdlibContactRepository(client, users, chats)
+        return TdlibContactRepository(client, users, chats, StandardTestDispatcher(testScheduler))
     }
 
     private fun failure(
@@ -90,6 +93,26 @@ class TdlibContactRepositoryTest {
 
                 client.emit(updateUser(user(id = 7, firstName = "Grace", isContact = false)))
                 assertEquals(listOf(8L), awaitItem().ids())
+            }
+        }
+
+    @Test
+    fun `a contact's status shows in the list, in the same order`() =
+        runTest {
+            val repository = repository()
+            answerContacts(
+                user(id = 7, firstName = "Grace", isContact = true),
+                user(id = 8, firstName = "Ada", isContact = true),
+            )
+
+            repository.contacts().test {
+                assertEquals(listOf(8L, 7L), awaitItem().ids())
+
+                client.emit(updateUserStatus(userId = 7, status = TdApiFixtures.onlineStatus(expires = 1_000)))
+
+                val list = (awaitItem() as Outcome.Success).value
+                assertEquals(listOf(8L, 7L), list.map { it.id })
+                assertEquals(UserStatus.Online(expiresAtEpochSeconds = 1_000), list[1].status)
             }
         }
 

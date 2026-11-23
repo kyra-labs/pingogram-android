@@ -39,6 +39,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -47,7 +48,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -135,11 +139,16 @@ class ChatMembersViewModel internal constructor(
     private var loadJob: Job? = null
     private var statusFormatter: UserStatusFormatter? = null
 
+    /** The loaded members as users, their status included: not every other user's change (docs/PERFORMANCE.md). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val memberUsers =
+        list.map { it.members.userIds() }.distinctUntilChanged().flatMapLatest(userRepository::users)
+
     val uiState: StateFlow<ChatMembersUiState> =
         combine(filter, query, list, group, removing) { filter, query, list, group, removing ->
             Sources(filter, query, list, group, removing)
         }.combine(tagging.draft) { sources, draft -> sources.copy(tagging = draft) }
-            .combine(userRepository.users) { sources, users -> sources to users }
+            .combine(memberUsers) { sources, users -> sources to users }
             .combine(userRepository.myUserId) { (sources, users), me -> Triple(sources, users, me) }
             .combine(chats) { (sources, users, me), chats -> Pair(Triple(sources, users, me), chats) }
             .combine(clock.minutes) { (parts, chats), now ->

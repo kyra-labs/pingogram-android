@@ -419,7 +419,7 @@ class GroupCallViewModel
                 }
 
         private fun participantRows(groupCallId: Int): Flow<ImmutableList<GroupCallParticipantUi>> =
-            combine(repository.participants(groupCallId), repository.groupCall(groupCallId), userRepository.users) {
+            combine(repository.participants(groupCallId), repository.groupCall(groupCallId), userRepository.profiles) {
                 participants,
                 info,
                 users,

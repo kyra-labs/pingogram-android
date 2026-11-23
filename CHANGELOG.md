@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- Someone going online or offline no longer makes an open chat, the contacts, profiles' members, the story viewer
+  or the share sheet redo their work: they follow names and photos, and only the statuses they show.
+
 ## [2.4.0] - 2026-11-23
 
 ### Added

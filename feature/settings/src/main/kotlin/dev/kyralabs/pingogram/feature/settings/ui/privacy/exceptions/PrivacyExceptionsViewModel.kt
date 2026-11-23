@@ -83,7 +83,8 @@ class PrivacyExceptionsViewModel internal constructor(
     private val effectChannel = Channel<PrivacyExceptionsEffect>(Channel.BUFFERED)
     val effects: Flow<PrivacyExceptionsEffect> = effectChannel.receiveAsFlow()
 
-    private val users = combine(userRepository.users, knownUsers) { announced, known -> known + announced }
+    // Names and photos: profiles, which no one's going online changes.
+    private val users = combine(userRepository.profiles, knownUsers) { announced, known -> known + announced }
 
     val uiState: StateFlow<PrivacyExceptionsUiState> =
         combine(lists, loadError, saving, users, knownChats) { lists, error, saving, users, chats ->
