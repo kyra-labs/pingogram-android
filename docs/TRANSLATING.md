@@ -109,9 +109,12 @@ Plus a **Glossary** component (Weblate's own glossary, "Manage → Glossary"), s
 
 Add-ons on the project (Manage → Add-ons): **Squash Git commits**, mode "All commits into one", commit message
 `chore(i18n): translations from Weblate`, "Append trailers" on (it credits every translator with `Co-authored-by:`);
-**Cleanup translation files** (drops strings the source no longer has). The pull request from `weblate` is reviewed and
-squash-merged like any other: CI must pass (placeholders and plurals are checked by Lint), and its title stays
-`chore(i18n): translations from Weblate`.
+**Cleanup translation files** (drops strings the source no longer has). The pull request from `weblate` is reviewed like
+any other: CI must pass (placeholders and plurals are checked by Lint), and its title stays
+`chore(i18n): translations from Weblate`. Unlike other pull requests, it is merged with a merge commit (owner decision
+2026-11-23): Weblate's commits then reach `main` unchanged and its next update follows on. A squash merge rewrites
+them, Weblate's next update stops on a conflict, and only Repository maintenance → Reset (with no pending changes)
+clears it.
 
 The README's badge links to `https://hosted.weblate.org/engage/pingogram/` and shows
 `https://hosted.weblate.org/widget/pingogram/svg-badge.svg`; check both work once the project exists.
