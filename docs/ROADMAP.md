@@ -208,7 +208,7 @@ Performance (the accepted results in #876's description, and the review):
 
 Features:
 - [ ] "Typing…" sent to the chat, with a setting to turn it off
-- [ ] Incoming bubbles stand out in light theme
+- [x] Incoming bubbles stand out in light theme
 - [ ] A compact chat list
 - [ ] Drafts: every unsent draft on one page
 - [ ] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"

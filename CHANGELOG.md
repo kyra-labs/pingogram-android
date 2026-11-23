@@ -71,6 +71,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- In light theme, messages you receive sit on a bubble a step deeper than the background, so they no longer blend into it.
 - A chat with a wallpaper opens faster: its colors show at once instead of fading in.
 - Scrolling a chat with a photo wallpaper is smoother.
 - The voice message button shows a sound wave instead of a microphone.

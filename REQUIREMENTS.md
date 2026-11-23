@@ -221,7 +221,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 ### 5.10 Beyond the official app [after v2.3.0]
 
 Owner decision of 2026-11-17. Each works on the phone with what TDLib already gives; nothing is sent anywhere but
-Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2).
+Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2). Every
+feature here can be turned off in Settings; a new behavior that changes an existing one is off by default (owner
+decision 2026-11-23).
 
 - FR-X1 Should: **Mentions & replies.** One page, opened from the Chats tab's header, listing the messages that mention
   the user and the replies to the user's messages, across all chats, newest first, unread first; each opens its chat

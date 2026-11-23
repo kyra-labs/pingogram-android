@@ -54,7 +54,8 @@ data class PingogramColors(
  * wherever they keep 3:1 against [container]; where they do not, as on `primaryContainer` in the medium and high
  * contrast schemes, they fall back to [content], so every contrast level stays legible (§9).
  *
- * @property container the bubble: `surfaceContainerHigh` incoming, `primaryContainer` outgoing, `secondaryContainer`
+ * @property container the bubble: incoming `surfaceContainerLow` in dark theme and `surfaceContainerHigh` in light
+ *   (where `surfaceContainerLow` is nearly the background's tone), `primaryContainer` outgoing, `secondaryContainer`
  *   selected.
  * @property content text and icons on [container]: `onSurface` incoming, `onPrimaryContainer` outgoing,
  *   `onSecondaryContainer` selected.
@@ -109,7 +110,7 @@ internal fun pingogramColors(
                 colorScheme = colorScheme,
                 roles =
                     BubbleRoles(
-                        container = colorScheme.surfaceContainerLow,
+                        container = if (dark) colorScheme.surfaceContainerLow else colorScheme.surfaceContainerHigh,
                         content = colorScheme.onSurface,
                         secondaryContent = colorScheme.onSurfaceVariant,
                         block = colorScheme.surfaceContainerHighest,
