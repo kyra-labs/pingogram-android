@@ -1922,23 +1922,3 @@ private fun DomainError?.toContent(): ChatContent =
 
 /** This set without [id] if it holds it, else with it. */
 private fun PersistentSet<Long>.toggling(id: Long): PersistentSet<Long> = if (id in this) removing(id) else adding(id)
-
-/**
- * The users as a conversation shows them: profiles, which no one's going online changes, with the other side of a
- * private chat ([partnerId], null in groups) live, whose status the header shows. Every user's status change re-ran
- * the whole history before (`docs/PERFORMANCE.md`).
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-internal fun shownUsers(
-    partnerId: Flow<Long?>,
-    users: UserRepository,
-): Flow<ImmutableMap<Long, User>> =
-    partnerId.distinctUntilChanged().flatMapLatest { id ->
-        if (id == null) {
-            users.profiles
-        } else {
-            combine(users.profiles, users.user(id)) { profiles, partner ->
-                if (partner == null) profiles else profiles.toPersistentMap().putting(partner.id, partner)
-            }
-        }
-    }
