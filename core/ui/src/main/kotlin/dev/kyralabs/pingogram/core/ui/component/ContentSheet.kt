@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -72,9 +73,11 @@ fun ContentSheet(
 }
 
 /**
- * [color] above the sheet that [innerPadding]'s top places, down to the end of its rounded corners: what shows around
- * them is the color the corners were drawn over before, to the pixel. Read in the draw phase, so a collapsing bar
- * redraws it without recomposing or measuring.
+ * [color] above the sheet that [innerPadding]'s top places, and behind its two rounded corners down to their end: what
+ * shows around them is the color the corners were drawn over before, to the pixel. Not between the corners, where the
+ * opaque sheet would paint over it at once: the folder bar floats there, its shadow and fill already layers deep
+ * (`docs/PERFORMANCE.md`, "Overdraw"). Read in the draw phase, so a collapsing bar redraws it without recomposing or
+ * measuring.
  */
 private fun Modifier.sheetSurround(
     innerPadding: PaddingValues,
@@ -83,8 +86,12 @@ private fun Modifier.sheetSurround(
 ): Modifier =
     drawBehind {
         if (color.alpha == 0f) return@drawBehind
-        val bottom = innerPadding.calculateTopPadding().toPx() + corner.toPx(size, this)
-        drawRect(color, size = Size(size.width, bottom.coerceAtMost(size.height)))
+        val top = innerPadding.calculateTopPadding().toPx().coerceAtMost(size.height)
+        val radius = corner.toPx(size, this).coerceAtMost(size.height - top)
+        drawRect(color, size = Size(size.width, top))
+        val cornerSize = Size(radius, radius)
+        drawRect(color, topLeft = Offset(0f, top), size = cornerSize)
+        drawRect(color, topLeft = Offset(size.width - radius, top), size = cornerSize)
     }
 
 /**
