@@ -234,7 +234,7 @@ import java.util.concurrent.TimeUnit.SECONDS
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
  *   A group of messages shows its time on its last bubble; a bubble tapped shows its own ([ChatEvent.ToggleTime]).
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
- *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
+ *   [FileRepository.observe] into [transfers], on [dispatcher], for as long as they are loaded. Documents
  *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
  * - **Automatic download** ([ChatAutoDownloads], `docs/PERFORMANCE.md` §7): under the rules of the current network
  *   ([AutoDownloadPolicy]), the files of the messages on screen download by themselves, and photos download in their
@@ -267,7 +267,7 @@ import java.util.concurrent.TimeUnit.SECONDS
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact, the device's
  *   location (found by the sheet's own `ShareLocationViewModel`) and a poll ([ChatUiState.poll], [pollEditor]), each
  *   taking the composer's reply along. The uploads of the messages being sent
- *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ *   ([transfers]) come from [FileRepository.observeUpload], and can be cancelled.
  * - **Shared into the chat** ([ChatShares], `REQUIREMENTS.md` FR-N2, direct share): what another app shared to this
  *   chat, through a Direct Share target or the share sheet, goes into the composer once the conversation is on screen,
  *   a text into the field, files into the attach preview; the user sends it.
@@ -1275,10 +1275,27 @@ class ChatViewModel internal constructor(
             Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen, checklistOpen)
         }
 
+    /**
+     * The downloads and uploads of the loaded messages, apart from [uiState] so that their ticks recompose only the
+     * bubbles they belong to ([ChatTransfers], `docs/PERFORMANCE.md`); followed while the screen reads them.
+     */
+    internal val transfers =
+        ChatTransfers(
+            fileStates =
+                files
+                    .statesOf(history)
+                    .flowOn(dispatcher)
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf()),
+            uploads =
+                files
+                    .uploadsOf(history)
+                    .flowOn(dispatcher)
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf()),
+        )
+
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
-            .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
-            .combine(files.uploadsOf(history)) { state, uploads -> state.copy(uploads = uploads) }
+            .map { state -> state.copy(transfers = transfers) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
@@ -1356,7 +1373,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.DownloadFile -> autoDownloads.download(event.fileId)
             is ChatEvent.CancelDownload -> autoDownloads.cancelDownload(event.fileId)
-            is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
+            is ChatEvent.OpenFile -> uiState.value.fileToOpen(event, transfers)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
@@ -1877,10 +1894,13 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
  * app; null for other messages and for files not on the device. Documents of chats that protect their content open
  * too: Telegram lets them be viewed, only not saved (`has_protected_content`), and Pingogram offers no saving here.
  */
-private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect? {
+private fun ChatUiState.fileToOpen(
+    event: ChatEvent.OpenFile,
+    transfers: ChatTransfers,
+): ChatEffect? {
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == event.messageId } as? ChatItem.Bubble
     val document = (bubble?.content as? MessageContent.Document)?.document?.takeIf { it.file.id == event.fileId }
-    val path = (fileStates[event.fileId] as? FileState.Downloaded)?.path ?: return null
+    val path = (transfers.fileStates.value[event.fileId] as? FileState.Downloaded)?.path ?: return null
     return when {
         document == null -> null
 

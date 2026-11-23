@@ -5,7 +5,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
-import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
@@ -14,7 +13,6 @@ import dev.kyralabs.pingogram.core.ui.component.SponsoredSheet
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
-import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
@@ -33,10 +31,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.transcription.BubbleTranscript
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
@@ -46,15 +42,13 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property header the top bar's chat; null until the chat is known, and for a chat that cannot be found.
  * @property content the messages, or why there are none.
  * @property unreadCount unread incoming messages, for the badge of the jump-to-bottom button; 0 shows none.
- * @property fileStates how far the files of the loaded voice messages, songs and documents are downloaded, by file id
- *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
+ * @property transfers how far the files of the loaded messages are downloaded ([downloadableFileId]) and the uploads of
+ *   the messages being sent; kept apart from the rest, as they tick ([ChatTransfers]).
  * @property playback the voice message or song in the player; null when none is.
  * @property composer what the bottom of the screen shows: the composer, why the user cannot write, or nothing.
  * @property messageActions the actions sheet of a long-pressed message; null while none is open.
  * @property deleteDialog the confirmation before messages are deleted; null while none is shown.
  * @property shortcuts which actions screen readers get on every bubble, besides the sheet.
- * @property uploads the uploads of the photos, videos and files being sent from this device, by message id (each item
- *   of an album by its own); messages not being sent are missing.
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
  * @property checklistForm the form of a new checklist; null while it is closed.
@@ -84,13 +78,12 @@ data class ChatUiState(
     val groupMemberCount: Int? = null,
     /** Who is typing in a group, for the typing bubble (§13.6); null while nobody is. */
     val typing: TypingBubble? = null,
-    val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
+    val transfers: ChatTransfers = ChatTransfers.None,
     val playback: MessagePlayback? = null,
     val composer: ComposerUiState = ComposerUiState.Hidden,
     val messageActions: MessageActionsSheet? = null,
     val deleteDialog: DeleteMessagesDialog? = null,
     val shortcuts: MessageShortcuts = MessageShortcuts(),
-    val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
     val checklistForm: ChecklistSheet? = null,

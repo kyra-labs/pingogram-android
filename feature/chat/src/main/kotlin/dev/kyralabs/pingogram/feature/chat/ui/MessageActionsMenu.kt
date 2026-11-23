@@ -241,7 +241,8 @@ internal fun LiftedBubble(
     state: ChatUiState,
     resources: BubbleResources,
 ) {
-    val fileState = bubble.content.downloadableFileId?.let(state.fileStates::get)
+    val transfers = state.transfers.collect()
+    val fileState = transfers.fileState(bubble.content.downloadableFileId)
     val playback = state.playback?.takeIf { it.messageId == bubble.id }?.playback ?: Playback.Stopped
     BubbleRowContent(
         bubble = bubble,
@@ -249,7 +250,7 @@ internal fun LiftedBubble(
         playback = playback,
         resources = resources,
         onEvent = {},
-        uploads = bubble.uploadsIn(state.uploads),
+        uploads = transfers.uploadsOf(bubble),
         isSelected = false,
         modifier = Modifier.fillMaxWidth(),
     )

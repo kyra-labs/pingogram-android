@@ -63,23 +63,43 @@ class ChatMediaTest : ChatViewModelHarness() {
                     voiceFile to FileState.Downloaded(path = "/voice.ogg", size = 1),
                     documentFile to FileState.Downloading(downloadedSize = 1, size = 4, isActive = true),
                 ),
-                viewModel.state.fileStates,
+                viewModel.fileStates,
             )
             assertEquals(setOf(voiceFile, documentFile), files.observed.toSet())
+        }
+
+    @Test
+    fun `a download's progress changes the transfers alone, not the screen's state`() =
+        runTest {
+            files.setFile(documentFile, FileState.Downloading(downloadedSize = 1, size = 4, isActive = true))
+            val viewModel = showing(chat(), history(message(1, content = document)))
+
+            viewModel.uiState.test {
+                awaitItem()
+
+                files.setFile(documentFile, FileState.Downloading(downloadedSize = 2, size = 4, isActive = true))
+                runCurrent()
+
+                expectNoEvents()
+            }
+            assertEquals(
+                FileState.Downloading(downloadedSize = 2, size = 4, isActive = true),
+                viewModel.fileStates[documentFile],
+            )
         }
 
     @Test
     fun `a file TDLib has not reported shows once it does`() =
         runTest {
             val viewModel = showing(chat(), history(message(1, content = document), message(2)))
-            assertTrue(viewModel.state.fileStates.isEmpty())
+            assertTrue(viewModel.fileStates.isEmpty())
 
             files.setFile(documentFile, FileState.NotDownloaded(size = 4, canBeDownloaded = true))
             runCurrent()
 
             assertEquals(
                 FileState.NotDownloaded(size = 4, canBeDownloaded = true),
-                viewModel.state.fileStates[documentFile],
+                viewModel.fileStates[documentFile],
             )
         }
 
@@ -92,7 +112,7 @@ class ChatMediaTest : ChatViewModelHarness() {
             messages.setHistory(PRIVATE_CHAT, history(message(2)))
             runCurrent()
 
-            assertNull(viewModel.state.fileStates[documentFile])
+            assertNull(viewModel.fileStates[documentFile])
         }
 
     @Test
