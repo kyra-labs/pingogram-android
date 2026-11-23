@@ -117,7 +117,7 @@ fun PingogramTheme(
 | Primary actions (FAB, send, CTA) | `primaryContainer` / `onPrimaryContainer` (FAB; not the floating navigation bar's action button, above), `primary` / `onPrimary` (filled button) |
 | Jump to bottom | `FloatingActionButton` in `secondaryContainer` / `onSecondaryContainer` (Material's secondary container FAB style), not the primary action |
 | Outgoing bubble | `primaryContainer` / `onPrimaryContainer`: deep with light text in dark theme, in the theme's scheme and a wallpaper's alike (owner decision 2026-11-22) |
-| Incoming bubble | `surfaceContainerLow` / `onSurface`: near-black, barely tinted, in dark theme; the same roles in light theme and without a wallpaper (owner decision 2026-11-22) |
+| Incoming bubble | Dark theme: `surfaceContainerLow` / `onSurface`, near-black, barely tinted (owner decision 2026-11-22). Light theme: `surfaceContainerHigh` / `onSurface`, a step deeper than the background, where `surfaceContainerLow` nearly matched it (owner decision 2026-11-23). The same roles with and without a wallpaper |
 | Selected bubble | `secondaryContainer` / `onSecondaryContainer` (`pingogramColors.selectedBubble`); its check at the row's start a filled check circle in `primary`, unselected rings in `outline` |
 | Emoji-only message | no container; time and state `onSurfaceVariant`, read checks `primary` |
 | Sponsored message | filled `Card` with its default colors (`CardDefaults.cardColors()`: `surfaceContainerHighest` / `onSurface`, a step above incoming bubbles); label "Sponsored" / "Recommended" `onSurfaceVariant`; the advertiser's button `FilledTonalButton` (`secondaryContainer` / `onSecondaryContainer`); TDLib's accent color id is not used |
