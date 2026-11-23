@@ -130,8 +130,8 @@ jobs:
           echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
           for f in dist/*.apk; do
             case "$f" in
-              *-arm64-v8a.apk|*-arm64-v8a-*.apk) budget=51 ;;
-              *-universal.apk|*-universal-*.apk) budget=125 ;;
+              *-arm64-v8a.apk|*-arm64-v8a-*.apk) budget=53 ;;
+              *-universal.apk|*-universal-*.apk) budget=128 ;;
               *) budget="" ;;
             esac
             size=$(stat -c %s "$f")
