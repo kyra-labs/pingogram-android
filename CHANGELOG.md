@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-23
+
 ### Added
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
   of the conversation, the whole page in the colors the conversation will take from the wallpaper you pick, your
@@ -1640,7 +1642,8 @@ Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts 
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.0.0...v2.1.0
