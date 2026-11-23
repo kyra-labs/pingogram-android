@@ -1,228 +1,219 @@
-<h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo_full_dark.svg">
-    <img src="art/logo_full.svg" alt="Pingogram" width="360">
-  </picture>
-</h1>
+<div align="center">
 
-<p align="center">
-  <strong>A Telegram client for Android in Material 3 Expressive design.</strong>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo_full_dark.svg">
+  <img src="art/logo_full.svg" alt="Pingogram" width="320">
+</picture>
+
+<h3>A fast, private Telegram client for Android, in Material 3 Expressive.</h3>
+
+<p>
+<a href="https://play.google.com/store/apps/details?id=dev.kyralabs.pingogram"><img src="docs/images/google-play-badge.png" height="60" alt="Get it on Google Play"></a>
+<a href="https://github.com/kyra-labs/pingogram-android/releases/latest"><img src="docs/images/github-badge.png" height="60" alt="Get it on GitHub"></a>
+<a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="60" alt="Explore it on AppGallery"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="docs/images/obtainium-badge.png" height="60" alt="Get it on Obtainium"></a>
 </p>
 
-<p align="center">
+<p>
   <a href="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml"><img src="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?label=download" alt="Latest release"></a>
+  <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License: GPL v3"></a>
   <a href="https://hosted.weblate.org/engage/pingogram/"><img src="https://hosted.weblate.org/widget/pingogram/svg-badge.svg" alt="Translation status"></a>
 </p>
 
-Pingogram is an open-source, third-party Telegram client for Android, written from scratch in
-Kotlin and Jetpack Compose on top of [TDLib](https://github.com/tdlib/td), Telegram's official
-client library. You sign in with your existing Telegram account and keep all your chats; what
-changes is the interface, which follows Material 3 Expressive: Google Sans Flex
-type, expressive shapes and spring motion, dynamic color from your wallpaper, and layouts that
-adapt from phones to tablets and foldables. There are no analytics, no ads and no telemetry: the
-app talks only to Telegram's servers, through TDLib, and to links you open.
+<!-- Generated from the Roborazzi goldens; regenerate with tools/readme/screenshots.sh -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/hero-dark.webp">
+  <img src="docs/screenshots/hero-light.webp" alt="Pingogram's chat list, a chat in its wallpaper's colors, a group chat in each person's color, and Settings" width="100%">
+</picture>
 
-Pingogram is **not** affiliated with Telegram. It is a third-party client that uses Telegram's
-official client library, [TDLib](https://github.com/tdlib/td), and complies with the
-[Telegram API Terms of Service](https://core.telegram.org/api/terms).
+</div>
+
+Pingogram is an open-source Telegram client for Android, written from scratch in Kotlin and Jetpack Compose on
+[TDLib](https://github.com/tdlib/td), Telegram's official client library. Sign in with your Telegram account and keep
+all your chats: what changes is the app around them. No analytics, no ads, no trackers. Pingogram talks only to
+Telegram, through TDLib.
 
 > [!NOTE]
-> Pingogram 2.0 brings a bolder Material 3 Expressive look to chats, contacts and Settings. Everyday messaging
-> works, with notifications, voice and video messages, stickers, groups and channels, forum topics, secret chats,
-> and voice, video and group calls. See [what works today](#what-works-today) and [what is missing](#not-yet).
+> Pingogram is an independent project, **not** affiliated with Telegram. It uses Telegram's official client library
+> and follows the [Telegram API Terms of Service](https://core.telegram.org/api/terms).
+
+## Highlights
+
+- **Material 3 Expressive, all the way.** Google Sans Flex type, expressive shapes, spring motion, dynamic color, and
+  layouts that adapt from phones to tablets and foldables.
+- **Chats in your wallpaper's colors.** *New in 2.4.* Photos, patterns or colors for your account or a single chat; a
+  chat with a wallpaper takes its colors from it, and one wallpaper page previews it all before you apply.
+- **A Feed of your channels.** Their newest posts as one list, unread first, plus Catch-up for unread chats and a page
+  of the messages that mention or reply to you.
+- **Private by design.** Nothing leaves your phone except to Telegram. Bookmarks, reminders, snippets and keyword
+  alerts stay on this phone, and backups are encrypted with a password you choose.
+- **Calls.** End-to-end encrypted voice and video calls, group voice chats with video, and live streams.
+- **Fast on purpose.** Start-up, scrolling and opening a chat are measured on a real phone against
+  [performance budgets](docs/PERFORMANCE.md) before every release.
 
 ## Screenshots
 
-<!-- Generated from the Roborazzi goldens; regenerate with tools/readme/screenshots.sh -->
-
 <table>
   <tr>
-    <td align="center" width="25%">
+    <td align="center" width="33%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chats-dark.png">
-        <img src="docs/screenshots/chats-light.png" alt="Chat list with its large header, folder chips and pinned chats" width="200">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/wallpaper-dark.png">
+        <img src="docs/screenshots/wallpaper-light.png" alt="The wallpaper page: a large preview of the conversation, light and dark theme, and the wallpapers" width="240">
       </picture>
-      <br><sub>Chat list with folders and pinned chats</sub>
+      <br><sub>One wallpaper page with a live preview</sub>
     </td>
-    <td align="center" width="25%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chat-dark.png">
-        <img src="docs/screenshots/chat-light.png" alt="Group conversation with each person's messages in their own color, role labels, replies and reactions" width="200">
-      </picture>
-      <br><sub>Group chats in each person's color</sub>
-    </td>
-    <td align="center" width="25%">
+    <td align="center" width="33%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/channel-dark.png">
-        <img src="docs/screenshots/channel-light.png" alt="Channel with a post, an unread divider and a group of files" width="200">
+        <img src="docs/screenshots/channel-light.png" alt="Channel with a post, an unread divider and a group of files" width="240">
       </picture>
       <br><sub>Channels and files</sub>
     </td>
-    <td align="center" width="25%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/contacts-dark.png">
-        <img src="docs/screenshots/contacts-light.png" alt="Contacts with who is online now and alphabetical sections" width="200">
-      </picture>
-      <br><sub>Contacts and who is online</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="25%">
+    <td align="center" width="33%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
-        <img src="docs/screenshots/search-light.png" alt="Search with the people you write to most, filter chips with counts and results" width="200">
+        <img src="docs/screenshots/search-light.png" alt="Search with the people you write to most, filter chips with counts and results" width="240">
       </picture>
       <br><sub>Search chats, people and messages</sub>
     </td>
-    <td align="center" width="25%">
+  </tr>
+  <tr>
+    <td align="center" width="33%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-        <img src="docs/screenshots/settings-light.png" alt="Settings with the account card and grouped pages" width="200">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/contacts-dark.png">
+        <img src="docs/screenshots/contacts-light.png" alt="Contacts with who is online now and alphabetical sections" width="240">
       </picture>
-      <br><sub>Settings</sub>
+      <br><sub>Contacts and who is online</sub>
     </td>
-    <td align="center" width="25%">
+    <td align="center" width="33%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/appearance-dark.png">
-        <img src="docs/screenshots/appearance-light.png" alt="Appearance settings: a live preview, light and dark modes, AMOLED black, color themes, contrast" width="200">
+        <img src="docs/screenshots/appearance-light.png" alt="Appearance settings: a live preview, light and dark modes, AMOLED black, color themes, contrast" width="240">
       </picture>
-      <br><sub>Live preview, themes, contrast</sub>
+      <br><sub>Themes, contrast and a live preview</sub>
     </td>
-    <td align="center" width="25%">
+    <td align="center" width="33%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/welcome-dark.png">
-        <img src="docs/screenshots/welcome-light.png" alt="Welcome screen" width="200">
+        <img src="docs/screenshots/welcome-light.png" alt="Welcome screen" width="240">
       </picture>
       <br><sub>Welcome</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" colspan="4">
+    <td align="center" colspan="3">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tablet-dark.png">
-        <img src="docs/screenshots/tablet-light.png" alt="Chat list and conversation side by side on a tablet" width="600">
+        <img src="docs/screenshots/tablet-light.png" alt="Chat list and conversation side by side on a tablet" width="640">
       </picture>
       <br><sub>Chat list and conversation side by side on tablets and foldables</sub>
     </td>
   </tr>
 </table>
 
-<sub>Screenshots come from the app's screenshot tests, with sample data, in the brand colors
-(on Android 12+ the app takes its colors from your wallpaper by default). They follow your GitHub
-light or dark theme.</sub>
+<sub>From the app's screenshot tests, with sample data and in the brand colors; on Android 12+ the app takes its colors
+from your phone's wallpaper by default. They follow your GitHub light or dark theme.</sub>
 
-## What works today
+## Features
 
-- **Sign-in:** phone number with country picker, every login code type, two-step verification
-  with password recovery, new-account registration, QR code login and email verification.
-- **The look:** Material 3 Expressive throughout: large headers that shrink as you scroll, folder chips that slide
-  with your finger, pinned chats grouped at the top, avatars shaped by the kind of chat, a floating navigation bar
-  with "New chat" beside it.
-- **Chat list:** folders, unread, mention and reaction badges, typing and online status,
-  drafts, swipe to archive or mark as read, multi-select with a floating toolbar (pin, mute,
-  archive, mark as read, delete) and the archive.
-- **Conversations:** paged history that opens at the first unread message, Material 3 Expressive
-  bubbles, formatted text, replies, forwarded headers, link previews and reactions; photos and
-  albums, videos, GIFs, stickers (animated too), voice messages and music, documents, polls,
-  locations and contacts; sponsored messages in channels as Telegram requires; a full-screen
-  media viewer with zoom, share and save.
-- **Writing:** text with formatting, silent and scheduled send, drafts synced with your other
-  devices; reply, edit, delete, pin, react (with every reaction the chat allows), forward,
-  select, report and save; attach photos and videos (as albums), files, your location, contacts,
-  polls and quizzes; record voice messages; an emoji and sticker panel; send as a channel or
-  anonymously where Telegram allows it. Files you send or download keep going in the background.
-- **Notifications:** per chat, with replies and mark as read from the notification, settings and
-  exceptions per kind of chat, and an optional "Keep connected" mode for the GitHub builds.
-- **Contacts:** your Telegram contacts in alphabetical sections with a letter index, search, adding
-  by phone number or username, editing, deleting and invitations to Telegram. Optional contacts
-  sync (off by default) finds who of your phone's contacts uses Telegram: only while it is on are
-  their names and numbers read and sent to Telegram, when you turn it on, open Contacts or tap
-  Sync now, never in the background; turning it off deletes them from Telegram.
-- **Profiles, groups and channels:** user profiles with their shared media; group and channel info
-  with members, admins and their rights, permissions and slow mode, invite links, photo, name and
-  description, leaving and deleting, as far as your rights allow; creating groups and channels.
-- **Bots:** command menus and suggestions, the buttons bots put under their messages, bot keyboards, inline bots
-  ("@gif cats") and a Start button for bots you have not used yet. Mini Apps, games and payments are not there yet.
-- **Calls:** end-to-end encrypted voice and video calls, with the four emojis to compare; they ring like phone
-  calls, on the lock screen too, and work with your headset, car and watch. Picture-in-picture, screen sharing,
-  group voice chats with video, live streams, and group calls by link or started from Recent calls.
-- **Channels and groups in color:** each person's messages in their own hue (vivid or tinted), role labels, a
-  "Jump to mention" button, and rich channel posts with headings, sections, photos, lists and tables.
-- **Inside chats:** secret chats (end-to-end encrypted, on this phone only, with a self-destruct
-  timer and the encryption key to compare), forum topics, comment threads under channel posts and
-  a pinned messages bar.
-- **Sharing into Pingogram:** text, links, photos, videos and files shared from other apps go to the
-  chats you pick, or straight to one from Android's share sheet.
-- **Search** across your chats, contacts, public chats and channels, and messages, with the people you write to
-  most and counts on the Messages, Media and Links chips. Settings has a search of its own.
-- **Telegram links:** `tg://`, `t.me`, `telegram.me` and `telegram.dog` links from other apps
-  and in messages open in Pingogram (usernames, phone numbers, message links, invite links,
-  Saved Messages, settings pages and more); on Android 12 and later, turn on "Open supported
-  links" for Pingogram (Settings → About → Open Telegram links) so `t.me` links skip the browser.
-- **QR codes:** scan Telegram QR codes with the camera or from an image, link a desktop device
-  by its login code (Pingogram always asks first), and show your own profile's QR code. Join
-  groups and channels from invite links, and see a channel's boosts.
-- **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
-  active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
-  or face, notifications, appearance (system, light or dark theme, AMOLED black, contrast, your wallpaper's colors
-  or one of 13 color themes; message text size, bubble corners and a chat wallpaper), data and storage (usage, clear
-  cache, automatic download per network), language and about with the open-source licenses. "Send feedback or
-  report a bug" prepares a report on your phone that you read and share yourself.
-- **On the home screen:** a widget of your recent chats, and shortcuts on the app's icon for New chat, Search and
-  Saved Messages.
-- **Built the Android way:** a floating navigation bar on phones and a navigation rail with a
-  list-detail layout on larger screens, edge-to-edge, predictive back, and layouts that hold up
-  at 200% font size and with TalkBack.
+<details>
+<summary><b>Chats and the chat list</b></summary>
 
-### Permissions
+- Folders as tabs that slide with your finger, pinned chats grouped at the top, unread, mention and reaction badges,
+  typing and online status, drafts, the archive, swipe to archive or mark as read, and multi-select with a floating
+  toolbar.
+- **Feed:** the newest posts from the channels you follow as one list, unread first, with its own search, filter,
+  reactions and "Open in channel". **Catch-up** steps through your unread chats; **Mentions & replies** collects the
+  messages that mention you or reply to you.
+- Stories above the chats: watch, react, share and post them, with viewers for your own and story albums on profiles.
+- Search across your chats, contacts, public chats and channels, and messages, with the people you write to most.
 
-Pingogram asks for each permission only when you use what needs it, and says why first:
-notifications (Android 13+), the microphone for voice messages and calls, the location you send, your
-contacts only if you turn on contacts sync, and the camera for the QR code scanner, video calls and video
-messages. The scanner reads codes on your phone: nothing the camera sees is kept or sent, only the Telegram
-link a code holds is opened through TDLib. Installing apps is used only when you tap an APK someone sent you,
-and Android asks first. There are no analytics, ads or trackers.
+</details>
 
-### Not yet
+<details>
+<summary><b>Conversations</b></summary>
 
-- Mini Apps, games and payments
-- Posting stories (viewing them works), and sending custom emoji
-- Image wallpapers for chats
+- Paged history that opens at the first unread message, formatted text, replies, forwards, link previews and
+  reactions; photos and albums, videos, GIFs, stickers (animated too), voice and round video messages, music,
+  documents, polls, locations and contacts; a full-screen media viewer.
+- Wallpapers for your account (light and dark apart) and for a single chat: photos, patterns and colors, with the
+  chat in the wallpaper's colors, a blurred top bar and the message box floating over it.
+- Write with formatting, silent and scheduled send, synced drafts and snippets (type `/` and a name); reply, edit,
+  pin, react, forward, select, report and save; attach photos, videos, files, location, contacts and polls; record
+  voice messages; emoji and sticker panel.
+- Voice messages at 1.5× or 2× and with silences skipped; "Add to calendar" and "Open in maps" for dates and
+  addresses in a message, found on your phone.
+- Groups and channels in color (each person's own hue, role labels), rich channel posts, comment threads, forum
+  topics and secret chats with a self-destruct timer.
+- Bots: command menus, inline buttons, keyboards, inline bots ("@gif cats") and Start.
 
-The [roadmap](docs/ROADMAP.md) lists what is left, and Pingogram also aims for faster start-up and smoother
-scrolling than the official app on the same device ([performance budgets](docs/PERFORMANCE.md)).
+</details>
+
+<details>
+<summary><b>Calls and notifications</b></summary>
+
+- End-to-end encrypted voice and video calls with the four emojis to compare; they ring like phone calls, on the lock
+  screen too, and work with your headset, car and watch.
+- Picture-in-picture, screen sharing, group voice chats with video, live streams, and group calls by link.
+- Notifications per chat with reply and mark as read, settings and exceptions per kind of chat, and "Keep connected"
+  for the builds without Google services.
+
+</details>
+
+<details>
+<summary><b>Settings, privacy and your data</b></summary>
+
+- Your account and profile, privacy, blocked users, active sessions, two-step verification, and a passcode lock with
+  fingerprint or face.
+- Appearance: system, light or dark theme, AMOLED black, contrast, your wallpaper's colors or one of 13 color themes,
+  message text size and bubble corners.
+- Backup & restore of what Pingogram keeps only on this phone (settings, bookmarks, reminders, keyword alerts and
+  snippets), encrypted with your password, by hand or automatically.
+- Data and storage, language, and "Send feedback or report a bug", which prepares a report you read and share
+  yourself.
+- Permissions are asked only when you use what needs them, with the reason first: notifications, the microphone, the
+  location you send, contacts (only if you turn on contacts sync) and the camera.
+
+</details>
+
+<details>
+<summary><b>The rest of Android</b></summary>
+
+- A floating navigation bar on phones, a navigation rail with list-detail on larger screens, edge-to-edge, predictive
+  back, and layouts that hold up at 200% font size and with TalkBack.
+- Telegram links (`tg://`, `t.me` and more) open in Pingogram; QR codes for login, joining and your own profile;
+  sharing into Pingogram from other apps; a recent chats widget and app shortcuts.
+- Sign in with your phone number (every code type), two-step verification, QR code login or a new account.
+
+</details>
+
+**Not yet:** Mini Apps, games and payments, and sending custom emoji. The [roadmap](docs/ROADMAP.md) lists what is left.
+
+## Download
+
+<a href="https://play.google.com/store/apps/details?id=dev.kyralabs.pingogram"><img src="docs/images/google-play-badge.png" height="60" alt="Get it on Google Play"></a>
+<a href="https://github.com/kyra-labs/pingogram-android/releases/latest"><img src="docs/images/github-badge.png" height="60" alt="Get it on GitHub"></a>
+<a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="60" alt="Explore it on AppGallery"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="docs/images/obtainium-badge.png" height="60" alt="Get it on Obtainium"></a>
+
+Pingogram needs Android 8.0 or newer and installs alongside other Telegram apps.
+
+- **Google Play:** the build with Google's push service, so new messages arrive while the app is closed.
+- **GitHub:** the APKs on the [Releases page](https://github.com/kyra-labs/pingogram-android/releases). The plain APKs
+  have no Google services: turn on Settings → Notifications → "Keep connected" to get messages while Pingogram is
+  closed. The APKs ending in `-gms` use Google's push service instead. Both are the same app, and one replaces the
+  other with your data kept. Use `-universal.apk` unless you know your phone's ABI, and verify it with
+  `SHA256SUMS.txt`.
+- **AppGallery** (Huawei phones): the plain build, so turn on "Keep connected"; offered in every country AppGallery
+  serves except India.
+- **[Obtainium](https://github.com/ImranR98/Obtainium)** installs from the GitHub releases and keeps Pingogram updated.
+  Set the APK filter to `arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for Google's push service.
 
 ## Translations
 
 Pingogram is translated on [Hosted Weblate](https://hosted.weblate.org/engage/pingogram/). A language ships once 80% of
-the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how to help and how strings are written.
-
-## Download
-
-<p>
-  <a href="https://github.com/kyra-labs/pingogram-android/releases/latest"><img src="docs/images/github-badge.png" height="80" alt="Get it on GitHub"></a>
-  <a href="https://url.cloud.huawei.com/CXKdcPQ1DW"><img src="docs/images/appgallery-badge.png" height="80" alt="Explore it on AppGallery"></a>
-  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/kyra-labs/pingogram-android"><img src="docs/images/obtainium-badge.png" height="80" alt="Get it on Obtainium"></a>
-</p>
-
-Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
-The 0.x releases before 1.0.0 are marked as pre-releases. Use `-universal.apk` unless you know your
-device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
-installs alongside other Telegram apps. The plain APKs have no Google services, so new messages
-arrive while Pingogram runs; turn on Settings → Notifications → "Keep connected" to get them when
-it is closed. The APKs ending in `-gms` get notifications through Google's push service instead,
-on phones with Google Play services; both are the same app, and one replaces the other with your
-data kept.
-
-On Huawei phones, get Pingogram from [AppGallery](https://url.cloud.huawei.com/CXKdcPQ1DW): it is the plain build,
-so turn on "Keep connected" for notifications while it is closed. AppGallery offers it in every country it serves
-except India.
-
-[Obtainium](https://github.com/ImranR98/Obtainium) installs Pingogram from these releases and keeps it
-updated. Set the APK filter to `arm64-v8a\.apk$` (most phones) or `arm64-v8a-gms\.apk$` for the build
-with Google's push service.
+the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how to help.
 
 ## Building
 
@@ -232,12 +223,13 @@ cp secrets.properties.example secrets.properties   # add your api_id / api_hash 
 ./gradlew check                                    # ktlint, detekt, lint, unit and screenshot tests
 ```
 
-Requirements: JDK 17+, an Android SDK with platform 37 (compileSdk), Android Studio (latest
-stable). `secrets.properties` is git-ignored; the build stops with a clear message if it is
-missing or malformed. The TDLib AAR is downloaded automatically from this repository's `tdlib-*`
-releases and checked against a pinned SHA-256 (see [docs/TDLIB.md](docs/TDLIB.md)).
+Requirements: JDK 17+, an Android SDK with platform 37 (compileSdk), Android Studio (latest stable).
+`secrets.properties` is git-ignored; the build stops with a clear message if it is missing or malformed. The TDLib AAR
+is downloaded from this repository's `tdlib-*` releases and checked against a pinned SHA-256
+([docs/TDLIB.md](docs/TDLIB.md)).
 
-## Documentation
+<details>
+<summary><b>Documentation</b></summary>
 
 | Doc | Contents |
 |---|---|
@@ -253,10 +245,12 @@ releases and checked against a pinned SHA-256 (see [docs/TDLIB.md](docs/TDLIB.md
 | [docs/OWNER_SETUP.md](docs/OWNER_SETUP.md) | Maintainer setup checklist |
 | [CLAUDE.md](CLAUDE.md) | Rules for AI-assisted development |
 
+</details>
+
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Commits
-must be signed off (DCO). Report security issues as described in [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Commits must be signed off (DCO).
+Report security issues as described in [SECURITY.md](SECURITY.md).
 
 ## Credits
 
@@ -274,9 +268,8 @@ Pingogram is built on the work of others. Thank you:
   to Kotlin: Apache License 2.0.
 - [Unicode emoji data](https://www.unicode.org/emoji/), by Unicode, Inc.: Unicode License v3.
 - Every other library the app uses (Kotlin, AndroidX, Jetpack Compose, Media3 and the rest) is listed with its
-  license in the app, under Settings → About → Open-source licenses. The build generates that list from the app's
-  dependencies, so it stays complete as they change.
-- The store badges in [Download](#download): see [docs/images/CREDITS.md](docs/images/CREDITS.md).
+  license in the app, under Settings → About → Open-source licenses, generated from the app's dependencies.
+- The store badges: see [docs/images/CREDITS.md](docs/images/CREDITS.md).
 - The translators on [Hosted Weblate](https://hosted.weblate.org/engage/pingogram/).
 
 ## License
@@ -286,5 +279,5 @@ services and Firebase libraries, which the `gms` build uses for push notificatio
 ([LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md)). The components above keep their own licenses.
 
 "Telegram" is a trademark of Telegram FZ-LLC; Pingogram is an independent project, not affiliated with Telegram.
-HUAWEI and AppGallery are trademarks of Huawei Technologies Co., Ltd.; GitHub is a trademark of GitHub, Inc.;
-Google Sans Flex and Material Symbols are Google's.
+Google Play and the Google Play logo are trademarks of Google LLC. HUAWEI and AppGallery are trademarks of Huawei
+Technologies Co., Ltd.; GitHub is a trademark of GitHub, Inc.; Google Sans Flex and Material Symbols are Google's.
