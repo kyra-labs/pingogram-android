@@ -172,6 +172,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1541,31 +1543,38 @@ class ChatViewModel internal constructor(
 
     /**
      * Asks once for each replied message that is not in [history], for messages of this chat: the quote shows it
-     * once it is there. A failure is kept, and shown; it is not asked for again.
+     * once it is there. A failure is kept, and shown; it is not asked for again. The messages of one history are
+     * marked pending, and then answered, in one change each, not one per message: every change maps the
+     * conversation again (`docs/PERFORMANCE.md`).
      */
     private fun fetchMissingReplies(history: ChatHistory) {
+        val known = replies.value
         val missing =
             history.messages.filter { message ->
                 val replyTo = message.replyTo as? ReplyTo.Message
                 val loaded = replyTo?.chatId == chatId && history.messages.findById(replyTo.messageId) != null
-                replyTo != null && replyTo.messageId != 0L && !loaded && message.id !in replies.value
+                replyTo != null && replyTo.messageId != 0L && !loaded && message.id !in known
             }
-        for (message in missing) {
-            var added = false
-            replies.update { replies ->
-                added = message.id !in replies
-                if (added) replies.putting(message.id, ReplyState.Pending) else replies
-            }
-            if (added) {
-                viewModelScope.launch {
-                    val state =
-                        when (val replied = messageRepository.repliedMessage(chatId, message.id)) {
-                            is Outcome.Success -> ReplyState.Loaded(replied.value)
-                            is Outcome.Failure -> ReplyState.Failed(replied.error)
+        if (missing.isEmpty()) return
+        var added: List<Long> = emptyList()
+        replies.update { replies ->
+            added = missing.map { it.id }.filter { it !in replies }
+            if (added.isEmpty()) replies else replies.puttingAll(added.associateWith { ReplyState.Pending })
+        }
+        if (added.isEmpty()) return
+        val asked = added
+        viewModelScope.launch {
+            val answers =
+                asked
+                    .map { id ->
+                        async {
+                            when (val replied = messageRepository.repliedMessage(chatId, id)) {
+                                is Outcome.Success -> id to ReplyState.Loaded(replied.value)
+                                is Outcome.Failure -> id to ReplyState.Failed(replied.error)
+                            }
                         }
-                    replies.update { it.putting(message.id, state) }
-                }
-            }
+                    }.awaitAll()
+            replies.update { it.puttingAll(answers.toMap()) }
         }
     }
 
