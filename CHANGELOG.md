@@ -12,6 +12,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - Someone going online or offline no longer makes an open chat, the contacts, profiles' members, the story viewer
   or the share sheet redo their work: they follow names and photos, and only the statuses they show.
+- In a chat, the quotes of the replied messages of a newly loaded page show together, in one redraw.
 
 ## [2.4.0] - 2026-11-23
 
