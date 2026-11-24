@@ -168,4 +168,79 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetSkipSilence(true)), events)
     }
+
+    @Test
+    fun `send silently by default is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_send_silently)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_send_silently_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetSendsSilently(true)), events)
+    }
+
+    @Test
+    fun `send silently by default shows on, and a tap turns it off`() {
+        setScreen(ChatsPageUiState.Content(sendsSilently = true))
+
+        switchRow(R.string.settings_send_silently)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetSendsSilently(false)), events)
+    }
+
+    @Test
+    fun `confirm bot commands is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_confirm_bot_commands)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_confirm_bot_commands_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetConfirmsBotCommands(true)), events)
+    }
+
+    @Test
+    fun `confirm bot commands shows on, and a tap turns it off`() {
+        setScreen(ChatsPageUiState.Content(confirmsBotCommands = true))
+
+        switchRow(R.string.settings_confirm_bot_commands)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetConfirmsBotCommands(false)), events)
+    }
+
+    @Test
+    fun `undo and redo is a switch, on at first, whose tap turns it off`() {
+        setScreen()
+
+        switchRow(R.string.settings_undo_redo)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_undo_redo_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetShowsUndoRedo(false)), events)
+    }
+
+    @Test
+    fun `undo and redo shows off, and a tap turns it on`() {
+        setScreen(ChatsPageUiState.Content(showsUndoRedo = false))
+
+        switchRow(R.string.settings_undo_redo)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetShowsUndoRedo(true)), events)
+    }
 }

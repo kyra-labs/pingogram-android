@@ -34,6 +34,8 @@ class TdlibInlineBotRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        // Null where options go as given; the app always has one.
+        private val sendDefaults: SendDefaults? = null,
     ) : InlineBotRepository {
         override suspend fun inlineBot(username: String): Outcome<InlineBot?> {
             val name = username.trim().removePrefix("@")
@@ -86,12 +88,13 @@ class TdlibInlineBotRepository
             options: SendOptions,
             replyTo: ReplyTarget?,
         ): Outcome<Unit> {
+            val resolved = sendDefaults?.resolve(options) ?: options
             val send =
                 TdApi.SendInlineQueryResultMessage(
                     chatId,
-                    options.tdTopic(),
+                    resolved.tdTopic(),
                     replyTo?.toInputMessageReplyTo(),
-                    options.toTdOptions(),
+                    resolved.toTdOptions(),
                     queryId,
                     resultId,
                     false,

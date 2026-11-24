@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.TextFindings
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -165,11 +166,14 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -230,7 +234,7 @@ import java.util.concurrent.TimeUnit.SECONDS
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
  *   A group of messages shows its time on its last bubble; a bubble tapped shows its own ([ChatEvent.ToggleTime]).
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
- *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
+ *   [FileRepository.observe] into [transfers], on [dispatcher], for as long as they are loaded. Documents
  *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
  * - **Automatic download** ([ChatAutoDownloads], `docs/PERFORMANCE.md` §7): under the rules of the current network
  *   ([AutoDownloadPolicy]), the files of the messages on screen download by themselves, and photos download in their
@@ -263,7 +267,7 @@ import java.util.concurrent.TimeUnit.SECONDS
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact, the device's
  *   location (found by the sheet's own `ShareLocationViewModel`) and a poll ([ChatUiState.poll], [pollEditor]), each
  *   taking the composer's reply along. The uploads of the messages being sent
- *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ *   ([transfers]) come from [FileRepository.observeUpload], and can be cancelled.
  * - **Shared into the chat** ([ChatShares], `REQUIREMENTS.md` FR-N2, direct share): what another app shared to this
  *   chat, through a Direct Share target or the share sheet, goes into the composer once the conversation is on screen,
  *   a text into the field, files into the attach preview; the user sends it.
@@ -383,6 +387,7 @@ class ChatViewModel internal constructor(
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
+    confirmsBotCommands: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
     private val appInfo: AppInfo = AppInfo(versionName = ""),
@@ -483,6 +488,7 @@ class ChatViewModel internal constructor(
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
+        confirmsBotCommands = composerSettings.confirmsBotCommands,
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
         appInfo = appInfo,
@@ -718,10 +724,14 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
             log = log,
+            confirmsCommands = confirmsBotCommands,
         )
 
     /** The bots' commands sheet; null while it is closed. Kept out of [uiState], like the forward sheet. */
     val botCommandsSheet: StateFlow<BotCommandsSheet?> get() = bots.sheet
+
+    /** The bot command waiting for "Send" in its question (FR-X12); null while none is. Kept out of [uiState]. */
+    val botCommandToConfirm: StateFlow<String?> get() = bots.commandToConfirm
 
     /** The commands suggested above the composer while one is typed; null while none is. Kept out of [uiState]. */
     val commandSuggestions: StateFlow<CommandSuggestions?> get() = bots.suggestions
@@ -1179,7 +1189,7 @@ class ChatViewModel internal constructor(
 
     private val people: Flow<ChatPeople> =
         combine(
-            userRepository.users,
+            shownUsers(chat.map { (it as? ChatLookup.Found)?.chat?.userId }, userRepository),
             userRepository.myUserId,
             referencedChats,
             senderRoles(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, searchRepositories.members),
@@ -1271,10 +1281,27 @@ class ChatViewModel internal constructor(
             Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen, checklistOpen)
         }
 
+    /**
+     * The downloads and uploads of the loaded messages, apart from [uiState] so that their ticks recompose only the
+     * bubbles they belong to ([ChatTransfers], `docs/PERFORMANCE.md`); followed while the screen reads them.
+     */
+    internal val transfers =
+        ChatTransfers(
+            fileStates =
+                files
+                    .statesOf(history)
+                    .flowOn(dispatcher)
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf()),
+            uploads =
+                files
+                    .uploadsOf(history)
+                    .flowOn(dispatcher)
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf()),
+        )
+
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
-            .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
-            .combine(files.uploadsOf(history)) { state, uploads -> state.copy(uploads = uploads) }
+            .map { state -> state.copy(transfers = transfers) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
@@ -1352,7 +1379,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.DownloadFile -> autoDownloads.download(event.fileId)
             is ChatEvent.CancelDownload -> autoDownloads.cancelDownload(event.fileId)
-            is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
+            is ChatEvent.OpenFile -> uiState.value.fileToOpen(event, transfers)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
             is ChatEvent.OpenChat -> effectChannel.trySend(ChatEffect.OpenChat(event.chatId))
@@ -1527,7 +1554,8 @@ class ChatViewModel internal constructor(
                 .firstOrNull()
                 ?.messages
                 .orEmpty()
-        val shown = messages.filter { it.id in messageIds }
+        // Looked up by id (the history is sorted), newest first as in the history: not a pass over all of it.
+        val shown = messageIds.sortedDescending().mapNotNull(messages::findById)
         autoDownloads.setVisible(shown.map { it.content })
         customEmojis.setVisible(shown)
     }
@@ -1539,31 +1567,38 @@ class ChatViewModel internal constructor(
 
     /**
      * Asks once for each replied message that is not in [history], for messages of this chat: the quote shows it
-     * once it is there. A failure is kept, and shown; it is not asked for again.
+     * once it is there. A failure is kept, and shown; it is not asked for again. The messages of one history are
+     * marked pending, and then answered, in one change each, not one per message: every change maps the
+     * conversation again (`docs/PERFORMANCE.md`).
      */
     private fun fetchMissingReplies(history: ChatHistory) {
+        val known = replies.value
         val missing =
             history.messages.filter { message ->
                 val replyTo = message.replyTo as? ReplyTo.Message
                 val loaded = replyTo?.chatId == chatId && history.messages.findById(replyTo.messageId) != null
-                replyTo != null && replyTo.messageId != 0L && !loaded && message.id !in replies.value
+                replyTo != null && replyTo.messageId != 0L && !loaded && message.id !in known
             }
-        for (message in missing) {
-            var added = false
-            replies.update { replies ->
-                added = message.id !in replies
-                if (added) replies.putting(message.id, ReplyState.Pending) else replies
-            }
-            if (added) {
-                viewModelScope.launch {
-                    val state =
-                        when (val replied = messageRepository.repliedMessage(chatId, message.id)) {
-                            is Outcome.Success -> ReplyState.Loaded(replied.value)
-                            is Outcome.Failure -> ReplyState.Failed(replied.error)
+        if (missing.isEmpty()) return
+        var added: List<Long> = emptyList()
+        replies.update { replies ->
+            added = missing.map { it.id }.filter { it !in replies }
+            if (added.isEmpty()) replies else replies.puttingAll(added.associateWith { ReplyState.Pending })
+        }
+        if (added.isEmpty()) return
+        val asked = added
+        viewModelScope.launch {
+            val answers =
+                asked
+                    .map { id ->
+                        async {
+                            when (val replied = messageRepository.repliedMessage(chatId, id)) {
+                                is Outcome.Success -> id to ReplyState.Loaded(replied.value)
+                                is Outcome.Failure -> id to ReplyState.Failed(replied.error)
+                            }
                         }
-                    replies.update { it.putting(message.id, state) }
-                }
-            }
+                    }.awaitAll()
+            replies.update { it.puttingAll(answers.toMap()) }
         }
     }
 
@@ -1866,10 +1901,13 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
  * app; null for other messages and for files not on the device. Documents of chats that protect their content open
  * too: Telegram lets them be viewed, only not saved (`has_protected_content`), and Pingogram offers no saving here.
  */
-private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect? {
+private fun ChatUiState.fileToOpen(
+    event: ChatEvent.OpenFile,
+    transfers: ChatTransfers,
+): ChatEffect? {
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == event.messageId } as? ChatItem.Bubble
     val document = (bubble?.content as? MessageContent.Document)?.document?.takeIf { it.file.id == event.fileId }
-    val path = (fileStates[event.fileId] as? FileState.Downloaded)?.path ?: return null
+    val path = (transfers.fileStates.value[event.fileId] as? FileState.Downloaded)?.path ?: return null
     return when {
         document == null -> null
 

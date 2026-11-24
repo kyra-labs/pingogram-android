@@ -11,8 +11,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.text
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -58,6 +60,27 @@ class ChatFoundTextTest : ChatViewModelHarness() {
             val calendar = actions.indexOf(MessageAction.AddToCalendar)
             assertEquals(calendar + 1, actions.indexOf(MessageAction.OpenInMaps))
             assertTrue(calendar > actions.indexOf(MessageAction.Copy))
+        }
+
+    @Test
+    fun `the actions open without waiting for the classifier, and what it finds joins them`() =
+        runViewModelTest {
+            textFinder.findings[PARTY] = TextFindings(FoundEvent(START, isAllDay = false), ADDRESS)
+            val classifier = CompletableDeferred<Unit>()
+            textFinder.held = classifier
+            val viewModel = chatWith(PARTY)
+
+            send(viewModel, ChatEvent.ShowMessageActions(1))
+
+            val shown = viewModel.state.messageActions!!.actions
+            assertTrue(MessageAction.Copy in shown)
+            assertFalse(MessageAction.AddToCalendar in shown)
+
+            classifier.complete(Unit)
+            runCurrent()
+
+            val actions = viewModel.state.messageActions!!.actions
+            assertTrue(MessageAction.AddToCalendar in actions && MessageAction.OpenInMaps in actions)
         }
 
     @Test

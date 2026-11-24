@@ -9,7 +9,8 @@ import dev.kyralabs.pingogram.feature.contacts.ui.NewContactUiState
 
 /**
  * Sample states of the Add contact screen, shared by the previews and the screenshot tests: a phone number being typed,
- * a username Telegram does not know, the `FLOOD_WAIT` countdown, and a number not on Telegram.
+ * sharing the user's own number with them, a username Telegram does not know, the `FLOOD_WAIT` countdown, and a number
+ * not on Telegram.
  */
 internal object NewContactPreviewData {
     val phoneNumber =
@@ -19,6 +20,8 @@ internal object NewContactPreviewData {
             phoneNumber = "+44 7911 123456",
             country = "🇬🇧 United Kingdom",
         )
+
+    val sharingPhoneNumber = phoneNumber.copy(sharePhoneNumber = true)
 
     val username =
         NewContactUiState(
@@ -37,6 +40,7 @@ internal class NewContactPreviewStates : PreviewParameterProvider<NewContactUiSt
     private val states =
         listOf(
             "Phone number" to NewContactPreviewData.phoneNumber,
+            "Sharing my phone number" to NewContactPreviewData.sharingPhoneNumber,
             "Username not found" to NewContactPreviewData.username,
             "Flood wait" to NewContactPreviewData.floodWait,
             "Not on Telegram" to NewContactPreviewData.notOnTelegram,

@@ -116,7 +116,8 @@ internal class ChatMessageActions(
      * Opens the actions sheet of message [messageId] once TDLib told what it allows, at its reactions picker if
      * [showsPicker] and the sheet has one, with "Open link" and "Copy link" first for the [link] of its text the long
      * press landed on, and "Add to calendar" and "Open in maps" for what the device finds in its text ([findInText],
-     * asked only now, beside TDLib); then asks for the pictures of the custom emoji it shows.
+     * asked only now, beside TDLib); then asks for the pictures of the custom emoji it shows. The sheet does not wait
+     * for the device's classifier, which can take a while: what it finds joins the open sheet once found.
      */
     fun show(
         messageId: Long,
@@ -144,26 +145,30 @@ internal class ChatMessageActions(
                         val available = reactions.await().getOrNull() ?: NO_REACTIONS
                         val quick = reactionOptions(available.top.take(MAX_QUICK_REACTIONS), reactionsMessage)
                         val picker = reactionPicker(available, quick.size, reactionsMessage)
-                        val findings = found.await()
+                        val actions = context.actionsOf(message, properties.value, inThread)
+                        val translation = translate.await()
                         val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
                                 reactionsMessageId = reactionsMessage.id,
                                 reactions = quick,
-                                actions =
-                                    (
-                                        (if (link == null) emptyList() else LINK_ACTIONS) +
-                                            context
-                                                .actionsOf(message, properties.value, inThread)
-                                                .withTranslation(translate.await() + findings.actions)
-                                    ).toImmutableList(),
+                                actions = sheetActions(link, actions, translation, TextFindings.None),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
                                 link = link,
-                                findings = findings,
+                                findings = TextFindings.None,
                             )
                         mutableSheet.value = sheet
-                        loadCustomEmojiPictures(sheet)
+                        launch { loadCustomEmojiPictures(sheet) }
+                        val findings = found.await()
+                        if (findings.actions.isNotEmpty()) {
+                            mutableSheet.update { open ->
+                                open?.takeIf { it.messageId == messageId }?.copy(
+                                    actions = sheetActions(link, actions, translation, findings),
+                                    findings = findings,
+                                ) ?: open
+                            }
+                        }
                     }
                 }
             }
@@ -494,6 +499,19 @@ internal class ChatMessageActions(
         val showsMore = onMessage.size > MAX_REACTION_BADGES
         return if (offersMore || showsMore) ReactionPicker(onMessage, sections.toImmutableList()) else null
     }
+
+    /**
+     * The sheet's actions: "Open link" and "Copy link" first for a [link], then the message's [actions] with its
+     * [translation] and what the device [found] in its text after copying or replying.
+     */
+    private fun sheetActions(
+        link: String?,
+        actions: List<MessageAction>,
+        translation: List<MessageAction>,
+        found: TextFindings,
+    ): ImmutableList<MessageAction> =
+        ((if (link == null) emptyList() else LINK_ACTIONS) + actions.withTranslation(translation + found.actions))
+            .toImmutableList()
 
     private companion object {
         /** Quick reactions at most: two rows of TDLib's reaction picker. */

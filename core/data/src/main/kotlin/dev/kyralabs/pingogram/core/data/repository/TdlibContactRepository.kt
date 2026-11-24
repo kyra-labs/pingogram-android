@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
@@ -16,11 +18,15 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
@@ -55,6 +61,7 @@ class TdlibContactRepository
         private val client: TdlibClient,
         private val userRepository: UserRepository,
         private val chatRepository: ChatRepository,
+        @Dispatcher(Default) private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     ) : ContactRepository {
         override fun contacts(): Flow<Outcome<ImmutableList<User>>> =
             flow {
@@ -76,11 +83,16 @@ class TdlibContactRepository
                         users.keys.containsAll(listed)
                     }
                 }
+                // Sorted when a profile changes, not when someone goes online: the order is the names'. The users with
+                // their live status are looked up by id, and the list emits only when a contact changed.
                 val sorted =
-                    userRepository.users
-                        .map { users -> sortedContacts(users.values) }
+                    userRepository.profiles
+                        .map { profiles -> sortedContactIds(profiles.values) }
+                        .distinctUntilChanged()
+                        .combine(userRepository.users) { ids, users -> ids.mapNotNull(users::get).toImmutableList() }
                         .distinctUntilChanged()
                         .map { Outcome.Success(it) }
+                        .flowOn(dispatcher)
                 emitAll(sorted)
             }
 
@@ -106,11 +118,20 @@ class TdlibContactRepository
             phoneNumber: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<AddContactResult> {
             val contact = TdApi.ImportedContact(phoneNumber.trim(), firstName.trim(), lastName.trim(), emptyNote())
-            return client.request(TdApi.ImportContacts(arrayOf(contact))).map { imported ->
-                val userId = imported.userIds.firstOrNull() ?: 0L
-                if (userId == 0L) AddContactResult.NotOnTelegram else AddContactResult.Added(userId)
+            val imported = client.request(TdApi.ImportContacts(arrayOf(contact)))
+            val userId = (imported as? Outcome.Success)?.value?.userIds?.firstOrNull() ?: 0L
+            return when {
+                imported is Outcome.Failure -> imported
+
+                userId == 0L -> Outcome.Success(AddContactResult.NotOnTelegram)
+
+                !sharePhoneNumber -> Outcome.Success(AddContactResult.Added(userId))
+
+                // importContacts cannot share the number; addContact, with the same names, does.
+                else -> client.request(TdApi.AddContact(userId, contact, true)).map { AddContactResult.Added(userId) }
             }
         }
 
@@ -118,6 +139,7 @@ class TdlibContactRepository
             username: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<Long> =
             when (val found = publicUser(username.trim().removePrefix("@"))) {
                 is Outcome.Success -> {
@@ -125,7 +147,7 @@ class TdlibContactRepository
                     val first = firstName.trim().ifEmpty { user.firstName }
                     val last = if (firstName.isBlank()) user.lastName else lastName.trim()
                     val contact = TdApi.ImportedContact(user.phoneNumber, first, last, currentNote(user.id))
-                    client.request(TdApi.AddContact(user.id, contact, false)).map { user.id }
+                    client.request(TdApi.AddContact(user.id, contact, sharePhoneNumber)).map { user.id }
                 }
 
                 is Outcome.Failure -> {
@@ -225,13 +247,13 @@ class TdlibContactRepository
         }
     }
 
-/** The contacts among [users], without deleted accounts, sorted by name in the user's language. */
-private fun sortedContacts(users: Collection<User>): ImmutableList<User> {
+/** The ids of the contacts among [users], without deleted accounts, sorted by name in the user's language. */
+private fun sortedContactIds(users: Collection<User>): List<Long> {
     val collator = Collator.getInstance()
     return users
         .filter { it.isContact && it.type != UserType.Deleted && it.type != UserType.Unknown }
         .sortedWith { a, b -> collator.compare(a.sortName(), b.sortName()).takeIf { it != 0 } ?: a.id.compareTo(b.id) }
-        .toImmutableList()
+        .map(User::id)
 }
 
 /** The name a contact is sorted by: the first name, then the last name, as Android's contacts sort them by default. */

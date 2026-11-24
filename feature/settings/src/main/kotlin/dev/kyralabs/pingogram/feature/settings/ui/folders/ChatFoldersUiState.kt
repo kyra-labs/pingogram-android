@@ -87,6 +87,11 @@ sealed interface ChatFoldersEvent {
     data class SetShowFeedTab(
         val show: Boolean,
     ) : ChatFoldersEvent
+
+    /** "Unread counters" turned on or off. */
+    data class SetShowFolderTabCounters(
+        val show: Boolean,
+    ) : ChatFoldersEvent
 }
 
 /** What the Chat folders page does once. */

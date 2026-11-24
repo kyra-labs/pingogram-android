@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeCleanLinksRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -24,6 +26,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -32,12 +35,16 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositorySendTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() =
-        TdlibMessageRepository(
-            client,
-            backgroundScope,
-            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
-        )
+    private fun TestScope.repository(
+        cleanLinks: Boolean? = null,
+        sendsSilently: Boolean = false,
+    ) = TdlibMessageRepository(
+        client,
+        backgroundScope,
+        SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        cleanLinks?.let { OutgoingLinkCleaner(FakeCleanLinksRepository(it)) },
+        SendDefaults(FakeComposerSettingsRepository(silently = sendsSilently)),
+    )
 
     private fun answerSend(answer: TdResult<TdApi.Message> = TdResult.Success(message(id = SENDING_ID))) =
         client.on(TdApi.SendMessage::class, answer)
@@ -50,6 +57,28 @@ class TdlibMessageRepositorySendTest {
         listOf(text) + entities.map { "${it.offset}+${it.length}:${it.type.javaClass.simpleName}" }
 
     private fun TdApi.InputMessageReplyToMessage.describe() = listOf(messageId, quote, checklistTaskId, pollOptionId)
+
+    @Test
+    fun `with link cleaning on, a sent link loses its tracking parameters`() =
+        runTest {
+            answerSend()
+
+            repository(cleanLinks = true).sendText(CHAT, text("See https://example.com/?utm_source=x&id=1"))
+
+            val sent = (sentMessage().inputMessageContent as TdApi.InputMessageText).text.text
+            assertEquals("See https://example.com/?id=1", sent)
+        }
+
+    @Test
+    fun `with link cleaning off, a sent link goes as written`() =
+        runTest {
+            answerSend()
+
+            repository(cleanLinks = false).sendText(CHAT, text("See https://example.com/?utm_source=x&id=1"))
+
+            val sent = (sentMessage().inputMessageContent as TdApi.InputMessageText).text.text
+            assertEquals("See https://example.com/?utm_source=x&id=1", sent)
+        }
 
     @Test
     fun `sendText sends the text to the chat itself and clears the draft`() =
@@ -147,6 +176,26 @@ class TdlibMessageRepositorySendTest {
 
             val options = sentMessage().options
             assertEquals(listOf<Any?>(false, null), listOf(options.disableNotification, options.schedulingState))
+        }
+
+    @Test
+    fun `with send silently by default on, a message left to the default goes without a notification`() =
+        runTest {
+            answerSend()
+
+            repository(sendsSilently = true).sendText(CHAT, text("Shh"), SendOptions())
+
+            assertTrue(sentMessage().options.disableNotification)
+        }
+
+    @Test
+    fun `with send silently by default on, send with sound still notifies`() =
+        runTest {
+            answerSend()
+
+            repository(sendsSilently = true).sendText(CHAT, text("Hey!"), SendOptions(silent = false))
+
+            assertFalse(sentMessage().options.disableNotification)
         }
 
     @Test

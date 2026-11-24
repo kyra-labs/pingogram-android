@@ -121,6 +121,76 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds a single setting by its name and opens its page`() {
+        show()
+        search("incognito")
+
+        composeRule.onNode(hasText(string(R.string.settings_incognito_keyboard)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
+    fun `search finds the link cleaning switch by a word of its name`() {
+        show()
+        search("tracking")
+
+        composeRule.onNode(hasText(string(R.string.settings_clean_links)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
+    fun `search finds the phone number sharing switch by its name`() {
+        show()
+        search("new contacts")
+
+        composeRule.onNode(hasText(string(R.string.settings_share_phone_number)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
+    fun `search finds the folder tabs' unread counters switch by its name`() {
+        show()
+        search("unread counters")
+
+        composeRule.onNode(hasText(string(R.string.settings_folder_tab_counters)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.ChatFolders), opened)
+    }
+
+    @Test
+    fun `search finds the send silently switch by its name`() {
+        show()
+        search("silently")
+
+        composeRule.onNode(hasText(string(R.string.settings_send_silently)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
+    fun `search finds the confirm bot commands switch by its name`() {
+        show()
+        search("bot commands")
+
+        composeRule.onNode(hasText(string(R.string.settings_confirm_bot_commands)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
+    fun `search finds the undo and redo switch by its name`() {
+        show()
+        search("undo")
+
+        composeRule.onNode(hasText(string(R.string.settings_undo_redo)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)
@@ -304,8 +374,17 @@ class SettingsHomeTest {
         val resources = RuntimeEnvironment.getApplication().resources
         val found = searchEntries(SearchEntries, "PRÍVACY security", resources, Locale.US)
         assertEquals(HomeDestination.Page(SettingsPage.PrivacySecurity), found.first().destination)
-        // The pages above Privacy and security, whose summary names it, follow it.
-        val above = found.drop(1).map { (it.destination as HomeDestination.SubPage).subPage.parent }.toSet()
+        // The pages above Privacy and security and its settings found by name, whose summary names it, follow it.
+        val above =
+            found
+                .drop(1)
+                .map { entry ->
+                    when (val destination = entry.destination) {
+                        is HomeDestination.SubPage -> destination.subPage.parent
+                        is HomeDestination.Page -> destination.page
+                        else -> null
+                    }
+                }.toSet()
         assertEquals(setOf(SettingsPage.PrivacySecurity), above)
         assertEquals(emptyList<HomeEntry>(), searchEntries(SearchEntries, "  ", resources, Locale.US))
     }

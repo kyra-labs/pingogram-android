@@ -200,6 +200,7 @@ abstract class ChatViewModelHarness {
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
                 videoNotes = VideoNoteRecording(camera, videoNotes, composerSettings),
+                confirmsBotCommands = composerSettings.confirmsBotCommands,
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
@@ -230,9 +231,20 @@ abstract class ChatViewModelHarness {
                 playbackSettings = playbackSettings,
             )
         created += viewModel
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
+        collectAsTheScreen(viewModel)
         runCurrent()
         return viewModel
+    }
+
+    /**
+     * Collects what the screen collects of [viewModel]: its state, and the transfers that the list reads apart from it
+     * ([ChatTransfers.collect]).
+     */
+    private fun TestScope.collectAsTheScreen(viewModel: ChatViewModel) {
+        val screen = UnconfinedTestDispatcher(testScheduler)
+        backgroundScope.launch(screen) { viewModel.uiState.collect {} }
+        backgroundScope.launch(screen) { viewModel.transfers.fileStates.collect {} }
+        backgroundScope.launch(screen) { viewModel.transfers.uploads.collect {} }
     }
 
     /**
@@ -284,6 +296,10 @@ abstract class ChatViewModelHarness {
     }
 
     protected val ChatViewModel.state get() = uiState.value
+
+    protected val ChatViewModel.fileStates get() = transfers.fileStates.value
+
+    protected val ChatViewModel.uploads get() = transfers.uploads.value
 
     protected val ChatViewModel.content get() = state.content as ChatContent.Content
 

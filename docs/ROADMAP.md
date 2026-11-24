@@ -179,9 +179,74 @@ The owner's decision of 2026-11-19:
 - [x] Arrow keys and Enter between the Channel feed's cards (FR-X5): a hardware keyboard moves between the cards
   and Enter opens the post in its channel
 
+## v2.5.0
+
+The owner's decision of 2026-11-23: no 2.4.1; the fixes from the code and performance review of 2026-11-23, the
+performance work behind 2.4.0's accepted benchmark results and the small features ship together. A serious problem in
+2.4.0 before then is fixed on `hotfix/2.4.1` from the `v2.4.0` tag (`docs/RELEASE.md`, Hotfix).
+
+Fixes:
+- [ ] The call service promotes itself to the foreground at once with a minimal notification, then updates it
+- [ ] A 1:1 call that ends while it connects closes its native session (the microphone stays open today); a group call
+  join survives its screen closing
+- [ ] An account slot is not reused while its old client is still closing
+- [ ] Crash hardening: duplicate keys in GIF search, a malformed animated sticker, the scanner's camera start, the order
+  of call signaling packets (check each first)
+- [ ] Opening a chat with a photo wallpaper decodes the photo once, not twice
+- [ ] Pull requests run the release build's lint, as `release.yml` does
+
+Performance (the accepted results in #876's description, and the review):
+- [ ] Cold start: the account registry read off the main thread's path, a startup profile collected on its own, and
+  v2.3.0 measured on the same account to separate the database's growth from the code
+- [ ] The users map projected per screen, off the main thread
+- [ ] Conversation: reply quotes in one update, transfer progress out of the screen's state, a bounded history window
+- [ ] Files: a state per file, no `getFile` for a file already on disk
+- [ ] Chat list scrolling within its budget (the shadow decision, the bars' state)
+- [ ] Media viewer decode size, minithumbnails off the main thread, sticker frame timing, a cheaper wallpaper blur
+- [ ] The late-frames budget revisited (an ADR); profile and benchmark journeys widened; a new baseline
+- [ ] `docs/PERFORMANCE.md` matches the code (download limit, history window, animated images)
+
+Features:
+- [ ] "Typing…" sent to the chat, with a setting to turn it off
+- [x] Incoming bubbles stand out in light theme
+- [ ] A compact chat list
+- [ ] Drafts: every unsent draft on one page
+- [ ] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
+- [ ] Composer: silent sending by default, a confirmation before a bot command, undo and redo
+- [ ] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages
+- [x] Folder tabs without unread counters, as an option
+- [x] Incognito keyboard: the keyboard does not learn from what is typed in Pingogram
+- [x] Links without tracking parameters, when sent and opened
+- [x] Adding a contact does not share the phone number unless chosen
+
+## v2.6.0
+
+The owner's decision of 2026-11-23:
+
+- [ ] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
+  Catch-up
+- [ ] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
+  with Reply and Dismiss; it never sends anything
+- [ ] Listen to posts: Android's on-device text-to-speech reads a message or a channel's unread posts aloud
+- [ ] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
+- [ ] Muted words: group messages with chosen words collapse into a line to tap open; never sponsored messages
+- [ ] Cleanup suggestions: chats not opened for a chosen time, with Mute, Archive or Leave decided one by one
+- [ ] A Quick Settings tile that blurs message text and photos until tapped
+- [ ] Proxies: added from a QR code, their speed tested, and a working one chosen when the current one fails
+
+## Later
+
+- [ ] UnifiedPush for `foss` (ADR 0004, "UnifiedPush for `foss`"): a spike against several distributors, then an ADR
+- [ ] One look for the theme and the wallpaper (an ADR first)
+
+Not planned, as they break Telegram's terms or `CLAUDE.md`'s rules (owner, 2026-11-23): appearing offline while online,
+reading without read receipts, keeping deleted or edited messages, hiding or filtering sponsored messages, poll results
+before voting, copying protected content, more accounts than Telegram's apps allow, and translation or speech
+recognition through other companies' services.
+
 ## Backlog (unscheduled)
 
-Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
+Group video calls, Premium features surface, custom emoji packs management, bot
 reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion, composing rich messages
 (the rich text editor, owner 2026-11-11: Pingogram shows them, `docs/audit/feature-gaps-telegram-2026.md`).
 

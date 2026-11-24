@@ -93,6 +93,30 @@ class ChatListScreenScreenshotTest(
         capture(ScreenshotVariant.Dark, "folderTabsIconsOnly", ChatSwipes(folderTabStyle = FolderTabStyle.Icon))
     }
 
+    /** The folder bar with "Unread counters" off (REQUIREMENTS.md FR-X10): names only, light and dark. */
+    @Test
+    fun folderTabsWithoutCountersLight() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Light, "folderTabsWithoutCountersLight", ChatSwipes(folderCounters = false))
+    }
+
+    @Test
+    fun folderTabsWithoutCountersDark() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(ScreenshotVariant.Dark, "folderTabsWithoutCountersDark", ChatSwipes(folderCounters = false))
+    }
+
+    /** The folder bar with "Folder tabs" at "Icons" and no counters: no badges on the icons. */
+    @Test
+    fun folderTabsIconsOnlyWithoutCounters() {
+        assumeTrue(stateName == "contentWithFolders")
+        capture(
+            ScreenshotVariant.Light,
+            "folderTabsIconsOnlyWithoutCounters",
+            ChatSwipes(folderTabStyle = FolderTabStyle.Icon, folderCounters = false),
+        )
+    }
+
     /** The header's Catch-up chip after the status line, from five chats to catch up on (owner decision 2026-11-15). */
     @Test
     fun catchUpChip() {

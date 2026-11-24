@@ -1203,6 +1203,12 @@
     <string name="settings_enter_sends_hardware_off">Ctrl+Enter sends, Enter starts a new line</string>
     <string name="settings_enter_sends_on_screen">Send with Enter on the screen keyboard</string>
     <string name="settings_enter_sends_on_screen_summary">The on-screen keyboard’s Enter key becomes Send</string>
+    <string name="settings_send_silently">Send silently by default</string>
+    <string name="settings_send_silently_summary">Messages arrive without a sound. Touch and hold Send to send with sound.</string>
+    <string name="settings_confirm_bot_commands">Confirm bot commands</string>
+    <string name="settings_confirm_bot_commands_summary">Asks before a command picked from a bot’s menu is sent</string>
+    <string name="settings_undo_redo">Undo and redo</string>
+    <string name="settings_undo_redo_summary">In the message box’s menu, while there is something to undo or redo</string>
 
     <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
     <string name="settings_section_network">Network</string>
@@ -1438,6 +1444,12 @@
     <string name="settings_hide_phone_numbers">Hide phone numbers</string>
     <!-- "Calling code", the "+44" part, never "country code": some places are regions. -->
     <string name="settings_hide_phone_numbers_summary">Shows only their calling code everywhere in Pingogram, for sharing your screen or streaming</string>
+    <string name="settings_share_phone_number">Share my phone number with new contacts</string>
+    <string name="settings_share_phone_number_summary">When you add someone, they can see your number. You can still change this on each contact’s form.</string>
+    <string name="settings_clean_links">Remove tracking from links</string>
+    <string name="settings_clean_links_summary">Links you send and open lose the parts that only tell sites where you came from, such as utm_source</string>
+    <string name="settings_incognito_keyboard">Incognito keyboard</string>
+    <string name="settings_incognito_keyboard_summary">Asks your keyboard not to learn from what you type in Pingogram. Secret chats always ask.</string>
     <string name="settings_show_ids">Show IDs</string>
     <string name="settings_show_ids_summary">Profiles and info pages show the ID that bots and other apps know a person or chat by</string>
     <string name="settings_direct_share">Chats in the share sheet</string>
@@ -1450,6 +1462,8 @@
     <string name="settings_edit_folders_button_summary">Shows a button at the end of the folder tabs</string>
     <string name="settings_show_feed_tab">Show Feed tab</string>
     <string name="settings_show_feed_tab_summary">Puts the newest posts from the channels you follow first in the folder tabs</string>
+    <string name="settings_folder_tab_counters">Unread counters</string>
+    <string name="settings_folder_tab_counters_summary">Shows how many chats are unread on each folder tab</string>
     <string name="settings_chat_type_icons">Chat type icons</string>
     <string name="settings_chat_type_icons_summary">Shows a symbol before the names of groups and channels</string>
     <!-- Appearance → Chat list: what each folder tab above the chat list shows. -->

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
+import dev.kyralabs.pingogram.feature.chat.ui.ChatTransfers
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.DeleteMessagesDialog
 import dev.kyralabs.pingogram.feature.chat.ui.DeleteScope
@@ -437,12 +439,7 @@ internal object ChatPreviewData {
                     ),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
                 ),
-            uploads =
-                persistentMapOf(
-                    71L to MessageUpload(progress = 0.4f),
-                    72L to MessageUpload(progress = null),
-                    73L to MessageUpload(progress = 0.65f),
-                ),
+            transfers = ChatTransfers.of(uploads = PreviewUploads),
         )
 
     /** A sticker, a voice message, a document as it downloads, a poll and a venue. */
@@ -499,11 +496,7 @@ internal object ChatPreviewData {
                     ),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
                 ),
-            fileStates =
-                persistentMapOf(
-                    sampleDocument.document.file.id to
-                        FileState.Downloading(DOWNLOADED_BYTES, sampleDocument.document.file.size, isActive = true),
-                ),
+            transfers = ChatTransfers.of(fileStates = downloading(sampleDocument.document.file, DOWNLOADED_BYTES)),
         )
 
     /** [mediaFiles] while its voice message plays, two fifths in. */
@@ -716,3 +709,20 @@ internal object ChatPreviewData {
 
 /** A name as the mappers put it into a string: isolated (`bidiIsolated`). */
 private fun isolated(name: String): UiText = UiText.Plain(name).bidiIsolated()
+
+/**
+ * The uploads of [ChatPreviewData.uploading]: an album whose first photo uploads and whose second has not started, and
+ * a document that uploads.
+ */
+private val PreviewUploads =
+    persistentMapOf(
+        71L to MessageUpload(progress = 0.4f),
+        72L to MessageUpload(progress = null),
+        73L to MessageUpload(progress = 0.65f),
+    )
+
+/** [file] downloading, [downloaded] bytes in. */
+private fun downloading(
+    file: FileRef,
+    downloaded: Long,
+) = persistentMapOf(file.id to FileState.Downloading(downloaded, file.size, isActive = true))

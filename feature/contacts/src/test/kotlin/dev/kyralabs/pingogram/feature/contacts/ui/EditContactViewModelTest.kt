@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.EditableContact
+import dev.kyralabs.pingogram.core.testing.FakeSharePhoneNumberRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,12 +28,14 @@ import org.junit.jupiter.api.Test
 
 /**
  * [EditContactViewModel] on a [FakeContactRepository] (`REQUIREMENTS.md` FR-P1): loading the user, editing a contact
- * and adding a user who is none, sharing the phone number where it applies, deleting with its question, errors
+ * and adding a user who is none, sharing the phone number where it applies (from the default for someone added,
+ * FR-X9), deleting with its question, errors
  * (`FLOOD_WAIT`, network, unauthorized, a rejected name) and what survives process death.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditContactViewModelTest {
     private val repository = FakeContactRepository()
+    private val sharing = FakeSharePhoneNumberRepository()
 
     @BeforeEach
     fun setUp() {
@@ -45,7 +48,7 @@ class EditContactViewModelTest {
     }
 
     private fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): EditContactViewModel {
-        val viewModel = EditContactViewModel(USER, handle, repository)
+        val viewModel = EditContactViewModel(USER, handle, repository, sharing)
         runCurrent()
         return viewModel
     }
@@ -186,6 +189,41 @@ class EditContactViewModelTest {
             val other = viewModel()
             send(other, EditContactEvent.SharePhoneNumberChanged(true))
             assertFalse(other.content.sharePhoneNumber)
+        }
+
+    @Test
+    fun `with the default off, adding someone starts without sharing the number`() =
+        runTest {
+            repository.onEditableContact = { editable(isContact = false, canSharePhoneNumber = true) }
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.sharePhoneNumber)
+
+            send(viewModel, EditContactEvent.Save)
+
+            assertTrue(repository.calls.contains("save:$USER:Grace:Hopper:false"))
+        }
+
+    @Test
+    fun `with the default on, adding someone starts sharing the number, and it can be turned off`() =
+        runTest {
+            sharing.enabled.value = true
+            repository.onEditableContact = { editable(isContact = false, canSharePhoneNumber = true) }
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.sharePhoneNumber)
+
+            send(viewModel, EditContactEvent.SharePhoneNumberChanged(false))
+            send(viewModel, EditContactEvent.Save)
+
+            assertTrue(repository.calls.contains("save:$USER:Grace:Hopper:false"))
+        }
+
+    @Test
+    fun `the default leaves an existing contact's form without sharing`() =
+        runTest {
+            sharing.enabled.value = true
+            repository.onEditableContact = { editable(isContact = true, canSharePhoneNumber = true) }
+
+            assertFalse(viewModel().content.sharePhoneNumber)
         }
 
     @Test

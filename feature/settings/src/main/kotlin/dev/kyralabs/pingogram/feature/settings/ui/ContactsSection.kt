@@ -13,7 +13,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 
 /**
  * "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused; then "Suggest
- * frequent contacts" once read ([suggestsFrequent]), whose summary says that turning it off clears them.
+ * frequent contacts" once read ([suggestsFrequent]), whose summary says that turning it off clears them; then "Share my
+ * phone number with new contacts" once read ([sharesPhoneNumber], off by default, `REQUIREMENTS.md` FR-X9), the choice
+ * each new contact's form starts from.
  */
 @Composable
 internal fun ContactsSection(
@@ -21,6 +23,8 @@ internal fun ContactsSection(
     onCheckedChange: (Boolean) -> Unit,
     suggestsFrequent: Boolean? = null,
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
+    sharesPhoneNumber: Boolean? = null,
+    onSharesPhoneNumberChange: (Boolean) -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_contacts)) {
         item { shapes ->
@@ -50,6 +54,17 @@ internal fun ContactsSection(
                 )
             }
         }
+        if (sharesPhoneNumber != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_share_phone_number),
+                    summary = stringResource(R.string.settings_share_phone_number_summary),
+                    checked = sharesPhoneNumber,
+                    shapes = shapes,
+                    onCheckedChange = onSharesPhoneNumberChange,
+                )
+            }
+        }
     }
 }
 
@@ -63,6 +78,21 @@ private fun PrivacySecurityScreenContactSyncOnPreview() {
             onOpen = {},
             onBack = {},
             contactSync = ContactSyncStatus.On(lastSyncedAt = null),
+            sharesPhoneNumber = false,
+        )
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun PrivacySecurityScreenSharePhoneNumberPreview() {
+    PingogramPreview {
+        PrivacySecurityScreen(
+            state = SettingsPreviewData.privacySecurity,
+            onEvent = {},
+            onOpen = {},
+            onBack = {},
+            sharesPhoneNumber = true,
         )
     }
 }

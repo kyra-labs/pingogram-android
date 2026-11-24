@@ -823,12 +823,12 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         fun `a photo being sent shows its upload, unknown until TDLib reports it`() =
             runViewModelTest {
                 val viewModel = showing(chat(), history(pending(-1)))
-                assertEquals(mapOf(-1L to MessageUpload(progress = null)), viewModel.state.uploads)
+                assertEquals(mapOf(-1L to MessageUpload(progress = null)), viewModel.uploads)
 
                 files.uploads.value = mapOf(UPLOAD_FILE to FileUpload(500, 2_000, isActive = true, isCompleted = false))
                 runCurrent()
 
-                assertEquals(mapOf(-1L to MessageUpload(progress = 0.25f)), viewModel.state.uploads)
+                assertEquals(mapOf(-1L to MessageUpload(progress = 0.25f)), viewModel.uploads)
                 assertEquals(listOf(UPLOAD_FILE), files.observedUploads)
             }
 
@@ -840,7 +840,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
 
                 val viewModel = showing(chat(), history(sent, received))
 
-                assertEquals(emptyMap<Long, MessageUpload>(), viewModel.state.uploads)
+                assertEquals(emptyMap<Long, MessageUpload>(), viewModel.uploads)
             }
 
         @Test

@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -297,9 +298,15 @@ class ChatListViewModel internal constructor(
                 loads.map { it[list] ?: ListLoad() }.distinctUntilChanged(),
                 communities.of(list),
                 forumTopics.of(chats),
-            ) { chats, snapshot, load, groups, topics ->
-                ListState(list, content(list, chats, snapshot, load, groups, topics))
-            }.combine(keywordWordsOf(list, keywordChats)) { state, words -> state.withKeywords(words) }
+                ::ListInputs,
+            )
+                // While the rows of one change map, the changes after it make one: only the latest is mapped.
+                .conflate()
+                .map { inputs ->
+                    val content =
+                        content(list, inputs.chats, inputs.snapshot, inputs.load, inputs.groups, inputs.topics)
+                    ListState(list, content)
+                }.combine(keywordWordsOf(list, keywordChats)) { state, words -> state.withKeywords(words) }
         }
 
     private val folderTabs: Flow<ImmutableList<FolderTab>> =
@@ -446,11 +453,12 @@ class ChatListViewModel internal constructor(
                     .without(lockedChatIds)
                     .map { chats -> chats.count { it.unreadMentionCount > 0 } }
                     .distinctUntilChanged()
+            // The name and photo only: the user's own status changes nothing here.
             val account =
-                combine(userRepository.myUserId, userRepository.users) { id, users ->
+                combine(userRepository.myUserId, userRepository.profiles) { id, users ->
                     id?.let(users::get)?.let { HeaderAccount(it.id, it.fullName(), it.profilePhoto) }
                 }.distinctUntilChanged()
-            val catchUp = catchUpChats.chats.map { it.size }.distinctUntilChanged()
+            val catchUp = catchUpChats.count
             combine(
                 chatRepository.unreadChatCount(ChatListType.Main),
                 mentions,
@@ -758,6 +766,15 @@ class ChatListViewModel internal constructor(
         val hasLoadedPage: Boolean = false,
         val isComplete: Boolean = false,
         val error: DomainError? = null,
+    )
+
+    /** What the rows of the shown list are mapped from, as of one change. */
+    private class ListInputs(
+        val chats: List<Chat>,
+        val snapshot: RowSnapshot,
+        val load: ListLoad,
+        val groups: CommunityGroups,
+        val topics: Map<Long, ForumRowSummary>,
     )
 
     private class ListState(

@@ -69,6 +69,10 @@ class TdlibMessageRepository
         private val client: TdlibClient,
         @ApplicationScope private val scope: CoroutineScope,
         private val linkPreviews: SecretChatLinkPreviews,
+        // Null where links go as written; the app always has one.
+        private val outgoingLinks: OutgoingLinkCleaner? = null,
+        // Null where options go as given; the app always has one.
+        private val sendDefaults: SendDefaults? = null,
     ) : MessageRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, HISTORY_UPDATES, HistoryCache(), HistoryCache::reduce)
@@ -189,8 +193,9 @@ class TdlibMessageRepository
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
         /**
-         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview (none in a
-         * secret chat unless allowed, [SecretChatLinkPreviews]) and [options]' notification, scheduling and topic,
+         * `sendMessage` of an `inputMessageText` that clears the draft, its links without tracking parameters while the
+         * setting says so ([OutgoingLinkCleaner]), with TDLib's default link preview (none in a secret chat unless
+         * allowed, [SecretChatLinkPreviews]) and [options]' notification, scheduling and topic,
          * replying as [replyTo] says (a message of the chat or of another one, with its quote). TDLib puts the message
          * into the chat as being sent (`updateNewMessage`) before it answers, so the window shows it at once
          * (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or `updateMessageSendFailed`
@@ -202,11 +207,12 @@ class TdlibMessageRepository
             options: SendOptions,
             replyTo: ReplyTarget?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
+            val sent = outgoingLinks?.clean(text) ?: text
+            val content = TdApi.InputMessageText(sent.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
             val tdReplyTo = replyTo?.toInputMessageReplyTo()
-            return client
-                .request(TdApi.SendMessage(chatId, options.tdTopic(), tdReplyTo, options.toTdOptions(), null, content))
-                .map {}
+            val resolved = sendDefaults?.resolve(options) ?: options
+            val send = TdApi.SendMessage(chatId, resolved.tdTopic(), tdReplyTo, resolved.toTdOptions(), null, content)
+            return client.request(send).map {}
         }
 
         /**
@@ -249,14 +255,15 @@ internal fun SendOptions.tdTopic(): TdApi.MessageTopic? =
     topic?.takeUnless { it is MessageTopic.SavedMessages }?.toTdMessageTopic()
 
 /**
- * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until
+ * `messageSendOptions` for [SendOptions]: silent disables the notification (a [SendOptions] left to the default is
+ * resolved first, [SendDefaults]), a scheduled time holds the message until
  * then (`messageSchedulingStateSendAtDate`, repeated every [SendOptions.repeatPeriod] seconds where that is more than
  * 0), both together where both are asked; a suggested post goes free, at any time (`inputSuggestedPostInfo` without a
  * price or date); everything else is TDLib's default for a user's message.
  */
 internal fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
     TdApi.MessageSendOptions().also { options ->
-        options.disableNotification = silent
+        options.disableNotification = silent == true
         options.schedulingState =
             scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), repeatPeriod.coerceAtLeast(0)) }
         if (suggestAsPost) options.suggestedPostInfo = TdApi.InputSuggestedPostInfo(null, 0)

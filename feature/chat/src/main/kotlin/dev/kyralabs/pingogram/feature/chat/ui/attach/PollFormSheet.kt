@@ -185,7 +185,7 @@ internal fun ColumnScope.PollForm(
         SendButton(
             canSchedule = sheet.canSchedule,
             onSend = { actions.onSend(SendOptions()) },
-            onSendSilently = { actions.onSend(SendOptions(silent = true)) },
+            onSendSound = { actions.onSend(SendOptions(silent = it)) },
             onSchedule = actions.onSchedule,
             enabled = canSend,
         )

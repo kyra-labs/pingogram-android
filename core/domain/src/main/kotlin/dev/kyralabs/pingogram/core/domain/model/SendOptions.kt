@@ -1,7 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.model
 
 /**
- * How a message is sent (`REQUIREMENTS.md` FR-C5): [silent] delivers it without a notification sound; [scheduledAt]
+ * How a message is sent (`REQUIREMENTS.md` FR-C5): [silent] delivers it without a notification sound (true) or with
+ * one (false), and null as the user's "Send silently by default" says (FR-X11); [scheduledAt]
  * (Unix time, seconds) holds it on Telegram's servers until then, outside the chat's history; null sends it now.
  * [repeatPeriod] sends a scheduled message again every so many seconds after that, one of [REPEAT_PERIODS] (td_api.tl
  * `messageSchedulingStateSendAtDate.repeat_period`, which Telegram takes from Telegram Premium subscribers and for one
@@ -10,7 +11,7 @@ package dev.kyralabs.pingogram.core.domain.model
  * and at any time its administrators choose (td_api.tl `inputSuggestedPostInfo` without a price).
  */
 data class SendOptions(
-    val silent: Boolean = false,
+    val silent: Boolean? = null,
     val scheduledAt: Long? = null,
     val topic: MessageTopic? = null,
     val repeatPeriod: Int = 0,

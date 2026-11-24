@@ -240,8 +240,12 @@ class ChatInfoViewModel internal constructor(
                 }
             }
 
+    /** The preview's members as users, their status included: not every other user's change (docs/PERFORMANCE.md). */
+    private val previewUsers =
+        previewMembers.map { it.orEmpty().userIds() }.distinctUntilChanged().flatMapLatest(userRepository::users)
+
     val uiState: StateFlow<ChatInfoUiState> =
-        combine(chat, group, previewMembers, userRepository.users, userRepository.myUserId) { c, g, m, u, me ->
+        combine(chat, group, previewMembers, previewUsers, userRepository.myUserId) { c, g, m, u, me ->
             Sources(c, g, m, u, me)
         }.combine(clock.minutes) { sources, now -> sources to now }
             .combine(canDeleteForEveryone) { (sources, now), canDelete -> Triple(sources, now, canDelete) }
@@ -698,3 +702,7 @@ class ChatInfoViewModel internal constructor(
         const val MEMBERS_PREVIEW = 5
     }
 }
+
+/** The ids of the users among these members (not the chats among them). */
+internal fun List<GroupMember>.userIds(): Set<Long> =
+    mapNotNullTo(HashSet()) { (it.sender as? MessageSender.User)?.userId }

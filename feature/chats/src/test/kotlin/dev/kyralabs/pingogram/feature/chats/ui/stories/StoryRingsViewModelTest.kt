@@ -42,9 +42,12 @@ class StoryRingsViewModelTest {
     private val chatListSettings = FakeChatListSettingsRepository()
     private val posts = FakeStoryPostRepository()
 
+    /** The main dispatcher, which the rings are also mapped on here; runTest shares its scheduler. */
+    private val dispatcher = StandardTestDispatcher()
+
     @BeforeEach
     fun setUp() {
-        Dispatchers.setMain(StandardTestDispatcher())
+        Dispatchers.setMain(dispatcher)
     }
 
     @AfterEach
@@ -52,7 +55,7 @@ class StoryRingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = StoryRingsViewModel(stories, chats, users, chatListSettings, posts)
+    private fun viewModel() = StoryRingsViewModel(stories, chats, users, chatListSettings, posts, dispatcher)
 
     private fun active(
         chatId: Long,

@@ -50,7 +50,7 @@ internal fun ChatUiState.dragOutFiles(messageId: Long): List<DragOutFile> {
     val items = (content as? ChatContent.Content)?.items.orEmpty()
     val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == messageId } as? ChatItem.Bubble
     val contents = bubble?.album?.items ?: listOfNotNull(bubble?.content)
-    return contents.mapNotNull { content -> content.dragOutFile(fileStates) }
+    return contents.mapNotNull { content -> content.dragOutFile(transfers.fileStates.value) }
 }
 
 private fun MessageContent.dragOutFile(states: Map<Int, FileState>): DragOutFile? {

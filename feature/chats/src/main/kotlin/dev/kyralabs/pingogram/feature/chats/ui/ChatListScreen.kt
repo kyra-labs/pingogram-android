@@ -163,6 +163,8 @@ internal fun ChatListScreen(
         }
     val folderSwitch = remember { FolderSwitch() }
     val insets = contentWindowInsets(state.kind, selectionMode = selection != null)
+    // Equal while only the rows change: the bar then skips.
+    val topBar = state.topBar
     Box(modifier) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -171,7 +173,7 @@ internal fun ChatListScreen(
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onSurface,
             topBar = {
-                ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, summary, headerActions)
+                ChatListScreenTopBar(topBar, scrollBehavior, onEvent, onBack, summary, headerActions)
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = insets,
@@ -271,8 +273,9 @@ private fun ChatListBody(
                 // First, so it is measured before the lists, which read its height in the same pass; drawn above
                 // them, and reached first by screen readers.
                 if (showsTabs) {
-                    val sides = Modifier.padding(sheetPadding.sidesOnly())
-                    FolderBar(uiState, onEvent, onEditFolder, onOpenFeed, folderBar, sides)
+                    // The same modifier while the padding is: the bar then skips when only the rows change.
+                    val sides = remember(sheetPadding) { Modifier.padding(sheetPadding.sidesOnly()) }
+                    FolderBar(uiState.folderBar, onEvent, onEditFolder, onOpenFeed, folderBar, sides)
                 }
                 Box(Modifier.fillMaxSize().folderSwipe(uiState, folderSwitch, neighbours, onEvent)) {
                     folderLists.of(state.selectedFolderId)(

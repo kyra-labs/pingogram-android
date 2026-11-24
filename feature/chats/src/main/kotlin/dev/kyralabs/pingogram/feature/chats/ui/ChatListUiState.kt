@@ -46,6 +46,33 @@ data class ChatListUiState(
 )
 
 /**
+ * What the top bar shows of a [ChatListUiState] ([ChatListScreenTopBar]): equal while only the rows change, so the bar
+ * skips then (`docs/PERFORMANCE.md`).
+ */
+@Immutable
+internal data class ChatListTopBarState(
+    val kind: ChatListKind,
+    val selectedCount: Int?,
+    val connection: ConnectionStatus,
+    val hiddenArchive: ArchiveEntry?,
+)
+
+internal val ChatListUiState.topBar: ChatListTopBarState
+    get() = ChatListTopBarState(kind, selection?.chatIds?.size, connection, hiddenArchive)
+
+/** What the [FolderBar] shows of a [ChatListUiState]: equal while only the rows change, so the bar skips then. */
+@Immutable
+internal data class FolderBarState(
+    val tabs: ImmutableList<FolderTab>,
+    val selectedFolderId: Int?,
+    val isSelecting: Boolean,
+    val feedTab: FeedTab?,
+)
+
+internal val ChatListUiState.folderBar: FolderBarState
+    get() = FolderBarState(folderTabs, selectedFolderId, isSelecting = selection != null, feedTab)
+
+/**
  * What the Chats tab's header says (`docs/DESIGN_SYSTEM.md` §6 "Chat list top bar"; owner decision 2026-11-06), kept
  * apart from [ChatListUiState] so its changes recompose the header alone ([ChatListViewModel.summary]).
  *

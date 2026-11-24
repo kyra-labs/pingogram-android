@@ -9,9 +9,36 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Add contact has a "Share my phone number" switch, off unless you turn on "Share my phone number with new
+  contacts" in Settings → Privacy and security → Contacts; the chat bar's "Add contact" follows that setting.
+- Folder tabs can leave out their unread counts: Settings → Chat folders → "Unread counters".
+- Send silently by default: Settings → Chats → Messages; touch and hold Send to send one with sound.
+- Confirm bot commands: Settings → Chats → Messages asks before a command from a bot's menu is sent.
+
+### Changed
+- Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer
+  waits for its turn to play; blurred wallpapers are made with a fraction of the work, and the media viewer decodes
+  photos at most 2048 px unless the screen shows them larger.
+- Someone going online or offline no longer makes an open chat, the contacts, profiles' members, the story viewer
+  or the share sheet redo their work: they follow names and photos, and only the statuses they show.
+- In a chat, the quotes of the replied messages of a newly loaded page show together, in one redraw.
+- In a chat, a file downloading or a photo or file being sent redraws only its own message as it moves along.
+- A long chat keeps at most 300 messages in memory while you scroll through it, loading the rest again as you come
+  back to them, and a message's menu opens without waiting for the device to look for dates and addresses in it:
+  "Add to calendar" and "Open in maps" join it once found.
+- Photos, avatars and files already on the device show again without asking for them first, and a download's progress
+  wakes only what shows that file.
+- The chat list does less work as chats change: a changed row no longer redraws the header or the folder tabs, rows
+  that did not change are recognised without being rebuilt, and the story rings follow their chats in one place.
+
 ## [2.4.0] - 2026-11-23
 
 ### Added
+- Links you send and open lose their tracking parameters, such as utm_source and fbclid: Settings → Privacy and
+  security → Remove tracking from links, on by default.
+- Incognito keyboard: Settings → Privacy and security asks your keyboard not to learn from what you type in
+  Pingogram; secret chats always ask.
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
   of the conversation, the whole page in the colors the conversation will take from the wallpaper you pick, your
   theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp at your screen's size),
@@ -71,6 +98,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
+- In light theme, messages you receive sit on a bubble a step deeper than the background, so they no longer blend into it.
 - A chat with a wallpaper opens faster: its colors show at once instead of fading in.
 - Scrolling a chat with a photo wallpaper is smoother.
 - The voice message button shows a sound wave instead of a microphone.

@@ -8,16 +8,16 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.tdlibPriority
 import dev.kyralabs.pingogram.core.data.mapper.toFileState
 import dev.kyralabs.pingogram.core.data.mapper.toFileUpload
+import dev.kyralabs.pingogram.core.data.updates.updateRouter
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -28,10 +28,12 @@ import javax.inject.Inject
 import kotlin.reflect.KClass
 
 /**
- * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] and [observeUpload] add a file
- * for as long as they are collected (counting collectors), so the cache holds what is on screen, and `updateFile` for
- * other files is ignored. Observing a file again asks TDLib, which answers from memory. Downloads the user asked for
- * ([DownloadPriority.Requested]) go through [TdlibTransferRepository], which follows them as transfers.
+ * [FileRepository] on TDLib's file API. Only files being observed are followed: [observe] and [observeUpload] add a
+ * file for as long as they are collected (counting collectors), and `updateFile` for other files is ignored. Each
+ * observed file has a state of its own, so an update wakes only that file's observers (`docs/PERFORMANCE.md` §3).
+ * Observing a file again asks TDLib, which answers from memory, unless the file was last seen downloaded in full: up
+ * to [MAX_COMPLETED_FILES] of those are remembered, and show at once, until an update says otherwise. Downloads the
+ * user asked for ([DownloadPriority.Requested]) go through [TdlibTransferRepository], which follows them as transfers.
  */
 @AccountScoped
 class TdlibFileRepository
@@ -42,7 +44,17 @@ class TdlibFileRepository
         @ApplicationScope scope: CoroutineScope,
     ) : FileRepository,
         TdlibUpdateCache {
-        private val store = UpdateStore(client, scope, FILE_UPDATES, persistentMapOf(), ObservedFiles::reduce)
+        private val files = ObservedFiles()
+
+        init {
+            // Registered when this returns, so no update emitted later is missed.
+            client.updateRouter(scope).onUpdates(FILE_UPDATES) { update ->
+                when {
+                    update is TdApi.UpdateFile -> files.report(update.file)
+                    update.closesTdlib() -> files.clear()
+                }
+            }
+        }
 
         override fun observe(fileId: Int): Flow<FileState> = observed(fileId) { it.state }
 
@@ -51,21 +63,19 @@ class TdlibFileRepository
         /** What [select] reads of file [fileId] while it is observed, then every change of it. */
         private fun <T : Any> observed(
             fileId: Int,
-            select: (ObservedFile) -> T?,
+            select: (ReportedFile) -> T,
         ): Flow<T> =
             flow {
                 // Observed before asking TDLib, so no updateFile in between is ignored.
-                store.update { files -> files.observe(fileId) }
+                val slot = files.acquire(fileId)
                 try {
                     coroutineScope {
                         // Alongside, so updates show even before TDLib answered.
-                        if (store.state.value[fileId]?.state == null) launch { fetch(fileId) }
-                        emitAll(
-                            store.state.mapNotNull { files -> files[fileId]?.let(select) }.distinctUntilChanged(),
-                        )
+                        if (slot.reported.value == null) launch { fetch(slot) }
+                        emitAll(slot.reported.mapNotNull { reported -> reported?.let(select) }.distinctUntilChanged())
                     }
                 } finally {
-                    store.update { files -> files.release(fileId) }
+                    files.release(slot)
                 }
             }
 
@@ -83,56 +93,100 @@ class TdlibFileRepository
         override suspend fun cancelDownload(fileId: Int): Outcome<Unit> =
             client.request(TdApi.CancelDownloadFile(fileId, false)).map {}
 
-        private suspend fun fetch(fileId: Int) {
-            client.request(TdApi.GetFile(fileId)).onSuccess { file ->
-                store.update { files -> files.putIfUnknown(fileId, file) }
-            }
+        private suspend fun fetch(slot: FileSlot) {
+            client.request(TdApi.GetFile(slot.fileId)).onSuccess { file -> files.reportIfUnknown(slot, file) }
         }
     }
 
-/** A file someone observes: how many collectors, and its state and upload once TDLib reported it. */
-private data class ObservedFile(
-    val collectors: Int,
-    val state: FileState?,
-    val upload: FileUpload? = null,
+/** Completely downloaded files remembered once nobody observes them, so observing one again asks TDLib nothing. */
+internal const val MAX_COMPLETED_FILES = 1_000
+
+/** What TDLib last reported of a file: its download [state] and its [upload]. */
+private data class ReportedFile(
+    val state: FileState,
+    val upload: FileUpload,
+)
+
+private fun TdApi.File.reported() = ReportedFile(toFileState(), toFileUpload())
+
+/** File [fileId] while someone observes it: how many collectors, and what TDLib [reported] of it, null until then. */
+private class FileSlot(
+    val fileId: Int,
+    initial: ReportedFile?,
 ) {
-    fun reported(file: TdApi.File) = copy(state = file.toFileState(), upload = file.toFileUpload())
-}
-
-private typealias ObservedFiles = PersistentMap<Int, ObservedFile>
-
-private fun ObservedFiles.reduce(update: TdApi.Update): ObservedFiles {
-    if (update !is TdApi.UpdateFile) return this
-    val file = update.file
-    return get(file.id)?.let { observed -> putting(file.id, observed.reported(file)) } ?: this
-}
-
-private fun ObservedFiles.observe(fileId: Int): ObservedFiles {
-    val observed = get(fileId)
-    return putting(fileId, observed?.copy(collectors = observed.collectors + 1) ?: ObservedFile(1, state = null))
-}
-
-private fun ObservedFiles.release(fileId: Int): ObservedFiles {
-    // Gone already if TDLib closed in between.
-    val observed = get(fileId) ?: return this
-    return when {
-        observed.collectors <= 1 -> removing(fileId)
-        else -> putting(fileId, observed.copy(collectors = observed.collectors - 1))
-    }
+    var collectors = 0
+    val reported = MutableStateFlow(initial)
 }
 
 /**
- * Stores a requested state unless an `updateFile` came first. TDLib reports every change of a file, so the updates
- * alone end at the answer's state or a newer one, while the answer, which takes another path, can be older than an
- * update already applied.
+ * The observed files, each with its own [FileSlot], and the [MAX_COMPLETED_FILES] most recently seen completely
+ * downloaded, which a new slot starts from. Called from the update router and from collectors: every function holds
+ * the lock.
  */
-private fun ObservedFiles.putIfUnknown(
-    fileId: Int,
-    file: TdApi.File,
-): ObservedFiles {
-    val observed = get(fileId)
-    return if (observed != null && observed.state == null) putting(fileId, observed.reported(file)) else this
+private class ObservedFiles {
+    private val slots = HashMap<Int, FileSlot>()
+    private val completed =
+        object : LinkedHashMap<Int, ReportedFile>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, ReportedFile>) =
+                size > MAX_COMPLETED_FILES
+        }
+
+    @Synchronized
+    fun acquire(fileId: Int): FileSlot =
+        slots.getOrPut(fileId) { FileSlot(fileId, completed[fileId]) }.also { it.collectors++ }
+
+    @Synchronized
+    fun release(slot: FileSlot) {
+        slot.collectors--
+        if (slot.collectors <= 0 && slots[slot.fileId] === slot) slots.remove(slot.fileId)
+    }
+
+    /** An `updateFile`: for the file's observers, and for the completed files, which forget one no longer complete. */
+    @Synchronized
+    fun report(file: TdApi.File) {
+        val slot = slots[file.id]
+        if (slot == null && file.id !in completed) return
+        val reported = file.reported()
+        slot?.reported?.value = reported
+        remember(file.id, reported)
+    }
+
+    /**
+     * TDLib's answer to `getFile`, unless an `updateFile` came first: TDLib reports every change of a file, so the
+     * updates alone end at the answer's state or a newer one, while the answer, which takes another path, can be older
+     * than an update already applied.
+     */
+    @Synchronized
+    fun reportIfUnknown(
+        slot: FileSlot,
+        file: TdApi.File,
+    ) {
+        if (slot.reported.value != null) return
+        val reported = file.reported()
+        slot.reported.value = reported
+        remember(file.id, reported)
+    }
+
+    /** TDLib closed: its file ids mean nothing to the next instance. */
+    @Synchronized
+    fun clear() {
+        slots.values.forEach { it.reported.value = null }
+        completed.clear()
+    }
+
+    private fun remember(
+        fileId: Int,
+        reported: ReportedFile,
+    ) {
+        if (reported.state is FileState.Downloaded) completed[fileId] = reported else completed.remove(fileId)
+    }
+
+    private companion object {
+        const val INITIAL_CAPACITY = 64
+        const val LOAD_FACTOR = 0.75f
+    }
 }
 
-/** The updates its store's reducer handles. */
-private val FILE_UPDATES: Set<KClass<out TdApi.Update>> = setOf(TdApi.UpdateFile::class)
+/** The updates the repository handles; the closing one resets it. */
+private val FILE_UPDATES: Set<KClass<out TdApi.Update>> =
+    setOf(TdApi.UpdateFile::class, TdApi.UpdateAuthorizationState::class)

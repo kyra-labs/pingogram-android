@@ -33,22 +33,25 @@ interface ContactRepository {
     /**
      * Adds the owner of [phoneNumber] (international, with or without `+`) as a contact named [firstName] and
      * [lastName]: [AddContactResult.Added] with their user id, or [AddContactResult.NotOnTelegram].
+     * [sharePhoneNumber] lets them see the current user's phone number.
      */
     suspend fun addByPhoneNumber(
         phoneNumber: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<AddContactResult>
 
     /**
      * Adds the user with [username] (without `@`) as a contact named [firstName] and [lastName], or by their own names
      * where [firstName] is blank: their user id. `DomainError.NotFound` if no user has the username (a channel's or a
-     * bot's included, as they cannot be contacts).
+     * bot's included, as they cannot be contacts). [sharePhoneNumber] lets them see the current user's phone number.
      */
     suspend fun addByUsername(
         username: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<Long>
 
     /** User [userId] with what editing them as a contact needs. */

@@ -5,6 +5,7 @@ import androidx.core.graphics.scale
 import coil3.size.Size
 import coil3.transform.Transformation
 import dev.kyralabs.pingogram.core.ui.image.gaussianBlur
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -14,6 +15,10 @@ import kotlin.math.roundToInt
  * with a Gaussian of [sigma], which leaves no box's steps. Coil runs it once, off the main thread, and keeps the small
  * result in its memory cache under the photo's key and [cacheKey]; the wallpaper draws it scaled up. [Photo] is a
  * blurred photo wallpaper's blur, [Bar] the stronger one behind a conversation's top bar (owner decision 2026-11-22).
+ *
+ * The photo is shrunk further by as much as keeps the Gaussian within [MAX_SIGMA] pixels, and the Gaussian with it:
+ * the same blur at that scale, a few times fewer pixels each taking a few times fewer taps (the bar's 115 at 450 px
+ * are 31 at 113 px), and as smooth drawn scaled up, as it holds nothing finer than the blur.
  */
 internal class WallpaperBlur private constructor(
     override val cacheKey: String,
@@ -23,7 +28,8 @@ internal class WallpaperBlur private constructor(
         input: Bitmap,
         size: Size,
     ): Bitmap {
-        val scale = min(1f, BLUR_SIDE_PX.toFloat() / max(input.width, input.height))
+        val shrink = ceil(sigma / MAX_SIGMA)
+        val scale = min(1f, BLUR_SIDE_PX.toFloat() / max(input.width, input.height)) / shrink
         val width = (input.width * scale).roundToInt().coerceAtLeast(1)
         val height = (input.height * scale).roundToInt().coerceAtLeast(1)
         val small = input.scale(width, height)
@@ -31,7 +37,7 @@ internal class WallpaperBlur private constructor(
         small.getPixels(pixels, 0, width, 0, 0, width, height)
         if (small !== input) small.recycle()
         return Bitmap.createBitmap(
-            gaussianBlur(pixels, width, height, sigma),
+            gaussianBlur(pixels, width, height, sigma / shrink),
             width,
             height,
             Bitmap.Config.ARGB_8888,
@@ -49,3 +55,6 @@ internal class WallpaperBlur private constructor(
 
 /** The square a blurred wallpaper fits before its blur, in pixels; its photo is decoded about that size. */
 internal const val BLUR_SIDE_PX = 450
+
+/** The widest Gaussian the blur takes, in pixels of the shrunk photo: 37 taps at most. */
+private const val MAX_SIGMA = 6f

@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.testing.FakeSharePhoneNumberRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ActionBarEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures
 import dev.kyralabs.pingogram.feature.chat.ui.FakeChatRepository
@@ -48,6 +49,7 @@ class ChatActionBarViewModelTest {
     private val contacts = FakeContacts()
     private val blockList = FakeBlockList()
     private val actionBars = FakeActionBars()
+    private val sharing = FakeSharePhoneNumberRepository()
     private val savedState = SavedStateHandle()
 
     @BeforeEach
@@ -64,7 +66,7 @@ class ChatActionBarViewModelTest {
         chats.setChats(ChatFixtures.chat(id = CHAT, type = ChatType.Private(USER)).copy(actionBar = bar))
 
     private fun TestScope.viewModel(): ChatActionBarViewModel {
-        val viewModel = ChatActionBarViewModel(CHAT, savedState, chats, users, contacts, blockList, actionBars)
+        val viewModel = ChatActionBarViewModel(CHAT, savedState, chats, users, contacts, blockList, actionBars, sharing)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.bar.collect {} }
         runCurrent()
         return viewModel
@@ -134,7 +136,7 @@ class ChatActionBarViewModelTest {
         }
 
     @Test
-    fun `adding a contact keeps their name and does not share the user's number`() =
+    fun `adding a contact keeps their name and, with the default off, does not share the user's number`() =
         runTest(dispatcher) {
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
@@ -144,6 +146,18 @@ class ChatActionBarViewModelTest {
 
             assertEquals(listOf(Saved(USER, "Ada", "Lovelace", sharePhoneNumber = false)), contacts.saved)
             assertEquals(listOf<ActionBarEffect>(ActionBarEffect.ContactAdded), effects)
+        }
+
+    @Test
+    fun `adding a contact with the default on shares the user's number`() =
+        runTest(dispatcher) {
+            sharing.enabled.value = true
+            val viewModel = viewModel()
+
+            viewModel.onEvent(ActionBarEvent.AddContact)
+            runCurrent()
+
+            assertEquals(listOf(Saved(USER, "Ada", "Lovelace", sharePhoneNumber = true)), contacts.saved)
         }
 
     @Test
@@ -231,12 +245,14 @@ class ChatActionBarViewModelTest {
             phoneNumber: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<AddContactResult> = Outcome.Failure(DomainError.NotFound)
 
         override suspend fun addByUsername(
             username: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<Long> = Outcome.Failure(DomainError.NotFound)
 
         override suspend fun editableContact(userId: Long): Outcome<EditableContact> =

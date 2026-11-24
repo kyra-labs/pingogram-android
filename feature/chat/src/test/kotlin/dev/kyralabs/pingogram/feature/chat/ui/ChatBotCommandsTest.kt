@@ -261,6 +261,50 @@ class ChatBotCommandsTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `with confirm bot commands on, a command waits for Send in its question, then goes`() =
+            runViewModelTest {
+                composerSettings.confirm.value = true
+                val viewModel = bot()
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.botCommandToConfirm.collect {}
+                }
+
+                send(viewModel, BotEvent.OpenMenu, BotEvent.SendCommand("/help"))
+                assertEquals("/help", viewModel.botCommandToConfirm.value)
+                assertNull(viewModel.botCommandsSheet.value)
+                assertTrue(messages.sent.isEmpty())
+
+                send(viewModel, BotEvent.ConfirmCommand)
+
+                assertEquals(listOf(Triple(BOT, text("/help"), SendOptions())), messages.sent)
+                assertNull(viewModel.botCommandToConfirm.value)
+            }
+
+        @Test
+        fun `with confirm bot commands on, cancel sends nothing`() =
+            runViewModelTest {
+                composerSettings.confirm.value = true
+                val viewModel = bot()
+
+                send(viewModel, BotEvent.SendCommand("/help"), BotEvent.CancelCommand)
+
+                assertNull(viewModel.botCommandToConfirm.value)
+                assertTrue(messages.sent.isEmpty())
+            }
+
+        @Test
+        fun `the command waiting for its question survives process death`() =
+            runViewModelTest {
+                composerSettings.confirm.value = true
+                send(bot(), BotEvent.SendCommand("/help"))
+
+                val restored = bot()
+                assertEquals("/help", restored.botCommandToConfirm.value)
+                send(restored, BotEvent.ConfirmCommand)
+                assertEquals(listOf(Triple(BOT, text("/help"), SendOptions())), messages.sent)
+            }
+
+        @Test
         fun `a command replies where the composer replies`() =
             runViewModelTest {
                 val viewModel = bot()

@@ -93,6 +93,20 @@ internal fun DeleteDraftsDialog(
     )
 }
 
+/** [DeleteDraftsDialog] while [drafts] says it is open, its answers going to [onEvent]. */
+@Composable
+internal fun DeleteDraftsDialogHost(
+    drafts: DataOptionsUiState,
+    onEvent: (DataOptionsEvent) -> Unit,
+) {
+    if (drafts.isDeleteDraftsDialogOpen) {
+        DeleteDraftsDialog(
+            onConfirm = { onEvent(DataOptionsEvent.ConfirmDeleteDrafts) },
+            onDismiss = { onEvent(DataOptionsEvent.DismissDeleteDrafts) },
+        )
+    }
+}
+
 /** Shows what [viewModel] did in snackbars of [snackbarHostState]: the deleted drafts, or why something failed. */
 @Composable
 internal fun DataOptionsSnackbars(

@@ -90,6 +90,8 @@
     <string name="contacts_share_phone_number">Share my phone number</string>
     <!-- %1$s is the contact's first name. -->
     <string name="contacts_share_phone_number_summary">%1$s can see your number</string>
+    <!-- The summary while no name is typed on the Add contact form. -->
+    <string name="contacts_share_phone_number_summary_unnamed">They can see your number</string>
     <string name="contacts_delete_contact">Delete contact</string>
 
     <!-- Contacts sync on the Contacts tab (ContactSyncItems). It sends the phone's names and numbers to Telegram. -->

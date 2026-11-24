@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.uploadFileId
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +24,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 
 /**
@@ -40,7 +43,8 @@ internal class ChatFiles(
 ) {
     /**
      * The state of every file of the messages in [history], by id: one [FileRepository.observe] per file, followed for
-     * as long as its message is loaded. A file TDLib has not reported is left out until it is.
+     * as long as its message is loaded. A file TDLib has not reported is left out until it is. Each change of a file
+     * puts that one file into the map, rather than building it again from all of them (`docs/PERFORMANCE.md`).
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun statesOf(history: Flow<ChatHistory>): Flow<ImmutableMap<Int, FileState>> =
@@ -48,13 +52,10 @@ internal class ChatFiles(
             .map { it.messages.mapNotNullTo(LinkedHashSet()) { message -> message.content.downloadableFileId } }
             .distinctUntilChanged()
             .flatMapLatest { ids ->
-                if (ids.isEmpty()) {
-                    flowOf(persistentMapOf())
-                } else {
-                    combine(ids.map(::observed)) { files ->
-                        files.mapNotNull { (id, state) -> state?.let { id to it } }.toMap().toImmutableMap()
-                    }
-                }
+                ids
+                    .map { id -> repository.observe(id).map { state -> id to state } }
+                    .merge()
+                    .runningFold(NoStates) { states, (id, state) -> states.putting(id, state) }
             }.distinctUntilChanged()
 
     /**
@@ -97,13 +98,6 @@ internal class ChatFiles(
             .observeUpload(fileId)
             .map { upload -> messageId to MessageUpload(upload.progressOrNull) }
             .onStart { emit(messageId to MessageUpload(progress = null)) }
-
-    /** [fileId] with its state as soon as it is subscribed: null until TDLib reports it. */
-    private fun observed(fileId: Int): Flow<Pair<Int, FileState?>> =
-        repository
-            .observe(fileId)
-            .map<FileState, Pair<Int, FileState?>> { fileId to it }
-            .onStart { emit(fileId to null) }
 }
 
 /**
@@ -117,6 +111,8 @@ internal fun ChatItem.Bubble.uploadsIn(uploads: ImmutableMap<Long, MessageUpload
 }
 
 private val NoUploads: ImmutableMap<Long, MessageUpload> = persistentMapOf()
+
+private val NoStates: PersistentMap<Int, FileState> = persistentMapOf()
 
 /** The progress to show: none while TDLib has neither started the upload nor told the size. */
 private val FileUpload.progressOrNull: Float?

@@ -16,15 +16,17 @@ import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 
 /**
- * "Messages": the rows of Double-tap to react and of Snippets ([pages]), and which Enter sends on a keyboard and on
- * the screen keyboard.
+ * "Messages": the rows of Double-tap to react and of Snippets ([pages]), which Enter sends on a keyboard and on
+ * the screen keyboard, whether messages go without sound unless chosen (`REQUIREMENTS.md` FR-X11), whether a bot
+ * command asks before it goes (FR-X12), and whether the message box's menu offers Undo and Redo (FR-X13).
  */
 @Composable
 internal fun MessagesGroup(
-    sendKeys: SendKeys,
+    state: ChatsPageUiState.Content,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
+    val sendKeys = state.sendKeys
     SettingsGroup(title = stringResource(R.string.settings_chat_section_messages)) {
         item { shapes ->
             PageRow(
@@ -45,6 +47,33 @@ internal fun MessagesGroup(
                 checked = sendKeys.onScreenKeyboard,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetSendKeys(sendKeys.copy(onScreenKeyboard = it))) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_send_silently),
+                summary = stringResource(R.string.settings_send_silently_summary),
+                checked = state.sendsSilently,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetSendsSilently(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_confirm_bot_commands),
+                summary = stringResource(R.string.settings_confirm_bot_commands_summary),
+                checked = state.confirmsBotCommands,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetConfirmsBotCommands(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_undo_redo),
+                summary = stringResource(R.string.settings_undo_redo_summary),
+                checked = state.showsUndoRedo,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetShowsUndoRedo(it)) },
             )
         }
     }

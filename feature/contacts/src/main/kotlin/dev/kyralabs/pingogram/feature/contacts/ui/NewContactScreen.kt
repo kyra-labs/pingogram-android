@@ -211,6 +211,12 @@ private fun NewContactForm(
             PhoneNumberField(state, onEvent, enabled, submit)
         }
     }
+    SharePhoneNumberRow(
+        name = state.firstName.trim(),
+        checked = state.sharePhoneNumber,
+        enabled = enabled,
+        onCheckedChange = { onEvent(NewContactEvent.SharePhoneNumberChanged(it)) },
+    )
     FormEnd(
         floodWaitSeconds = state.floodWaitSeconds,
         floodWaitTotalSeconds = state.floodWaitTotalSeconds,

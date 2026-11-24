@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
@@ -17,7 +18,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Chat folders page in each of its states, light and dark; with folders in AMOLED black, high contrast, right to
+ * The Chat folders page in each of its states, light and dark, and with the folder tabs' "Unread counters" off
+ * (FR-X10; the others show it on, the default); with folders in AMOLED black, high contrast, right to
  * left, a 700 dp window, an expanded one and at twice the font size (`docs/DESIGN_SYSTEM.md` §12).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -46,6 +48,12 @@ class ChatFoldersScreenScreenshotTest {
 
     @Test
     fun addingDark() = capture("addingDark", ThemeMode.Dark, ChatFoldersPreviewStates.adding)
+
+    @Test
+    fun countersOffLight() = capture("countersOffLight", ThemeMode.Light, ChatFoldersPreviewStates.content, countersOff)
+
+    @Test
+    fun countersOffDark() = capture("countersOffDark", ThemeMode.Dark, ChatFoldersPreviewStates.content, countersOff)
 
     @Test
     @Config(qualifiers = COMPACT)
@@ -88,9 +96,12 @@ class ChatFoldersScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         state: ChatFoldersUiState,
+        tabs: ChatListSettings = ChatListSettings(),
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        ChatFoldersScreen(state = state, onEvent = {}, onOpenFolder = {}, onBack = {})
+        ChatFoldersScreen(state = state, onEvent = {}, onOpenFolder = {}, onBack = {}, tabs = tabs)
     }
+
+    private val countersOff = ChatListSettings(showFolderTabCounters = false)
 
     private fun captureAudit(variant: ScreenshotVariant) =
         composeRule.captureScreen(javaClass, variant.goldenName, variant) {

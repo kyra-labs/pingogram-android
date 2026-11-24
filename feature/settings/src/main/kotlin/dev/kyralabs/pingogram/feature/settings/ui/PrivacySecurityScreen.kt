@@ -55,12 +55,14 @@ internal fun PrivacySecurityRoute(
     phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
+    incognitoKeyboardViewModel: IncognitoKeyboardViewModel = hiltViewModel(),
+    cleanLinksViewModel: CleanLinksViewModel = hiltViewModel(),
+    sharePhoneNumberViewModel: SharePhoneNumberViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
-    val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
     val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
@@ -76,18 +78,11 @@ internal fun PrivacySecurityRoute(
         frequentContactsViewModel.errors,
         idVisibilityViewModel.errors,
         directShareViewModel.errors,
+        incognitoKeyboardViewModel.errors,
+        cleanLinksViewModel.errors,
+        sharePhoneNumberViewModel.errors,
     )
-    LifecycleStartEffect(viewModel, contactSyncViewModel) {
-        viewModel.onEvent(PrivacySecurityEvent.Refresh)
-        contactSyncViewModel.onStarted()
-        onStopOrDispose {}
-    }
-    ContactSyncHost(
-        controls = controls,
-        effects = contactSyncViewModel.contactSync.effects,
-        onEvent = contactSyncViewModel.contactSync::onEvent,
-        snackbarHostState = snackbarHostState,
-    )
+    PrivacySecurityRefreshAndSync(viewModel, contactSyncViewModel, snackbarHostState)
     PrivacySecurityScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -105,6 +100,12 @@ internal fun PrivacySecurityRoute(
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
         idsShown = idsShown,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
+        incognitoKeyboard = incognitoKeyboardViewModel.enabled.collectAsStateWithLifecycle().value,
+        onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
+        cleanLinks = cleanLinksViewModel.enabled.collectAsStateWithLifecycle().value,
+        onCleanLinksChange = cleanLinksViewModel::onCheckedChange,
+        sharesPhoneNumber = sharePhoneNumberViewModel.enabled.collectAsStateWithLifecycle().value,
+        onSharesPhoneNumberChange = sharePhoneNumberViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
         drafts = drafts,
@@ -115,12 +116,14 @@ internal fun PrivacySecurityRoute(
 /**
  * Privacy and security (`REQUIREMENTS.md` FR-S1), its groups in the owner's order of 2026-11-19 below the privacy
  * checkup:
- * - Security: whether 2-step verification is on, passkeys, whether the passcode lock is on, locked chats, blocked
+ * - Security: whether 2-step verification is on, passkeys, whether the passcode lock is on, locked chats, each opening
+ *   its page; "Incognito keyboard" ([incognitoKeyboard], off by default, `REQUIREMENTS.md` FR-X7), a switch; blocked
  *   users and devices with their counts, and connected websites, each opening its page;
- * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
+ * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page, then
+ *   "Remove tracking from links" ([cleanLinks], on by default, `REQUIREMENTS.md` FR-X8), a switch;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
- *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), and "Suggest frequent contacts"
- *   ([suggestsFrequent]);
+ *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), "Suggest frequent contacts"
+ *   ([suggestsFrequent]) and "Share my phone number with new contacts" ([sharesPhoneNumber], FR-X9);
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
@@ -148,6 +151,12 @@ internal fun PrivacySecurityScreen(
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
     idsShown: Boolean? = null,
     onIdsShownChange: (Boolean) -> Unit = {},
+    incognitoKeyboard: Boolean? = null,
+    onIncognitoKeyboardChange: (Boolean) -> Unit = {},
+    cleanLinks: Boolean? = null,
+    onCleanLinksChange: (Boolean) -> Unit = {},
+    sharesPhoneNumber: Boolean? = null,
+    onSharesPhoneNumberChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
     drafts: DataOptionsUiState = DataOptionsUiState(),
@@ -172,10 +181,17 @@ internal fun PrivacySecurityScreen(
                 // One child of the page with the section below it, so the gap it holds goes with it.
                 Column {
                     PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
-                    SecuritySection(state, onOpen)
+                    SecuritySection(state, onOpen, incognitoKeyboard, onIncognitoKeyboardChange)
                 }
-                PrivacySection(state, onOpen)
-                ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
+                PrivacySection(state, onOpen, cleanLinks, onCleanLinksChange)
+                ContactsSection(
+                    contactSync,
+                    onContactSyncChange,
+                    suggestsFrequent,
+                    onSuggestsFrequentChange,
+                    sharesPhoneNumber,
+                    onSharesPhoneNumberChange,
+                )
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(
                     hidden = phoneNumbersHidden,
@@ -201,18 +217,15 @@ internal fun PrivacySecurityScreen(
             }
         }
     }
-    if (drafts.isDeleteDraftsDialogOpen) {
-        DeleteDraftsDialog(
-            onConfirm = { onDraftsEvent(DataOptionsEvent.ConfirmDeleteDrafts) },
-            onDismiss = { onDraftsEvent(DataOptionsEvent.DismissDeleteDrafts) },
-        )
-    }
+    DeleteDraftsDialogHost(drafts, onDraftsEvent)
 }
 
 @Composable
 private fun PrivacySection(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
+    cleanLinks: Boolean?,
+    onCleanLinksChange: (Boolean) -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_privacy)) {
         PrivacySettings.forEach { setting ->
@@ -249,6 +262,7 @@ private fun PrivacySection(
                 )
             }
         }
+        cleanLinks?.let { cleanLinksItem(it, onCleanLinksChange) }
     }
 }
 
@@ -279,6 +293,8 @@ private fun PrivacySettingItem(
 private fun SecuritySection(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
+    incognitoKeyboard: Boolean?,
+    onIncognitoKeyboardChange: (Boolean) -> Unit,
 ) {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     SettingsGroup(title = stringResource(R.string.settings_section_security)) {
@@ -305,6 +321,7 @@ private fun SecuritySection(
             )
         }
         lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
+        incognitoKeyboard?.let { incognitoKeyboardItem(it, onIncognitoKeyboardChange) }
         item { shapes ->
             BlockedUsersItem(state.blockedCount, numbers, shapes) { onOpen(PrivacySecurityPage.BlockedUsers) }
         }
@@ -366,7 +383,14 @@ private fun TwoStepVerificationItem(
 @Composable
 private fun PrivacySecurityScreenPreview() {
     PingogramPreview {
-        PrivacySecurityScreen(state = SettingsPreviewData.privacySecurity, onEvent = {}, onOpen = {}, onBack = {})
+        PrivacySecurityScreen(
+            state = SettingsPreviewData.privacySecurity,
+            onEvent = {},
+            onOpen = {},
+            onBack = {},
+            incognitoKeyboard = false,
+            cleanLinks = true,
+        )
     }
 }
 

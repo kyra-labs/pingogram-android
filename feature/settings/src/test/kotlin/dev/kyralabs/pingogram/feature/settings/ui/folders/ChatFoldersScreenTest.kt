@@ -108,6 +108,19 @@ class ChatFoldersScreenTest {
     }
 
     @Test
+    fun `the Unread counters row is a switch, on at first, whose tap hides the counts`() {
+        setScreen()
+
+        scrollTo("folderTabCounters")
+        switchRow(R.string.settings_folder_tab_counters)
+            .assert(on())
+            .assert(hasText(string(R.string.settings_folder_tab_counters_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatFoldersEvent.SetShowFolderTabCounters(false)), events)
+    }
+
+    @Test
     fun `the group waits for the settings to be read`() {
         setScreen(tabs = null)
 

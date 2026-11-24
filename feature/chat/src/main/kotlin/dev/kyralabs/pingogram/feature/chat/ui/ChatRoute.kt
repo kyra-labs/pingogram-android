@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.text.IncognitoKeyboard
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
@@ -53,6 +54,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetHost
 import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
+import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendsSilently
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
@@ -236,6 +238,7 @@ internal fun ConversationRoute(
             }
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
+    val sendsSilently by sendKeysViewModel.sendsSilently.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     OpenChatTraceEffect(chatId, shown = state.content !is ChatContent.Loading)
@@ -315,6 +318,7 @@ internal fun ConversationRoute(
         LocalKeywordMatchBar provides keywordMatch,
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
+        LocalSendsSilently provides sendsSilently,
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
         LocalReminderChips provides reminderChips,
@@ -323,44 +327,47 @@ internal fun ConversationRoute(
     ) {
         // What TDLib suggests about a chat someone new started; a topic's or thread's conversation has no bar.
         // The conversation in its wallpaper's colors (docs/adr/0041-chat-colors-from-the-wallpaper.md).
-        WallpaperColorsTheme(shownWallpaper.seed) {
-            ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
-                AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
-                    ChatScreen(
-                        state = state,
-                        onEvent = onEvent,
-                        onBack = onBack,
-                        modifier = modifier,
-                        snackbarHostState = snackbarHostState,
-                        jumpState = jumpState,
-                        composerText = viewModel.composerText,
-                        composerFocus = composerFocus,
-                        attach = attach,
-                        recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-                        reportComment = viewModel.reportComment,
-                        emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-                        onEmojiPanelEvent = panelViewModel::onEvent,
-                        onOpenProfile = onOpenProfile,
-                        onOpenChatInfo = onOpenChatInfo,
-                        commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-                        inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-                        search = viewModel.searchState.collectAsStateWithLifecycle().value,
-                        searchQuery = viewModel.searchQuery,
-                        botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-                        topicAction = topicActions?.button,
-                        connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
-                        onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
-                        // A topic's or thread's conversation is not where a new member lands.
-                        welcome =
-                            welcomeViewModel.pack
-                                .collectAsStateWithLifecycle()
-                                .value
-                                .takeIf { topic == null },
-                        onWelcomeEvent = welcomeViewModel::onEvent,
-                        nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
-                        recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
-                        videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
-                    )
+        // A secret chat's text fields never let the keyboard learn, whatever the setting (REQUIREMENTS.md FR-X7).
+        IncognitoKeyboard(enabled = state.header?.secret != null) {
+            WallpaperColorsTheme(shownWallpaper.seed) {
+                ChatActionBarHost(actionBarViewModel, onEvent, snackbarHostState, shown = topic == null) {
+                    AiEditorHost(aiEditorViewModel, viewModel.composerText, snackbarHostState) {
+                        ChatScreen(
+                            state = state,
+                            onEvent = onEvent,
+                            onBack = onBack,
+                            modifier = modifier,
+                            snackbarHostState = snackbarHostState,
+                            jumpState = jumpState,
+                            composerText = viewModel.composerText,
+                            composerFocus = composerFocus,
+                            attach = attach,
+                            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+                            reportComment = viewModel.reportComment,
+                            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+                            onEmojiPanelEvent = panelViewModel::onEvent,
+                            onOpenProfile = onOpenProfile,
+                            onOpenChatInfo = onOpenChatInfo,
+                            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+                            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+                            search = viewModel.searchState.collectAsStateWithLifecycle().value,
+                            searchQuery = viewModel.searchQuery,
+                            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+                            topicAction = topicActions?.button,
+                            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
+                            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+                            // A topic's or thread's conversation is not where a new member lands.
+                            welcome =
+                                welcomeViewModel.pack
+                                    .collectAsStateWithLifecycle()
+                                    .value
+                                    .takeIf { topic == null },
+                            onWelcomeEvent = welcomeViewModel::onEvent,
+                            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+                            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+                            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
+                        )
+                    }
                 }
             }
         }
@@ -378,30 +385,29 @@ internal fun ConversationRoute(
 
 /**
  * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied or found message that is
- * gone, for a scheduled message's time ([scheduledTime]), for an action
- * that is not allowed and for what is not there yet, the newest replacing the one shown; a downloaded document opens
- * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
- * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
- * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
- * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
- * [onOpenThread], the next unread channel to [onOpenNextChat], the next unread forum topic to [onOpenNextTopic] and a
- * forwarded post's original to [onOpenMessage]; the
- * camera app opens through [onLaunchCamera], which asks for the camera permission first and says in a snackbar why no
- * camera app opened; a bot's keyboard button that asks for the location opens the "Location" sheet through
- * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action that opens it
- * through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's link opens
- * through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting one is a
- * snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several texts at
- * once, thank for a report, and say how saving to Downloads went, with an action that opens the one file saved; the
- * storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it where the
- * system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the microphone
- * permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings once it is
- * refused, and say to hold the button or that recording failed. A message's link goes to the clipboard through
- * [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited message's opens
- * through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group message and who reacted
- * to it opens through [onOpenInteractions]. A message that failed to send while the screen is shown gets a `Reject`
- * haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm`
- * (right) or `Reject` (wrong).
+ * gone, for a scheduled message's time ([scheduledTime]), for an action that is not allowed and for what is not there
+ * yet, the newest replacing the one shown; a downloaded document opens in another app through [openFile] (the app's
+ * `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a snackbar says that no app can; a copied text goes
+ * to the clipboard through [copyText], with a snackbar before Android 13, which confirms copies itself; a focus request
+ * goes to [composerFocus]; media to open goes to [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to
+ * [onOpenChat], a message's thread to [onOpenThread], the next unread channel to [onOpenNextChat], the next unread
+ * forum topic to [onOpenNextTopic] and a forwarded post's original to [onOpenMessage]; the camera app opens through
+ * [onLaunchCamera], which asks for the camera permission first and says in a snackbar why no camera app opened; a bot's
+ * keyboard button that asks for the location opens the "Location" sheet through [onShareLocation]. After forwarding a
+ * snackbar says to how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another
+ * chat; or for how many it failed, and why. A link to open goes through [openUri] (the app's handler), a sponsored
+ * message's through [openUriUnchanged], exactly as Telegram sent it, or a snackbar says that no app can; what came of
+ * reporting one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy
+ * several texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one
+ * file saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains
+ * it where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
+ * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
+ * once it is refused, and say to hold the button or that recording failed. A message's link goes to the clipboard
+ * through [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited message's
+ * opens through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group message and who
+ * reacted to it opens through [onOpenInteractions]. A message that failed to send while the screen is shown gets a
+ * `Reject` haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a
+ * `Confirm` (right) or `Reject` (wrong).
  */
 @Suppress(
     // One branch per effect, all in one place: the compiler sees none is missed.
@@ -427,6 +433,7 @@ internal fun ChatEffects(
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     onLaunchCamera: (path: String) -> Unit = {},
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
+    openUriUnchanged: (uri: String) -> Boolean = rememberUriOpener(unchanged = true),
     onEvent: (ChatEvent) -> Unit = {},
     onShareLocation: () -> Unit = {},
     onPickReplacement: (ReplaceMedia) -> Boolean = { false },
@@ -516,7 +523,8 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.OpenUrl -> {
-                        if (openUri(effect.url)) "" else resources.getString(UiR.string.sponsored_no_app)
+                        val opener = if (effect.sponsored) openUriUnchanged else openUri
+                        if (opener(effect.url)) "" else resources.getString(UiR.string.sponsored_no_app)
                     }
 
                     is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect, is BotButtonEffect -> {

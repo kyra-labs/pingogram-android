@@ -72,6 +72,73 @@ class PrivacySecurityScreenScreenshotTest {
             phoneNumbersHidden = true,
         )
 
+    /** "Incognito keyboard" on, in the Security group (REQUIREMENTS.md FR-X7); the other captures show it off. */
+    @Test
+    fun incognitoKeyboardOnLight() =
+        capture(
+            "incognitoKeyboardOnLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            incognitoKeyboard = true,
+        )
+
+    @Test
+    fun incognitoKeyboardOnDark() =
+        capture(
+            "incognitoKeyboardOnDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            incognitoKeyboard = true,
+        )
+
+    /**
+     * The whole page with "Remove tracking from links" off (REQUIREMENTS.md FR-X8), at the Privacy group's end; the
+     * other captures show it on, its default.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun cleanLinksOffLight() =
+        capture(
+            "cleanLinksOffLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            cleanLinks = false,
+        )
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun cleanLinksOffDark() =
+        capture(
+            "cleanLinksOffDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            cleanLinks = false,
+        )
+
+    /**
+     * The whole page with "Share my phone number with new contacts" on (REQUIREMENTS.md FR-X9), at the Contacts group's
+     * end; the other captures show it off, its default.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun sharePhoneNumberOnLight() =
+        capture(
+            "sharePhoneNumberOnLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            sharesPhoneNumber = true,
+        )
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun sharePhoneNumberOnDark() =
+        capture(
+            "sharePhoneNumberOnDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            sharesPhoneNumber = true,
+        )
+
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
     @Config(qualifiers = TALL)
@@ -178,6 +245,9 @@ class PrivacySecurityScreenScreenshotTest {
         contactSync: ContactSyncStatus = ContactSyncStatus.Off,
         secretChatPreviews: Boolean = false,
         phoneNumbersHidden: Boolean = false,
+        incognitoKeyboard: Boolean = false,
+        cleanLinks: Boolean = true,
+        sharesPhoneNumber: Boolean = false,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -187,6 +257,9 @@ class PrivacySecurityScreenScreenshotTest {
             contactSync = contactSync,
             secretChatPreviews = secretChatPreviews,
             phoneNumbersHidden = phoneNumbersHidden,
+            incognitoKeyboard = incognitoKeyboard,
+            cleanLinks = cleanLinks,
+            sharesPhoneNumber = sharesPhoneNumber,
         )
     }
 }

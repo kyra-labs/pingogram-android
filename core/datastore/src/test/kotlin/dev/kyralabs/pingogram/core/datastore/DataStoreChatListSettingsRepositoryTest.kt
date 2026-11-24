@@ -134,6 +134,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `folder tab counters show until they are turned off, and turning them off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showFolderTabCounters)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowFolderTabCounters(false))
+
+            assertEquals(ChatListSettings(showFolderTabCounters = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showFolderTabCounters)
+        }
+
+    @Test
     fun `chat type icons show until they are turned off, and turning them off is kept`() =
         runTest {
             val store = dataStore()

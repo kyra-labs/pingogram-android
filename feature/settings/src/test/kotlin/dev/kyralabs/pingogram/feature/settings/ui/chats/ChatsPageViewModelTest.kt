@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -91,6 +92,87 @@ class ChatsPageViewModelTest {
             send(viewModel, ChatsPageEvent.SetSendKeys(SendKeys(onScreenKeyboard = true)))
 
             assertEquals(SendKeys(), viewModel.content.sendKeys)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
+    fun `messages go with sound at first, and sending silently by default saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.sendsSilently)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(true))
+            assertTrue(viewModel.content.sendsSilently)
+            assertTrue(composerSettings.silent.value)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(false))
+            assertFalse(viewModel.content.sendsSilently)
+        }
+
+    @Test
+    fun `sending silently that cannot be saved stays off, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(true))
+
+            assertFalse(viewModel.content.sendsSilently)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
+    fun `bot commands go at once at first, and confirming them saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.confirmsBotCommands)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(true))
+            assertTrue(viewModel.content.confirmsBotCommands)
+            assertTrue(composerSettings.confirm.value)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(false))
+            assertFalse(viewModel.content.confirmsBotCommands)
+        }
+
+    @Test
+    fun `confirming bot commands that cannot be saved stays off, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(true))
+
+            assertFalse(viewModel.content.confirmsBotCommands)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
+    fun `undo and redo show at first, and turning them off saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.showsUndoRedo)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(false))
+            assertFalse(viewModel.content.showsUndoRedo)
+            assertFalse(composerSettings.undo.value)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(true))
+            assertTrue(viewModel.content.showsUndoRedo)
+        }
+
+    @Test
+    fun `undo and redo that cannot be saved stay on, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(false))
+
+            assertTrue(viewModel.content.showsUndoRedo)
             assertTrue(effects.single() is ChatsPageEffect.ShowError)
         }
 

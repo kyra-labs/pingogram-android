@@ -168,7 +168,8 @@ private fun FolderButtonGroup(
     val enabled = tabMenu.enabled
     val colors = folderButtonColors()
     val labels = tabs.map { it.label() }
-    val descriptions = tabs.map { tabDescription(it) }
+    val counters = LocalChatSwipes.current.folderCounters
+    val descriptions = tabs.map { tabDescription(it, counters) }
     val scroll =
         rememberTabScroll(
             tabs.size,
@@ -264,7 +265,8 @@ private fun FolderButton(
 
 /**
  * The button of a [FolderButton], as Appearance → Chat list → "Folder tabs" asks ([ChatSwipes.folderTabStyle]): its
- * label, its icon before its label, or its icon alone, and its unread count in a badge. With icons alone the selected
+ * label, its icon before its label, or its icon alone, and its unread count in a badge unless "Unread counters" is off
+ * ([ChatSwipes.folderCounters]). With icons alone the selected
  * tab still shows its name, as a tab's long press opens its menu rather than a tooltip, and the others carry their
  * count on the icon ([BadgedBox]); screen readers hear every tab's name ([FolderButton]).
  */
@@ -281,6 +283,7 @@ private fun FolderToggleButton(
     interactionSource: MutableInteractionSource,
 ) {
     val style = LocalChatSwipes.current.folderTabStyle
+    val unread = if (LocalChatSwipes.current.folderCounters) tab.unreadCount else 0
     ToggleButton(
         checked = selected,
         onCheckedChange = { onSelect(tab.folderId) },
@@ -292,10 +295,10 @@ private fun FolderToggleButton(
         val showsLabel = style != FolderTabStyle.Icon || selected
         val badge = tabBadgeColors(selected, colors)
         if (style != FolderTabStyle.Text) {
-            if (showsLabel || tab.unreadCount == 0) {
+            if (showsLabel || unread == 0) {
                 TabIcon(tab)
             } else {
-                BadgedBox(badge = { TabBadge(tab.unreadCount, badge.first, badge.second) }) { TabIcon(tab) }
+                BadgedBox(badge = { TabBadge(unread, badge.first, badge.second) }) { TabIcon(tab) }
             }
         }
         if (showsLabel) {
@@ -309,9 +312,9 @@ private fun FolderToggleButton(
                 maxLines = 1,
                 style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
             )
-            if (tab.unreadCount > 0) {
+            if (unread > 0) {
                 TabBadge(
-                    count = tab.unreadCount,
+                    count = unread,
                     containerColor = badge.first,
                     contentColor = badge.second,
                     modifier = Modifier.padding(start = MaterialTheme.spacing.small),
@@ -379,12 +382,15 @@ private fun FolderTab.label(): String =
         is FolderTab.KeywordAlerts -> stringResource(R.string.chat_list_keyword_alerts)
     }
 
-/** "Work, 2 unread chats" for screen readers. */
+/** "Work, 2 unread chats" for screen readers; the name alone without a count or with [counters] off. */
 @Composable
 @ReadOnlyComposable
-private fun tabDescription(tab: FolderTab): String {
+private fun tabDescription(
+    tab: FolderTab,
+    counters: Boolean,
+): String {
     val label = tab.label()
-    if (tab.unreadCount == 0) return label
+    if (tab.unreadCount == 0 || !counters) return label
     val count = tab.unreadCount
     val unread = LocalResources.current.getQuantityString(R.plurals.chat_list_a11y_unread_chats, count, count)
     return stringResource(R.string.chat_list_a11y_tab, label, unread)

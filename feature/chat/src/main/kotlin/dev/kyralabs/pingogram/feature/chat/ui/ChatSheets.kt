@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotCommandConfirmDialog
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotCommandsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialogHost
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardDialogHost
@@ -40,6 +41,8 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     switchInlineSheet?.let { SwitchInlineChatsSheet(it, viewModel::onEvent) }
     val botCommandsSheet by viewModel.botCommandsSheet.collectAsStateWithLifecycle()
     botCommandsSheet?.let { BotCommandsBottomSheet(it, viewModel::onEvent) }
+    val botCommandToConfirm by viewModel.botCommandToConfirm.collectAsStateWithLifecycle()
+    botCommandToConfirm?.let { BotCommandConfirmDialog(it, viewModel::onEvent) }
     val botKeyboardDialog by viewModel.botKeyboardDialog.collectAsStateWithLifecycle()
     botKeyboardDialog?.let { BotKeyboardDialogHost(it, viewModel::onEvent) }
     val keyboardShareSheet by viewModel.keyboardShareSheet.collectAsStateWithLifecycle()

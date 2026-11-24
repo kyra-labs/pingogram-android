@@ -33,4 +33,31 @@ interface ComposerSettingsRepository {
 
     /** Saves [recordsVideoMessages]; fails with `DomainError.Unknown` if it cannot be written. */
     suspend fun setRecordsVideoMessages(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether messages go without a notification sound unless the user picks "Send with sound" (`REQUIREMENTS.md`
+     * FR-X11, Settings → Chats → Messages), then every change. Off when unreadable.
+     */
+    val sendsSilently: Flow<Boolean>
+
+    /** Saves [sendsSilently]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setSendsSilently(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether a bot command picked from the commands' menu or suggestions asks before it is sent (`REQUIREMENTS.md`
+     * FR-X12, Settings → Chats → Messages), then every change. Off when unreadable.
+     */
+    val confirmsBotCommands: Flow<Boolean>
+
+    /** Saves [confirmsBotCommands]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether the message box's menu offers Undo and Redo (`REQUIREMENTS.md` FR-X13, Settings → Chats → Messages),
+     * then every change; a keyboard's Ctrl+Z works either way. On when unreadable.
+     */
+    val showsUndoRedo: Flow<Boolean>
+
+    /** Saves [showsUndoRedo]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setShowsUndoRedo(enabled: Boolean): Outcome<Unit>
 }

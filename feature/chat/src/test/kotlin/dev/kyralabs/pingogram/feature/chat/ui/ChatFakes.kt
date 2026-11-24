@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
@@ -705,7 +706,13 @@ class FakeUserRepository : UserRepository {
 
     override val users: Flow<ImmutableMap<Long, User>> = userMap
 
+    /** As TDLib's: no new map when only a status changed. */
+    override val profiles: Flow<ImmutableMap<Long, User>> =
+        userMap.distinctUntilChanged { old, new -> old.withoutStatus() == new.withoutStatus() }
+
     override fun user(id: Long): Flow<User?> = userMap.map { it[id] }.distinctUntilChanged()
+
+    private fun Map<Long, User>.withoutStatus() = mapValues { it.value.copy(status = UserStatus.Empty) }
 
     /** A user of [setUsers], else [DomainError.NotFound]. */
     override suspend fun getUser(id: Long): Outcome<User> =

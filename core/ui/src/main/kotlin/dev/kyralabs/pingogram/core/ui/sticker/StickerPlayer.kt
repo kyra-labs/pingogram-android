@@ -10,12 +10,11 @@ import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.ceil
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.TimeSource
 
 /**
  * Renders the frames of [animation] in turn at [width] × [height] pixels, at most
@@ -23,6 +22,10 @@ import kotlin.time.TimeSource
  * [show]: what an animated sticker ([AnimatedSticker]) and the custom emoji of a text (`customEmoji`) play with.
  * [draws] counts the draws of what shows the frames: a frame that is not drawn within [OFF_SCREEN_TIMEOUT] means it
  * left the screen (a lazy list keeps items composed but not placed).
+ *
+ * The frames follow the clock ([AnimatedStickers.timeSource]): one that renders late is skipped rather than shown
+ * late, so a sticker keeps its pace on a busy device. Its renderer is built once it first plays, not for a sticker
+ * that only ever shows its first frame (the frame cache's, [AnimatedStickers.firstFrame]).
  */
 internal class StickerPlayer(
     private val stickers: AnimatedStickers,
@@ -32,13 +35,15 @@ internal class StickerPlayer(
     private val draws: StateFlow<Long>,
     private val show: (ImageBitmap) -> Unit,
 ) {
-    private val renderer = animation.newRenderer()
+    private val renderer by lazy { animation.newRenderer() }
     private val step = ceil(animation.frameRate / AnimatedStickers.MAX_FRAMES_PER_SECOND).toInt().coerceAtLeast(1)
-    private val frameDuration = (step * MILLIS_PER_SECOND / animation.frameRate).toDouble().milliseconds
     private val buffers = arrayOfNulls<Bitmap>(2)
     private val images = arrayOfNulls<ImageBitmap>(2)
     private var next = 0
-    private var frame = 0
+
+    /** The frame showing, of the animation's [StickerAnimation.frameCount]. */
+    internal var frame = 0
+        private set
 
     /** It went through its last frame since it started showing: with looping off, it stops there. */
     private var played = false
@@ -53,8 +58,11 @@ internal class StickerPlayer(
     ) {
         while (true) {
             awaitOnScreen(windowInfo, requestDraw)
-            stickers.slots.withPermit {
+            if (!acquireSlotOnScreen(requestDraw)) continue
+            try {
                 playWhile { windowInfo.isWindowFocused && !stickers.still.value && (stickers.loop.value || !played) }
+            } finally {
+                stickers.slots.release()
             }
             if (stickers.still.value || (played && !stickers.loop.value)) {
                 showFirstFrame()
@@ -89,12 +97,31 @@ internal class StickerPlayer(
         draws.first { it > drawn }
     }
 
-    /** Plays while [condition] holds and every frame is drawn in time. */
+    /**
+     * Takes one of the [AnimatedStickers.slots], waiting in line only while on screen: every [OFF_SCREEN_TIMEOUT] of
+     * waiting it asks for a draw, and leaves the line, false, if none comes. A sticker that scrolled away no longer
+     * holds a place, to take a slot only to find it is gone.
+     */
+    private suspend fun acquireSlotOnScreen(requestDraw: () -> Unit): Boolean {
+        while (true) {
+            if (withTimeoutOrNull(OFF_SCREEN_TIMEOUT) { stickers.slots.acquire() } != null) return true
+            val drawn = draws.value
+            requestDraw()
+            if (withTimeoutOrNull(OFF_SCREEN_TIMEOUT) { draws.first { it > drawn } } == null) return false
+        }
+    }
+
+    /** Plays while [condition] holds and every frame is drawn in time, the frames following the clock. */
     private suspend fun playWhile(condition: () -> Boolean) {
+        // From the frame showing; frames counted on, past the last one into the next turns.
+        val origin = stickers.timeSource.markNow() - timeOf(frame.toLong())
+        var position = frame.toLong()
         while (condition()) {
-            val start = TimeSource.Monotonic.markNow()
-            if (frame + step >= animation.frameCount) played = true
-            frame = (frame + step) % animation.frameCount
+            val due = origin.elapsedNow().inWholeMicroseconds * animation.frameRate / MICROS_PER_SECOND
+            val upcoming = maxOf(position + step, due.toLong() / step * step)
+            if (upcoming / animation.frameCount > position / animation.frameCount) played = true
+            position = upcoming
+            frame = (position % animation.frameCount).toInt()
             val index = next
             withContext(stickers.renderDispatcher) {
                 val bitmap = buffers[index] ?: createBitmap(width, height).also { buffers[index] = it }
@@ -105,9 +132,12 @@ internal class StickerPlayer(
             show(image)
             next = 1 - index
             withTimeoutOrNull(OFF_SCREEN_TIMEOUT) { draws.first { it > drawn } } ?: return
-            delay(frameDuration - start.elapsedNow())
+            delay(timeOf(position + step) - origin.elapsedNow())
         }
     }
+
+    /** When frame [position] (counted on past the last frame) is due, from the start of the animation. */
+    private fun timeOf(position: Long) = (position * MICROS_PER_SECOND / animation.frameRate).toDouble().microseconds
 }
 
 /** Whether [animation] plays at all: more than one frame, animations on, and not in previews or screenshots. */
@@ -117,4 +147,4 @@ internal fun AnimatedStickers.plays(animation: StickerAnimation): Boolean =
 /** Long enough for a frame to be drawn on a busy device; any longer and an off-screen sticker keeps its slot. */
 private val OFF_SCREEN_TIMEOUT = 250.milliseconds
 
-private const val MILLIS_PER_SECOND = 1000f
+private const val MICROS_PER_SECOND = 1_000_000f

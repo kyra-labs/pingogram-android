@@ -37,6 +37,8 @@ class TdlibVideoNoteRepository
         private val files: UploadFiles,
         @param:Dispatcher(IO) private val io: CoroutineDispatcher,
         @param:ApplicationScope private val scope: CoroutineScope,
+        // Null where options go as given; the app always has one.
+        private val sendDefaults: SendDefaults? = null,
     ) : VideoNoteRepository {
         override suspend fun newVideoNoteFiles(): Outcome<VideoNoteFiles> =
             withContext(io) {
@@ -62,7 +64,8 @@ class TdlibVideoNoteRepository
             replyTo: ReplyTarget?,
         ): Outcome<Unit> {
             val content = videoNote.toInputMessageVideoNote()
-            val result = client.sendMessage(chatId, content, options, replyTo?.toInputMessageReplyTo())
+            val resolved = sendDefaults?.resolve(options) ?: options
+            val result = client.sendMessage(chatId, content, resolved, replyTo?.toInputMessageReplyTo())
             if (result is Outcome.Failure) discardVideoNote(videoNote.path)
             return result
         }

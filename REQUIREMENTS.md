@@ -221,7 +221,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 ### 5.10 Beyond the official app [after v2.3.0]
 
 Owner decision of 2026-11-17. Each works on the phone with what TDLib already gives; nothing is sent anywhere but
-Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2).
+Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2). Every
+feature here can be turned off in Settings; a new behavior that changes an existing one is off by default (owner
+decision 2026-11-23).
 
 - FR-X1 Should: **Mentions & replies.** One page, opened from the Chats tab's header, listing the messages that mention
   the user and the replies to the user's messages, across all chats, newest first, unread first; each opens its chat
@@ -272,6 +274,30 @@ Telegram, nothing acts for the user, and sponsored messages are shown exactly as
   Daily or Weekly (Weekly by default once a folder is picked), while charging or the battery is not low, keeping the
   newest 3 files, encrypted with the key of the last backup's password kept in the Android Keystore (never the
   password). Nothing is sent anywhere.
+- FR-X7 Should: **Incognito keyboard** (owner decision 2026-11-23). Settings → Privacy and security → "Incognito
+  keyboard", off by default: every text field asks the keyboard not to learn from what is typed
+  (`IME_FLAG_NO_PERSONALIZED_LEARNING`), through one helper around the app; a secret chat's fields always ask. A
+  keyboard may ignore the request; nothing else changes.
+- FR-X8 Should: **Links without tracking parameters** (owner decision 2026-11-23). Settings → Privacy and security →
+  "Remove tracking from links", on by default: links the user sends (messages, notification replies, the share sheet's
+  comment) and links the user opens lose their tracking parameters: every `utm_*`, `fbclid`, `igshid`, `igsh`,
+  `gclid`, `dclid`, `gbraid`, `wbraid`, `msclkid`, `yclid`, `mc_cid`, `mc_eid`, `_hsenc`, `_hsmi`, and `si` on YouTube
+  and Spotify links (`LinkCleaner`). Everything else in a link stays as written; links in received messages show as
+  sent. A sponsored message's link always opens exactly as Telegram sent it (§2).
+- FR-X9 Should: **Adding a contact shares the phone number only when chosen** (owner decision 2026-11-23). Add
+  contact (by phone number or by username) and "Add to contacts" have "Share my phone number", which starts from
+  Settings → Privacy and security → Contacts → "Share my phone number with new contacts", off by default; the chat
+  bar's "Add contact" follows that setting. Editing an existing contact starts with the number not shared.
+- FR-X10 Should: **Folder tabs without unread counters** (owner decision 2026-11-23). Settings → Chat folders →
+  Folder tabs → "Unread counters", on by default: off, the folder tabs show no unread counts, whatever they show
+  (names, icons and names, or icons), and screen readers hear their names alone.
+- FR-X11 Should: **Send silently by default** (owner decision 2026-11-23). Settings → Chats → Messages → "Send
+  silently by default", off by default: on, messages sent from a chat (text, files and media, polls, checklists,
+  locations, inline results, voice and round video messages) and from the share sheet go without a notification
+  sound, and the send menus offer "Send with sound" in place of "Send without sound".
+- FR-X12 Should: **Confirm bot commands** (owner decision 2026-11-23). Settings → Chats → Messages → "Confirm bot
+  commands", off by default: on, a command picked from a bot's commands sheet or the suggestions above the composer
+  asks "Send /help?" first, kept across process death; a command typed and sent as text goes as before.
 
 ## 6. Non-functional requirements
 

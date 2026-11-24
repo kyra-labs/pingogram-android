@@ -79,6 +79,48 @@ class DataStoreComposerSettingsRepository
             } catch (error: IOException) {
                 Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
             }
+
+        override val sendsSilently: Flow<Boolean> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { it[SEND_SILENTLY] ?: false }
+                .distinctUntilChanged()
+
+        override suspend fun setSendsSilently(enabled: Boolean): Outcome<Unit> =
+            try {
+                dataStore.edit { it[SEND_SILENTLY] = enabled }
+                Outcome.Success(Unit)
+            } catch (error: IOException) {
+                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
+            }
+
+        override val confirmsBotCommands: Flow<Boolean> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { it[CONFIRM_BOT_COMMANDS] ?: false }
+                .distinctUntilChanged()
+
+        override suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit> =
+            try {
+                dataStore.edit { it[CONFIRM_BOT_COMMANDS] = enabled }
+                Outcome.Success(Unit)
+            } catch (error: IOException) {
+                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
+            }
+
+        override val showsUndoRedo: Flow<Boolean> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { it[UNDO_REDO] ?: true }
+                .distinctUntilChanged()
+
+        override suspend fun setShowsUndoRedo(enabled: Boolean): Outcome<Unit> =
+            try {
+                dataStore.edit { it[UNDO_REDO] = enabled }
+                Outcome.Success(Unit)
+            } catch (error: IOException) {
+                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
+            }
     }
 
 // The keys in the settings file; renaming them loses what users saved under them.
@@ -89,3 +131,6 @@ private val ENTER_SENDS_ON_SCREEN = booleanPreferencesKey("composer.enter_sends_
 private val SEND_WITH_CTRL_ENTER = booleanPreferencesKey("composer.send_with_ctrl_enter")
 private val SEND_PHOTOS_ORIGINAL = booleanPreferencesKey("composer.send_photos_original")
 private val RECORDS_VIDEO_MESSAGES = booleanPreferencesKey("composer.records_video_messages")
+private val SEND_SILENTLY = booleanPreferencesKey("composer.send_silently")
+private val CONFIRM_BOT_COMMANDS = booleanPreferencesKey("composer.confirm_bot_commands")
+private val UNDO_REDO = booleanPreferencesKey("composer.undo_redo")

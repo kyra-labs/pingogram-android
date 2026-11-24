@@ -40,6 +40,15 @@ class CatchUpChats
                 chatLock.lockedChatIds,
             ) { chats, includeMuted, locked -> catchUpOrder(chats, includeMuted, locked) }
 
+        /** How many chats there are to catch up on, then every change: counted, not sorted ([chats]). */
+        internal val count: Flow<Int> =
+            combine(
+                chatRepository.chatList(ChatListType.Main),
+                includesMuted,
+                chatLock.lockedChatIds,
+            ) { chats, includeMuted, locked -> chats.count { it.isToCatchUp(includeMuted, locked) } }
+                .distinctUntilChanged()
+
         /** Saves whether muted chats and channels are included; fails as the settings fail to save. */
         internal suspend fun setIncludesMuted(include: Boolean): Outcome<Unit> =
             settingsRepository.setCatchUpIncludesMuted(include)
@@ -60,8 +69,13 @@ internal fun catchUpOrder(
     locked: Set<Long>,
 ): List<Chat> =
     chats
-        .filter { chat ->
-            chat.unreadCount > 0 && chat.id !in locked && (includeMuted || (!chat.isMuted && !chat.isChannel))
-        }.sortedWith(
+        .filter { it.isToCatchUp(includeMuted, locked) }
+        .sortedWith(
             compareByDescending<Chat> { it.unreadMentionCount > 0 }.thenByDescending { it.lastMessage?.date ?: 0L },
         )
+
+/** Whether this chat is one to catch up on: unread, not [locked], and not muted nor a channel unless [includeMuted]. */
+private fun Chat.isToCatchUp(
+    includeMuted: Boolean,
+    locked: Set<Long>,
+): Boolean = unreadCount > 0 && id !in locked && (includeMuted || (!isMuted && !isChannel))
