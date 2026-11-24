@@ -234,7 +234,7 @@ class ChatFoldersViewModelTest {
         }
 
     @Test
-    fun `the folder tabs show names, the Edit folders button and the Feed tab at first, as before the move`() =
+    fun `the folder tabs show names, the Edit folders button, the Feed tab and counters at first`() =
         runTest {
             answerFolders()
             val viewModel = viewModel()
@@ -244,6 +244,7 @@ class ChatFoldersViewModelTest {
             assertEquals(FolderTabStyle.Text, tabs.folderTabStyle)
             assertTrue(tabs.showEditFoldersButton)
             assertTrue(tabs.showFeedTab)
+            assertTrue(tabs.showFolderTabCounters)
         }
 
     @Test
@@ -256,13 +257,30 @@ class ChatFoldersViewModelTest {
             viewModel.onEvent(ChatFoldersEvent.SetFolderTabStyle(FolderTabStyle.Icon))
             viewModel.onEvent(ChatFoldersEvent.SetShowEditFoldersButton(false))
             viewModel.onEvent(ChatFoldersEvent.SetShowFeedTab(false))
+            viewModel.onEvent(ChatFoldersEvent.SetShowFolderTabCounters(false))
             runCurrent()
 
             val tabs = requireNotNull(viewModel.tabs.value)
             assertEquals(FolderTabStyle.Icon, tabs.folderTabStyle)
             assertFalse(tabs.showEditFoldersButton)
             assertFalse(tabs.showFeedTab)
+            assertFalse(tabs.showFolderTabCounters)
             assertEquals(tabs, chatListSettings.settings.value)
+        }
+
+    @Test
+    fun `unread counters turned off can be turned on again`() =
+        runTest {
+            answerFolders()
+            chatListSettings.settings.value = chatListSettings.settings.value.copy(showFolderTabCounters = false)
+            val viewModel = viewModel()
+            runCurrent()
+            assertFalse(requireNotNull(viewModel.tabs.value).showFolderTabCounters)
+
+            viewModel.onEvent(ChatFoldersEvent.SetShowFolderTabCounters(true))
+            runCurrent()
+
+            assertTrue(requireNotNull(viewModel.tabs.value).showFolderTabCounters)
         }
 
     @Test

@@ -214,7 +214,7 @@ Features:
 - [ ] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
 - [ ] Composer: silent sending by default, a confirmation before a bot command, undo and redo
 - [ ] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages
-- [ ] Folder tabs without unread counters, as an option
+- [x] Folder tabs without unread counters, as an option
 - [x] Incognito keyboard: the keyboard does not learn from what is typed in Pingogram
 - [x] Links without tracking parameters, when sent and opened
 - [x] Adding a contact does not share the phone number unless chosen

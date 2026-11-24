@@ -151,6 +151,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the folder tabs' unread counters switch by its name`() {
+        show()
+        search("unread counters")
+
+        composeRule.onNode(hasText(string(R.string.settings_folder_tab_counters)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.ChatFolders), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)

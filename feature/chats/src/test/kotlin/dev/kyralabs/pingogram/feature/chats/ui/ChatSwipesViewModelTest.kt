@@ -60,6 +60,17 @@ class ChatSwipesViewModelTest {
         }
 
     @Test
+    fun `follows whether the folder tabs show their unread counts`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().folderCounters)
+
+                settings.settings.value = ChatListSettings(showFolderTabCounters = false)
+                assertEquals(ChatSwipes(folderCounters = false), awaitItem())
+            }
+        }
+
+    @Test
     fun `follows whether the folder tabs end in Edit folders`() =
         runTest {
             ChatSwipesViewModel(settings).swipes.test {

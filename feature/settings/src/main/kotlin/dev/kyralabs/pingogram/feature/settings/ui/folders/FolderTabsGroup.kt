@@ -27,8 +27,9 @@ import kotlinx.collections.immutable.toImmutableList
 /**
  * The "Folder tabs" group of the Chat folders page (owner decision 2026-11-19, moved from Appearance with the keys
  * they had): what each tab shows ("Folder tabs", owner decision 2026-11-08), whether the tabs end in "Edit folders"
- * ("Edit folders button", owner decision 2026-11-07), and whether the Feed tab starts them ("Show Feed tab",
- * `docs/DESIGN_SYSTEM.md` §6 "Channel feed").
+ * ("Edit folders button", owner decision 2026-11-07), whether the Feed tab starts them ("Show Feed tab",
+ * `docs/DESIGN_SYSTEM.md` §6 "Channel feed"), and whether they show their unread counts ("Unread counters",
+ * `REQUIREMENTS.md` FR-X10).
  */
 internal fun LazyListScope.folderTabs(
     tabs: ChatListSettings,
@@ -70,6 +71,16 @@ internal fun LazyListScope.folderTabs(
             shapes = ListItemDefaults.segmentedShapes(2, TAB_ROWS),
             modifier = Modifier.settingsListRow(this, style),
             onCheckedChange = { onEvent(ChatFoldersEvent.SetShowFeedTab(it)) },
+        )
+    }
+    item(key = TAB_COUNTERS, contentType = TAB_SWITCH) {
+        SwitchItem(
+            title = stringResource(R.string.settings_folder_tab_counters),
+            summary = stringResource(R.string.settings_folder_tab_counters_summary),
+            checked = tabs.showFolderTabCounters,
+            shapes = ListItemDefaults.segmentedShapes(TAB_ROWS - 1, TAB_ROWS),
+            modifier = Modifier.settingsListRow(this, style),
+            onCheckedChange = { onEvent(ChatFoldersEvent.SetShowFolderTabCounters(it)) },
         )
     }
 }
@@ -122,4 +133,5 @@ private const val TAB_STYLE = "tabStyle"
 private const val TAB_SWITCH = "tabSwitch"
 private const val EDIT_BUTTON = "editFoldersButton"
 private const val FEED_TAB = "feedTab"
-private const val TAB_ROWS = 3
+private const val TAB_COUNTERS = "folderTabCounters"
+private const val TAB_ROWS = 4
