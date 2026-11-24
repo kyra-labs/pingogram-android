@@ -124,6 +124,8 @@ interface AccountRepositories {
 
     fun quickReactionRepository(): QuickReactionRepository
 
+    fun birthdayRepository(): BirthdayRepository
+
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
 
     fun passkeyRepository(): PasskeyRepository

@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibBirthdayRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotButtonRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
@@ -133,6 +134,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
+import dev.kyralabs.pingogram.core.domain.repository.BirthdayRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
@@ -427,6 +429,9 @@ interface RepositoryModule {
 
     @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
+
+    @Binds
+    fun birthdayRepository(repository: TdlibBirthdayRepository): BirthdayRepository
 
     @Binds
     fun connectedWebsiteRepository(repository: TdlibConnectedWebsiteRepository): ConnectedWebsiteRepository
