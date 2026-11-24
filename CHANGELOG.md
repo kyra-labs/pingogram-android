@@ -25,6 +25,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   first; Settings → Chats → "Drafts button" can leave it out.
 - Birthdays: when a contact's birthday is near, a row on the Contacts tab opens them all, with "Remind me" to be
   reminded on the day and "Add to calendar"; Settings → Privacy and security → Contacts → "Birthdays" hides the row.
+  Birthday reminders go into your backups and come back when you restore.
 - Compact chat list: Settings → Chats → "Compact chat list" shows smaller pictures and one line per chat, the
   message after the name, so more chats fit.
 

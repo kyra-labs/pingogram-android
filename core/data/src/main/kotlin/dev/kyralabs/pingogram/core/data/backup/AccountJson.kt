@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.backup
 
 import dev.kyralabs.pingogram.core.domain.model.AccountBackup
+import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
@@ -21,6 +22,7 @@ internal fun AccountBackup.toJson(): JSONObject =
         .put(REMINDERS, reminders.toJsonArray { it.toJson() })
         .put(KEYWORD_HITS, keywordHits.toJsonArray { it.toJson() })
         .put(SNIPPETS, snippets.toJsonArray { JSONObject().put(ID, it.id).put(NAME, it.name).put(TEXT, it.text) })
+        .put(BIRTHDAY_REMINDERS, birthdayReminders.toJsonArray { it.toJson() })
 
 /** The account section [toJson] wrote; throws `JSONException` for one that does not read. */
 internal fun JSONObject.toAccountBackup(): AccountBackup =
@@ -34,6 +36,8 @@ internal fun JSONObject.toAccountBackup(): AccountBackup =
                 KeywordHit(it.getLong(CHAT_ID), it.getLong(MESSAGE_ID), it.getString(WORD), it.getLong(DATE))
             },
         snippets = objects(SNIPPETS) { Snippet(it.getLong(ID), it.getString(NAME), it.getString(TEXT)) },
+        birthdayReminders =
+            objects(BIRTHDAY_REMINDERS) { BirthdayReminder(it.getLong(USER_ID), it.getInt(DAY), it.getInt(MONTH)) },
     )
 
 private fun Bookmark.toJson(): JSONObject =
@@ -75,6 +79,8 @@ private fun JSONObject.toReminder(): MessageReminder =
         isDone = optBoolean(DONE),
     )
 
+private fun BirthdayReminder.toJson(): JSONObject = JSONObject().put(USER_ID, userId).put(DAY, day).put(MONTH, month)
+
 private fun KeywordHit.toJson(): JSONObject =
     JSONObject()
         .put(CHAT_ID, chatId)
@@ -98,6 +104,7 @@ private const val TAGS = "tags"
 private const val REMINDERS = "reminders"
 private const val KEYWORD_HITS = "keyword_hits"
 private const val SNIPPETS = "snippets"
+private const val BIRTHDAY_REMINDERS = "birthday_reminders"
 private const val ID = "id"
 private const val NAME = "name"
 private const val COLOR = "color"
@@ -112,3 +119,5 @@ private const val AT = "at"
 private const val DONE = "done"
 private const val WORD = "word"
 private const val DATE = "date"
+private const val DAY = "day"
+private const val MONTH = "month"

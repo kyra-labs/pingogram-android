@@ -123,7 +123,8 @@ sealed interface RestoreStep {
 
 /**
  * An account's data in a backup: the account's [name] when it is signed in on this phone (its data is restored into
- * it), null for another account (whose data stays in the backup), and how many of each it holds.
+ * it), null for another account (whose data stays in the backup), and how many of each it holds, [reminders] counting
+ * message and birthday reminders together.
  */
 @Immutable
 data class AccountSummary(

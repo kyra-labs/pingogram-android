@@ -117,7 +117,7 @@ internal class BackupRestoreFlow(
                         AccountSummary(
                             name = onPhone[account.userId]?.let { "${it.firstName} ${it.lastName}".trim() },
                             bookmarks = account.bookmarks.size,
-                            reminders = account.reminders.size,
+                            reminders = account.reminders.size + account.birthdayReminders.size,
                             keywordHits = account.keywordHits.size,
                             snippets = account.snippets.size,
                         )

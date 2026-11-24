@@ -268,9 +268,9 @@ decision 2026-11-23).
   owner decisions of 2026-11-17). Settings → On this phone → Backup & restore: a folder the user picks once (Storage
   Access Framework, no permission), "Back up now" into one file encrypted with a password set at the first backup,
   and the last backup's date and size; the settings (never the passcode, locked chats or one-time hints) and each
-  account's bookmarks, reminders, keyword hits and snippets (never of secret or locked chats, never the demo).
-  Restoring asks for the password, shows what the backup holds, replaces the settings and merges each account's data
-  into the same Telegram account only; the chat list offers a restore after signing in. "Back up automatically": Off,
+  account's bookmarks, reminders, birthday reminders, keyword hits and snippets (never of secret or locked chats, never
+  the demo). Restoring asks for the password, shows what the backup holds, replaces the settings and merges each
+  account's data into the same Telegram account only; the chat list offers a restore after signing in. "Back up automatically": Off,
   Daily or Weekly (Weekly by default once a folder is picked), while charging or the battery is not low, keeping the
   newest 3 files, encrypted with the key of the last backup's password kept in the Android Keystore (never the
   password). Nothing is sent anywhere.

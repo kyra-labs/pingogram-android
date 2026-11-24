@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.notifications
 
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
+import dev.kyralabs.pingogram.core.testing.FakeBirthdayReminderRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -89,6 +90,21 @@ class BirthdayReminderAlarmsTest {
             runCurrent()
 
             assertEquals(0 to emptyMap<Long, Instant>(), work.synced.last())
+        }
+
+    @Test
+    fun `reminders a restore brings back are scheduled, in an account that had none`() =
+        runTest {
+            val restoredInto = FakeBirthdayReminderRepository()
+            accounts.value = listOf(BirthdayReminderAccount(0, restoredInto.reminders))
+            started()
+            assertTrue(work.synced.isEmpty())
+
+            // What a backup's restore does: it sets each reminder through the account's repository.
+            restoredInto.set(BirthdayReminder(7, 25, 11))
+            runCurrent()
+
+            assertEquals(listOf(0 to mapOf(7L to Instant.parse("2026-11-25T09:00:00Z"))), work.synced)
         }
 
     private companion object {

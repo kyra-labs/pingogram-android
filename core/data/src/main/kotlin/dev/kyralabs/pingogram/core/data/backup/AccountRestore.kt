@@ -20,6 +20,8 @@ import java.time.Instant
  *   was set after the backup or kept since, so it stays.
  * - **Keyword hits** the phone lacks; the repository keeps those of the last week only, as always.
  * - **Snippets** by name, letter case aside: the backup's when the phone has none by that name and has room for it.
+ * - **Birthday reminders** by contact: the backup's when the phone has none for that contact; the alarms follow the
+ *   repository, so each restored one is scheduled again.
  *
  * Nothing on the phone is deleted. The first write that fails stops it, with what was written so far kept.
  */
@@ -34,7 +36,7 @@ internal class AccountRestore(
             .then {
                 repositories.keywordHitRepository().restore(backup.keywordHits)
                 snippets(backup)
-            }
+            }.then { birthdayReminders(backup) }
 
     /** The phone's tag id for each tag id of [backup], adding the tags the phone lacks. */
     private suspend fun tags(backup: AccountBackup): Outcome<Map<Long, Long>> {
@@ -76,6 +78,18 @@ internal class AccountRestore(
         return backup.reminders
             .filter { (it.chatId to it.messageId) !in onPhone }
             .firstFailure { repository.set(it.copy(isDone = it.isDone || it.at <= now)) }
+    }
+
+    private suspend fun birthdayReminders(backup: AccountBackup): Outcome<Unit> {
+        val repository = repositories.birthdayReminderRepository()
+        val onPhone =
+            repository.reminders
+                .first()
+                .map { it.userId }
+                .toSet()
+        return backup.birthdayReminders
+            .filter { it.userId !in onPhone }
+            .firstFailure { repository.set(it) }
     }
 
     private suspend fun snippets(backup: AccountBackup): Outcome<Unit> {
