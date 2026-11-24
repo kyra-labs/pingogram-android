@@ -163,8 +163,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   messages (six pages, `HistoryCache`'s `MAX_WINDOW_MESSAGES`): a page loaded past that drops as many from the other
   end, which loads again as pages when the list comes back to it.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
-  `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
-  concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).
+  `cancelDownloadFile` when the item leaves the viewport by more than one screen. Pingogram does not limit how many
+  downloads run at once: TDLib schedules them itself, by priority, over its own connections. Each observed file has
+  a state of its own in `TdlibFileRepository`, so an `updateFile` wakes only that file's observers, and the last 1,000
+  files seen downloaded in full show again without a `getFile`.
 - Streaming (`docs/adr/0028-streaming-media.md`): a video that plays as it downloads downloads from where it plays at
   32, as visible media, and only while the player reads it: closing the viewer, turning the page or seeking elsewhere
   stops it (`cancelDownloadFile`, what came stays). It holds Media3's default buffer (50 s of media at most) and no copy
@@ -255,8 +257,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   rendering off the main thread, with a frame cache keyed by (sticker, size) that holds each sticker's first frame
   (8 MB LRU; whole animations would take ~17 MB each) and two bitmaps per playing sticker; max 8 concurrently
   animating items at ≤ 30 fps; pause everything off-screen (a frame not drawn within 250 ms) and when the window
-  loses focus; a new frame invalidates only the sticker's own layer; GIF/WebP via Coil's animated decoder with
-  frame-rate cap 30 fps.
+  loses focus; a new frame invalidates only the sticker's own layer. There is no GIF or animated WebP decoder:
+  Telegram sends GIFs as MP4 animations, shown in the bubble as a still with a GIF badge and played by Media3 in the
+  media viewer, and WebP stickers are still images that Coil decodes with the platform's decoder.
 - Custom emoji (`docs/adr/0022-custom-emoji-rendering.md`) go through the same pipeline: animated ones are decoded,
   cached (first frames by sticker and size) and played by `AnimatedStickers`, and each custom emoji that plays counts
   as one of the 8 animating items, sharing them with stickers (the same id twice in one text is one); still ones come
