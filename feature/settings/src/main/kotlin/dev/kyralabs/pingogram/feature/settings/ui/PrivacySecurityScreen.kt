@@ -62,13 +62,10 @@ internal fun PrivacySecurityRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
-    val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
     val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
     val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
-    val incognitoKeyboard by incognitoKeyboardViewModel.enabled.collectAsStateWithLifecycle()
-    val cleanLinks by cleanLinksViewModel.enabled.collectAsStateWithLifecycle()
     val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val drafts by draftsViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,17 +80,7 @@ internal fun PrivacySecurityRoute(
         incognitoKeyboardViewModel.errors,
         cleanLinksViewModel.errors,
     )
-    LifecycleStartEffect(viewModel, contactSyncViewModel) {
-        viewModel.onEvent(PrivacySecurityEvent.Refresh)
-        contactSyncViewModel.onStarted()
-        onStopOrDispose {}
-    }
-    ContactSyncHost(
-        controls = controls,
-        effects = contactSyncViewModel.contactSync.effects,
-        onEvent = contactSyncViewModel.contactSync::onEvent,
-        snackbarHostState = snackbarHostState,
-    )
+    PrivacySecurityRefreshAndSync(viewModel, contactSyncViewModel, snackbarHostState)
     PrivacySecurityScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -111,9 +98,9 @@ internal fun PrivacySecurityRoute(
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
         idsShown = idsShown,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
-        incognitoKeyboard = incognitoKeyboard,
+        incognitoKeyboard = incognitoKeyboardViewModel.enabled.collectAsStateWithLifecycle().value,
         onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
-        cleanLinks = cleanLinks,
+        cleanLinks = cleanLinksViewModel.enabled.collectAsStateWithLifecycle().value,
         onCleanLinksChange = cleanLinksViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,

@@ -92,18 +92,28 @@ class PrivacySecurityScreenScreenshotTest {
         )
 
     /**
-     * The whole page with "Remove tracking from links" off (REQUIREMENTS.md FR-X8), at the Privacy group's end; the other
-     * captures show it on, its default.
+     * The whole page with "Remove tracking from links" off (REQUIREMENTS.md FR-X8), at the Privacy group's end; the
+     * other captures show it on, its default.
      */
     @Test
     @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
     fun cleanLinksOffLight() =
-        capture("cleanLinksOffLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, cleanLinks = false)
+        capture(
+            "cleanLinksOffLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            cleanLinks = false,
+        )
 
     @Test
     @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
     fun cleanLinksOffDark() =
-        capture("cleanLinksOffDark", ThemeMode.Dark, SettingsPreviewData.privacySecurity, cleanLinks = false)
+        capture(
+            "cleanLinksOffDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            cleanLinks = false,
+        )
 
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
