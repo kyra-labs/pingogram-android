@@ -46,7 +46,8 @@ import javax.inject.Singleton
  * Which accounts there are is in a small file ([AccountRegistryFile]), read on the IO dispatcher as the app starts
  * ([start]). Something that asks for [active] before then reads it itself, on its own thread: a millisecond's read,
  * where the activity comes 30–40 ms after the application's start, so in practice only tests do (Hilt's test
- * application never calls [start]).
+ * application never calls [start]). Only that read is under this object's lock: each account's graph is made outside
+ * it, the others' in the background, so the main thread asking for [active] waits for at most the active one's.
  *
  * The demo (`docs/adr/0034-demo-mode-for-store-review.md`) is a graph of its own beside the accounts, under
  * [AccountSlot.Demo]: while it is on ([isDemo]), [active] is its graph, so the screens show its sample chats, and the
@@ -92,8 +93,12 @@ class Accounts internal constructor(
         val previous: Int,
     )
 
-    // Changed only under this object's lock.
-    private val bySlot = mutableMapOf<AccountSlot, Account>()
+    // Changed only under this object's lock; each account made outside it, once ([account]).
+    private val bySlot = mutableMapOf<AccountSlot, Lazy<Account>>()
+
+    // Changed only under this object's lock: slots that left the device and are not free again until their client
+    // closed and their storage is deleted, so an account added meanwhile never signs in on the closing client.
+    private val closing = mutableSetOf<Int>()
     private val loaded = CompletableDeferred<Unit>()
     private var registryRead = false
 
@@ -133,17 +138,22 @@ class Accounts internal constructor(
         appScope.launch(io) { readRegistry() }
     }
 
-    /** Reads which accounts there are, once, and starts them; whichever of [start] and [active] comes first. */
+    /**
+     * Reads which accounts there are, once, whichever of [start] and [active] comes first; then starts them in the
+     * background, off the caller's thread, which may be the main thread asking for [active].
+     */
     private fun readRegistry() {
-        synchronized(this) {
-            if (registryRead) return
-            registryRead = true
-            val registry = registryFile.read()
-            mutableRegistry.value = registry
-            mutableIsDemo.value = factory.isDemoOn()
-            registry.slots.forEach { account(AccountSlot(it)) }
-        }
+        val registry =
+            synchronized(this) {
+                if (registryRead) return
+                registryRead = true
+                registryFile.read().also {
+                    mutableRegistry.value = it
+                    mutableIsDemo.value = factory.isDemoOn()
+                }
+            }
         loaded.complete(Unit)
+        appScope.launch(io) { registry.slots.forEach { account(AccountSlot(it)) } }
     }
 
     /** The first slot's account, which is always there, signed in or not; its client is the app's [TdlibClient]. */
@@ -159,7 +169,7 @@ class Accounts internal constructor(
     }
 
     /** Every account on the device, in [registry]'s order. */
-    fun all(): List<Account> = synchronized(this) { mutableRegistry.value.slots.map { account(AccountSlot(it)) } }
+    fun all(): List<Account> = mutableRegistry.value.slots.map { account(AccountSlot(it)) }
 
     /** Shows [slot]'s account, from the next screens on, and keeps it shown at the next start. */
     fun switchTo(slot: Int) {
@@ -170,22 +180,30 @@ class Accounts internal constructor(
         }
     }
 
-    /** Adds an account in a free slot, which signs in and is shown; returns its slot, or null when none is free. */
-    fun add(): Int? =
-        synchronized(this) {
-            val registry = mutableRegistry.value
-            val slot = (0 until AccountSlot.MAX_ACCOUNTS).firstOrNull { it !in registry.slots } ?: return null
-            mutableAdding.value = Adding(slot, previous = registry.active)
-            save(AccountRegistry(registry.slots + slot, active = slot))
-            account(AccountSlot(slot))
-            slot
-        }
+    /**
+     * Adds an account in a free slot, which signs in and is shown; returns its slot, or null when none is free. A slot
+     * still closing ([remove]) is not free.
+     */
+    fun add(): Int? {
+        val slot =
+            synchronized(this) {
+                val registry = mutableRegistry.value
+                val free =
+                    (0 until AccountSlot.MAX_ACCOUNTS).firstOrNull { it !in registry.slots && it !in closing }
+                        ?: return null
+                mutableAdding.value = Adding(free, previous = registry.active)
+                save(AccountRegistry(registry.slots + free, active = free))
+                free
+            }
+        account(AccountSlot(slot))
+        return slot
+    }
 
     /** Leaves the sign-in of the account being added: it goes, and the one shown before it shows again. */
     fun cancelAdding() {
         val adding = mutableAdding.value ?: return
         mutableAdding.value = null
-        val account = synchronized(this) { bySlot[AccountSlot(adding.slot)] }
+        val account = made(AccountSlot(adding.slot))
         remove(adding.slot, showInstead = adding.previous)
         // A slot that never signed in has nothing to log out of: closing its TDLib instance ends it.
         if (account != null && adding.slot != 0) appScope.launch { account.client.send(TdApi.Close()) }
@@ -209,17 +227,27 @@ class Accounts internal constructor(
                 if (registry.active != slot) registry.active else showInstead?.takeIf { it in others } ?: others.first()
             if (mutableAdding.value?.slot == slot) mutableAdding.value = null
             save(AccountRegistry(others, active))
+            if (slot != 0) closing += slot
         }
         if (slot != 0) appScope.launch { closeAndDelete(AccountSlot(slot)) }
     }
 
+    /** Waits for [slot]'s client to close, then deletes its storage; only then is the slot free again ([add]). */
     private suspend fun closeAndDelete(slot: AccountSlot) {
-        val account = synchronized(this) { bySlot[slot] } ?: return
-        account.client.authState.first { it == AuthState.Closed }
-        synchronized(this) { bySlot.remove(slot) }
-        account.scope.cancel()
-        withContext(io) { factory.deleteStorage(slot) }
+        try {
+            val account = made(slot) ?: return
+            account.client.authState.first { it == AuthState.Closed }
+            synchronized(this) { bySlot.remove(slot) }
+            account.scope.cancel()
+            withContext(io) { factory.deleteStorage(slot) }
+        } finally {
+            synchronized(this) { closing -= slot.index }
+        }
     }
+
+    /** [slot]'s account if it was made; null otherwise, without making it. */
+    private fun made(slot: AccountSlot): Account? =
+        synchronized(this) { bySlot[slot] }?.takeIf { it.isInitialized() }?.value
 
     /**
      * Turns the demo on: from the next screens on, [active] is the demo's graph, and it stays on at the next start.
@@ -259,7 +287,9 @@ class Accounts internal constructor(
     /** Whether [slot] is still on the device, which decides whether its client starts again after closing. */
     private fun kept(slot: AccountSlot) = slot.index in mutableRegistry.value.slots
 
-    private fun account(slot: AccountSlot): Account = synchronized(this) { bySlot[slot] ?: startAccount(slot) }
+    /** [slot]'s account, made the first time it is asked for, outside this object's lock: no other waits for it. */
+    private fun account(slot: AccountSlot): Account =
+        synchronized(this) { bySlot.getOrPut(slot) { lazy { startAccount(slot) } } }.value
 
     /**
      * Makes [slot]'s graph and, for the accounts after the first, its caches, then starts their client. The first
@@ -271,7 +301,6 @@ class Accounts internal constructor(
         val scope = CoroutineScope(appScope.coroutineContext + SupervisorJob(appScope.coroutineContext.job))
         val component = factory.component(slot, client, scope)
         val account = Account(slot, client, component, scope)
-        bySlot[slot] = account
         scope.launch { followSignIn(account) }
         if (slot != AccountSlot.First) {
             component.updateCaches()
