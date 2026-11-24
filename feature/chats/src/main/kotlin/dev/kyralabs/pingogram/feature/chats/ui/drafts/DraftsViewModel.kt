@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -37,7 +38,8 @@ import javax.inject.Inject
  * - **Loading**: TDLib knows only the chats loaded so far, so once the page collects [uiState] (not in the
  *   constructor, `docs/PERFORMANCE.md` §4) it loads the rest of both lists, page by page, until they end or a page
  *   fails; the loading state shows only until the first draft is found or both lists are loaded.
- * - **Rows** are mapped on [dispatcher] as global search's message rows, the draft as the message.
+ * - **Rows** are mapped on [dispatcher] as global search's message rows, the draft as the message. Locked chats
+ *   ([ChatLockRepository]) never show, as in the chat list (`docs/adr/0029-locked-chats.md`).
  * - A row opens its chat ([DraftsEffect.OpenChat]), where the message box holds the draft.
  *
  * Tests replace the clock, time patterns, dispatcher and language ([locale]).
@@ -45,6 +47,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DraftsViewModel internal constructor(
     private val chatRepository: ChatRepository,
+    chatLock: ChatLockRepository,
     userRepository: UserRepository,
     groupRepository: GroupRepository,
     private val clock: WallClock,
@@ -55,12 +58,22 @@ class DraftsViewModel internal constructor(
     @Inject
     constructor(
         chatRepository: ChatRepository,
+        chatLock: ChatLockRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
-    ) : this(chatRepository, userRepository, groupRepository, clock, timePatterns, dispatcher, Locale::getDefault)
+    ) : this(
+        chatRepository = chatRepository,
+        chatLock = chatLock,
+        userRepository = userRepository,
+        groupRepository = groupRepository,
+        clock = clock,
+        timePatterns = timePatterns,
+        dispatcher = dispatcher,
+        locale = Locale::getDefault,
+    )
 
     private var timeFormatter: ChatListTimeFormatter? = null
 
@@ -77,12 +90,13 @@ class DraftsViewModel internal constructor(
             emit(true)
         }
 
-    /** The chats with a draft the chat list shows, from both lists, newest draft first. */
+    /** The chats with a draft the chat list shows, from both lists, newest draft first; never a locked chat. */
     private val drafts: Flow<List<Chat>> =
-        combine(LISTS.map(chatRepository::chatList)) { lists ->
+        combine(combine(LISTS.map(chatRepository::chatList)) { it.toList() }, chatLock.lockedChatIds) { lists, locked ->
             lists
                 .flatMap { it }
                 .distinctBy { it.id }
+                .filterNot { it.id in locked }
                 .mapNotNull { chat -> chat.shownDraft?.let { chat to it.date } }
                 .sortedByDescending { it.second }
                 .map { it.first }
