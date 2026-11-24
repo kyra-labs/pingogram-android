@@ -172,8 +172,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -196,6 +194,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -1568,8 +1567,9 @@ class ChatViewModel internal constructor(
     /**
      * Asks once for each replied message that is not in [history], for messages of this chat: the quote shows it
      * once it is there. A failure is kept, and shown; it is not asked for again. The messages of one history are
-     * marked pending, and then answered, in one change each, not one per message: every change maps the
-     * conversation again (`docs/PERFORMANCE.md`).
+     * marked pending in one change, as every change maps the conversation again (`docs/PERFORMANCE.md`). Each answer
+     * then shows as soon as it comes, with whatever others came meanwhile in the same change: none waits for another,
+     * as one TDLib must ask the server for waits for the connection while the others answer from its database.
      */
     private fun fetchMissingReplies(history: ChatHistory) {
         val known = replies.value
@@ -1588,17 +1588,30 @@ class ChatViewModel internal constructor(
         if (added.isEmpty()) return
         val asked = added
         viewModelScope.launch {
-            val answers =
+            val answers = Channel<Pair<Long, ReplyState>>(Channel.UNLIMITED)
+            launch {
                 asked
                     .map { id ->
-                        async {
-                            when (val replied = messageRepository.repliedMessage(chatId, id)) {
-                                is Outcome.Success -> id to ReplyState.Loaded(replied.value)
-                                is Outcome.Failure -> id to ReplyState.Failed(replied.error)
-                            }
+                        launch {
+                            val state =
+                                when (val replied = messageRepository.repliedMessage(chatId, id)) {
+                                    is Outcome.Success -> ReplyState.Loaded(replied.value)
+                                    is Outcome.Failure -> ReplyState.Failed(replied.error)
+                                }
+                            answers.send(id to state)
                         }
-                    }.awaitAll()
-            replies.update { it.puttingAll(answers.toMap()) }
+                    }.joinAll()
+                answers.close()
+            }
+            for (first in answers) {
+                val came = mutableMapOf(first)
+                var next = answers.tryReceive().getOrNull()
+                while (next != null) {
+                    came += next
+                    next = answers.tryReceive().getOrNull()
+                }
+                replies.update { it.puttingAll(came) }
+            }
         }
     }
 
