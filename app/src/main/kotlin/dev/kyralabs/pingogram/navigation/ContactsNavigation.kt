@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.navigation
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import dev.kyralabs.pingogram.core.navigation.BirthdaysRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactScreens
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
@@ -24,6 +25,7 @@ internal fun NavGraphBuilder.contacts(
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
         onOpenMyQrCode = { navController.navigate(MyQrCodeRoute) { launchSingleTop = true } },
         onScanQrCode = { navController.navigateToQrScanner() },
+        onOpenBirthdays = { navController.navigate(BirthdaysRoute) { launchSingleTop = true } },
     )
     contactScreens(onBack = { navController.popBackStack() }, onOpenChat = openChat)
 }

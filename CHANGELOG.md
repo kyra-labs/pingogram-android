@@ -23,6 +23,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Settings → Privacy and security.
 - Drafts: while a chat has an unsent draft, a button in the Chats header opens every draft on one page, newest
   first; Settings → Chats → "Drafts button" can leave it out.
+- Birthdays: when a contact's birthday is near, a row on the Contacts tab opens them all, with "Remind me" to be
+  reminded on the day and "Add to calendar"; Settings → Privacy and security → Contacts → "Birthdays" hides the row.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer

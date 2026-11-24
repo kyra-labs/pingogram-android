@@ -52,6 +52,12 @@ class ContactsAccessibilityChecksTest {
         }
 
     @Test
+    fun birthdays() =
+        check {
+            ContactsScreen(state = ContactsPreviewData.birthdays, onEvent = {}, onAddContact = {}, onEditContact = {})
+        }
+
+    @Test
     fun newContact() = check { NewContactScreen(state = NewContactPreviewData.phoneNumber, onEvent = {}, onBack = {}) }
 
     @Test

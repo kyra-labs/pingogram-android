@@ -96,6 +96,23 @@ class ContactsScreenTest {
     }
 
     @Test
+    fun `the Birthdays row opens the page`() {
+        var opened = 0
+        setScreen(ContactsPreviewData.birthdays, onOpenBirthdays = { opened++ })
+
+        composeRule.onNodeWithText(string(R.string.birthdays_title)).performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `without birthdays there is no Birthdays row`() {
+        setScreen(ContactsPreviewData.content)
+
+        composeRule.onNodeWithText(string(R.string.birthdays_title)).assertDoesNotExist()
+    }
+
+    @Test
     fun `a long press offers Edit and Delete`() {
         setScreen(ContactsPreviewData.content)
         val grace = hasContentDescription("Grace Hopper", substring = true) and hasClickAction()
@@ -227,7 +244,10 @@ class ContactsScreenTest {
         assertEquals(listOf(ContactSyncEvent.Allow, ContactSyncEvent.TurnOff), syncEvents)
     }
 
-    private fun setScreen(state: ContactsUiState) {
+    private fun setScreen(
+        state: ContactsUiState,
+        onOpenBirthdays: () -> Unit = {},
+    ) {
         composeRule.setContent {
             listState = rememberLazyListState()
             PingogramTheme(dynamicColor = false) {
@@ -238,6 +258,7 @@ class ContactsScreenTest {
                     onEditContact = { edited += it },
                     onSyncEvent = { syncEvents += it },
                     listState = listState,
+                    onOpenBirthdays = onOpenBirthdays,
                 )
             }
         }

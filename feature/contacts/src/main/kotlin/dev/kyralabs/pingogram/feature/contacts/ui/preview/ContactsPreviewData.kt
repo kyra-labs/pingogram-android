@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.feature.contacts.ui.ContactsContent
 import dev.kyralabs.pingogram.feature.contacts.ui.ContactsUiState
 import dev.kyralabs.pingogram.feature.contacts.ui.DeleteContactDialog
 import dev.kyralabs.pingogram.feature.contacts.ui.InviteItem
+import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BirthdaysEntry
 import dev.kyralabs.pingogram.feature.contacts.ui.contactSections
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -124,6 +125,16 @@ internal object ContactsPreviewData {
 
     /** Contacts sync off: its offer above the contacts. */
     val syncOffer = content.copy(sync = ContactSyncUi.Offer)
+
+    /** Contacts with birthdays these days: the "Birthdays" row above the contacts (FR-X18). */
+    val birthdays =
+        content.copy(
+            birthdays =
+                BirthdaysEntry(
+                    persistentListOf(UiText.Plain("Ada Lovelace"), UiText.Plain("Grace Hopper")),
+                    more = 1,
+                ),
+        )
 
     /** Contacts sync on, but Android no longer lets Pingogram read the contacts. */
     val syncPaused = content.copy(sync = ContactSyncUi.NeedsPermission)

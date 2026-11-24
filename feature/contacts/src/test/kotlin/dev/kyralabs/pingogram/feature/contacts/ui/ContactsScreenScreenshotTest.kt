@@ -88,6 +88,17 @@ class ContactsScreenScreenshotTest {
     @Test
     fun syncOnDark() = capture(ScreenshotVariant.Dark, ContactsPreviewData.syncOn)
 
+    /** The "Birthdays" row on; [light] is the same list with it off. */
+    @Test
+    fun birthdays() = capture(ScreenshotVariant.Light, ContactsPreviewData.birthdays)
+
+    @Test
+    fun birthdaysDark() = capture(ScreenshotVariant.Dark, ContactsPreviewData.birthdays)
+
+    @Test
+    @Config(qualifiers = COMPACT_TALL, fontScale = FONT_SCALE_200)
+    fun birthdaysFontScale200() = capture(ScreenshotVariant.Light, ContactsPreviewData.birthdays)
+
     @Test
     fun syncRationale() =
         captureRoboImage {

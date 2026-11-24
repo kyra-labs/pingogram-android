@@ -18,6 +18,7 @@ internal class ContactsPreviewStates : PreviewParameterProvider<ContactsUiState>
             "Sync offered" to ContactsPreviewData.syncOffer,
             "Sync paused" to ContactsPreviewData.syncPaused,
             "Sync on" to ContactsPreviewData.syncOn,
+            "Birthdays" to ContactsPreviewData.birthdays,
         )
 
     override val values: Sequence<ContactsUiState> = states.asSequence().map { it.second }
