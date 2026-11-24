@@ -34,9 +34,11 @@ import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelViewModel
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.drafts.DraftsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.mentions.MentionsRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute as ArchiveSettingsDestination
 import dev.kyralabs.pingogram.core.navigation.CatchUpRoute as CatchUpDestination
+import dev.kyralabs.pingogram.core.navigation.DraftsRoute as DraftsDestination
 import dev.kyralabs.pingogram.core.navigation.MentionsRoute as MentionsDestination
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
@@ -99,6 +101,14 @@ fun NavGraphBuilder.mentionsScreen(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
 ) {
     composable<MentionsDestination> { MentionsRoute(onBack = onBack, onOpenMessage = onOpenMessage) }
+}
+
+/** Adds Drafts, [DraftsDestination], to the graph; [onBack] leaves it, and a row opens its chat with [onOpenChat]. */
+fun NavGraphBuilder.draftsScreen(
+    onBack: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
+) {
+    composable<DraftsDestination> { DraftsRoute(onBack = onBack, onOpenChat = onOpenChat) }
 }
 
 /**

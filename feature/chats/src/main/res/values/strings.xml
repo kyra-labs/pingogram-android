@@ -319,6 +319,12 @@
     <string name="mentions_empty_body">When someone in a group mentions you or replies to you, it shows here.</string>
     <string name="mentions_error_title">Couldn\'t load mentions</string>
     <string name="mentions_retry">Try again</string>
+    <!-- The Drafts page (FR-X16): the chats with a message the user started and has not sent. -->
+    <string name="drafts_title">Drafts</string>
+    <string name="drafts_back">Back</string>
+    <string name="drafts_loading">Loading drafts</string>
+    <string name="drafts_empty_title">No drafts</string>
+    <string name="drafts_empty_body">A message you start and don\'t send waits here until you send or clear it.</string>
     <!-- The Channel feed (REQUIREMENTS.md FR-X5): an unread post's time, after its dot. -->
     <string name="feed_new_at">New · %1$s</string>
     <string name="feed_open_in_channel">Open in channel</string>
