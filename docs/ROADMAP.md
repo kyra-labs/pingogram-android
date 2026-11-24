@@ -217,7 +217,7 @@ Features:
 - [ ] Folder tabs without unread counters, as an option
 - [x] Incognito keyboard: the keyboard does not learn from what is typed in Pingogram
 - [x] Links without tracking parameters, when sent and opened
-- [ ] Adding a contact does not share the phone number unless chosen
+- [x] Adding a contact does not share the phone number unless chosen
 
 ## v2.6.0
 

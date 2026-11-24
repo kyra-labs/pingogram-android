@@ -20,8 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -41,17 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.toggleableState
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,15 +53,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
-import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
@@ -375,39 +365,6 @@ private fun ContactNoteField(
 
 private const val NOTE_MIN_LINES = 2
 private const val NOTE_MAX_LINES = 6
-
-/**
- * "Share my phone number": a list item with a [CheckSwitch] at its end on the fields' tonal container
- * (`surfaceContainer`), the whole row toggling it as a switch for screen readers, with a `ToggleOn`/`ToggleOff` haptic.
- */
-@Composable
-private fun SharePhoneNumberRow(
-    name: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    val haptics = LocalHapticFeedback.current
-    ListItem(
-        onClick = {
-            haptics.performToggle(!checked)
-            onCheckedChange(!checked)
-        },
-        modifier =
-            Modifier.semantics {
-                role = Role.Switch
-                toggleableState = ToggleableState(checked)
-            },
-        enabled = enabled,
-        supportingContent = {
-            Text(stringResource(R.string.contacts_share_phone_number_summary, name.bidiIsolated()).bidiIsolated())
-        },
-        trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
-        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        content = { Text(stringResource(R.string.contacts_share_phone_number)) },
-    )
-}
 
 /** Reading the user failed: its error in a soft-shaped empty state, with "Try again" ([onRetry]). */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

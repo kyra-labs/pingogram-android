@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AddContactResult
+import dev.kyralabs.pingogram.core.testing.FakeSharePhoneNumberRepository
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -29,12 +30,14 @@ import org.junit.jupiter.api.Test
 /**
  * [NewContactViewModel] on fake repositories (`REQUIREMENTS.md` FR-P1): the calling code it starts the number with,
  * the country of the number, adding by phone number and by username, a number not on Telegram and its invitation,
- * field errors, `FLOOD_WAIT`, other errors, and what survives process death.
+ * "Share my phone number" from the user's default (FR-X9), field errors, `FLOOD_WAIT`, other errors, and what
+ * survives process death.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewContactViewModelTest {
     private val contacts = FakeContactRepository()
     private val countries = FakeCountryRepository()
+    private val sharing = FakeSharePhoneNumberRepository()
     private val users =
         FakeUserRepository().apply {
             myUserId.value = ME
@@ -52,7 +55,7 @@ class NewContactViewModelTest {
     }
 
     private fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): NewContactViewModel {
-        val viewModel = NewContactViewModel(handle, contacts, countries, users)
+        val viewModel = NewContactViewModel(handle, contacts, countries, users, sharing)
         runCurrent()
         return viewModel
     }
@@ -283,6 +286,70 @@ class NewContactViewModelTest {
                 effects,
             )
             assertNull(viewModel.uiState.value.fieldError)
+        }
+
+    // Sharing the phone number
+
+    @Test
+    fun `with the default off the number is not shared`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.uiState.value.sharePhoneNumber)
+            fill(viewModel)
+
+            send(viewModel, NewContactEvent.Submit)
+
+            assertTrue(contacts.calls.contains("addByPhoneNumber:+447911123456:Grace::false"))
+        }
+
+    @Test
+    fun `with the default on the form starts sharing the number, and adding shares it`() =
+        runTest {
+            sharing.enabled.value = true
+            val viewModel = viewModel()
+            assertTrue(viewModel.uiState.value.sharePhoneNumber)
+            fill(viewModel)
+
+            send(viewModel, NewContactEvent.Submit)
+
+            assertTrue(contacts.calls.contains("addByPhoneNumber:+447911123456:Grace::true"))
+        }
+
+    @Test
+    fun `turning sharing off on the form wins over the default, by username too`() =
+        runTest {
+            sharing.enabled.value = true
+            val viewModel = viewModel()
+            send(viewModel, NewContactEvent.SharePhoneNumberChanged(false))
+            send(viewModel, NewContactEvent.MethodChanged(ContactMethod.Username))
+            send(viewModel, NewContactEvent.UsernameChanged("@grace"))
+
+            send(viewModel, NewContactEvent.Submit)
+
+            assertFalse(viewModel.uiState.value.sharePhoneNumber)
+            assertTrue(contacts.calls.contains("addByUsername:grace:::false"))
+        }
+
+    @Test
+    fun `turning sharing on with the default off shares the number`() =
+        runTest {
+            val viewModel = viewModel()
+            send(viewModel, NewContactEvent.SharePhoneNumberChanged(true))
+            send(viewModel, NewContactEvent.MethodChanged(ContactMethod.Username))
+            send(viewModel, NewContactEvent.UsernameChanged("grace"))
+
+            send(viewModel, NewContactEvent.Submit)
+
+            assertTrue(contacts.calls.contains("addByUsername:grace:::true"))
+        }
+
+    @Test
+    fun `the choice on the form survives process death, whatever the default`() =
+        runTest {
+            val handle = SavedStateHandle()
+            send(viewModel(handle), NewContactEvent.SharePhoneNumberChanged(true))
+
+            assertTrue(viewModel(handle).uiState.value.sharePhoneNumber)
         }
 
     // By username

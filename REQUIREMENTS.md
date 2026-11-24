@@ -284,6 +284,10 @@ decision 2026-11-23).
   `gclid`, `dclid`, `gbraid`, `wbraid`, `msclkid`, `yclid`, `mc_cid`, `mc_eid`, `_hsenc`, `_hsmi`, and `si` on YouTube
   and Spotify links (`LinkCleaner`). Everything else in a link stays as written; links in received messages show as
   sent. A sponsored message's link always opens exactly as Telegram sent it (§2).
+- FR-X9 Should: **Adding a contact shares the phone number only when chosen** (owner decision 2026-11-23). Add
+  contact (by phone number or by username) and "Add to contacts" have "Share my phone number", which starts from
+  Settings → Privacy and security → Contacts → "Share my phone number with new contacts", off by default; the chat
+  bar's "Add contact" follows that setting. Editing an existing contact starts with the number not shared.
 
 ## 6. Non-functional requirements
 

@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Add contact has a "Share my phone number" switch, off unless you turn on "Share my phone number with new
+  contacts" in Settings → Privacy and security → Contacts; the chat bar's "Add contact" follows that setting.
+
 ### Changed
 - Someone going online or offline no longer makes an open chat, the contacts, profiles' members, the story viewer
   or the share sheet redo their work: they follow names and photos, and only the statuses they show.
