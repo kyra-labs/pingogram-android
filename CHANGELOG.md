@@ -16,6 +16,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Send silently by default: Settings → Chats → Messages; touch and hold Send to send one with sound.
 - Confirm bot commands: Settings → Chats → Messages asks before a command from a bot's menu is sent.
 - Undo and redo in the message box's menu; Settings → Chats → Messages can leave them out.
+- Save to Downloads and Unpin for several selected messages at once.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer

@@ -6,8 +6,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 /**
  * The events of selection mode, reporting and saving (`REQUIREMENTS.md` FR-C6 "select, report, save to downloads")
  * for `ChatViewModel`, handed to the [selection], the [reporting], the [saving] and the [messageActions] that check
- * them against TDLib. The selection toolbar's actions run on every selected message, oldest first: copying their texts
- * ends selection mode at once; forwarding (through [forwarding]), reporting and deleting once they are done. The
+ * them against TDLib. The selection toolbar's actions run on every selected message, oldest first: copying their texts,
+ * saving their files to Downloads ([saving]) and unpinning them end selection mode at once; forwarding (through
+ * [forwarding]), reporting and deleting once they are done. The
  * messages that waited for the storage permission are found again in the [history].
  */
 internal class ChatSelectionEvents(
@@ -72,6 +73,16 @@ internal class ChatSelectionEvents(
 
                 MessageAction.Forward -> {
                     forwarding.open(messages, onSent = selection::clear)
+                }
+
+                MessageAction.SaveToDownloads -> {
+                    saving.save(messages)
+                    selection.clear()
+                }
+
+                MessageAction.Unpin -> {
+                    messages.forEach { messageActions.unpin(it.id) }
+                    selection.clear()
                 }
 
                 MessageAction.Report -> {

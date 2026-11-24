@@ -28,6 +28,27 @@ internal object SelectionPreviewData {
                 ),
         )
 
+    /**
+     * [selecting] with all six of the toolbar's actions, saving to Downloads and unpinning among them
+     * (`REQUIREMENTS.md` FR-X14): they fit the narrowest phones.
+     */
+    val allActions =
+        selecting.copy(
+            selection =
+                MessageSelection(
+                    messageIds = persistentSetOf(6, 10, 11),
+                    actions =
+                        persistentListOf(
+                            MessageAction.Copy,
+                            MessageAction.Forward,
+                            MessageAction.SaveToDownloads,
+                            MessageAction.Unpin,
+                            MessageAction.Report,
+                            MessageAction.Delete,
+                        ),
+                ),
+        )
+
     /** The report of Ada's messages at its reasons, as Telegram words them. */
     val reportOptions =
         ReportSheet(
