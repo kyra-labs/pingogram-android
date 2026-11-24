@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibBirthdayRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -190,6 +191,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun quickReactionCache(repository: TdlibQuickReactionRepository): TdlibUpdateCache
+
+    /** For the contacts with a close birthday, which TDLib announces at start and cannot be asked for. */
+    @Binds
+    @IntoSet
+    fun birthdayCache(repository: TdlibBirthdayRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds

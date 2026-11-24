@@ -316,6 +316,12 @@ decision 2026-11-23).
   status", on by default: while on, a chat sees what the user is doing in it (typing, recording a voice or round video
   message, uploading a photo or a file), sent again at most every five seconds while it lasts and ended when the
   message goes or the text is cleared; while off, nothing is sent, not even an action's end.
+- FR-X18 Should: **Birthdays** (owner decision 2026-11-23). While Telegram names contacts with a birthday these days,
+  the Contacts tab shows a "Birthdays" row above the contacts, opening a page that lists them with the day and, where
+  shared, the age they turn. Each offers "Send a message"; "Remind me", which only the user sets, one reminder a year
+  per contact, kept on the phone and ringing on the day; and "Add to calendar", which hands a yearly event to the
+  calendar app. Settings → Privacy and security → Contacts → "Birthdays", on by default: off, the row is hidden, and
+  reminders already set still ring.
 
 ## 6. Non-functional requirements
 

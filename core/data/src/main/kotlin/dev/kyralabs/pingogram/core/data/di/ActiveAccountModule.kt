@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.BirthdayRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
@@ -307,6 +308,9 @@ object ActiveAccountModule {
 
     @Provides
     fun quickReactionRepository(accounts: Accounts): QuickReactionRepository = accounts.active.quickReactionRepository()
+
+    @Provides
+    fun birthdayRepository(accounts: Accounts): BirthdayRepository = accounts.active.birthdayRepository()
 
     @Provides
     fun connectedWebsiteRepository(accounts: Accounts): ConnectedWebsiteRepository =
