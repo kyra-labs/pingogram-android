@@ -14,9 +14,11 @@ import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpScreen
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpStage
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpUiState
 import dev.kyralabs.pingogram.feature.chats.ui.create.CreateChatScreenshotTest
+import dev.kyralabs.pingogram.feature.chats.ui.drafts.DraftsScreen
 import dev.kyralabs.pingogram.feature.chats.ui.mentions.MentionsScreen
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ArchiveSettingsPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.preview.DraftsPreviewStates
 import dev.kyralabs.pingogram.feature.chats.ui.preview.MentionsPreviewStates
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
@@ -77,6 +79,9 @@ class ChatsAccessibilityChecksTest(
             buildMap {
                 MentionsPreviewStates().values.forEachIndexed { index, state ->
                     put("mentions.$index") { MentionsScreen(state = state, onEvent = {}, onBack = {}) }
+                }
+                DraftsPreviewStates().values.forEachIndexed { index, state ->
+                    put("drafts.$index") { DraftsScreen(state = state, onEvent = {}, onBack = {}) }
                 }
                 ChatListScreenScreenshotTest.STATES.forEach { (name, state) ->
                     put("chatList.$name") { ChatListScreen(state = state, onEvent = {}) }

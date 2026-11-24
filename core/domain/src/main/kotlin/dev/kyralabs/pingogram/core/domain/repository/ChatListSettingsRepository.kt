@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.Flow
  * folders ([ChatListSettings.folderTabStyle], their names by default), whether Catch-up takes muted chats and
  * channels too ([ChatListSettings.catchUpIncludesMuted], off by default), whether the Channel feed's tab starts the
  * folder row ([ChatListSettings.showFeedTab], on by default), and whether the folder tabs show their unread counts
- * ([ChatListSettings.showFolderTabCounters], on by default).
+ * ([ChatListSettings.showFolderTabCounters], on by default), and whether the Chats tab's header offers the drafts
+ * ([ChatListSettings.showDraftsButton], on by default).
  */
 interface ChatListSettingsRepository {
     /** The settings, then every change. Never fails: unreadable settings read as the defaults. */
@@ -48,6 +49,9 @@ interface ChatListSettingsRepository {
 
     /** Saves whether the folder tabs show their unread counts; fails as [setShowStories] does. */
     suspend fun setShowFolderTabCounters(show: Boolean): Outcome<Unit>
+
+    /** Saves whether the Chats tab's header offers the drafts; fails as [setShowStories] does. */
+    suspend fun setShowDraftsButton(show: Boolean): Outcome<Unit>
 }
 
 /**
@@ -60,7 +64,8 @@ interface ChatListSettingsRepository {
  * each folder tab shows: its name, its icon and name, or its icon alone. Catch-up (`docs/DESIGN_SYSTEM.md` §6
  * "Catch-up") leaves muted chats and channels out unless [catchUpIncludesMuted]. While [showFeedTab] is off, the folder
  * row has no Feed tab (`docs/DESIGN_SYSTEM.md` §6 "Channel feed"), whatever the channels followed. While
- * [showFolderTabCounters] is off, the folder tabs show no unread counts (`REQUIREMENTS.md` FR-X10).
+ * [showFolderTabCounters] is off, the folder tabs show no unread counts (`REQUIREMENTS.md` FR-X10). While
+ * [showDraftsButton] is off, the Chats tab's header has no Drafts button (FR-X16).
  */
 data class ChatListSettings(
     val showStories: Boolean = true,
@@ -73,6 +78,7 @@ data class ChatListSettings(
     val catchUpIncludesMuted: Boolean = false,
     val showFeedTab: Boolean = true,
     val showFolderTabCounters: Boolean = true,
+    val showDraftsButton: Boolean = true,
 )
 
 /**

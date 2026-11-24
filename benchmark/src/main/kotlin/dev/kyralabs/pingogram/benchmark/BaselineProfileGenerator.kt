@@ -8,13 +8,16 @@ import org.junit.runner.RunWith
 
 /**
  * Collects the Baseline Profile and Startup Profile that `:app` ships (`docs/PERFORMANCE.md` §2). Run it through
- * `./gradlew :app:generateBaselineProfile`, which needs a device on API 33+ (or a rooted one on API 28+) with the app
- * signed in (§9), and commit the result in `app/src/main/generated/baselineProfiles/`.
+ * `tools/benchmark/generate-profiles.sh` (`.ps1` on Windows), which needs a device on API 33+ (or a rooted one on
+ * API 28+) with the app signed in (§9), and commit the result in `app/src/main/generated/baselineProfiles/`. The
+ * script deletes the committed profiles first: collected from an APK that embeds one, every profile inherits it.
  *
  * The startup profile covers the start up to the chat list; the Baseline Profile adds scrolling the chat list,
  * opening and scrolling a conversation, and opening it again from the chat list with its history cached, as
- * `OpenChatBenchmark` does; then Catch-up's cards and the Bookmarks page, where the account has them (at least five
- * unread chats that are not muted, and a bookmarked message), reading no chat on the way.
+ * `OpenChatBenchmark` does; Saved Messages' newest photo in the media viewer (where it has one), a message sent and
+ * deleted there, and its profile (where its title opens one); search and the Settings tab; then Catch-up's cards and
+ * the Bookmarks page, where the account has them (at least five unread chats that are not muted, and a bookmarked
+ * message), reading no chat on the way.
  */
 @RunWith(AndroidJUnit4::class)
 class BaselineProfileGenerator {
@@ -46,6 +49,38 @@ class BaselineProfileGenerator {
     }
 
     @Test
+    fun mediaComposerAndProfile() {
+        rule.collect(packageName = TARGET_PACKAGE) {
+            pressHome()
+            startActivityAndWait()
+            openSavedMessages()
+            showAllSavedMessages()
+            if (photoOnScreen()) {
+                openNewestPhoto()
+                closeMediaViewer()
+            }
+            // Sent to Saved Messages and deleted again, as SendMessageBenchmark does.
+            val text = "Baseline Profile ${System.nanoTime()}"
+            typeMessage(text)
+            sendTyped(text)
+            deleteMessage(text)
+            browseProfileFromConversation()
+            returnToChatList()
+        }
+    }
+
+    @Test
+    fun searchAndSettings() {
+        rule.collect(packageName = TARGET_PACKAGE) {
+            pressHome()
+            startActivityAndWait()
+            waitForChatList()
+            searchChats(SEARCH_QUERY)
+            browseSettings()
+        }
+    }
+
+    @Test
     fun catchUpAndBookmarks() {
         rule.collect(packageName = TARGET_PACKAGE) {
             pressHome()
@@ -57,5 +92,10 @@ class BaselineProfileGenerator {
             if (openBookmarks() != null) scrollBookmarks()
             returnToChatList()
         }
+    }
+
+    private companion object {
+        /** A search that finds something in most accounts: a common letter. */
+        const val SEARCH_QUERY = "a"
     }
 }

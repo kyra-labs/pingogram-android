@@ -177,6 +177,19 @@ class ChatsPageViewModelTest {
         }
 
     @Test
+    fun `the drafts button shows at first, and turning it off saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.chatList.showDraftsButton)
+
+            send(viewModel, ChatsPageEvent.SetShowDraftsButton(false))
+            assertFalse(viewModel.content.chatList.showDraftsButton)
+
+            send(viewModel, ChatsPageEvent.SetShowDraftsButton(true))
+            assertTrue(viewModel.content.chatList.showDraftsButton)
+        }
+
+    @Test
     fun `raise to listen is on at first, and the split row's switch saves and shows`() =
         runTest {
             val viewModel = viewModel()

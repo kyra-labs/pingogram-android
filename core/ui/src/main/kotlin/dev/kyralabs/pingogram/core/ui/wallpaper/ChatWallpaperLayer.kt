@@ -16,28 +16,36 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
+import coil3.Image
+import coil3.ImageLoader
 import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
+import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.transformations
 import coil3.size.Scale
+import coil3.toBitmap
 import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
+import dev.kyralabs.pingogram.core.ui.image.TdlibFileImageKeyer
 import dev.kyralabs.pingogram.core.ui.theme.brush
 import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
@@ -178,7 +186,13 @@ private fun wallpaperPainter(
     val context = LocalPlatformContext.current
     val request =
         remember(wallpaper, data, window, barBlur) { wallpaperRequest(context, wallpaper, data, window, barBlur) }
-    return rememberAsyncImagePainter(request)
+    // A blurred copy made before (an earlier open) draws at once, with no request and nothing decoded again.
+    val kept = remember(request) { keptBlur(SingletonImageLoader.get(context), request) }
+    return if (kept != null) {
+        remember(kept) { BitmapPainter(kept.toBitmap().asImageBitmap()) }
+    } else {
+        rememberAsyncImagePainter(request)
+    }
 }
 
 /**
@@ -213,8 +227,36 @@ internal fun wallpaperRequest(
                 allowHardware(false)
                 size(BLUR_SIDE_PX, BLUR_SIDE_PX)
                 scale(Scale.FIT)
+                blurKey(data, blur)?.let(::memoryCacheKey)
             }
         }.build()
+
+/**
+ * The memory cache key of [data]'s copy blurred by [blur], one per photo and blur whatever was asked: the copy is read
+ * back by it ([keptBlur]) rather than through Coil's request, so an open after the first decodes nothing for it. Null
+ * for data without a stable key.
+ */
+internal fun blurKey(
+    data: Any,
+    blur: WallpaperBlur,
+): String? {
+    val source =
+        when (data) {
+            is TdlibFileImage -> TdlibFileImageKeyer.keyOf(data.fileId)
+            is File -> data.path
+            else -> return null
+        }
+    return "$source#${blur.cacheKey}"
+}
+
+/** [request]'s blurred copy if [imageLoader]'s memory cache keeps it already ([blurKey]); null otherwise. */
+internal fun keptBlur(
+    imageLoader: ImageLoader,
+    request: ImageRequest,
+): Image? {
+    val key = request.memoryCacheKey ?: return null
+    return imageLoader.memoryCache?.get(MemoryCache.Key(key, request.memoryCacheKeyExtras))?.image
+}
 
 /**
  * How [wallpaper] draws with this theme's [colors], the [themeWallpaper] (else [placeholder]) under a photo until it is

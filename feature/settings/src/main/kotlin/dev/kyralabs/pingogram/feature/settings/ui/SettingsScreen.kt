@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -148,7 +149,7 @@ internal fun SettingsScreen(
     val crossfade = remember(motionScheme) { stateCrossfade<Boolean>(motionScheme) }
     val onOpen = homeOpener(onOpenPage, onOpenSubPage)
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection).testTag(SETTINGS_HOME_TEST_TAG),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
         // The tabs' large header, as Chats and Contacts have it (owner decision 2026-11-07); pages keep the medium bar.
@@ -274,3 +275,6 @@ private fun SettingsScreenLoggingOutPreview() {
         SettingsScreen(state = SettingsPreviewData.content.copy(isLoggingOut = true), onEvent = {}, onOpenPage = {})
     }
 }
+
+/** The Settings tab's home, for the Baseline Profile's journeys. */
+internal const val SETTINGS_HOME_TEST_TAG = "settings_home"

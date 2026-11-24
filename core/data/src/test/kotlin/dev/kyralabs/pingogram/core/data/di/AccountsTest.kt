@@ -28,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -388,6 +389,41 @@ class AccountsTest {
 
             assertEquals(AccountRegistry.First, accounts.registry.value)
             assertEquals(listOf(1), deleted)
+        }
+
+    @Test
+    fun `an account added while one that left still closes takes another slot, not the closing client`() =
+        runTest {
+            val accounts = accounts()
+            signIn(0, userId = 1)
+            accounts.add()
+            runCurrent()
+            signIn(1, userId = 2)
+            steps.getValue(1).value = AuthStep.LoggingOut
+            runCurrent()
+            val leaving = clients.getValue(1)
+
+            assertEquals(2, accounts.add())
+            runCurrent()
+            leaving.authState.value = AuthState.Closed
+            runCurrent()
+
+            assertEquals(listOf(1), deleted)
+            assertEquals(1, accounts.add())
+            assertNotSame(leaving, clients.getValue(1))
+        }
+
+    @Test
+    fun `asking for the active account makes only its graph, and the others come in the background`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 1, 2), active = 1))
+            val accounts = accounts(start = false)
+
+            accounts.active
+
+            assertEquals(setOf(1), components.keys)
+            runCurrent()
+            assertEquals(setOf(0, 1, 2), components.keys)
         }
 
     @Test

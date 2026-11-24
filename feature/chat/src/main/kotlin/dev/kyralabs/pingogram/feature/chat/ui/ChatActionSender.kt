@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * Tells the chat what the user is doing in it (`REQUIREMENTS.md` FR-X16): typing while they write, recording a voice or
+ * Tells the chat what the user is doing in it (`REQUIREMENTS.md` FR-X17): typing while they write, recording a voice or
  * round video message, uploading a photo or a file. The others see an action for a few seconds, so it is sent again,
  * at most every [RESEND_MILLIS], while it goes on: typing on the next edit after that, a recording or an upload when
  * the time comes. It is ended when it stops. Recording and uploading come before typing. Nothing at all is sent, an

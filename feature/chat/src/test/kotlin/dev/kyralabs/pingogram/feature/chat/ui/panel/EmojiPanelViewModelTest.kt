@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.repository.StickerSuggestions
 import dev.kyralabs.pingogram.core.testing.FakeStickerSettingsRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeInlineBotRepository
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -309,6 +310,30 @@ class EmojiPanelViewModelTest {
             viewModel.onEvent(EmojiPanelEvent.GifQueryChanged(""))
             runCurrent()
             assertEquals(null, (viewModel.uiState.value.gifs as GifTab.Content).search)
+        }
+
+    @Test
+    fun `a GIF a later page or the saved list repeats shows once`() =
+        runTest {
+            savedGifs.saved.value = listOf(gif(1), gif(1), gif(2))
+            inlineBots.bots["gif"] = InlineBot(GIF_BOT, GIF_BOT, "gif", "", needsLocation = false)
+            inlineBots.onResults = { query ->
+                val ids = if (query.offset.isEmpty()) listOf(7, 7) else listOf(7, 9)
+                val results = ids.map { InlineResult.Animation("r$it", gif(it), "") }.toPersistentList()
+                Outcome.Success(InlineQueryResults(5, null, results, if (query.offset.isEmpty()) "next" else ""))
+            }
+            val viewModel = viewModel()
+            val saved = opened(viewModel).gifs as GifTab.Content
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged("cats"))
+            advanceTimeBy(SEARCH_PAUSE)
+            runCurrent()
+
+            viewModel.onEvent(EmojiPanelEvent.MoreGifs)
+            runCurrent()
+
+            assertEquals(listOf(1, 2), saved.saved.map { it.file.id })
+            val search = (viewModel.uiState.value.gifs as GifTab.Content).search!!
+            assertEquals(listOf(7, 9), search.results.map { it.file.id })
         }
 
     @Test

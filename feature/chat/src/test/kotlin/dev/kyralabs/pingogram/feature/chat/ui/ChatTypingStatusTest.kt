@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * What [ChatViewModel] tells the chat the user is doing (`REQUIREMENTS.md` FR-X16): typing, recording a voice or round
+ * What [ChatViewModel] tells the chat the user is doing (`REQUIREMENTS.md` FR-X17): typing, recording a voice or round
  * video message, uploading a photo or a file; sent again at most every five seconds while it lasts, ended when it
  * stops, and never anything while "Send typing status" is off.
  */

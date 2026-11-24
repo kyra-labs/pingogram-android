@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
@@ -42,6 +43,16 @@ class ChatsPageScreenshotTest {
 
     @Test
     fun changedDark() = capture("changedDark", ThemeMode.Dark, changed)
+
+    /** The whole page, down to the Chat list group, with "Drafts button" off (`REQUIREMENTS.md` FR-X16). */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun draftsButtonOffLight() =
+        capture(
+            "draftsButtonOffLight",
+            ThemeMode.Light,
+            defaults.copy(chatList = ChatListSettings(showDraftsButton = false)),
+        )
 
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, ChatsPageUiState.Loading)

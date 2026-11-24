@@ -130,7 +130,7 @@ class GroupCallManager
                     if (live != null || !line.take(this)) return JoinResult.Busy
                     Live(chatId, videoChat.groupCallId, videoChat.defaultParticipant, callScope()).also { start(it) }
                 }
-            connect(call)
+            joinInBackground(call)
             return JoinResult.Joining
         }
 
@@ -152,7 +152,7 @@ class GroupCallManager
                     if (!line.take(this)) return JoinResult.Busy
                     Live(chatId, groupCallId, joinAs = null, scope = callScope(), isLiveStory = true).also { start(it) }
                 }
-            connect(call)
+            joinInBackground(call)
             return JoinResult.Joining
         }
 
@@ -175,7 +175,7 @@ class GroupCallManager
                             start(it)
                         }
                 }
-            connect(call)
+            joinInBackground(call)
             return JoinResult.Joining
         }
 
@@ -198,7 +198,7 @@ class GroupCallManager
                             start(it)
                         }
                 }
-            connect(call)
+            joinInBackground(call).join()
             val ended = mutex.withLock { call.phase as? GroupCallPhase.Ended }
             val link =
                 if (ended != null) {
@@ -495,6 +495,12 @@ class GroupCallManager
                 }
             }
         }
+
+        /**
+         * [connect]s [call] in the manager's scope, not the caller's: a screen that closes while it joins (the engine's
+         * session, TDLib's join) neither leaves the call stuck joining nor drops the session it opened.
+         */
+        private fun joinInBackground(call: Live): Job = scope.launch { connect(call) }
 
         /** Creates the engine's call, joins through TDLib, then connects; not under the mutex. */
         private suspend fun connect(call: Live) {

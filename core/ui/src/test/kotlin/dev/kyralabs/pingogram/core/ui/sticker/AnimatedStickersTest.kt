@@ -28,6 +28,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.zip.GZIPOutputStream
 
 /**
  * [AnimatedStickers] with Lottie ([LottieStickerDecoder]) on Robolectric's native graphics: downloading the file,
@@ -59,6 +60,19 @@ class AnimatedStickersTest {
         assertTrue(Color.alpha(first.getPixel(64, 64)) == 255)
         assertEquals(Color.TRANSPARENT, first.getPixel(1, 1))
         assertNotEquals(first.getPixel(64, 12), last.getPixel(64, 12))
+    }
+
+    @Test
+    fun `a sticker without a size draws blank frames instead of failing`() {
+        val json = """{"v":"5.5.2","fr":30,"ip":0,"op":30,"w":0,"h":0,"layers":[]}"""
+        val tgs = folder.newFile("empty.tgs")
+        GZIPOutputStream(tgs.outputStream()).use { it.write(json.toByteArray()) }
+        val animation = checkNotNull(LottieStickerDecoder().decode(tgs))
+        val frame = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+
+        animation.newRenderer().render(0, frame)
+
+        assertEquals(Color.TRANSPARENT, frame.getPixel(32, 32))
     }
 
     @Test

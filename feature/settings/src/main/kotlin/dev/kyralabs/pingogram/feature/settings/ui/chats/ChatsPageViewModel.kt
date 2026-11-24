@@ -73,6 +73,11 @@ sealed interface ChatsPageEvent {
         val enabled: Boolean,
     ) : ChatsPageEvent
 
+    /** "Drafts button" turned on or off. */
+    data class SetShowDraftsButton(
+        val show: Boolean,
+    ) : ChatsPageEvent
+
     /** "Raise to listen" turned on or off. */
     data class SetRaiseToListen(
         val enabled: Boolean,
@@ -109,7 +114,7 @@ class ChatsPageViewModel
     constructor(
         private val composerSettingsRepository: ComposerSettingsRepository,
         private val playbackSettingsRepository: PlaybackSettingsRepository,
-        chatListSettingsRepository: ChatListSettingsRepository,
+        private val chatListSettingsRepository: ChatListSettingsRepository,
         private val transcriptionSettingsRepository: TranscriptionSettingsRepository,
         private val transcriber: VoiceTranscriber,
     ) : ViewModel() {
@@ -172,6 +177,10 @@ class ChatsPageViewModel
 
                 is ChatsPageEvent.SetShowsUndoRedo -> {
                     composerSettingsRepository.setShowsUndoRedo(event.enabled)
+                }
+
+                is ChatsPageEvent.SetShowDraftsButton -> {
+                    chatListSettingsRepository.setShowDraftsButton(event.show)
                 }
 
                 is ChatsPageEvent.SetRaiseToListen -> {

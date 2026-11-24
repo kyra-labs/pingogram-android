@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -57,7 +58,12 @@ internal fun HeaderSearchButton(actions: ChatListHeaderActions?) {
         TopBarAction(label = label, onClick = {}, icon = icon)
     } else {
         SearchButtonSlot(shown = !actions.isSearchOpen, search = actions.search, shape = CircleShape) { transform ->
-            TopBarAction(label = label, onClick = actions.openSearch, modifier = transform, icon = icon)
+            TopBarAction(
+                label = label,
+                onClick = actions.openSearch,
+                modifier = transform.testTag(CHAT_LIST_SEARCH_TEST_TAG),
+                icon = icon,
+            )
         }
     }
 }
@@ -89,7 +95,11 @@ internal fun HeaderAccountButton(
             val avatarSize = MaterialTheme.sizes.headerAction
             IconButton(
                 onClick = { actions?.openAccount?.invoke() },
-                modifier = menuModifier.size(avatarSize).semantics { contentDescription = label },
+                modifier =
+                    menuModifier
+                        .size(avatarSize)
+                        .semantics { contentDescription = label }
+                        .testTag(CHAT_LIST_ACCOUNT_TEST_TAG),
                 shapes =
                     IconButtonShapes(
                         shape = MaterialTheme.shapes.large,
@@ -172,3 +182,9 @@ private fun Modifier.keepingSize(kept: KeptSize): Modifier =
         val height = kept.size.height.coerceIn(constraints.minHeight, constraints.maxHeight)
         layout(width, height) { placeable.place(0, 0) }
     }
+
+/** The header's search button, for the Baseline Profile's journeys. */
+internal const val CHAT_LIST_SEARCH_TEST_TAG = "chat_list_search"
+
+/** The header's account button, which opens the Settings tab, for the Baseline Profile's journeys. */
+internal const val CHAT_LIST_ACCOUNT_TEST_TAG = "chat_list_account"

@@ -10,13 +10,14 @@ import dev.kyralabs.pingogram.core.navigation.ForwardRoute
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveSettingsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.draftsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.feedScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.mentionsScreen
 
 /**
  * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them, and
- * Catch-up, Mentions & replies and the Channel feed; a chat opens with [openChat], a topic a forum's row names pushed
- * as its chat would be, and a mention, reply or feed post pushes its chat at the message.
+ * Catch-up, Mentions & replies, Drafts and the Channel feed; a chat opens with [openChat], a topic a forum's row names
+ * pushed as its chat would be, and a mention, reply or feed post pushes its chat at the message.
  */
 internal fun NavGraphBuilder.archive(
     navController: NavHostController,
@@ -38,6 +39,8 @@ internal fun NavGraphBuilder.archive(
             navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
         },
     )
+    // Drafts, pushed above the Chats tab from its header: a chat it opens is pushed above it.
+    draftsScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
     // The Channel feed, pushed above the Chats tab from its Feed tab: a post it opens pushes its channel at the post,
     // and a post's "Forward" opens the forward sheet above it.
     feedScreen(

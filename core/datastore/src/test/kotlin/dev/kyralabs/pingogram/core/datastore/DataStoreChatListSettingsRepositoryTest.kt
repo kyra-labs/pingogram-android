@@ -147,6 +147,19 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `the drafts button shows until it is turned off, and turning it off is kept`() =
+        runTest {
+            val store = dataStore()
+            val repository = DataStoreChatListSettingsRepository(store)
+            assertTrue(repository.settings.first().showDraftsButton)
+
+            assertEquals(Outcome.Success(Unit), repository.setShowDraftsButton(false))
+
+            assertEquals(ChatListSettings(showDraftsButton = false), repository.settings.first())
+            assertFalse(DataStoreChatListSettingsRepository(store).settings.first().showDraftsButton)
+        }
+
+    @Test
     fun `chat type icons show until they are turned off, and turning them off is kept`() =
         runTest {
             val store = dataStore()
