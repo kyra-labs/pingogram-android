@@ -144,6 +144,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- A call that ends while it is still connecting no longer leaves the microphone on, and closing a voice chat's screen
+  while it joins no longer leaves it stuck at "Joining".
+- Calls connect more reliably: what the other phone sends to set up the call reaches it in the order it was sent.
 - Pingogram no longer sometimes closes right as it opens.
 - The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
   start-up work, so the app opens faster again.

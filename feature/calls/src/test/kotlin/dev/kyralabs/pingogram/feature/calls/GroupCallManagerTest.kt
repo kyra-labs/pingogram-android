@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,6 +104,26 @@ class GroupCallManagerTest {
             assertEquals(GroupCallPhase.Connected, manager.call.value?.phase)
             assertEquals(clock.now, manager.call.value?.connectedAtMillis)
             assertTrue(system.calls.single().active)
+        }
+
+    @Test
+    fun `a join goes on when the screen that started it closes, and keeps the session it opened`() =
+        runTest {
+            engine.gate = CompletableDeferred()
+            val manager = manager()
+            val screen = launchNow { manager.join(CHAT_ID) }
+            runCurrent()
+
+            screen.cancel()
+            engine.gate?.complete(Unit)
+            runCurrent()
+
+            val session = engine.groupSessions.single()
+            assertFalse(session.closed)
+            assertEquals(CALL_ID, repository.joins.single().id)
+            session.state.value = CallMediaState.Connected
+            runCurrent()
+            assertEquals(GroupCallPhase.Connected, manager.call.value?.phase)
         }
 
     @Test
