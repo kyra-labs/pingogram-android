@@ -29,6 +29,10 @@ REGRESSION = 0.10
 # Frames whose CPU time is above this count against "0 frames > 32 ms" (docs/PERFORMANCE.md §1).
 LONG_FRAME_MS = 32.0
 
+# Frames more than this late are stutter, the frames a user sees as a hitch
+# (docs/adr/0042-stutter-instead-of-late-frames.md).
+STUTTER_MS = 16.0
+
 
 def result_files(paths):
     """The *-benchmarkData.json files of [paths], files or directories."""
@@ -57,6 +61,7 @@ def flatten(benchmark):
             values[metric + ".over32msFrames"] = float(sum(1 for v in samples if v > LONG_FRAME_MS))
         if samples and metric == "frameOverrunMs":
             values[metric + ".latePercent"] = 100.0 * sum(1 for v in samples if v > 0) / len(samples)
+            values[metric + ".stutterPercent"] = 100.0 * sum(1 for v in samples if v > STUTTER_MS) / len(samples)
     return values
 
 
@@ -91,9 +96,20 @@ def default_baseline(devices):
 def is_time(key):
     """Whether [key] is a time compared for regressions: start times, frame time percentiles and trace sections."""
     statistic = key.rsplit(".", 1)[-1]
-    if key.startswith("frameOverrunMs") or statistic in ("over32msFrames", "latePercent"):
+    if key.startswith("frameOverrunMs") or statistic in ("over32msFrames", "latePercent", "stutterPercent"):
         return False
     return key.split(".")[0].endswith("Ms")
+
+
+def frame_lines(benchmarks):
+    """Each scrolling benchmark's late and stutter shares, as lines to print: late frames are reported, not budgeted."""
+    lines = []
+    for name, values in sorted(benchmarks.items()):
+        late = values.get("frameOverrunMs.latePercent")
+        stutter = values.get("frameOverrunMs.stutterPercent")
+        if late is not None and stutter is not None:
+            lines.append("%s: %.1f%% late, %.2f%% stutter (> %g ms late)" % (name, late, stutter, STUTTER_MS))
+    return lines
 
 
 def check_budgets(benchmarks, budgets):
@@ -148,6 +164,11 @@ def main(argv):
         return 2
     benchmarks, devices = read_run(files)
     print("Run: %d benchmarks from %d files, on %s." % (len(benchmarks), len(files), ", ".join(devices)))
+    frames = frame_lines(benchmarks)
+    if frames:
+        print("\nFrames:")
+        for line in frames:
+            print("  " + line)
 
     with open(args.budgets, encoding="utf-8") as f:
         budgets = json.load(f)

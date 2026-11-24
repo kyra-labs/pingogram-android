@@ -8,11 +8,12 @@
   },
   "ChatListScrollBenchmark.*": {
     "frameDurationCpuMs.P90": 8,
-    "frameDurationCpuMs.over32msFrames": 0
+    "frameDurationCpuMs.over32msFrames": 0,
+    "frameOverrunMs.stutterPercent": 0.5
   },
   "ConversationScrollBenchmark.*": {
     "frameDurationCpuMs.P90": 10,
-    "frameOverrunMs.latePercent": 1
+    "frameOverrunMs.stutterPercent": 0.5
   },
   "OpenChatBenchmark.*": {
     "openChatSumMs.median": 150
