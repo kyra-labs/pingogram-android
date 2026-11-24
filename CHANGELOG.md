@@ -147,6 +147,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- A chat with a photo wallpaper opens without decoding the photo again for its top bar's blur: the blurred copy made
+  the first time is kept.
 - A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
   notification shows at once and fills in its name and photo as they come.
 - A call that ends while it is still connecting no longer leaves the microphone on, and closing a voice chat's screen
