@@ -243,4 +243,17 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetShowsUndoRedo(true)), events)
     }
+
+    @Test
+    fun `the drafts button row is a switch, on at first, whose tap turns it off`() {
+        setScreen()
+
+        switchRow(R.string.settings_drafts_button)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_drafts_button_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetShowDraftsButton(false)), events)
+    }
 }

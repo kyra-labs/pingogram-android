@@ -72,4 +72,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(showFolderTabCounters = show)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setShowDraftsButton(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showDraftsButton = show)
+        return Outcome.Success(Unit)
+    }
 }
