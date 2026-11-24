@@ -33,4 +33,13 @@ interface ComposerSettingsRepository {
 
     /** Saves [recordsVideoMessages]; fails with `DomainError.Unknown` if it cannot be written. */
     suspend fun setRecordsVideoMessages(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether messages go without a notification sound unless the user picks "Send with sound" (`REQUIREMENTS.md`
+     * FR-X11, Settings → Chats → Messages), then every change. Off when unreadable.
+     */
+    val sendsSilently: Flow<Boolean>
+
+    /** Saves [sendsSilently]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setSendsSilently(enabled: Boolean): Outcome<Unit>
 }

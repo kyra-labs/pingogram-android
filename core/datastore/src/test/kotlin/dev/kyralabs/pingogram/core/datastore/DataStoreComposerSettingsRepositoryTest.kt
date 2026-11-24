@@ -131,6 +131,21 @@ class DataStoreComposerSettingsRepositoryTest {
         }
 
     @Test
+    fun `messages go with sound until sending silently is turned on, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStoreComposerSettingsRepository(dataStore(firstProcess))
+            assertEquals(false, first.sendsSilently.first())
+
+            assertEquals(Outcome.Success(Unit), first.setSendsSilently(true))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStoreComposerSettingsRepository(dataStore())
+            assertEquals(true, again.sendsSilently.first())
+            assertEquals(false, again.recordsVideoMessages.first())
+        }
+
+    @Test
     fun `a record mode that cannot be read is voice, and saving it fails`() =
         runTest {
             val repository = DataStoreComposerSettingsRepository(FailingDataStore())

@@ -32,7 +32,8 @@ sealed interface ChatsPageUiState {
     data object Loading : ChatsPageUiState
 
     /**
-     * Which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear ([raiseToListen]),
+     * Which Enter sends the composer's messages ([sendKeys]), whether they go without sound unless chosen
+     * ([sendsSilently], `REQUIREMENTS.md` FR-X11), how voice messages play at the ear ([raiseToListen]),
      * whether they skip their silences ([skipSilence]), the chat list's swipes, which the Swipe actions row sums up
      * ([chatList]), and whether voice messages are transcribed as they show ([transcribeAutomatically]; null where
      * the phone cannot transcribe).
@@ -43,6 +44,7 @@ sealed interface ChatsPageUiState {
         val skipSilence: Boolean = false,
         val chatList: ChatListSettings = ChatListSettings(),
         val transcribeAutomatically: Boolean? = null,
+        val sendsSilently: Boolean = false,
     ) : ChatsPageUiState
 }
 
@@ -51,6 +53,11 @@ sealed interface ChatsPageEvent {
     /** "Send with Enter" turned on or off for a keyboard or the screen keyboard. */
     data class SetSendKeys(
         val keys: SendKeys,
+    ) : ChatsPageEvent
+
+    /** "Send silently by default" turned on or off. */
+    data class SetSendsSilently(
+        val enabled: Boolean,
     ) : ChatsPageEvent
 
     /** "Raise to listen" turned on or off. */
@@ -95,21 +102,21 @@ class ChatsPageViewModel
     ) : ViewModel() {
         val uiState: StateFlow<ChatsPageUiState> =
             combine<
-                SendKeys,
+                Pair<SendKeys, Boolean>,
                 RaiseToListenSettings,
                 Boolean,
                 ChatListSettings,
                 TranscriptionSettings,
                 ChatsPageUiState,
             >(
-                composerSettingsRepository.sendKeys,
+                composerSettingsRepository.sendKeys.combine(composerSettingsRepository.sendsSilently, ::Pair),
                 playbackSettingsRepository.raiseToListen,
                 playbackSettingsRepository.skipSilence,
                 chatListSettingsRepository.settings,
                 transcriptionSettingsRepository.settings,
-            ) { keys, raise, skipSilence, chatList, transcription ->
+            ) { (keys, silently), raise, skipSilence, chatList, transcription ->
                 val automatic = transcription.automatic.takeIf { transcriber.isAvailable }
-                ChatsPageUiState.Content(keys, raise, skipSilence, chatList, automatic)
+                ChatsPageUiState.Content(keys, raise, skipSilence, chatList, automatic, silently)
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
         private val effectChannel = Channel<ChatsPageEffect>(Channel.BUFFERED)
@@ -125,6 +132,10 @@ class ChatsPageViewModel
             when (event) {
                 is ChatsPageEvent.SetSendKeys -> {
                     composerSettingsRepository.setSendKeys(event.keys)
+                }
+
+                is ChatsPageEvent.SetSendsSilently -> {
+                    composerSettingsRepository.setSendsSilently(event.enabled)
                 }
 
                 is ChatsPageEvent.SetRaiseToListen -> {

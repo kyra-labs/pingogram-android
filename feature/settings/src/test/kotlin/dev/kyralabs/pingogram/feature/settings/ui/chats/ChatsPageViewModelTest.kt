@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -91,6 +92,33 @@ class ChatsPageViewModelTest {
             send(viewModel, ChatsPageEvent.SetSendKeys(SendKeys(onScreenKeyboard = true)))
 
             assertEquals(SendKeys(), viewModel.content.sendKeys)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
+    fun `messages go with sound at first, and sending silently by default saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.sendsSilently)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(true))
+            assertTrue(viewModel.content.sendsSilently)
+            assertTrue(composerSettings.silent.value)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(false))
+            assertFalse(viewModel.content.sendsSilently)
+        }
+
+    @Test
+    fun `sending silently that cannot be saved stays off, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetSendsSilently(true))
+
+            assertFalse(viewModel.content.sendsSilently)
             assertTrue(effects.single() is ChatsPageEffect.ShowError)
         }
 

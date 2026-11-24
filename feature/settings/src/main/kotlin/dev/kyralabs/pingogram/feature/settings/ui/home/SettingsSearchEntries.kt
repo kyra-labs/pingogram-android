@@ -26,6 +26,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
         setting(SettingsPage.PrivacySecurity, R.string.settings_clean_links),
         setting(SettingsPage.PrivacySecurity, R.string.settings_share_phone_number),
         setting(SettingsPage.ChatFolders, R.string.settings_folder_tab_counters),
+        setting(SettingsPage.Chats, R.string.settings_send_silently),
     )
 }
 
