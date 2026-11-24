@@ -307,6 +307,10 @@ decision 2026-11-23).
 - FR-X15 Should: **What a double tap does** (owner decision 2026-11-23). Settings → Chats → Messages →
   "Double-tap to react": on others' messages and on the user's own, each React (the default), Reply or Nothing; the
   switches saved before read as React or Nothing.
+- FR-X16 Should: **Send typing status** (owner decision 2026-11-23). Settings → Privacy and security → "Send typing
+  status", on by default: while on, a chat sees what the user is doing in it (typing, recording a voice or round video
+  message, uploading a photo or a file), sent again at most every five seconds while it lasts and ended when the
+  message goes or the text is cleared; while off, nothing is sent, not even an action's end.
 
 ## 6. Non-functional requirements
 

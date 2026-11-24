@@ -1451,6 +1451,8 @@
     <string name="settings_share_phone_number_summary">When you add someone, they can see your number. You can still change this on each contact’s form.</string>
     <string name="settings_clean_links">Remove tracking from links</string>
     <string name="settings_clean_links_summary">Links you send and open lose the parts that only tell sites where you came from, such as utm_source</string>
+    <string name="settings_send_typing_status">Send typing status</string>
+    <string name="settings_send_typing_status_summary">Others in a chat see when you\'re typing, recording a voice or round video message, or sending a photo or a file</string>
     <string name="settings_incognito_keyboard">Incognito keyboard</string>
     <string name="settings_incognito_keyboard_summary">Asks your keyboard not to learn from what you type in Pingogram. Secret chats always ask.</string>
     <string name="settings_show_ids">Show IDs</string>

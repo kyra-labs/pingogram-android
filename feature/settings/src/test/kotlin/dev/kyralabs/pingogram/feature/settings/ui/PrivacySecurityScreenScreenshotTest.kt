@@ -116,6 +116,20 @@ class PrivacySecurityScreenScreenshotTest {
         )
 
     /**
+     * The whole page with "Send typing status" off, after "Remove tracking from links" at the Privacy group's end; the
+     * other captures show it on, its default.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun typingStatusOffLight() =
+        capture("typingStatusOffLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, typingStatus = false)
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun typingStatusOffDark() =
+        capture("typingStatusOffDark", ThemeMode.Dark, SettingsPreviewData.privacySecurity, typingStatus = false)
+
+    /**
      * The whole page with "Share my phone number with new contacts" on (REQUIREMENTS.md FR-X9), at the Contacts group's
      * end; the other captures show it off, its default.
      */
@@ -248,6 +262,7 @@ class PrivacySecurityScreenScreenshotTest {
         incognitoKeyboard: Boolean = false,
         cleanLinks: Boolean = true,
         sharesPhoneNumber: Boolean = false,
+        typingStatus: Boolean = true,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -260,6 +275,7 @@ class PrivacySecurityScreenScreenshotTest {
             incognitoKeyboard = incognitoKeyboard,
             cleanLinks = cleanLinks,
             sharesPhoneNumber = sharesPhoneNumber,
+            typingStatus = typingStatus,
         )
     }
 }
