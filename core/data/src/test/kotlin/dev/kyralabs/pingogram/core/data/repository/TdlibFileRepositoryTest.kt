@@ -140,6 +140,48 @@ class TdlibFileRepositoryTest {
         }
 
     @Test
+    fun `a file last seen downloaded shows again at once, without asking TDLib`() =
+        runTest {
+            client.on(TdApi.GetFile::class, TdResult.Success(downloaded()))
+            val repository = repository()
+            repository.observe(FILE_ID).first()
+
+            val again = repository.observe(FILE_ID).first()
+
+            assertEquals(FileState.Downloaded(path = PATH, size = SIZE), again)
+            assertEquals(1, client.sentOf<TdApi.GetFile>().size)
+        }
+
+    @Test
+    fun `a file last seen downloaded that TDLib reports deleted is asked for again`() =
+        runTest {
+            client.on(TdApi.GetFile::class, TdResult.Success(downloaded()))
+            val repository = repository()
+            repository.observe(FILE_ID).first()
+
+            // Nobody observes it now; the storage clean-up deleted it.
+            client.emit(updateFile(file(id = FILE_ID, size = SIZE)))
+            client.on(TdApi.GetFile::class, TdResult.Success(file(id = FILE_ID, size = SIZE)))
+            val again = repository.observe(FILE_ID).first()
+
+            assertEquals(FileState.NotDownloaded(size = SIZE, canBeDownloaded = true), again)
+            assertEquals(2, client.sentOf<TdApi.GetFile>().size)
+        }
+
+    @Test
+    fun `files last seen downloaded are forgotten when TDLib closes`() =
+        runTest {
+            client.on(TdApi.GetFile::class, TdResult.Success(downloaded()))
+            val repository = repository()
+            repository.observe(FILE_ID).first()
+
+            client.emitAuthorizationState(TdApiFixtures.closed())
+            repository.observe(FILE_ID).first()
+
+            assertEquals(2, client.sentOf<TdApi.GetFile>().size)
+        }
+
+    @Test
     fun `observe emits nothing for a file TDLib does not know`() =
         runTest {
             client.on(TdApi.GetFile::class, TdResult.Failure(TdError(404, "Not Found")))

@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A long chat keeps at most 300 messages in memory while you scroll through it, loading the rest again as you come
   back to them, and a message's menu opens without waiting for the device to look for dates and addresses in it:
   "Add to calendar" and "Open in maps" join it once found.
+- Photos, avatars and files already on the device show again without asking for them first, and a download's progress
+  wakes only what shows that file.
 
 ## [2.4.0] - 2026-11-23
 
