@@ -85,7 +85,9 @@ https://core.telegram.org/api/auth#test-accounts). Use them only in `androidTest
   - `ci.yml` runs `check` as parallel jobs, one per group of modules (`tools/ci/check-shards.json`), beside the debug
     APK. A new module goes into a group in that file; `tools/ci/check_shards.py` fails CI when a project of
     `settings.gradle.kts` is in no group or in two.
-  - The `apk size` job checks the APK size budget (`docs/PERFORMANCE.md` §1) beside them.
+  - The `apk size` job runs the release lint (`:app:lintVitalFossRelease`, the one a release tag runs, over the app
+    and all its modules at once, which finds unused resources the per-module lint cannot), then checks the APK size
+    budget (`docs/PERFORMANCE.md` §1), beside them.
   - The `build` job passes only when every one of them did, `apk size` included, so pull requests and a merge keep
     waiting for one check.
 - Nightly: instrumented smoke on API 26 and API 36 emulators, Macrobenchmark on a Firebase

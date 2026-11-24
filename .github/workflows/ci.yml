@@ -211,8 +211,10 @@ jobs:
             --run-url "$RUN_URL" --apk-dir "$RUNNER_TEMP/debug-apks"
 
   # The APK size budget (docs/PERFORMANCE.md §1, §8): the foss APKs built as a release is (R8, resource shrinking),
-  # signed with the debug key so no release credentials are needed; arm64-v8a at most 53 MB, universal 128 MB. Its own
-  # job, so the tests do not wait for R8; the build gate waits for it.
+  # signed with the debug key so no release credentials are needed; arm64-v8a at most 53 MB, universal 128 MB. First,
+  # the release lint the release workflow runs (lintVitalFossRelease): one pass over the app and every module it
+  # depends on, so it finds what the per-module lint of `check` cannot, such as a resource no module uses. Its own job,
+  # so the tests do not wait for R8; the build gate waits for it.
   apk-size:
     name: apk size
     runs-on: ubuntu-latest
@@ -237,6 +239,17 @@ jobs:
       - name: Write secrets.properties
         run: |
           printf 'TELEGRAM_API_ID=%s\nTELEGRAM_API_HASH=%s\n' 0 00000000000000000000000000000000 > secrets.properties
+
+      - name: Release lint
+        run: ./gradlew -I tools/ci/maven-central-mirror.gradle :app:lintVitalFossRelease --stacktrace --no-daemon
+
+      - name: Upload the release lint report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-lint
+          path: app/build/intermediates/lint_vital_intermediate_text_report/
+          retention-days: 7
 
       - name: Check the APK size budget
         run: ./gradlew -I tools/ci/maven-central-mirror.gradle :app:checkFossBenchmarkReleaseApkSize --stacktrace --no-daemon
