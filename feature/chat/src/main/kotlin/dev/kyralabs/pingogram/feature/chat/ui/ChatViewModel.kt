@@ -1347,6 +1347,8 @@ class ChatViewModel internal constructor(
         // Leaving the chat stops the automatic downloads still on their way (docs/audit/performance-review-2026-11.md,
         // W3): they would hold the connection the next chat needs. What came stays; the media viewer asks for its own.
         addCloseable { cleanupScope?.let(autoDownloads::cancelStarted) }
+        // Leaving the chat ends at once what the user was doing in it, rather than leaving the others' indicator on.
+        addCloseable { cleanupScope?.let(chatActions::leave) }
         // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
         // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
         viewModelScope.launch(Dispatchers.Main) {
@@ -1361,7 +1363,7 @@ class ChatViewModel internal constructor(
             recorder.start()
             chatActions.start(
                 composer.text.writing(composer.mode),
-                ongoingAction(recorder.state, history, transfers.uploads),
+                ongoingAction(recorder.state, history, transfers.uploads).flowOn(dispatcher),
             )
             views.start()
             autoDownloads.start()
@@ -1536,6 +1538,7 @@ class ChatViewModel internal constructor(
         isOpen = open
         onScreen.value = open
         if (!open) {
+            chatActions.pause()
             composer.flush()
             playback.pause()
             recorder.onStopped()
@@ -1546,6 +1549,7 @@ class ChatViewModel internal constructor(
         }
         // Once openChat is sent: TDLib reads the messages viewed in an open chat only.
         if (open) {
+            chatActions.resume()
             views.setOpen(true)
             sponsored.onStarted()
         }

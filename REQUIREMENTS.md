@@ -314,8 +314,9 @@ decision 2026-11-23).
   default: off, the header has no Drafts button.
 - FR-X17 Should: **Send typing status** (owner decision 2026-11-23). Settings → Privacy and security → "Send typing
   status", on by default: while on, a chat sees what the user is doing in it (typing, recording a voice or round video
-  message, uploading a photo or a file), sent again at most every five seconds while it lasts and ended when the
-  message goes or the text is cleared; while off, nothing is sent, not even an action's end.
+  message, uploading a photo, a video, a file or a voice or round video message; a GIF shows nothing), sent again at
+  most every five seconds while it lasts and ended when the message goes, the text is cleared, or the user leaves the
+  conversation or its screen stops; while off, nothing is sent, not even an action's end.
 
 ## 6. Non-functional requirements
 

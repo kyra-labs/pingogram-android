@@ -18,8 +18,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Undo and redo in the message box's menu; Settings → Chats → Messages can leave them out.
 - Save to Downloads and Unpin for several selected messages at once.
 - What a double tap does, for messages you received and for your own: react, reply or nothing.
-- Chats see when you're typing, recording a voice or round video message, or sending a photo or a file; turn it off
-  with "Send typing status" in Settings → Privacy and security.
+- Chats see when you're typing, recording a voice or round video message, or sending a photo, a video, a file or a
+  voice or round video message, until you send it or leave the chat; turn it off with "Send typing status" in
+  Settings → Privacy and security.
 - Drafts: while a chat has an unsent draft, a button in the Chats header opens every draft on one page, newest
   first; Settings → Chats → "Drafts button" can leave it out.
 

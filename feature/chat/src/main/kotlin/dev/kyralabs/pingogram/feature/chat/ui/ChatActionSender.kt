@@ -4,6 +4,7 @@ import androidx.compose.runtime.snapshotFlow
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
@@ -16,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -25,10 +27,12 @@ import kotlin.math.roundToInt
 
 /**
  * Tells the chat what the user is doing in it (`REQUIREMENTS.md` FR-X17): typing while they write, recording a voice or
- * round video message, uploading a photo or a file. The others see an action for a few seconds, so it is sent again,
- * at most every [RESEND_MILLIS], while it goes on: typing on the next edit after that, a recording or an upload when
- * the time comes. It is ended when it stops. Recording and uploading come before typing. Nothing at all is sent, an
- * ending included, while "Send typing status" is off ([enabled]).
+ * round video message, uploading a photo, a video, a file or a voice or round video message ([ongoingAction]). The
+ * others see an action for a few seconds, so it is sent again, at most every [RESEND_MILLIS], while it goes on:
+ * typing on the next edit after that, a recording or an upload when the time comes. It is ended when it stops, and
+ * when the screen stops ([pause]) or the conversation closes ([leave]), so the others' indicator goes at once.
+ * Recording and uploading come before typing. Nothing at all is sent, an ending included, while "Send typing status"
+ * is off ([enabled]).
  *
  * Runs in [scope], the view model's; [send] goes out one at a time, in order.
  */
@@ -49,6 +53,9 @@ internal class ChatActionSender(
 
     /** Sends [ongoing] again each time the last one is [RESEND_MILLIS] old, while there is one. */
     private var resending: Job? = null
+
+    /** The screen stopped ([pause]) or the conversation closed ([leave]): nothing is sent until [resume]. */
+    private var paused = false
 
     /**
      * Follows [writing] (true on each edit that leaves text to send, false once there is none) and [ongoing], each of
@@ -90,8 +97,32 @@ internal class ChatActionSender(
         }
     }
 
+    /** The screen stopped: what the user was doing ends now, and nothing more is sent until it starts again. */
+    fun pause() {
+        end()
+        paused = true
+    }
+
+    /** The screen started again: a recording or an upload still going on is sent again. */
+    fun resume() {
+        paused = false
+        ongoing?.let(::act)
+    }
+
+    /**
+     * The conversation closed: what the user was doing ends now, in [cleanup] (the app's scope, as [scope] is gone
+     * with the view model), and nothing more is sent.
+     */
+    fun leave(cleanup: CoroutineScope) {
+        paused = true
+        resending?.cancel()
+        if (sent == null) return
+        sent = null
+        if (enabled.value) cleanup.launch { send(null) }
+    }
+
     private fun act(action: ChatAction) {
-        if (!enabled.value) return
+        if (paused || !enabled.value) return
         val last = sent
         val time = now()
         // An upload's progress changes the action, not what the others see: resent at the same pace.
@@ -124,22 +155,24 @@ internal fun ComposerText.writing(mode: StateFlow<ComposerMode>): Flow<Boolean> 
     )
 
 /**
- * The recording or upload going on, on each change of [recording] or [uploads]: a voice or round video message being
- * recorded (not while paused), else a photo or a file of [history] being sent from this device; null for none.
+ * The recording or upload going on, on each change of [recording], [history] or [uploads]: a voice or round video
+ * message being recorded (not while paused), else the newest photo, video, file, voice or round video message of
+ * [history] being sent from this device, with its upload's progress where [uploads] has it; null for none. A GIF has
+ * no action.
  */
 internal fun ongoingAction(
     recording: Flow<VoiceRecordingUiState?>,
     history: Flow<ChatHistory>,
     uploads: Flow<ImmutableMap<Long, MessageUpload>>,
-): Flow<ChatAction?> =
-    combine(recording, history, uploads) { recorded, loaded, uploading ->
-        recorded?.action ?: uploading.firstNotNullOfOrNull { (messageId, upload) ->
-            loaded.messages
-                .findById(messageId)
-                ?.content
-                ?.uploading(upload)
-        }
+): Flow<ChatAction?> {
+    val sending =
+        history
+            .map { loaded -> loaded.messages.filter { it.isOutgoing && it.sendingState == SendingState.Pending } }
+            .distinctUntilChanged()
+    return combine(recording, sending, uploads) { recorded, pending, uploading ->
+        recorded?.action ?: pending.firstNotNullOfOrNull { it.content.uploading(uploading[it.id]?.progress) }
     }
+}
 
 private val VoiceRecordingUiState.action: ChatAction?
     get() =
@@ -149,11 +182,15 @@ private val VoiceRecordingUiState.action: ChatAction?
             else -> ChatAction.RecordingVoiceNote
         }
 
-private fun MessageContent.uploading(upload: MessageUpload): ChatAction? {
-    val percent = ((upload.progress ?: 0f) * PERCENT).roundToInt()
+/** What sending this content shows the others, at [progress] (0–1, unknown as 0); null for a GIF and for text. */
+private fun MessageContent.uploading(progress: Float?): ChatAction? {
+    val percent = ((progress ?: 0f) * PERCENT).roundToInt()
     return when (this) {
         is MessageContent.Photo -> ChatAction.UploadingPhoto(percent)
+        is MessageContent.Video -> ChatAction.UploadingVideo(percent)
         is MessageContent.Document -> ChatAction.UploadingDocument(percent)
+        is MessageContent.VoiceNote -> ChatAction.UploadingVoiceNote(percent)
+        is MessageContent.VideoNote -> ChatAction.UploadingVideoNote(percent)
         else -> null
     }
 }
