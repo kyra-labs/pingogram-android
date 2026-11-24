@@ -24,6 +24,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
     listOf(
         setting(SettingsPage.PrivacySecurity, R.string.settings_incognito_keyboard),
         setting(SettingsPage.PrivacySecurity, R.string.settings_clean_links),
+        setting(SettingsPage.PrivacySecurity, R.string.settings_share_phone_number),
     )
 }
 

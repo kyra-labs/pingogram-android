@@ -118,6 +118,7 @@ internal val BackedUpSettings: Set<String> =
         "composer.send_photos_original",
         "composer.records_video_messages",
         "composer.recent_emoji",
+        "contacts.share_phone_number",
         "focus.profiles",
         "focus.manual",
         "focus.last_used",

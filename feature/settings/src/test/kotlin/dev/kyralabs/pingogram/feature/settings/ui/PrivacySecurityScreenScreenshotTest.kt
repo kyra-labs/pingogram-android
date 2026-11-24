@@ -115,6 +115,30 @@ class PrivacySecurityScreenScreenshotTest {
             cleanLinks = false,
         )
 
+    /**
+     * The whole page with "Share my phone number with new contacts" on (REQUIREMENTS.md FR-X9), at the Contacts group's
+     * end; the other captures show it off, its default.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun sharePhoneNumberOnLight() =
+        capture(
+            "sharePhoneNumberOnLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            sharesPhoneNumber = true,
+        )
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun sharePhoneNumberOnDark() =
+        capture(
+            "sharePhoneNumberOnDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            sharesPhoneNumber = true,
+        )
+
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
     @Config(qualifiers = TALL)
@@ -223,6 +247,7 @@ class PrivacySecurityScreenScreenshotTest {
         phoneNumbersHidden: Boolean = false,
         incognitoKeyboard: Boolean = false,
         cleanLinks: Boolean = true,
+        sharesPhoneNumber: Boolean = false,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -234,6 +259,7 @@ class PrivacySecurityScreenScreenshotTest {
             phoneNumbersHidden = phoneNumbersHidden,
             incognitoKeyboard = incognitoKeyboard,
             cleanLinks = cleanLinks,
+            sharesPhoneNumber = sharesPhoneNumber,
         )
     }
 }
