@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.settings.ui.MEDIUM
 import dev.kyralabs.pingogram.feature.settings.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.settings.ui.captureScreen
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,6 +43,16 @@ class ChatsPageScreenshotTest {
 
     @Test
     fun changedDark() = capture("changedDark", ThemeMode.Dark, changed)
+
+    /** The whole page, down to the Chat list group, with "Drafts button" off (`REQUIREMENTS.md` FR-X16). */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun draftsButtonOffLight() =
+        capture(
+            "draftsButtonOffLight",
+            ThemeMode.Light,
+            defaults.copy(chatList = ChatListSettings(showDraftsButton = false)),
+        )
 
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, ChatsPageUiState.Loading)

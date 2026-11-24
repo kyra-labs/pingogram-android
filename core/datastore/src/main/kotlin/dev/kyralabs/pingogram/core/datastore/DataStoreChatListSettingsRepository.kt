@@ -48,6 +48,7 @@ class DataStoreChatListSettingsRepository
                         catchUpIncludesMuted = preferences[CATCH_UP_INCLUDES_MUTED] ?: defaults.catchUpIncludesMuted,
                         showFeedTab = preferences[FEED_TAB] ?: defaults.showFeedTab,
                         showFolderTabCounters = preferences[FOLDER_TAB_COUNTERS] ?: defaults.showFolderTabCounters,
+                        showDraftsButton = preferences[DRAFTS_BUTTON] ?: defaults.showDraftsButton,
                     )
                 }.distinctUntilChanged()
 
@@ -81,6 +82,8 @@ class DataStoreChatListSettingsRepository
         override suspend fun setShowFolderTabCounters(show: Boolean): Outcome<Unit> =
             save { it[FOLDER_TAB_COUNTERS] = show }
 
+        override suspend fun setShowDraftsButton(show: Boolean): Outcome<Unit> = save { it[DRAFTS_BUTTON] = show }
+
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
                 dataStore.edit(change)
@@ -105,3 +108,4 @@ private val FOLDER_TAB_STYLE = stringPreferencesKey("chat_list.folder_tab_style"
 private val CATCH_UP_INCLUDES_MUTED = booleanPreferencesKey("chat_list.catch_up_includes_muted")
 private val FEED_TAB = booleanPreferencesKey("chat_list.feed_tab")
 private val FOLDER_TAB_COUNTERS = booleanPreferencesKey("chat_list.folder_tab_counters")
+private val DRAFTS_BUTTON = booleanPreferencesKey("chat_list.drafts_button")
