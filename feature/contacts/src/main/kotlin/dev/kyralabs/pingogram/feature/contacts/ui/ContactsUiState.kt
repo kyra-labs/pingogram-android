@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BirthdaysEntry
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -18,6 +19,7 @@ data class ContactsUiState(
     val query: String = "",
     val deleteDialog: DeleteContactDialog? = null,
     val sync: ContactSyncUi = ContactSyncUi.Hidden,
+    val birthdays: BirthdaysEntry? = null,
 )
 
 /** What the Contacts tab shows of contacts sync (`docs/adr/0011-contacts-sync.md`) above the contacts. */

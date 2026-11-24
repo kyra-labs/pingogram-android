@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.contacts.R
+import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BirthdaysEntryViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -32,7 +33,8 @@ import kotlinx.coroutines.launch
  * needs a permission. Snackbars say what failed and what was deleted, the newest replacing the one shown. Contacts
  * sync's dialogs, permission request and snackbars come from [ContactSyncHost]; each time the tab starts (back from
  * Android's settings too) it tells the view model ([ContactsEvent.Started]). The top bar opens the user's own QR code
- * ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode]).
+ * ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode]). The Birthdays row ([BirthdaysEntryViewModel]) opens
+ * the Birthdays page ([onOpenBirthdays]).
  */
 @Composable
 internal fun ContactsRoute(
@@ -42,9 +44,13 @@ internal fun ContactsRoute(
     modifier: Modifier = Modifier,
     onOpenMyQrCode: () -> Unit = {},
     onScanQrCode: () -> Unit = {},
+    onOpenBirthdays: () -> Unit = {},
     viewModel: ContactsViewModel = hiltViewModel(),
+    birthdaysViewModel: BirthdaysEntryViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val contactsState by viewModel.uiState.collectAsStateWithLifecycle()
+    val birthdays by birthdaysViewModel.entry.collectAsStateWithLifecycle()
+    val state = remember(contactsState, birthdays) { contactsState.copy(birthdays = birthdays) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -102,6 +108,7 @@ internal fun ContactsRoute(
         snackbarHostState = snackbarHostState,
         onOpenMyQrCode = onOpenMyQrCode,
         onScanQrCode = onScanQrCode,
+        onOpenBirthdays = onOpenBirthdays,
     )
 }
 

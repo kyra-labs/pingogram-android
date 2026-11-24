@@ -123,11 +123,12 @@ internal fun ContactsScreen(
     listState: LazyListState = rememberLazyListState(),
     onOpenMyQrCode: () -> Unit = {},
     onScanQrCode: () -> Unit = {},
+    onOpenBirthdays: () -> Unit = {},
 ) {
     ScrollToTopOnReselect(ContactsRoute, listState)
     val callbacks =
-        remember(onEvent, onAddContact, onEditContact, onSyncEvent) {
-            ContactsCallbacks(onEvent, onAddContact, onEditContact, onSyncEvent)
+        remember(onEvent, onAddContact, onEditContact, onSyncEvent, onOpenBirthdays) {
+            ContactsCallbacks(onEvent, onAddContact, onEditContact, onSyncEvent, onOpenBirthdays)
         }
     val searchFocus = callbacks.searchFocus
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -361,6 +362,7 @@ internal class ContactsCallbacks(
     val onAddContact: () -> Unit,
     val onEditContact: (userId: Long) -> Unit,
     val onSyncEvent: (ContactSyncEvent) -> Unit,
+    val onOpenBirthdays: () -> Unit = {},
 ) {
     /** The search field, which the header's search button focuses. */
     val searchFocus = FocusRequester()

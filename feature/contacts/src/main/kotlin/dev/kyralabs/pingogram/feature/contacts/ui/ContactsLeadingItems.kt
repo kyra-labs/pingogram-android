@@ -36,6 +36,8 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.contacts.R
+import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BIRTHDAYS_ROW
+import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BirthdaysRow
 import kotlinx.collections.immutable.persistentListOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -43,7 +45,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The entries above the contacts (`docs/DESIGN_SYSTEM.md` §13.8): contacts sync (its offer as [SyncOffer], its other
- * states as [ContactSyncItem]), then "Online now" ([OnlineNow]) while someone is. "Add contact" sits beside the
+ * states as [ContactSyncItem]), then "Birthdays" ([BirthdaysRow]) while contacts have one these days and the setting
+ * allows it, then "Online now" ([OnlineNow]) while someone is. "Add contact" sits beside the
  * navigation bar and "Invite" under the header.
  */
 internal fun LazyListScope.leadingItems(
@@ -73,6 +76,15 @@ internal fun LazyListScope.leadingItems(
                     modifier = modifier,
                 )
             }
+        }
+    }
+    state.birthdays?.let { birthdays ->
+        item(key = BIRTHDAYS_ROW, contentType = BIRTHDAYS_ROW) {
+            BirthdaysRow(
+                entry = birthdays,
+                onClick = callbacks.onOpenBirthdays,
+                modifier = Modifier.row(this, maxWidth, motionScheme).padding(rowInsets()),
+            )
         }
     }
     if (online.isNotEmpty()) {

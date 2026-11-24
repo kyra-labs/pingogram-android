@@ -16,7 +16,7 @@ import dev.kyralabs.pingogram.feature.contacts.ui.birthdays.BirthdaysRoute as Bi
  * Adds the Contacts tab, [ContactsRoute], to the graph: a contact calls [onOpenChat] with the id of its private chat,
  * "Add contact" [onAddContact] ([navigateToNewContact]), and a contact's Edit [onEditContact] with its user id
  * ([navigateToEditContact]); the top bar opens the user's own QR code ([onOpenMyQrCode]) and the QR code scanner
- * ([onScanQrCode]).
+ * ([onScanQrCode]); its Birthdays row opens the Birthdays page ([onOpenBirthdays]).
  */
 fun NavGraphBuilder.contactsScreen(
     onOpenChat: (chatId: Long) -> Unit,
@@ -24,6 +24,7 @@ fun NavGraphBuilder.contactsScreen(
     onEditContact: (userId: Long) -> Unit,
     onOpenMyQrCode: () -> Unit = {},
     onScanQrCode: () -> Unit = {},
+    onOpenBirthdays: () -> Unit = {},
 ) {
     composable<ContactsRoute> {
         ContactsScreenRoute(
@@ -32,6 +33,7 @@ fun NavGraphBuilder.contactsScreen(
             onEditContact = onEditContact,
             onOpenMyQrCode = onOpenMyQrCode,
             onScanQrCode = onScanQrCode,
+            onOpenBirthdays = onOpenBirthdays,
         )
     }
 }
