@@ -218,4 +218,29 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetConfirmsBotCommands(false)), events)
     }
+
+    @Test
+    fun `undo and redo is a switch, on at first, whose tap turns it off`() {
+        setScreen()
+
+        switchRow(R.string.settings_undo_redo)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_undo_redo_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetShowsUndoRedo(false)), events)
+    }
+
+    @Test
+    fun `undo and redo shows off, and a tap turns it on`() {
+        setScreen(ChatsPageUiState.Content(showsUndoRedo = false))
+
+        switchRow(R.string.settings_undo_redo)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetShowsUndoRedo(true)), events)
+    }
 }

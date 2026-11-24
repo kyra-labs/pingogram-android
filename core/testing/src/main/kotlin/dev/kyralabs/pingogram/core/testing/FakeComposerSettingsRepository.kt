@@ -17,6 +17,7 @@ class FakeComposerSettingsRepository(
     videoMessages: Boolean = false,
     silently: Boolean = false,
     confirmCommands: Boolean = false,
+    undoRedo: Boolean = true,
 ) : ComposerSettingsRepository {
     private val saved = MutableStateFlow(initial)
 
@@ -31,6 +32,9 @@ class FakeComposerSettingsRepository(
 
     /** What [confirmsBotCommands] holds. */
     val confirm = MutableStateFlow(confirmCommands)
+
+    /** What [showsUndoRedo] holds. */
+    val undo = MutableStateFlow(undoRedo)
 
     /** What the setter fails with; null saves. */
     var failure: DomainError? = null
@@ -72,6 +76,14 @@ class FakeComposerSettingsRepository(
     override suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
         confirm.value = enabled
+        return Outcome.Success(Unit)
+    }
+
+    override val showsUndoRedo: Flow<Boolean> = undo
+
+    override suspend fun setShowsUndoRedo(enabled: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        undo.value = enabled
         return Outcome.Success(Unit)
     }
 }
