@@ -131,6 +131,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the typing status switch by a word of its name`() {
+        show()
+        search("typing")
+
+        composeRule.onNode(hasText(string(R.string.settings_send_typing_status)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
     fun `search finds the link cleaning switch by a word of its name`() {
         show()
         search("tracking")

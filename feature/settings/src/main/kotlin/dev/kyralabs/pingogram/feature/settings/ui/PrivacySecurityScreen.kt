@@ -57,6 +57,7 @@ internal fun PrivacySecurityRoute(
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
     incognitoKeyboardViewModel: IncognitoKeyboardViewModel = hiltViewModel(),
     cleanLinksViewModel: CleanLinksViewModel = hiltViewModel(),
+    typingStatusViewModel: TypingStatusViewModel = hiltViewModel(),
     sharePhoneNumberViewModel: SharePhoneNumberViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
@@ -80,6 +81,7 @@ internal fun PrivacySecurityRoute(
         directShareViewModel.errors,
         incognitoKeyboardViewModel.errors,
         cleanLinksViewModel.errors,
+        typingStatusViewModel.errors,
         sharePhoneNumberViewModel.errors,
     )
     PrivacySecurityRefreshAndSync(viewModel, contactSyncViewModel, snackbarHostState)
@@ -104,6 +106,8 @@ internal fun PrivacySecurityRoute(
         onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
         cleanLinks = cleanLinksViewModel.enabled.collectAsStateWithLifecycle().value,
         onCleanLinksChange = cleanLinksViewModel::onCheckedChange,
+        typingStatus = typingStatusViewModel.enabled.collectAsStateWithLifecycle().value,
+        onTypingStatusChange = typingStatusViewModel::onCheckedChange,
         sharesPhoneNumber = sharePhoneNumberViewModel.enabled.collectAsStateWithLifecycle().value,
         onSharesPhoneNumberChange = sharePhoneNumberViewModel::onCheckedChange,
         directShare = directShare,
@@ -120,7 +124,8 @@ internal fun PrivacySecurityRoute(
  *   its page; "Incognito keyboard" ([incognitoKeyboard], off by default, `REQUIREMENTS.md` FR-X7), a switch; blocked
  *   users and devices with their counts, and connected websites, each opening its page;
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page, then
- *   "Remove tracking from links" ([cleanLinks], on by default, `REQUIREMENTS.md` FR-X8), a switch;
+ *   "Remove tracking from links" ([cleanLinks], on by default, `REQUIREMENTS.md` FR-X8) and "Send typing status"
+ *   ([typingStatus], on by default), switches;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), "Suggest frequent contacts"
  *   ([suggestsFrequent]) and "Share my phone number with new contacts" ([sharesPhoneNumber], FR-X9);
@@ -155,6 +160,8 @@ internal fun PrivacySecurityScreen(
     onIncognitoKeyboardChange: (Boolean) -> Unit = {},
     cleanLinks: Boolean? = null,
     onCleanLinksChange: (Boolean) -> Unit = {},
+    typingStatus: Boolean? = null,
+    onTypingStatusChange: (Boolean) -> Unit = {},
     sharesPhoneNumber: Boolean? = null,
     onSharesPhoneNumberChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
@@ -183,7 +190,11 @@ internal fun PrivacySecurityScreen(
                     PrivacyCheckupCard(state, onOpen, Modifier.padding(bottom = settingsGroupSpacing()))
                     SecuritySection(state, onOpen, incognitoKeyboard, onIncognitoKeyboardChange)
                 }
-                PrivacySection(state, onOpen, cleanLinks, onCleanLinksChange)
+                PrivacySection(
+                    state,
+                    onOpen,
+                    PrivacySwitches(cleanLinks, onCleanLinksChange, typingStatus, onTypingStatusChange),
+                )
                 ContactsSection(
                     contactSync,
                     onContactSyncChange,
@@ -224,8 +235,7 @@ internal fun PrivacySecurityScreen(
 private fun PrivacySection(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
-    cleanLinks: Boolean?,
-    onCleanLinksChange: (Boolean) -> Unit,
+    switches: PrivacySwitches,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_privacy)) {
         PrivacySettings.forEach { setting ->
@@ -262,9 +272,18 @@ private fun PrivacySection(
                 )
             }
         }
-        cleanLinks?.let { cleanLinksItem(it, onCleanLinksChange) }
+        switches.cleanLinks?.let { cleanLinksItem(it, switches.onCleanLinksChange) }
+        switches.typingStatus?.let { typingStatusItem(it, switches.onTypingStatusChange) }
     }
 }
+
+/** The Privacy group's switches after its settings; each one null, and not shown, until it is read. */
+private class PrivacySwitches(
+    val cleanLinks: Boolean?,
+    val onCleanLinksChange: (Boolean) -> Unit,
+    val typingStatus: Boolean?,
+    val onTypingStatusChange: (Boolean) -> Unit,
+)
 
 /** The key of the "Messages" row among the privacy settings' rows. */
 private const val NEW_CHATS = "newChats"

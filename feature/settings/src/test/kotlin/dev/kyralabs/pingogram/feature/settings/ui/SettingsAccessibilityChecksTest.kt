@@ -194,6 +194,8 @@ class SettingsAccessibilityChecksTest {
                 onEvent = {},
                 onOpen = {},
                 onBack = {},
+                cleanLinks = true,
+                typingStatus = true,
             )
         }
 

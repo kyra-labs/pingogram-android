@@ -312,6 +312,10 @@ decision 2026-11-23).
   chat list previews it (a draft that is only a reply is left out); a tap opens the chat with the draft in the message
   box, and a draft sent or cleared there leaves the page. Settings → Chats → Chat list → "Drafts button", on by
   default: off, the header has no Drafts button.
+- FR-X17 Should: **Send typing status** (owner decision 2026-11-23). Settings → Privacy and security → "Send typing
+  status", on by default: while on, a chat sees what the user is doing in it (typing, recording a voice or round video
+  message, uploading a photo or a file), sent again at most every five seconds while it lasts and ended when the
+  message goes or the text is cleared; while off, nothing is sent, not even an action's end.
 
 ## 6. Non-functional requirements
 
