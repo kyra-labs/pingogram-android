@@ -403,6 +403,13 @@ data object ArchiveRoute
 data object MentionsRoute
 
 /**
+ * Drafts (`REQUIREMENTS.md` FR-X16), `:feature:chats`: the chats with a message the user started and has not sent,
+ * pushed above the Chats tab from its header.
+ */
+@Serializable
+data object DraftsRoute
+
+/**
  * The Channel feed (`REQUIREMENTS.md` FR-X5), `:feature:chats`: the newest posts of the channels the user follows as
  * one list, pushed above the Chats tab from the Feed tab that starts its folder row.
  */
