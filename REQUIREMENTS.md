@@ -278,6 +278,12 @@ decision 2026-11-23).
   keyboard", off by default: every text field asks the keyboard not to learn from what is typed
   (`IME_FLAG_NO_PERSONALIZED_LEARNING`), through one helper around the app; a secret chat's fields always ask. A
   keyboard may ignore the request; nothing else changes.
+- FR-X8 Should: **Links without tracking parameters** (owner decision 2026-11-23). Settings → Privacy and security →
+  "Remove tracking from links", on by default: links the user sends (messages, notification replies, the share sheet's
+  comment) and links the user opens lose their tracking parameters: every `utm_*`, `fbclid`, `igshid`, `igsh`,
+  `gclid`, `dclid`, `gbraid`, `wbraid`, `msclkid`, `yclid`, `mc_cid`, `mc_eid`, `_hsenc`, `_hsmi`, and `si` on YouTube
+  and Spotify links (`LinkCleaner`). Everything else in a link stays as written; links in received messages show as
+  sent. A sponsored message's link always opens exactly as Telegram sent it (§2).
 
 ## 6. Non-functional requirements
 

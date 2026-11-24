@@ -7,12 +7,15 @@ import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatNotification
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroup
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroupType
+import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroup
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
@@ -47,6 +50,8 @@ class TdlibNotificationRepository
         @ApplicationScope scope: CoroutineScope,
         openChats: OpenChats,
         private val linkPreviews: SecretChatLinkPreviews,
+        // Null where links go as written; the app always has one.
+        private val outgoingLinks: OutgoingLinkCleaner? = null,
     ) : NotificationRepository,
         TdlibUpdateCache {
         private val store =
@@ -71,15 +76,17 @@ class TdlibNotificationRepository
 
         /**
          * `sendMessage` with a plain text: TDLib finds links, mentions and hashtags itself, with no link preview in a
-         * secret chat unless allowed ([SecretChatLinkPreviews]). The draft stays.
+         * secret chat unless allowed ([SecretChatLinkPreviews]), the links without tracking parameters while the
+         * setting says so ([OutgoingLinkCleaner]). The draft stays.
          */
         override suspend fun reply(
             chatId: Long,
             text: String,
             replyToMessageId: Long?,
         ): Outcome<Unit> {
-            val content =
-                TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), linkPreviews.optionsFor(chatId), false)
+            val typed = FormattedText(text, persistentListOf())
+            val sent = outgoingLinks?.clean(typed) ?: typed
+            val content = TdApi.InputMessageText(sent.toTdFormattedText(), linkPreviews.optionsFor(chatId), false)
             return client
                 .request(TdApi.SendMessage(chatId, null, replyToMessageId?.let(::replyToMessage), null, null, content))
                 .map {}

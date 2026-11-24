@@ -195,10 +195,12 @@ sealed interface ChatEffect {
 
     /**
      * Open [url], a sponsored message's link, a bot's button's or a long-pressed one's, with the app's link handler
-     * (Telegram links open in Pingogram, others in the platform's handler); a snackbar if no app on the device can.
+     * (Telegram links open in Pingogram, others in the platform's handler); a snackbar if no app on the device can. A
+     * [sponsored] message's opens exactly as Telegram sent it, never cleaned of tracking parameters (FR-X8).
      */
     data class OpenUrl(
         val url: String,
+        val sponsored: Boolean = false,
     ) : ChatEffect {
         override fun toString() = "OpenUrl(…)"
     }

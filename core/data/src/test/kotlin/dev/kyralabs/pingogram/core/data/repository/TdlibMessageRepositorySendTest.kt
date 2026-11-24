@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeCleanLinksRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -32,11 +33,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositorySendTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() =
+    private fun TestScope.repository(cleanLinks: Boolean? = null) =
         TdlibMessageRepository(
             client,
             backgroundScope,
             SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+            cleanLinks?.let { OutgoingLinkCleaner(FakeCleanLinksRepository(it)) },
         )
 
     private fun answerSend(answer: TdResult<TdApi.Message> = TdResult.Success(message(id = SENDING_ID))) =
@@ -50,6 +52,28 @@ class TdlibMessageRepositorySendTest {
         listOf(text) + entities.map { "${it.offset}+${it.length}:${it.type.javaClass.simpleName}" }
 
     private fun TdApi.InputMessageReplyToMessage.describe() = listOf(messageId, quote, checklistTaskId, pollOptionId)
+
+    @Test
+    fun `with link cleaning on, a sent link loses its tracking parameters`() =
+        runTest {
+            answerSend()
+
+            repository(cleanLinks = true).sendText(CHAT, text("See https://example.com/?utm_source=x&id=1"))
+
+            val sent = (sentMessage().inputMessageContent as TdApi.InputMessageText).text.text
+            assertEquals("See https://example.com/?id=1", sent)
+        }
+
+    @Test
+    fun `with link cleaning off, a sent link goes as written`() =
+        runTest {
+            answerSend()
+
+            repository(cleanLinks = false).sendText(CHAT, text("See https://example.com/?utm_source=x&id=1"))
+
+            val sent = (sentMessage().inputMessageContent as TdApi.InputMessageText).text.text
+            assertEquals("See https://example.com/?utm_source=x&id=1", sent)
+        }
 
     @Test
     fun `sendText sends the text to the chat itself and clears the draft`() =

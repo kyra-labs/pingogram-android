@@ -69,6 +69,8 @@ class TdlibMessageRepository
         private val client: TdlibClient,
         @ApplicationScope private val scope: CoroutineScope,
         private val linkPreviews: SecretChatLinkPreviews,
+        // Null where links go as written; the app always has one.
+        private val outgoingLinks: OutgoingLinkCleaner? = null,
     ) : MessageRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, HISTORY_UPDATES, HistoryCache(), HistoryCache::reduce)
@@ -189,8 +191,9 @@ class TdlibMessageRepository
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
         /**
-         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview (none in a
-         * secret chat unless allowed, [SecretChatLinkPreviews]) and [options]' notification, scheduling and topic,
+         * `sendMessage` of an `inputMessageText` that clears the draft, its links without tracking parameters while the
+         * setting says so ([OutgoingLinkCleaner]), with TDLib's default link preview (none in a secret chat unless
+         * allowed, [SecretChatLinkPreviews]) and [options]' notification, scheduling and topic,
          * replying as [replyTo] says (a message of the chat or of another one, with its quote). TDLib puts the message
          * into the chat as being sent (`updateNewMessage`) before it answers, so the window shows it at once
          * (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or `updateMessageSendFailed`
@@ -202,7 +205,8 @@ class TdlibMessageRepository
             options: SendOptions,
             replyTo: ReplyTarget?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
+            val sent = outgoingLinks?.clean(text) ?: text
+            val content = TdApi.InputMessageText(sent.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
             val tdReplyTo = replyTo?.toInputMessageReplyTo()
             return client
                 .request(TdApi.SendMessage(chatId, options.tdTopic(), tdReplyTo, options.toTdOptions(), null, content))

@@ -149,7 +149,7 @@ internal class ChatSponsoredMessages(
                 log.warn("clickChatSponsoredMessage failed: ${error::class.simpleName}")
             }
         }
-        (url ?: ad.sponsor.url).takeIf(String::isNotBlank)?.let { onEffect(ChatEffect.OpenUrl(it)) }
+        (url ?: ad.sponsor.url).takeIf(String::isNotBlank)?.let { onEffect(ChatEffect.OpenUrl(it, sponsored = true)) }
     }
 
     private fun showInfo(id: Long) {

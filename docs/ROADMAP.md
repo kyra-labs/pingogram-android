@@ -216,7 +216,7 @@ Features:
 - [ ] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages
 - [ ] Folder tabs without unread counters, as an option
 - [x] Incognito keyboard: the keyboard does not learn from what is typed in Pingogram
-- [ ] Links without tracking parameters, when sent and opened
+- [x] Links without tracking parameters, when sent and opened
 - [ ] Adding a contact does not share the phone number unless chosen
 
 ## v2.6.0

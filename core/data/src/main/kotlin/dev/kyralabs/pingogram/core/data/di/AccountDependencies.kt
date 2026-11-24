@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.data.export.DocumentTree
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
@@ -53,6 +54,9 @@ interface AccountDependencies {
     fun appLockRepository(): AppLockRepository
 
     fun linkPreviewSettingsRepository(): LinkPreviewSettingsRepository
+
+    /** Whether a text loses its links' tracking parameters as it is sent (`OutgoingLinkCleaner`, FR-X8). */
+    fun cleanLinksRepository(): CleanLinksRepository
 
     fun contactSyncSettingsRepository(): ContactSyncSettingsRepository
 

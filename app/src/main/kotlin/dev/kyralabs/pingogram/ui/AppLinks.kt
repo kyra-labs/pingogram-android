@@ -54,18 +54,21 @@ import kotlinx.coroutines.launch
 /**
  * The app's [UriHandler] (`LocalUriHandler`, provided by `MainActivity` around the app): Telegram links tapped
  * anywhere in the app open through [links] while someone is logged in ([LinkUriHandler]); signed out, or without
- * [links], they open in a browser. Every other link goes to [platform], the system's handler.
+ * [links], they open in a browser. Every other link goes to [platform], the system's handler, without its tracking
+ * parameters while [cleansLinks] (`REQUIREMENTS.md` FR-X8).
  */
 @Composable
 internal fun rememberLinkUriHandler(
     links: LinkDispatcher?,
     uiState: MainActivityUiState,
+    cleansLinks: Boolean = false,
     platform: UriHandler = LocalUriHandler.current,
 ): UriHandler {
     val context = LocalContext.current
     val currentUiState by rememberUpdatedState(uiState)
+    val currentCleansLinks by rememberUpdatedState(cleansLinks)
     return remember(links, platform, context) {
-        LinkUriHandler(platform) { link ->
+        LinkUriHandler(platform, cleansLinks = { currentCleansLinks }) { link ->
             if (links != null && currentUiState == MainActivityUiState.SignedIn) {
                 links.open(link)
             } else {
