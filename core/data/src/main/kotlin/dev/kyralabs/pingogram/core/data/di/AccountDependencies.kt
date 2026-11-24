@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.data.export.DocumentTree
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
+import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
@@ -57,6 +58,9 @@ interface AccountDependencies {
 
     /** Whether a text loses its links' tracking parameters as it is sent (`OutgoingLinkCleaner`, FR-X8). */
     fun cleanLinksRepository(): CleanLinksRepository
+
+    /** Whether messages go without sound unless the user picks otherwise (`SendDefaults`, FR-X11). */
+    fun composerSettingsRepository(): ComposerSettingsRepository
 
     fun contactSyncSettingsRepository(): ContactSyncSettingsRepository
 

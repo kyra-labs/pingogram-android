@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -59,7 +60,7 @@ class TdlibAttachmentRepositoryTest {
     private val media = FakeMediaProcessor()
     private val files by lazy { UploadFiles { cacheDir } }
 
-    private fun TestScope.repository() =
+    private fun TestScope.repository(sendsSilently: Boolean = false) =
         TdlibAttachmentRepository(
             client = client,
             files = files,
@@ -67,6 +68,7 @@ class TdlibAttachmentRepositoryTest {
             media = media,
             io = StandardTestDispatcher(testScheduler),
             scope = backgroundScope,
+            sendDefaults = SendDefaults(FakeComposerSettingsRepository(silently = sendsSilently)),
         )
 
     private fun answerSends() {
@@ -278,6 +280,18 @@ class TdlibAttachmentRepositoryTest {
                 assertTrue(sent.disableNotification)
                 assertEquals(1_800_000_000, (sent.schedulingState as TdApi.MessageSchedulingStateSendAtDate).sendDate)
             }
+        }
+
+    @Test
+    fun `with send silently by default on, every message of the attachments goes without a notification`() =
+        runTest {
+            answerSends()
+
+            repository(sendsSilently = true).send(CHAT, List(11) { photo() }, text(""), SendOptions(), replyTo = null)
+
+            val album = client.sentOf<TdApi.SendMessageAlbum>().single()
+            val single = client.sentOf<TdApi.SendMessage>().single()
+            assertTrue(album.options.disableNotification && single.options.disableNotification)
         }
 
     @Test
