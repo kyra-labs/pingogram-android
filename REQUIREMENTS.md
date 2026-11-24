@@ -323,6 +323,9 @@ decision 2026-11-23).
   per contact, kept on the phone and ringing on the day; and "Add to calendar", which hands a yearly event to the
   calendar app. Settings → Privacy and security → Contacts → "Birthdays", on by default: off, the row is hidden, and
   reminders already set still ring.
+- FR-X19 Should: **Compact chat list** (owner decision 2026-11-23). Settings → Chats → Chat list → "Compact chat
+  list", off by default: on, the chat list's rows show a 40 dp avatar on rows at least 56 dp high, so more chats fit;
+  they still grow with the font size.
 
 ## 6. Non-functional requirements
 

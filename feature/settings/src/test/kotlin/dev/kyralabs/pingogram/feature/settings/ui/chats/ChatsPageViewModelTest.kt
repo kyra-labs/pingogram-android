@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
@@ -32,6 +33,7 @@ class ChatsPageViewModelTest {
     private val composerSettings = FakeComposerSettingsRepository()
     private val playbackSettings = FakePlaybackSettingsRepository()
     private val chatListSettings = FakeChatListSettingsRepository()
+    private val compactChatList = FakeCompactChatListRepository()
     private val transcriptionSettings = FakeTranscriptionSettingsRepository()
     private val transcriber = FakeVoiceTranscriber()
 
@@ -46,8 +48,14 @@ class ChatsPageViewModelTest {
     }
 
     private fun TestScope.viewModel() =
-        ChatsPageViewModel(composerSettings, playbackSettings, chatListSettings, transcriptionSettings, transcriber)
-            .also { runCurrent() }
+        ChatsPageViewModel(
+            composerSettings,
+            playbackSettings,
+            chatListSettings,
+            compactChatList,
+            transcriptionSettings,
+            transcriber,
+        ).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: ChatsPageViewModel): List<ChatsPageEffect> {
         val effects = mutableListOf<ChatsPageEffect>()
@@ -187,6 +195,20 @@ class ChatsPageViewModelTest {
 
             send(viewModel, ChatsPageEvent.SetShowDraftsButton(true))
             assertTrue(viewModel.content.chatList.showDraftsButton)
+        }
+
+    @Test
+    fun `the chat list is not compact at first, and turning it on saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.compactChatList)
+
+            send(viewModel, ChatsPageEvent.SetCompactChatList(true))
+            assertTrue(viewModel.content.compactChatList)
+            assertTrue(compactChatList.enabled.value)
+
+            send(viewModel, ChatsPageEvent.SetCompactChatList(false))
+            assertFalse(viewModel.content.compactChatList)
         }
 
     @Test

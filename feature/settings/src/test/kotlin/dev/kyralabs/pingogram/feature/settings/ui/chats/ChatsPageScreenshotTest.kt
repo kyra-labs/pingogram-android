@@ -54,6 +54,11 @@ class ChatsPageScreenshotTest {
             defaults.copy(chatList = ChatListSettings(showDraftsButton = false)),
         )
 
+    /** The whole page, down to the Chat list group, with "Compact chat list" on (`REQUIREMENTS.md` FR-X19). */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun compactOnLight() = capture("compactOnLight", ThemeMode.Light, defaults.copy(compactChatList = true))
+
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, ChatsPageUiState.Loading)
 

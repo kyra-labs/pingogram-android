@@ -256,4 +256,17 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetShowDraftsButton(false)), events)
     }
+
+    @Test
+    fun `the compact chat list row is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_compact_chat_list)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_compact_chat_list_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetCompactChatList(true)), events)
+    }
 }

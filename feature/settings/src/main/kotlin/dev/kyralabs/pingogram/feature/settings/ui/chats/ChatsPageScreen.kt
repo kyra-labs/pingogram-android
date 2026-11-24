@@ -83,7 +83,7 @@ internal fun ChatsPageScreen(
             is ChatsPageUiState.Content -> {
                 MessagesGroup(state, onEvent, pages)
                 VoiceMessagesGroup(state, onEvent, pages)
-                ChatListBehaviorGroup(state.chatList, onEvent, pages)
+                ChatListBehaviorGroup(state.chatList, state.compactChatList, onEvent, pages)
             }
         }
     }
