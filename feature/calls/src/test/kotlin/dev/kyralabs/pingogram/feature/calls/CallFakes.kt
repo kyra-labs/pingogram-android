@@ -36,13 +36,17 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration
 
 val FRONT_CAMERA = CallCamera(id = "1", isFront = true, metadata = "{\"id\":\"1\",\"is_front\":true}")
@@ -155,6 +159,15 @@ private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = toImmutableM
 
 class FakeCallEngine : CallEngine {
     var failsToLoad = false
+
+    /**
+     * When set, [connect] and [createGroupCall] wait for it as the engine's native code does: on a context of their
+     * own (the engine's thread), which cancelling the caller does not stop.
+     */
+    var gate: CompletableDeferred<Unit>? = null
+
+    private suspend fun passGate() = gate?.let { withContext(NonCancellable + Dispatchers.Unconfined) { it.await() } }
+
     val sessions = mutableListOf<FakeCallSession>()
     var cameras = listOf(FRONT_CAMERA, BACK_CAMERA)
 
@@ -172,7 +185,10 @@ class FakeCallEngine : CallEngine {
         callId: Int,
         isOutgoing: Boolean,
         connection: CallConnection,
-    ): CallSession = FakeCallSession(callId, isOutgoing, connection).also { sessions += it }
+    ): CallSession {
+        passGate()
+        return FakeCallSession(callId, isOutgoing, connection).also { sessions += it }
+    }
 
     val groupSessions = mutableListOf<FakeGroupCallSession>()
 
@@ -185,6 +201,7 @@ class FakeCallEngine : CallEngine {
         withMicrophone: Boolean,
     ): GroupCallSession {
         if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        passGate()
         groupMicrophones += withMicrophone
         return FakeGroupCallSession(groupCallId, muted).also { groupSessions += it }
     }
@@ -383,7 +400,11 @@ class FakeCallSession(
         outgoing.trySend(data)
     }
 
+    /** How long the engine takes over each packet of the other side's data; none by default. */
+    var receiveDelayMillis: (ByteArray) -> Long = { 0 }
+
     override suspend fun receiveSignalingData(data: ByteArray) {
+        delay(receiveDelayMillis(data))
         received += data.toList()
     }
 
