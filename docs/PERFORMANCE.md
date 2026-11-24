@@ -11,8 +11,8 @@ regresses by more than 10%.
 |---|---|---|
 | Cold start → chat list drawn | ≤ 1.2 s (`timeToFullDisplay`) | Macrobenchmark `StartupBenchmark`, `reportFullyDrawn()` after first chat list frame |
 | Warm start | ≤ 400 ms | same |
-| Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms | `ScrollBenchmark` + JankStats |
-| Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, jank rate < 1% | same |
+| Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms, stutter ≤ 0.5% (frames > 16 ms late; `docs/adr/0042-stutter-instead-of-late-frames.md`) | `ScrollBenchmark` + JankStats |
+| Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, stutter ≤ 0.5% (frames > 16 ms late; ADR 0042) | same |
 | Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `OpenChatBenchmark`: `TraceSectionMetric("openChat")`, an async section from the tap in the chat list (`:app`) to the frame after the first messages (`feature:chat`) |
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | `SendMessageBenchmark`: `TraceSectionMetric("sendMessage")`, an async section from the composer's send (`feature:chat`'s `ChatComposer`) to the frame after the bubble on its way shows (`SendMessageTraceEffect`), sending to Saved Messages and deleting each message after |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
@@ -606,7 +606,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   baseline of the device (`benchmark/baselines/`, one file per device, such as `galaxy-s24-ultra.json`; its `commit`
   names the release it was recorded on). Times are the start times' medians, the frame time percentiles and the trace
   sections' medians; a time the baseline holds as 0 (a section the run did not record) is not compared; the share of
-  late frames is checked against its budget only. `--write-baseline` records a run as the new baseline. `docs/RELEASE.md` runs it before each release, on the owner's phone, as there is no device in CI.
+  frames more than 16 ms late (`frameOverrunMs.stutterPercent`) is checked against its budget only, and the share of
+  late frames (`latePercent`, any overrun at all) is printed for each scroll benchmark but has no budget (ADR 0042). `--write-baseline` records a run as the new baseline. `docs/RELEASE.md` runs it before each release, on the owner's phone, as there is no device in CI.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.
