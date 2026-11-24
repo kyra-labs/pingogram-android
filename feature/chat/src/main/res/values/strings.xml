@@ -149,6 +149,8 @@
     <string name="bot_command_confirm_body">The command goes to the chat as a message, and the bot answers it.</string>
     <string name="bot_command_confirm_send">Send</string>
     <string name="bot_command_confirm_cancel">Cancel</string>
+    <string name="composer_undo">Undo</string>
+    <string name="composer_redo">Redo</string>
     <!-- The button at the end of the empty message field that opens the system photo picker. -->
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->
