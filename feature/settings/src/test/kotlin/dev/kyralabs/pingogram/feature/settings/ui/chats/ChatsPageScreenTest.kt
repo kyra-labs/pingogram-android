@@ -193,4 +193,29 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetSendsSilently(false)), events)
     }
+
+    @Test
+    fun `confirm bot commands is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_confirm_bot_commands)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_confirm_bot_commands_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetConfirmsBotCommands(true)), events)
+    }
+
+    @Test
+    fun `confirm bot commands shows on, and a tap turns it off`() {
+        setScreen(ChatsPageUiState.Content(confirmsBotCommands = true))
+
+        switchRow(R.string.settings_confirm_bot_commands)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetConfirmsBotCommands(false)), events)
+    }
 }

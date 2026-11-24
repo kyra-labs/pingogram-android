@@ -123,6 +123,33 @@ class ChatsPageViewModelTest {
         }
 
     @Test
+    fun `bot commands go at once at first, and confirming them saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.confirmsBotCommands)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(true))
+            assertTrue(viewModel.content.confirmsBotCommands)
+            assertTrue(composerSettings.confirm.value)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(false))
+            assertFalse(viewModel.content.confirmsBotCommands)
+        }
+
+    @Test
+    fun `confirming bot commands that cannot be saved stays off, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetConfirmsBotCommands(true))
+
+            assertFalse(viewModel.content.confirmsBotCommands)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
     fun `raise to listen is on at first, and the split row's switch saves and shows`() =
         runTest {
             val viewModel = viewModel()

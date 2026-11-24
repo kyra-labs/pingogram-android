@@ -42,4 +42,13 @@ interface ComposerSettingsRepository {
 
     /** Saves [sendsSilently]; fails with `DomainError.Unknown` if it cannot be written. */
     suspend fun setSendsSilently(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether a bot command picked from the commands' menu or suggestions asks before it is sent (`REQUIREMENTS.md`
+     * FR-X12, Settings → Chats → Messages), then every change. Off when unreadable.
+     */
+    val confirmsBotCommands: Flow<Boolean>
+
+    /** Saves [confirmsBotCommands]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit>
 }
