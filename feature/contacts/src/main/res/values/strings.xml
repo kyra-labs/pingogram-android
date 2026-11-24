@@ -142,4 +142,21 @@
     <string name="contacts_action_scan">Scan</string>
     <string name="contacts_online_now">Online now</string>
     <string name="contacts_online_person">%1$s, online</string>
+    <!-- The Birthdays page (FR-X18): contacts with a birthday these days. -->
+    <string name="birthdays_title">Birthdays</string>
+    <string name="birthdays_back">Back</string>
+    <string name="birthdays_loading">Loading birthdays</string>
+    <string name="birthdays_today">Today</string>
+    <string name="birthdays_upcoming">Coming up</string>
+    <string name="birthdays_past">Recently</string>
+    <!-- A birthday's date and the age the contact turns: "November 24 · turns 36". -->
+    <plurals name="birthdays_date_turns">
+        <item quantity="one">%1$s · turns %2$d</item>
+        <item quantity="other">%1$s · turns %2$d</item>
+    </plurals>
+    <!-- For screen readers: the toggle that sets a yearly reminder. %1$s is the contact's name. -->
+    <string name="birthdays_remind_me">Remind me of %1$s\'s birthday</string>
+    <string name="birthdays_add_to_calendar">Add %1$s\'s birthday to calendar</string>
+    <string name="birthdays_empty_title">No birthdays soon</string>
+    <string name="birthdays_empty_body">When a contact\'s birthday comes near, it shows here.</string>
 </resources>
