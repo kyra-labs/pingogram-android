@@ -1,6 +1,6 @@
 # 0042. Stutter instead of late frames
 
-- Status: proposed (for the owner to accept or decline)
+- Status: accepted (owner, 2026-11-24)
 - Concerns the conversation scroll budget of `docs/PERFORMANCE.md` §1 ("jank rate < 1%") and
   `benchmark/budgets.json` (`ConversationScrollBenchmark.*`, `frameOverrunMs.latePercent` ≤ 1).
 
@@ -22,7 +22,7 @@ visibly smoother can leave it at 55%, and one that adds a dropped frame every se
 already report the measure that does: stutter, the share of frames more than 16 ms late, which the §9 history records
 alongside (0.36% chat list, 0.05% conversation at v0.5.0).
 
-## Decision (proposed)
+## Decision
 
 1. **The conversation's budget becomes a stutter budget.** "Jank rate < 1%" is replaced by: at most 0.5% of frames
    more than 16 ms late (`frameOverrunMs` > 16), the frames a user sees as a hitch at 60 and 120 Hz alike (two frames
