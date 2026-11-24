@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextRange
@@ -42,6 +43,13 @@ class ComposerText(
 
     /** The entities and the text they were last made for: the text can be ahead, by an edit not seen here. */
     private var formatting by mutableStateOf(Formatting(initial.text, initial.entities.toList()))
+
+    /**
+     * How many edits the user made: typing, pasting, the emoji panel, a command or snippet put in; never a text set from
+     * code ([setContent]). The conversation tells the chat the user is typing from it.
+     */
+    var userEdits by mutableIntStateOf(0)
+        private set
 
     /** Moves the entities with each of the user's edits, for the text field's `inputTransformation`. */
     val inputTransformation: InputTransformation = InputTransformation { followEdit() }
@@ -153,6 +161,7 @@ class ComposerText(
             selection = TextRange(start + replacement.length)
         }
         formatting = Formatting(state.text.toString(), entities)
+        userEdits++
     }
 
     private inline fun changeEntities(change: (List<TextEntity>) -> List<TextEntity>) {
@@ -173,6 +182,7 @@ class ComposerText(
             entities = entities.afterReplace(original.min, original.max, changes.getRange(index).length)
         }
         formatting = Formatting(asCharSequence().toString(), entities)
+        if (changes.changeCount > 0) userEdits++
     }
 
     private data class Formatting(

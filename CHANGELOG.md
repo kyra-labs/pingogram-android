@@ -18,6 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Undo and redo in the message box's menu; Settings → Chats → Messages can leave them out.
 - Save to Downloads and Unpin for several selected messages at once.
 - What a double tap does, for messages you received and for your own: react, reply or nothing.
+- Chats see when you're typing, recording a voice or round video message, or sending a photo or a file; turn it off
+  with "Send typing status" in Settings → Privacy and security.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer

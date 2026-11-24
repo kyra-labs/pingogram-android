@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.TypingStatusRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -388,6 +389,7 @@ class ChatViewModel internal constructor(
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
     confirmsBotCommands: Flow<Boolean> = flowOf(false),
+    sendsTypingStatus: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
     private val appInfo: AppInfo = AppInfo(versionName = ""),
@@ -442,6 +444,7 @@ class ChatViewModel internal constructor(
         places: ChatPlaces,
         textFinder: DeviceTextFinder,
         playbackSettings: PlaybackSettingsRepository,
+        typingStatus: TypingStatusRepository,
         @ApplicationScope applicationScope: CoroutineScope,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -489,6 +492,7 @@ class ChatViewModel internal constructor(
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
         confirmsBotCommands = composerSettings.confirmsBotCommands,
+        sendsTypingStatus = typingStatus.enabled,
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
         appInfo = appInfo,
@@ -1299,6 +1303,14 @@ class ChatViewModel internal constructor(
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), persistentMapOf()),
         )
 
+    /** What the user does in the chat, told to it while "Send typing status" is on. */
+    private val chatActions =
+        ChatActionSender(
+            enabled = sendsTypingStatus.stateIn(viewModelScope, SharingStarted.Eagerly, false),
+            scope = viewModelScope,
+            now = recordingClock,
+        ) { action -> chatActionRepository.send(chatId, topic, action) }
+
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
             .map { state -> state.copy(transfers = transfers) }
@@ -1348,6 +1360,10 @@ class ChatViewModel internal constructor(
             search.start()
             botKeyboard.start()
             recorder.start()
+            chatActions.start(
+                composer.text.writing(composer.mode),
+                ongoingAction(recorder.state, history, transfers.uploads),
+            )
             views.start()
             autoDownloads.start()
             customEmojis.start(composer.text)
