@@ -30,6 +30,10 @@ class SendKeysViewModel
         val sendsSilently: StateFlow<Boolean> =
             repository.sendsSilently.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
+        /** "Undo and redo" in the message box's menu (`REQUIREMENTS.md` FR-X13). */
+        val showsUndoRedo: StateFlow<Boolean> =
+            repository.showsUndoRedo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), true)
+
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L
         }
@@ -46,3 +50,9 @@ internal val LocalSendKeys = staticCompositionLocalOf { SendKeys() }
  * with sound" in place of "Send silently": the conversation's route provides the setting; elsewhere it is off.
  */
 internal val LocalSendsSilently = staticCompositionLocalOf { false }
+
+/**
+ * Whether the message box's menu offers Undo and Redo ("Undo and redo", FR-X13): the conversation's route provides the
+ * setting; elsewhere it is on, its default.
+ */
+internal val LocalShowsUndoRedo = staticCompositionLocalOf { true }

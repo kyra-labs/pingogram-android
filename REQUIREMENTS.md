@@ -298,6 +298,9 @@ decision 2026-11-23).
 - FR-X12 Should: **Confirm bot commands** (owner decision 2026-11-23). Settings → Chats → Messages → "Confirm bot
   commands", off by default: on, a command picked from a bot's commands sheet or the suggestions above the composer
   asks "Send /help?" first, kept across process death; a command typed and sent as text goes as before.
+- FR-X13 Should: **Undo and redo in the message box** (owner decision 2026-11-23). Settings → Chats → Messages →
+  "Undo and redo", on by default: the message box's menu and its screen-reader actions offer "Undo" and "Redo" while
+  its history allows them; off, they leave the menu. A keyboard's Ctrl+Z works either way.
 
 ## 6. Non-functional requirements
 

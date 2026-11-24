@@ -112,6 +112,7 @@ internal fun ComposerField(
     val scrollState = rememberScrollState()
     val customEmoji = rememberFieldCustomEmoji(text, scrollState)
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
+    val history by rememberUndoHistory(text.state)
     // onFocusChanged also reports the first state, unfocused: only changes are news.
     val focus = remember { FocusReport() }
     val colors = pillColors(containerColor)
@@ -136,7 +137,7 @@ internal fun ComposerField(
                     }.onPreviewKeyEvent { event ->
                         onKeyEvent(event) || fieldKey(event, text, onSend, onLink, sendKeys) ||
                             tabKey(event, focusManager)
-                    }.fieldMenus(menus, { textLayout.lineCount }, hasSelection),
+                    }.fieldMenus(menus, { textLayout.lineCount }, hasSelection, history),
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
             outputTransformation = outputTransformation,

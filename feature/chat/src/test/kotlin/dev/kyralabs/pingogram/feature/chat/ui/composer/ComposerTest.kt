@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -73,10 +74,15 @@ class ComposerTest {
         composer: ComposerUiState = ComposerUiState.Available(canSchedule = true),
         sendKeys: SendKeys = SendKeys(),
         sendsSilently: Boolean = false,
+        showsUndoRedo: Boolean = true,
     ): ComposerText {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalSendKeys provides sendKeys, LocalSendsSilently provides sendsSilently) {
+                CompositionLocalProvider(
+                    LocalSendKeys provides sendKeys,
+                    LocalSendsSilently provides sendsSilently,
+                    LocalShowsUndoRedo provides showsUndoRedo,
+                ) {
                     ChatBottomBar(
                         composer,
                         text,
@@ -201,6 +207,50 @@ class ComposerTest {
         field().performKeyInput { pressKey(Key.Enter) }
 
         assertEquals(emptyList<SendOptions>(), sent)
+    }
+
+    private fun fieldActions(): List<String> =
+        field()
+            .fetchSemanticsNode()
+            .config
+            .getOrNull(SemanticsActions.CustomActions)
+            .orEmpty()
+            .map { it.label }
+
+    private fun performFieldAction(label: String) {
+        val action =
+            field()
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .first { it.label == label }
+        composeRule.runOnIdle { action.action() }
+    }
+
+    @Test
+    fun `typing offers undo, which takes it back and offers redo`() {
+        val text = setComposer()
+        assertFalse(string(R.string.composer_undo) in fieldActions())
+
+        field().performTextInput("Hello")
+        assertTrue(string(R.string.composer_undo) in fieldActions())
+        assertFalse(string(R.string.composer_redo) in fieldActions())
+
+        performFieldAction(string(R.string.composer_undo))
+        assertEquals("", text.content.text)
+        assertTrue(string(R.string.composer_redo) in fieldActions())
+
+        performFieldAction(string(R.string.composer_redo))
+        assertEquals("Hello", text.content.text)
+    }
+
+    @Test
+    fun `with undo and redo off, the field offers neither`() {
+        setComposer(showsUndoRedo = false)
+
+        field().performTextInput("Hello")
+
+        assertFalse(string(R.string.composer_undo) in fieldActions())
+        assertFalse(string(R.string.composer_redo) in fieldActions())
     }
 
     @Test

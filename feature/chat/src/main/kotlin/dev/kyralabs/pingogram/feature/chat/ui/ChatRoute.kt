@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.bookmarks.BookmarkSheetViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendsSilently
+import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalShowsUndoRedo
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
@@ -239,6 +240,7 @@ internal fun ConversationRoute(
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val sendsSilently by sendKeysViewModel.sendsSilently.collectAsStateWithLifecycle()
+    val showsUndoRedo by sendKeysViewModel.showsUndoRedo.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     OpenChatTraceEffect(chatId, shown = state.content !is ChatContent.Loading)
@@ -319,6 +321,7 @@ internal fun ConversationRoute(
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalSendsSilently provides sendsSilently,
+        LocalShowsUndoRedo provides showsUndoRedo,
         LocalDoubleTapReaction provides doubleTap,
         LocalBirthdaySuggestions provides birthdaysViewModel,
         LocalReminderChips provides reminderChips,

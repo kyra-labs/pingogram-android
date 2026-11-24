@@ -98,6 +98,8 @@ internal class FormattingLabels(
     val link: String,
     val ai: String,
     val snippets: String,
+    val undo: String,
+    val redo: String,
 )
 
 @Composable
@@ -109,6 +111,8 @@ internal fun rememberFormattingLabels(): FormattingLabels {
             link = resources.getString(R.string.composer_format_link),
             ai = resources.getString(R.string.ai_editor_menu),
             snippets = resources.getString(R.string.composer_insert_snippet),
+            undo = resources.getString(R.string.composer_undo),
+            redo = resources.getString(R.string.composer_redo),
         )
     }
 }
@@ -196,16 +200,19 @@ internal class FieldMenus(
 )
 
 /**
- * The formatting in the selection menu, "Insert snippet" where there are snippets, and, once the text runs past three
- * lines, "Edit with AI" ([aiItem]); the same as screen readers' actions, the formatting while text [hasSelection].
+ * The formatting in the selection menu, "Undo" and "Redo" while [history] allows them ([undoItems]), "Insert snippet"
+ * where there are snippets, and, once the text runs past three lines, "Edit with AI" ([aiItem]); the same as screen
+ * readers' actions, the formatting while text [hasSelection].
  */
 internal fun Modifier.fieldMenus(
     menus: FieldMenus,
     lineCount: () -> Int,
     hasSelection: Boolean,
+    history: UndoHistory = UndoHistory.None,
 ): Modifier =
     appendTextContextMenuComponents {
         formattingItems(menus.text, menus.labels, menus.onLink)
+        undoItems(menus.text.state, history, menus.labels)
         menus.onSnippets?.let { open ->
             separator()
             item(key = SNIPPETS_ITEM, label = menus.labels.snippets, leadingIcon = UiR.drawable.ic_description) {
@@ -221,7 +228,7 @@ internal fun Modifier.fieldMenus(
                 CustomAccessibilityAction(menus.labels.snippets) { true.also { open() } }
             }
         val formats = if (hasSelection) formattingActions(menus.text, menus.labels, menus.onLink) else emptyList()
-        val actions = formats + listOfNotNull(snippets, ai)
+        val actions = formats + undoActions(menus.text.state, history, menus.labels) + listOfNotNull(snippets, ai)
         if (actions.isNotEmpty()) customActions = actions
     }
 
