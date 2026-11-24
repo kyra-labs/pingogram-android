@@ -193,6 +193,9 @@ internal fun ChatListTopBar(
                     if (selectedCount == null) {
                         state.hiddenArchive?.let { HiddenArchiveButton(it, onOpenArchive) }
                         HeaderMentionsButton(summary, onClick = { actions?.openMentions?.invoke() })
+                        if (LocalChatSwipes.current.draftsButton) {
+                            HeaderDraftsButton(summary, onClick = { actions?.openDrafts?.invoke() })
+                        }
                         HeaderSearchButton(actions)
                         HeaderAccountButton(summary, actions)
                     }

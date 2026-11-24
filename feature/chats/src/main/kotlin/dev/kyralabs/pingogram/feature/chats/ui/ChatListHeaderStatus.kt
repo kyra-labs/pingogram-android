@@ -183,6 +183,22 @@ private fun FocusPillSlot(focus: ChatListFocus) {
 }
 
 /**
+ * Drafts (`docs/DESIGN_SYSTEM.md` §6 "Drafts"): a [TopBarAction] with the description symbol, which opens the page of
+ * unsent messages, shown only while a chat has a draft ([summary]'s, read here alone so its flips recompose the button
+ * and nothing else).
+ */
+@Composable
+internal fun HeaderDraftsButton(
+    summary: () -> ChatListSummary,
+    onClick: () -> Unit,
+) {
+    if (!summary().hasDrafts) return
+    TopBarAction(label = stringResource(R.string.drafts_title), onClick = onClick) {
+        Icon(painterResource(UiR.drawable.ic_description), contentDescription = null)
+    }
+}
+
+/**
  * Mentions & replies (`docs/DESIGN_SYSTEM.md` §6): a [TopBarAction] with the alternate email symbol, which opens the
  * page, and how many chats have unread mentions ([summary]'s) in a `primary` badge. Screen readers hear "Mentions &
  * replies, 3 chats with unread mentions".

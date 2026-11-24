@@ -210,7 +210,7 @@ Features:
 - [ ] "Typing…" sent to the chat, with a setting to turn it off
 - [x] Incoming bubbles stand out in light theme
 - [ ] A compact chat list
-- [ ] Drafts: every unsent draft on one page
+- [x] Drafts: every unsent draft on one page
 - [ ] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
 - [x] Composer: silent sending by default, a confirmation before a bot command, undo and redo
 - [x] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages

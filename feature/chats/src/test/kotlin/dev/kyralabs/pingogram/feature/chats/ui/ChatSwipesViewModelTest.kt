@@ -60,6 +60,17 @@ class ChatSwipesViewModelTest {
         }
 
     @Test
+    fun `follows whether the header offers Drafts`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(true, awaitItem().draftsButton)
+
+                settings.settings.value = ChatListSettings(showDraftsButton = false)
+                assertEquals(ChatSwipes(draftsButton = false), awaitItem())
+            }
+        }
+
+    @Test
     fun `follows whether the folder tabs show their unread counts`() =
         runTest {
             ChatSwipesViewModel(settings).swipes.test {

@@ -24,7 +24,8 @@ import javax.inject.Inject
  * rows show the kind of chat before its name ([chatTypeIcons], "Chat type icons", on by
  * default), what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default), whether the
  * Channel feed's tab starts them ([feedTab], "Show Feed tab", on by default), and whether they show their unread
- * counts ([folderCounters], "Unread counters", on by default).
+ * counts ([folderCounters], "Unread counters", on by default), and whether the header offers Drafts ([draftsButton],
+ * Settings → Chats → "Drafts button", on by default).
  */
 @Immutable
 data class ChatSwipes(
@@ -36,6 +37,7 @@ data class ChatSwipes(
     val folderTabStyle: FolderTabStyle = FolderTabStyle.Text,
     val feedTab: Boolean = true,
     val folderCounters: Boolean = true,
+    val draftsButton: Boolean = true,
 )
 
 /**
@@ -63,6 +65,7 @@ class ChatSwipesViewModel
                         folderTabStyle = it.folderTabStyle,
                         feedTab = it.showFeedTab,
                         folderCounters = it.showFolderTabCounters,
+                        draftsButton = it.showDraftsButton,
                     )
                 }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())

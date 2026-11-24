@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
  * - **Catch-up**: the status line's chip opens Catch-up ([openCatchUp], owner decision 2026-11-15).
  * - **Mentions & replies**: its button opens the page of messages that mention the user or reply to them
  *   ([openMentions], `REQUIREMENTS.md` FR-X1).
+ * - **Drafts**: its button, while a chat has a draft, opens the page of unsent messages ([openDrafts],
+ *   `REQUIREMENTS.md` FR-X16).
  * - **Focus**: the Focus switcher's "Manage" opens Settings → Focus ([openFocus], board 31).
  * - **Feed**: the Feed tab, first in the folder row, opens the Channel feed ([openFeed], `REQUIREMENTS.md` FR-X5).
  * - **Restore**: the restore card above the list opens Backup & restore restoring a backup ([openBackup], by its
@@ -31,6 +33,7 @@ class ChatListHeaderActions(
     val accountMenu: @Composable (content: @Composable (Modifier) -> Unit) -> Unit = { content -> content(Modifier) },
     val openCatchUp: () -> Unit = {},
     val openMentions: () -> Unit = {},
+    val openDrafts: () -> Unit = {},
     val openFocus: () -> Unit = {},
     val openFeed: () -> Unit = {},
     val openBackup: (document: String) -> Unit = {},
@@ -48,6 +51,7 @@ class ChatListHeaderActions(
             accountMenu = accountMenu,
             openCatchUp = openCatchUp,
             openMentions = openMentions,
+            openDrafts = openDrafts,
             openFocus = openFocus,
             openFeed = open,
             openBackup = openBackup,
