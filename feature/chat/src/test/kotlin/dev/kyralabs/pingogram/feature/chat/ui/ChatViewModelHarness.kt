@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionReposit
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -98,6 +99,9 @@ abstract class ChatViewModelHarness {
     protected val textFinder = FakeDeviceTextFinder()
     protected val playbackSettings = FakePlaybackSettingsRepository()
     protected val typingStatus = FakeTypingStatusRepository()
+
+    /** The app's scope the view models get, where clearing one finishes its work; none unless a test sets it. */
+    protected var appScope: CoroutineScope? = null
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     internal val camera = FakeVideoNoteRecorder()
@@ -227,6 +231,7 @@ abstract class ChatViewModelHarness {
                 topic = topic,
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
                 sendsTypingStatus = typingStatus.enabled,
+                cleanupScope = appScope,
                 appInfo = appInfo,
                 transcriptionRepositories = transcription,
                 places = chatPlaces,

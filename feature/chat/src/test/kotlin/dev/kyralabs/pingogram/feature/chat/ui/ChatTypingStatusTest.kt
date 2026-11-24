@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.text.TextRange
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileRef
@@ -12,6 +13,10 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.Video
+import dev.kyralabs.pingogram.core.domain.model.VideoNote
+import dev.kyralabs.pingogram.core.domain.model.VoiceNote
+import dev.kyralabs.pingogram.core.domain.model.Waveform
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
@@ -23,11 +28,14 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 /**
  * What [ChatViewModel] tells the chat the user is doing (`REQUIREMENTS.md` FR-X17): typing, recording a voice or round
- * video message, uploading a photo or a file; sent again at most every five seconds while it lasts, ended when it
- * stops, and never anything while "Send typing status" is off.
+ * video message, uploading a photo, a video, a file or a voice or round video message (a GIF tells nothing); sent again
+ * at most every five seconds while it lasts, ended when it stops or the screen stops, and never anything while "Send
+ * typing status" is off.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatTypingStatusTest : ChatViewModelHarness() {
@@ -180,15 +188,189 @@ class ChatTypingStatusTest : ChatViewModelHarness() {
             assertEquals(listOf(ChatAction.UploadingDocument(0), ChatAction.UploadingDocument(25)), sentActions)
         }
 
+    @Test
+    fun `the screen stopping while typing ends it once`() =
+        runViewModelTest {
+            val viewModel = privateChat()
+            send(viewModel, ChatEvent.Started)
+            type(viewModel, "H")
+
+            send(viewModel, ChatEvent.Stopped)
+            settle()
+
+            assertEquals(listOf(ChatAction.Typing, null), sentActions)
+        }
+
+    @Test
+    fun `closing the conversation while recording ends it at once, in the app's scope`() =
+        runViewModelTest {
+            appScope = backgroundScope
+            val viewModel = privateChat()
+            send(viewModel, VoiceEvent.Start())
+
+            clear(viewModel)
+            runCurrent()
+
+            assertEquals(listOf(ChatAction.RecordingVoiceNote, null), sentActions)
+        }
+
+    @Test
+    fun `with Send typing status off, closing the conversation sends nothing`() =
+        runViewModelTest {
+            appScope = backgroundScope
+            typingStatus.setEnabled(false)
+            val viewModel = privateChat()
+            type(viewModel, "H")
+
+            clear(viewModel)
+            runCurrent()
+
+            assertEquals(emptyList<ChatAction?>(), sentActions)
+        }
+
+    @Test
+    fun `an upload is ended while the screen is stopped, and told again once it starts`() =
+        runViewModelTest {
+            chats.setChats(chat())
+            messages.setHistory(ADA, history(pending(-1, video)))
+            val viewModel = viewModel()
+            send(viewModel, ChatEvent.Started)
+
+            send(viewModel, ChatEvent.Stopped)
+            wait(ChatActionSender.RESEND_MILLIS * 2)
+            send(viewModel, ChatEvent.Started)
+
+            assertEquals(listOf(ChatAction.UploadingVideo(0), null, ChatAction.UploadingVideo(0)), sentActions)
+        }
+
+    @Test
+    fun `with Send typing status off, the screen stopping sends nothing`() =
+        runViewModelTest {
+            typingStatus.setEnabled(false)
+            val viewModel = privateChat()
+            send(viewModel, ChatEvent.Started)
+            type(viewModel, "H")
+
+            send(viewModel, ChatEvent.Stopped)
+            settle()
+
+            assertEquals(emptyList<ChatAction?>(), sentActions)
+        }
+
+    @ParameterizedTest
+    @MethodSource("mediaUploads")
+    fun `a video, voice or round video message being sent tells the chat its upload`(upload: MediaUpload) =
+        runViewModelTest {
+            chats.setChats(chat())
+            messages.setHistory(ADA, history(pending(-1, upload.content)))
+            viewModel()
+
+            messages.setHistory(ADA, history(message(2, isOutgoing = true, content = upload.content)))
+            runCurrent()
+
+            assertEquals(listOf(upload.action, null), sentActions)
+        }
+
+    @ParameterizedTest
+    @MethodSource("mediaUploads")
+    fun `with Send typing status off, sending a video, voice or round video message tells nothing`(
+        upload: MediaUpload,
+    ) = runViewModelTest {
+        typingStatus.setEnabled(false)
+        chats.setChats(chat())
+        messages.setHistory(ADA, history(pending(-1, upload.content)))
+        viewModel()
+
+        wait(ChatActionSender.RESEND_MILLIS)
+        messages.setHistory(ADA, history(message(2, isOutgoing = true, content = upload.content)))
+        runCurrent()
+
+        assertEquals(emptyList<ChatAction?>(), sentActions)
+    }
+
+    @Test
+    fun `a video's upload is resent with its progress`() =
+        runViewModelTest {
+            chats.setChats(chat())
+            messages.setHistory(ADA, history(pending(-1, video)))
+            viewModel()
+
+            files.uploads.value = mapOf(UPLOAD_FILE to FileUpload(1_500, 2_000, isActive = true, isCompleted = false))
+            runCurrent()
+            wait(ChatActionSender.RESEND_MILLIS)
+
+            assertEquals(listOf(ChatAction.UploadingVideo(0), ChatAction.UploadingVideo(75)), sentActions)
+        }
+
+    @Test
+    fun `a GIF being sent tells nothing`() =
+        runViewModelTest {
+            chats.setChats(chat())
+            messages.setHistory(ADA, history(pending(-1, gif)))
+            viewModel()
+
+            wait(ChatActionSender.RESEND_MILLIS)
+
+            assertEquals(emptyList<ChatAction?>(), sentActions)
+        }
+
     private fun pending(
         id: Long,
         content: MessageContent,
     ) = message(id, isOutgoing = true, content = content, sendingState = SendingState.Pending)
 
-    private companion object {
-        const val UPLOAD_FILE = 77
+    /** A message with [content] being sent, and what it tells the chat meanwhile. */
+    data class MediaUpload(
+        val content: MessageContent,
+        val action: ChatAction,
+    ) {
+        override fun toString() = action.toString()
+    }
 
-        val photo =
+    companion object {
+        private const val UPLOAD_FILE = 77
+
+        private val video =
+            MessageContent.Video(
+                Video(5, 1280, 720, null, null, true, FileRef(UPLOAD_FILE, 2_000)),
+                caption = FormattedText.Empty,
+                hasSpoiler = false,
+                isSecret = false,
+                showCaptionAboveMedia = false,
+            )
+
+        private val voice =
+            MessageContent.VoiceNote(
+                VoiceNote(duration = 3, waveform = Waveform(ByteArray(0)), file = FileRef(UPLOAD_FILE + 1, 1_000)),
+                caption = FormattedText.Empty,
+                isListened = false,
+            )
+
+        private val round =
+            MessageContent.VideoNote(
+                VideoNote(4, 384, null, null, FileRef(UPLOAD_FILE + 2, 1_000)),
+                isViewed = false,
+                isSecret = false,
+            )
+
+        private val gif =
+            MessageContent.Animation(
+                Animation(2, 320, 240, "video/mp4", minithumbnail = null, thumbnail = null, file = FileRef(10, 100)),
+                caption = FormattedText.Empty,
+                hasSpoiler = false,
+                isSecret = false,
+                showCaptionAboveMedia = false,
+            )
+
+        @JvmStatic
+        fun mediaUploads() =
+            listOf(
+                MediaUpload(video, ChatAction.UploadingVideo(0)),
+                MediaUpload(voice, ChatAction.UploadingVoiceNote(0)),
+                MediaUpload(round, ChatAction.UploadingVideoNote(0)),
+            )
+
+        private val photo =
             MessageContent.Photo(
                 photo =
                     Photo(
@@ -201,7 +383,7 @@ class ChatTypingStatusTest : ChatViewModelHarness() {
                 showCaptionAboveMedia = false,
             )
 
-        val document =
+        private val document =
             MessageContent.Document(
                 Document(
                     fileName = "Report 2026.pdf",
