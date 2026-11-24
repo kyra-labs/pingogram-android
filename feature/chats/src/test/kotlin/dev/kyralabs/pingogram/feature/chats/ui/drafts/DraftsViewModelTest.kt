@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -40,6 +41,7 @@ import java.util.Locale
 class DraftsViewModelTest {
     private val chats = FakeChatRepository()
     private val users = FakeUserRepository().apply { myUserId.value = ME }
+    private val chatLock = FakeChatLockRepository(locked = setOf(9L))
 
     @BeforeEach
     fun setUp() {
@@ -55,7 +57,7 @@ class DraftsViewModelTest {
     private fun TestScope.viewModel(): DraftsViewModel {
         val viewModel =
             DraftsViewModel(
-                chatRepository = chats,
+                draftChats = DraftChats(chats, chatLock),
                 userRepository = users,
                 groupRepository = FakeGroupRepository(),
                 clock = FakeWallClock(NOW),
@@ -146,6 +148,14 @@ class DraftsViewModelTest {
             runCurrent()
 
             assertEquals(DraftsUiState.Empty, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `a locked chat's draft never shows`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(2, draft = draft("hello")), chat(9, draft = draft("secret")))
+
+            assertEquals(listOf(2L), viewModel().chatIds)
         }
 
     @Test
