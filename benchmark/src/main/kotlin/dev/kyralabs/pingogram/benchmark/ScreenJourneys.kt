@@ -44,8 +44,7 @@ internal fun MacrobenchmarkScope.browseSettings(): Boolean {
  * title opens nothing (Saved Messages may not) or the profile does not show.
  */
 internal fun MacrobenchmarkScope.browseProfileFromConversation(): Boolean {
-    val title = device.wait(Until.findObject(By.res(CHAT_TITLE)), TIMEOUT_MS) ?: return false
-    title.click()
+    device.wait(Until.findObject(By.res(CHAT_TITLE)), TIMEOUT_MS)?.click()
     val grid = device.wait(Until.findObject(By.res(PROFILE_GRID)), PROFILE_WAIT_MS) ?: return false
     grid.setGestureMargin(device.displayWidth / GESTURE_MARGIN_FRACTION)
     grid.fling(Direction.DOWN)
