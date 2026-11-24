@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
 import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
@@ -171,9 +172,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var incognitoKeyboard: IncognitoKeyboardRepository
 
+    /** Whether links open without their tracking parameters ([rememberLinkUriHandler], Privacy and security). */
+    @Inject
+    lateinit var cleanLinks: CleanLinksRepository
+
     /** Privacy and security's settings the whole app follows on screen, read once the activity composes. */
     private val screenPrivacy by lazy {
-        combine(phoneNumberVisibility.hidden, incognitoKeyboard.enabled, ::ScreenPrivacy)
+        combine(phoneNumberVisibility.hidden, incognitoKeyboard.enabled, cleanLinks.enabled, ::ScreenPrivacy)
     }
 
     /**
@@ -266,7 +271,7 @@ class MainActivity : ComponentActivity() {
                             LocalAnimatedStickers provides animatedStickers,
                             LocalSecureWindow provides secureRequests,
                             // Telegram links tapped in the app open in it (LinkUriHandler).
-                            LocalUriHandler provides rememberLinkUriHandler(links, uiState),
+                            LocalUriHandler provides rememberLinkUriHandler(links, uiState, privacy.cleanLinks),
                             // The conversation's and the profile's call buttons, and "Call back" (feature:calls);
                             // scripted calls in the demo, which connect to nothing (docs/adr/0034).
                             LocalCallStarter provides calls,
@@ -417,10 +422,14 @@ class MainActivity : ComponentActivity() {
         @StyleRes theme: Int,
     ) = withContext(io) { splashScreen.setSplashScreenTheme(theme) }
 
-    /** Whether phone numbers are hidden on screen, and whether text fields ask the keyboard not to learn. */
+    /**
+     * Whether phone numbers are hidden on screen, whether text fields ask the keyboard not to learn, and whether links
+     * open without their tracking parameters.
+     */
     private data class ScreenPrivacy(
         val phoneNumbersHidden: Boolean,
         val incognitoKeyboard: Boolean,
+        val cleanLinks: Boolean,
     )
 
     private companion object {

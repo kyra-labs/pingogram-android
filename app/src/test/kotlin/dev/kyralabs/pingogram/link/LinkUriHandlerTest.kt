@@ -1,10 +1,14 @@
 package dev.kyralabs.pingogram.link
 
 import androidx.compose.ui.platform.UriHandler
+import dev.kyralabs.pingogram.core.ui.link.openUnchanged
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-/** Links tapped in the app: Telegram's open in Pingogram, every other one in the app the system picks. */
+/**
+ * Links tapped in the app: Telegram's open in Pingogram, every other one in the app the system picks, without its
+ * tracking parameters while the setting is on (`REQUIREMENTS.md` FR-X8), a sponsored message's always unchanged.
+ */
 class LinkUriHandlerTest {
     private val inApp = mutableListOf<String>()
     private val platform =
@@ -33,5 +37,32 @@ class LinkUriHandlerTest {
 
         assertEquals(emptyList<String>(), inApp)
         assertEquals(listOf("https://telegram.org/faq", "mailto:someone@example.com"), platform.opened)
+    }
+
+    @Test
+    fun `with link cleaning on, a link opens without its tracking parameters`() {
+        val cleaning = LinkUriHandler(platform, cleansLinks = { true }) { inApp += it }
+
+        cleaning.openUri("https://example.com/a?utm_source=news&id=1")
+
+        assertEquals(listOf("https://example.com/a?id=1"), platform.opened)
+    }
+
+    @Test
+    fun `with link cleaning off, a link opens as written`() {
+        val keeping = LinkUriHandler(platform, cleansLinks = { false }) { inApp += it }
+
+        keeping.openUri("https://example.com/a?utm_source=news&id=1")
+
+        assertEquals(listOf("https://example.com/a?utm_source=news&id=1"), platform.opened)
+    }
+
+    @Test
+    fun `a link opened unchanged, as a sponsored message's, keeps everything with cleaning on`() {
+        val cleaning = LinkUriHandler(platform, cleansLinks = { true }) { inApp += it }
+
+        cleaning.openUnchanged("https://sponsor.example/?utm_campaign=ad")
+
+        assertEquals(listOf("https://sponsor.example/?utm_campaign=ad"), platform.opened)
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.link.openUnchanged
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
@@ -111,7 +112,8 @@ private fun FeedEffects(
                     }
 
                     is FeedEffect.OpenUrl -> {
-                        val opened = runCatching { uriHandler.openUri(effect.url) }.isSuccess
+                        // A sponsor's link opens exactly as Telegram sent it (FR-X8, CLAUDE.md rule 3).
+                        val opened = runCatching { uriHandler.openUnchanged(effect.url) }.isSuccess
                         if (opened) "" else resources.getString(UiR.string.sponsored_no_app)
                     }
 

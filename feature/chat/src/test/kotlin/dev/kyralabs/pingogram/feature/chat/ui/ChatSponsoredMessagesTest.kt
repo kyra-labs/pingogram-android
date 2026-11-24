@@ -235,7 +235,7 @@ class ChatSponsoredMessagesTest : ChatViewModelHarness() {
                 send(viewModel, SponsoredEvent.Open(100))
 
                 assertEquals(listOf(FakeSponsoredMessageRepository.Click(CHANNEL_CHAT, 100, false)), sponsored.clicks)
-                assertEquals(listOf<ChatEffect>(ChatEffect.OpenUrl(SPONSOR_URL)), effects)
+                assertEquals(listOf<ChatEffect>(ChatEffect.OpenUrl(SPONSOR_URL, sponsored = true)), effects)
             }
 
         @Test
@@ -253,8 +253,8 @@ class ChatSponsoredMessagesTest : ChatViewModelHarness() {
                 assertEquals(listOf(true, false), sponsored.clicks.map { it.isMediaClick })
                 assertEquals(
                     listOf<ChatEffect>(
-                        ChatEffect.OpenUrl(SPONSOR_URL),
-                        ChatEffect.OpenUrl("https://example.org/offer"),
+                        ChatEffect.OpenUrl(SPONSOR_URL, sponsored = true),
+                        ChatEffect.OpenUrl("https://example.org/offer", sponsored = true),
                     ),
                     effects,
                 )

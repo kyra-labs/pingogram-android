@@ -21,6 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [2.4.0] - 2026-11-23
 
 ### Added
+- Links you send and open lose their tracking parameters, such as utm_source and fbclid: Settings → Privacy and
+  security → Remove tracking from links, on by default.
 - Incognito keyboard: Settings → Privacy and security asks your keyboard not to learn from what you type in
   Pingogram; secret chats always ask.
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview

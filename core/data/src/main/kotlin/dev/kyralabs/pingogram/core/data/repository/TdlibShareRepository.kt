@@ -47,6 +47,8 @@ class TdlibShareRepository internal constructor(
     private val cleaner: UploadCleaner,
     private val linkPreviews: SecretChatLinkPreviews,
     private val io: CoroutineDispatcher,
+    // Null where links go as written; the app always has one.
+    private val outgoingLinks: OutgoingLinkCleaner? = null,
 ) : ShareRepository {
     @Inject
     constructor(
@@ -56,6 +58,7 @@ class TdlibShareRepository internal constructor(
         linkPreviews: SecretChatLinkPreviews,
         @ApplicationContext context: Context,
         @Dispatcher(IO) io: CoroutineDispatcher,
+        outgoingLinks: OutgoingLinkCleaner,
     ) : this(
         client,
         files,
@@ -64,6 +67,7 @@ class TdlibShareRepository internal constructor(
         cleaner,
         linkPreviews,
         io,
+        outgoingLinks,
     )
 
     private val preparer = AttachmentPreparer(files, content, media)
@@ -184,12 +188,17 @@ class TdlibShareRepository internal constructor(
 
     /**
      * A text message to [chatId] with TDLib's default link preview (none in a secret chat unless allowed,
-     * [SecretChatLinkPreviews]), leaving the chat's draft alone.
+     * [SecretChatLinkPreviews]), its links without tracking parameters while the setting says so
+     * ([OutgoingLinkCleaner]), leaving the chat's draft alone.
      */
     private suspend fun textContent(
         chatId: Long,
         text: FormattedText,
-    ) = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), false)
+    ) = TdApi.InputMessageText(
+        (outgoingLinks?.clean(text) ?: text).toTdFormattedText(),
+        linkPreviews.optionsFor(chatId),
+        false,
+    )
 }
 
 /** The copies TDLib uploads for this attachment: its file, and a video's still. */

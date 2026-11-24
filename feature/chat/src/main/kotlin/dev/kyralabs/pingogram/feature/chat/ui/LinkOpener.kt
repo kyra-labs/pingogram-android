@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
+import dev.kyralabs.pingogram.core.ui.link.openUnchanged
 
 /**
  * Opens a link of a message with the platform's handler. A link no app opens (a `tg://` link on a device without an
@@ -21,14 +22,17 @@ internal fun rememberLinkOpener(): LinkInteractionListener {
     }
 }
 
-/** Opens a URI with the platform's handler ([LocalUriHandler]); false if no app on the device opens it. */
+/**
+ * Opens a URI with the app's handler ([LocalUriHandler]), [unchanged] exactly as given (a sponsored message's link,
+ * [openUnchanged]); false if no app on the device opens it.
+ */
 @Composable
-internal fun rememberUriOpener(): (String) -> Boolean {
+internal fun rememberUriOpener(unchanged: Boolean = false): (String) -> Boolean {
     val uriHandler = LocalUriHandler.current
-    return remember(uriHandler) {
+    return remember(uriHandler, unchanged) {
         { uri ->
             try {
-                uriHandler.openUri(uri)
+                if (unchanged) uriHandler.openUnchanged(uri) else uriHandler.openUri(uri)
                 true
             } catch (_: IllegalArgumentException) {
                 // No app on the device opens it.
