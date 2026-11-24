@@ -10,11 +10,13 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.testTimeSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -116,7 +118,15 @@ class AnimatedStickersTest {
     fun `power saving holds stickers still, and they play on once it is off`() =
         runTest {
             val still = MutableStateFlow(true)
-            val saving = AnimatedStickers(files, decoder, renderDispatcher = Dispatchers.Unconfined, still = still)
+            // The frames' clock is the test's, as the delays between them are.
+            val saving =
+                AnimatedStickers(
+                    files,
+                    decoder,
+                    renderDispatcher = Dispatchers.Unconfined,
+                    still = still,
+                    timeSource = testTimeSource,
+                )
             files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
             val draws = MutableStateFlow(0L)
             var shown = 0
@@ -145,7 +155,76 @@ class AnimatedStickersTest {
             playing.cancel()
         }
 
+    @Test
+    fun `frames follow the clock, so a sticker drawn late keeps its pace`() =
+        runTest {
+            val timed = AnimatedStickers(files, decoder, Dispatchers.Unconfined, timeSource = testTimeSource)
+            files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
+            val animation = checkNotNull(timed.animation(FILE_ID))
+            val draws = MutableStateFlow(0L)
+            // A busy device: every frame is drawn 100 ms after it is shown.
+            val player =
+                StickerPlayer(timed, animation, 64, 64, draws) {
+                    launch {
+                        delay(LATE_DRAW_MILLIS)
+                        draws.value++
+                    }
+                }
+            val playing = launch { player.playOnScreen(FocusedWindow) { draws.value++ } }
+
+            advanceTimeBy(PLAY_MILLIS)
+
+            // The pulse runs at 60 frames per second: 550 ms in, about frame 33, not one step of 2 per late draw (12).
+            val due = (PLAY_MILLIS * animation.frameRate / MILLIS_PER_SECOND).toInt()
+            assertTrue("frame ${player.frame}, due $due", player.frame in due - FRAME_SLACK..due)
+            playing.cancel()
+        }
+
+    @Test
+    fun `a sticker that leaves the screen while waiting for a slot gives up its place`() =
+        runTest {
+            val oneSlot =
+                AnimatedStickers(files, decoder, Dispatchers.Unconfined, maxAnimating = 1, timeSource = testTimeSource)
+            files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
+            val animation = checkNotNull(oneSlot.animation(FILE_ID))
+            val playingDraws = MutableStateFlow(0L)
+            val playingOne = StickerPlayer(oneSlot, animation, 64, 64, playingDraws) { playingDraws.value++ }
+            val holding = launch { playingOne.playOnScreen(FocusedWindow) { playingDraws.value++ } }
+            advanceTimeBy(SHORT_MILLIS)
+            var onScreen = true
+            var shown = 0
+            val waitingDraws = MutableStateFlow(0L)
+            val waitingOne =
+                StickerPlayer(oneSlot, animation, 64, 64, waitingDraws) {
+                    shown++
+                    if (onScreen) waitingDraws.value++
+                }
+            val waiting = launch { waitingOne.playOnScreen(FocusedWindow) { if (onScreen) waitingDraws.value++ } }
+            advanceTimeBy(SHORT_MILLIS)
+
+            // It scrolls away while the other plays, then the other stops.
+            onScreen = false
+            advanceTimeBy(LEAVE_MILLIS)
+            holding.cancel()
+            advanceTimeBy(LEAVE_MILLIS)
+
+            assertEquals(0, shown)
+            waiting.cancel()
+        }
+
+    private object FocusedWindow : WindowInfo {
+        override val isWindowFocused = true
+    }
+
     private companion object {
         const val FILE_ID = 42
+        const val LATE_DRAW_MILLIS = 100L
+        const val PLAY_MILLIS = 550L
+        const val MILLIS_PER_SECOND = 1_000f
+
+        /** The frames since the last draw came: 50 ms at 60 frames per second, shown in steps of 2. */
+        const val FRAME_SLACK = 4
+        const val SHORT_MILLIS = 50L
+        const val LEAVE_MILLIS = 600L
     }
 }

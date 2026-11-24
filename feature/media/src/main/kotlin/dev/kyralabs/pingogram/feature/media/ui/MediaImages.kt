@@ -86,24 +86,32 @@ internal fun ViewerImage(
 
 /**
  * The size to decode a full photo of [width] × [height] at in a window of [window]: its own, or scaled down so its
- * longer side is at most twice the window's longer side, which is as sharp as zooming shows it. Decoding a 2560 px
- * photo at its own size took 20 MB of memory and evicted the conversation's bitmaps from Coil's cache, which then
- * decoded again on the way back (`docs/audit/performance-review-2026-11.md`, M5).
+ * longer side is at most twice the window's longer side, which is as sharp as zooming shows it, and at most
+ * [MAX_DECODE_SIDE] unless the page shows it larger at rest (fitted in the window). Decoding a 2560 px photo at its own
+ * size took 20 MB of memory and evicted the conversation's bitmaps from Coil's cache, which then decoded again on the
+ * way back (`docs/audit/performance-review-2026-11.md`, M5); twice a phone's window is larger than any photo, so only
+ * the absolute cap applies there.
  */
 internal fun viewerDecodeSize(
     width: Int,
     height: Int,
     window: IntSize,
 ): IntSize {
-    val limit = maxOf(window.width, window.height) * ZOOM_HEADROOM
     val longest = maxOf(width, height)
-    if (limit <= 0 || longest <= limit) return IntSize(width, height)
-    val scale = limit.toFloat() / longest
+    val known = window.width > 0 && window.height > 0 && width > 0 && height > 0
+    // Fitted in the window, as the page shows it at rest: never decoded smaller than that.
+    val fitted = if (known) minOf(window.width.toFloat() / width, window.height.toFloat() / height) * longest else 0f
+    val limit = minOf(maxOf(window.width, window.height) * ZOOM_HEADROOM.toFloat(), maxOf(fitted, MAX_DECODE_SIDE))
+    if (!known || longest <= limit) return IntSize(width, height)
+    val scale = limit / longest
     return IntSize((width * scale).roundToInt().coerceAtLeast(1), (height * scale).roundToInt().coerceAtLeast(1))
 }
 
 /** How many times the window's size a full photo is decoded at, at most: the zoom it stays sharp to. */
 private const val ZOOM_HEADROOM = 2
+
+/** The longest side a full photo is decoded at when the page shows it smaller than that at rest: 12 MB at 4:3. */
+private const val MAX_DECODE_SIDE = 2_048f
 
 /**
  * How far [ViewerImage] of [fileId] has faded in: 0 until it loads, or 1 from the start without [fadeIn] (then what

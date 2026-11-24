@@ -20,6 +20,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.TimeSource
 
 /**
  * Plays animated (TGS) stickers in the conversation and the sticker panel (`REQUIREMENTS.md` FR-C4, FR-C5;
@@ -52,12 +54,15 @@ class AnimatedStickers(
     internal val animate: Boolean = true,
     internal val still: StateFlow<Boolean> = MutableStateFlow(false),
     internal val loop: StateFlow<Boolean> = MutableStateFlow(true),
+    internal val timeSource: TimeSource.WithComparableMarks = TimeSource.Monotonic,
 ) {
     /** One permit per sticker that may play now. */
     internal val slots = Semaphore(maxAnimating)
 
     private val decoded = LruCache<Int, StickerAnimation>(MAX_DECODED)
-    private val decoding = Mutex()
+
+    /** One lock per file being decoded: a file shown twice is decoded once, and different files side by side. */
+    private val decoding = ConcurrentHashMap<Int, Mutex>()
 
     private val firstFrames =
         object : LruCache<FrameKey, Bitmap>(FIRST_FRAMES_BYTES) {
@@ -69,15 +74,26 @@ class AnimatedStickers(
 
     /**
      * The animation of TDLib file [fileId], downloading the file first if needed; null when it cannot be downloaded or
-     * holds no animation. Decodes one file at a time, so a sticker shown twice is decoded once.
+     * holds no animation. A file is decoded once however many show it at a time, and different files decode side by
+     * side on [renderDispatcher]: no sticker waits for another's file.
      */
     internal suspend fun animation(fileId: Int): StickerAnimation? =
         decoded[fileId] ?: downloadedPath(fileId)?.let { path ->
-            decoding.withLock {
-                decoded[fileId]
-                    ?: withContext(renderDispatcher) { decoder.decode(File(path)) }?.also { decoded.put(fileId, it) }
+            val lock = decoding.getOrPut(fileId) { Mutex() }
+            try {
+                lock.withLock { decoded[fileId] ?: decode(fileId, path) }
+            } finally {
+                // Whoever still waits on it finds the animation decoded; a later caller gets a new lock.
+                decoding.remove(fileId, lock)
             }
         }
+
+    /** File [fileId] at [path] decoded, and kept; null when it holds no animation. */
+    private suspend fun decode(
+        fileId: Int,
+        path: String,
+    ): StickerAnimation? =
+        withContext(renderDispatcher) { decoder.decode(File(path)) }?.also { decoded.put(fileId, it) }
 
     /** The first frame of [animation] (file [fileId]) at [width] × [height] pixels, from the frame cache. */
     internal suspend fun firstFrame(
