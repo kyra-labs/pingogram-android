@@ -52,45 +52,51 @@ class DataStoreChatListSettingsRepository
                     )
                 }.distinctUntilChanged()
 
-        override suspend fun setShowStories(show: Boolean): Outcome<Unit> = save { it[SHOW_STORIES] = show }
+        override suspend fun setShowStories(show: Boolean): Outcome<Unit> = dataStore.save { it[SHOW_STORIES] = show }
 
         override suspend fun setSwipeActions(
             start: SwipeAction,
             end: SwipeAction,
         ): Outcome<Unit> =
-            save {
+            dataStore.save {
                 it[START_SWIPE] = start.name
                 it[END_SWIPE] = end.name
             }
 
         override suspend fun setSwipeChangesFolder(changes: Boolean): Outcome<Unit> =
-            save { it[SWIPE_CHANGES_FOLDER] = changes }
+            dataStore.save { it[SWIPE_CHANGES_FOLDER] = changes }
 
         override suspend fun setShowEditFoldersButton(show: Boolean): Outcome<Unit> =
-            save { it[EDIT_FOLDERS_BUTTON] = show }
+            dataStore.save { it[EDIT_FOLDERS_BUTTON] = show }
 
-        override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> = save { it[CHAT_TYPE_ICONS] = show }
+        override suspend fun setShowChatTypeIcons(show: Boolean): Outcome<Unit> =
+            dataStore.save { it[CHAT_TYPE_ICONS] = show }
 
         override suspend fun setFolderTabStyle(style: FolderTabStyle): Outcome<Unit> =
-            save { it[FOLDER_TAB_STYLE] = style.name }
+            dataStore.save { it[FOLDER_TAB_STYLE] = style.name }
 
         override suspend fun setCatchUpIncludesMuted(include: Boolean): Outcome<Unit> =
-            save { it[CATCH_UP_INCLUDES_MUTED] = include }
+            dataStore.save { it[CATCH_UP_INCLUDES_MUTED] = include }
 
-        override suspend fun setShowFeedTab(show: Boolean): Outcome<Unit> = save { it[FEED_TAB] = show }
+        override suspend fun setShowFeedTab(show: Boolean): Outcome<Unit> = dataStore.save { it[FEED_TAB] = show }
 
         override suspend fun setShowFolderTabCounters(show: Boolean): Outcome<Unit> =
-            save { it[FOLDER_TAB_COUNTERS] = show }
+            dataStore.save { it[FOLDER_TAB_COUNTERS] = show }
 
-        override suspend fun setShowDraftsButton(show: Boolean): Outcome<Unit> = save { it[DRAFTS_BUTTON] = show }
+        override suspend fun setShowDraftsButton(show: Boolean): Outcome<Unit> =
+            dataStore.save { it[DRAFTS_BUTTON] = show }
+    }
 
-        private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
-            try {
-                dataStore.edit(change)
-                Outcome.Success(Unit)
-            } catch (error: IOException) {
-                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
-            }
+/**
+ * Applies [change] to the settings file: [Outcome.Failure] when it cannot be written. Outside the repository, which
+ * has a setter per setting.
+ */
+private suspend fun DataStore<Preferences>.save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
+    try {
+        edit(change)
+        Outcome.Success(Unit)
+    } catch (error: IOException) {
+        Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
     }
 
 private fun swipeActionOf(name: String?): SwipeAction? = SwipeAction.entries.firstOrNull { it.name == name }

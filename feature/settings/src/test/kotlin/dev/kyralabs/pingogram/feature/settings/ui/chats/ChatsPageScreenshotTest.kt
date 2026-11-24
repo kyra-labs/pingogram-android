@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
@@ -11,7 +12,6 @@ import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.settings.ui.MEDIUM
 import dev.kyralabs.pingogram.feature.settings.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.settings.ui.captureScreen
-import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
