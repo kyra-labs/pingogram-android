@@ -43,7 +43,7 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
  */
 @Composable
 internal fun FolderBar(
-    state: ChatListUiState,
+    state: FolderBarState,
     onEvent: (ChatListEvent) -> Unit,
     onEditFolder: ((folderId: Int?) -> Unit)?,
     onOpenFeed: () -> Unit,
@@ -74,11 +74,11 @@ internal fun FolderBar(
                 }.padding(start = gap, top = gap, end = gap),
         ) {
             FolderTabs(
-                tabs = state.folderTabs,
+                tabs = state.tabs,
                 selectedFolderId = state.selectedFolderId,
                 onSelect = { onEvent(ChatListEvent.SelectFolder(it)) },
                 // Switching lists, which would drop the selection, waits until the selection is done.
-                enabled = state.selection == null,
+                enabled = !state.isSelecting,
                 onMarkAllAsRead = { onEvent(ChatListEvent.MarkAllAsRead(it)) },
                 onEditFolder = onEditFolder,
                 feedTab = state.feedTab,

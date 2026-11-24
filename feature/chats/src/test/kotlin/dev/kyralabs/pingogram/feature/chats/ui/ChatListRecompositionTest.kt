@@ -222,6 +222,27 @@ class ChatListRecompositionTest {
     }
 
     @Test
+    fun `a row changing recomposes neither the header nor the folder bar`() {
+        setScreen(connection = ConnectionStatus.Ready)
+
+        // The counter sees a composable compose again only from its second time on: change the row once first.
+        rowChange++
+        repeat(SETTLE_FRAMES) { frame() }
+        counter.reset()
+        rowChange++
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val recomposed = counter.recomposed
+        assertTrue(recomposed.toString(), recomposed.any { name -> ROW_FILES.any { it in name } })
+        // The screen calls each bar again as it composes again; given the same arguments, it skips, and nothing in it
+        // composes again. Given the whole state, as before, everything in them did.
+        val header = recomposed.filter { HEADER in it || HEADER_STATUS in it }
+        assertEquals(emptyList<String>(), header.filterNot { it.endsWith(HEADER_ENTRY) })
+        val bar = recomposed.filter { name -> BAR_FILES.any { it in name } }
+        assertEquals(emptyList<String>(), bar.filterNot { it.endsWith(BAR_ENTRY) })
+    }
+
+    @Test
     fun `the counter sees a recomposition`() {
         setScreen(connection = ConnectionStatus.Ready)
 
@@ -267,11 +288,25 @@ class ChatListRecompositionTest {
         assertEquals(bar, folderBarBounds())
     }
 
+    /** These rows with [added] unread messages in the first. */
+    private fun ChatListContent.Content.withUnread(added: Int) =
+        if (added == 0) {
+            this
+        } else {
+            val first = items.first()
+            copy(
+                items = (listOf(first.copy(unreadCount = first.unreadCount + added)) + items.drop(1)).toImmutableList(),
+            )
+        }
+
     private fun folderBarBounds() = composeRule.onNodeWithTag(FOLDER_BAR_TEST_TAG).fetchSemanticsNode().boundsInRoot
 
     private fun folderBarTop() = folderBarBounds().top
 
     private var connection by mutableStateOf(ConnectionStatus.Ready)
+
+    /** Unread messages added to the first row, as a new message does. */
+    private var rowChange by mutableStateOf(0)
 
     private var summary by mutableStateOf(ChatListPreviewData.summary)
 
@@ -321,7 +356,7 @@ class ChatListRecompositionTest {
                             ChatListScreen(
                                 state =
                                     ChatListUiState(
-                                        content = if (family) familyContent else content,
+                                        content = if (family) familyContent else content.withUnread(rowChange),
                                         connection = this.connection,
                                         folderTabs = ChatListPreviewData.folders,
                                         selectedFolderId = selectedFolder,
@@ -412,6 +447,8 @@ class ChatListRecompositionTest {
         const val CHAT_LIST_TEST_TAG = "chat_list"
         const val STORY_RINGS = "StoryRingsKt"
         const val HEADER = "ChatListTopBarKt"
+        const val HEADER_ENTRY = "ChatListTopBarKt.ChatListScreenTopBar"
+        const val BAR_ENTRY = "FolderBarKt.FolderBar"
         const val HEADER_STATUS = "ChatListHeaderStatusKt"
     }
 }

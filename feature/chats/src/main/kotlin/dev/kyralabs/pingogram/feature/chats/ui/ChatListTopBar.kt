@@ -84,7 +84,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  */
 @Composable
 internal fun ChatListScreenTopBar(
-    state: ChatListUiState,
+    state: ChatListTopBarState,
     scrollBehavior: TopAppBarScrollBehavior,
     onEvent: (ChatListEvent) -> Unit,
     onBack: () -> Unit,
@@ -106,7 +106,7 @@ internal fun ChatListScreenTopBar(
 
         ChatListKind.Archive -> {
             ArchiveTopBar(
-                selectedCount = state.selection?.chatIds?.size,
+                selectedCount = state.selectedCount,
                 scrollBehavior = scrollBehavior,
                 onBack = onBack,
                 onClearSelection = clearSelection,
@@ -127,7 +127,7 @@ internal fun ChatListScreenTopBar(
  *   the connection pill ([ConnectionPill]) in its place (`REQUIREMENTS.md` FR-L5).
  * - **Collapsed**: "Chats" in `titleLargeEmphasized` on the dense bar's height (`sizes.denseTopAppBar`, §7); the
  *   status line goes, and while not connected one line says the connection's state.
- * - **Actions**: the archive while its row is hidden ([ChatListUiState.hiddenArchive]), Mentions & replies
+ * - **Actions**: the archive while its row is hidden ([ChatListTopBarState.hiddenArchive]), Mentions & replies
  *   ([HeaderMentionsButton]), search ([HeaderSearchButton]) and the signed-in user's avatar
  *   ([HeaderAccountButton]), from [actions].
  *
@@ -137,14 +137,14 @@ internal fun ChatListScreenTopBar(
  */
 @Composable
 internal fun ChatListTopBar(
-    state: ChatListUiState,
+    state: ChatListTopBarState,
     scrollBehavior: TopAppBarScrollBehavior,
     onClearSelection: () -> Unit,
     onOpenArchive: () -> Unit = {},
     summary: () -> ChatListSummary = { ChatListSummary() },
     actions: ChatListHeaderActions? = null,
 ) {
-    val selectedCount = state.selection?.chatIds?.size
+    val selectedCount = state.selectedCount
     val connection = state.connection
     val focus = LocalChatListFocus.current
     // Room for the Focus pill below the status line, growing and shrinking with it on the scheme's spring: its touch

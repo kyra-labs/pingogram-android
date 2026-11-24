@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ActiveStories
@@ -21,6 +23,8 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +35,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -128,6 +133,7 @@ class StoryRingsViewModel
         userRepository: UserRepository,
         chatListSettings: ChatListSettingsRepository,
         private val storyPosts: StoryPostRepository,
+        @Dispatcher(Default) dispatcher: CoroutineDispatcher = Dispatchers.Default,
     ) : ViewModel() {
         private var loadingMore: Job? = null
         private val cancel = MutableStateFlow(UploadCancel())
@@ -137,12 +143,9 @@ class StoryRingsViewModel
             storyRepository
                 .activeStories(StoryList.Main)
                 .flatMapLatest { active ->
-                    if (active.isEmpty()) {
-                        flowOf(persistentListOf())
-                    } else {
-                        combine(active.map { stories -> chatRepository.chat(stories.chatId).map { stories to it } }) {
-                            it.toList()
-                        }
+                    // One flow for the rings' chats, not one per ring.
+                    chatRepository.chats(active.mapTo(HashSet()) { it.chatId }).map { chats ->
+                        active.map { stories -> stories to chats[stories.chatId] }
                     }
                 }.combine(userRepository.myUserId) { chats, me ->
                     chats.mapNotNull { (stories, chat) -> chat?.let { ringOf(stories, it, me) } }
@@ -159,6 +162,7 @@ class StoryRingsViewModel
                 .map { it.showStories }
                 .distinctUntilChanged()
                 .flatMapLatest { shown -> if (shown) rings else flowOf(StoryRingsUiState()) }
+                .flowOn(dispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoryRingsUiState())
 
         fun onEvent(event: StoryRingsEvent) {

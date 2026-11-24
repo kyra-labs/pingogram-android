@@ -23,6 +23,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   "Add to calendar" and "Open in maps" join it once found.
 - Photos, avatars and files already on the device show again without asking for them first, and a download's progress
   wakes only what shows that file.
+- The chat list does less work as chats change: a changed row no longer redraws the header or the folder tabs, rows
+  that did not change are recognised without being rebuilt, and the story rings follow their chats in one place.
 
 ## [2.4.0] - 2026-11-23
 
