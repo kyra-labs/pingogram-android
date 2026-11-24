@@ -21,9 +21,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,8 +46,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * One chat in a chat list (`REQUIREMENTS.md` FR-L2, `docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the avatar, the
  * name with its badges, a one-line preview ([ChatPreviewText]), and the time with the unread badges at the end
- * ([ChatMeta]). A forum's row names its newest topics above the preview, three lines tall ([ForumRowPreview]). At
- * large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
+ * ([ChatMeta]). A forum's row names its newest topics above the preview, three lines tall ([ForumRowPreview]). In a
+ * full row at large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
  * column is only as wide as the badges and the name keeps most of its line; the row stays two lines tall. The preview
  * stays one plain text: the list item reads its baselines while it measures, to tell one line from several. For the
  * main list, the archive and folders alike; swipe actions and selection wrap or extend it.
@@ -57,7 +55,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Everything shown is in [item], mapped by the ViewModel: the row resolves texts and builds the preview's styled text,
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
  * count included ([rowDescription], `docs/DESIGN_SYSTEM.md` §9), built only when something reads the semantics tree.
- * No fixed heights, so it grows with the font scale.
+ * No fixed heights, so it grows with the font scale. Compact ([ChatSwipes.compact], `REQUIREMENTS.md` FR-X19), it
+ * has the small avatar and one line, the preview after the title ([CompactRowHeadline]) and the time at the end at
+ * every font scale: the list item's one-line height.
  *
  * The row's container sits in from its place in the list ([rowInsets]), while its content keeps the list item's
  * padding ([insetContentPadding]): at rest nothing shows it, but a pressed, selected or open row stands apart from the
@@ -100,33 +100,34 @@ internal fun ChatListItem(
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
     // Built in the semantics blocks, so only when something reads the semantics tree.
     val resources = LocalResources.current
-    val leading = @Composable { ChatAvatar(item, title, selected, open) }
-    val timeOnPreviewLine = timeOnPreviewLine()
+    val compact = LocalChatSwipes.current.compact
+    val leading = @Composable { ChatAvatar(item, title, selected, open, compact) }
+    // Compact rows keep the time at the end: on their one line it would take the preview's place.
+    val timeOnPreviewLine = !compact && timeOnPreviewLine()
     val shownPreview = if (timeOnPreviewLine) remember(preview, item.time) { preview.after(item.time) } else preview
     // The row of docs/DESIGN_SYSTEM.md §13.3: the kind of chat before its name, the mute icon only while nothing is
     // unread, the time in `primary` while unread and not muted, the kind of message before its text.
     val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
-    val supporting = @Composable { RowSupporting(item, shownPreview, onTopicClick.takeIf { onClick != null }) }
-    val headline = @Composable { ChatRowTitle(item, title) }
+    // Compact, the preview follows the title on its one line (CompactRowHeadline).
+    val supporting =
+        if (compact) {
+            null
+        } else {
+            @Composable {
+                RowSupporting(item, shownPreview, onTopicClick.takeIf { onClick != null })
+            }
+        }
+    val headline =
+        @Composable { if (compact) CompactRowHeadline(item, title, shownPreview) else ChatRowTitle(item, title) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
     if (onClick != null) {
-        // A row being swiped covers what the swipe reveals from its first frame with its resting container, in the list
-        // item's selected shape (`large`): the list item's own container is transparent at rest and would fade in.
-        val draggedContainer =
-            if (dragged) {
-                val color = ListItemDefaults.colors().containerColor
-                val shape = ListItemDefaults.shapes().selectedShape
-                Modifier.drawBehind { drawOutline(shape.createOutline(size, layoutDirection, this), color) }
-            } else {
-                Modifier
-            }
         ListItem(
             onClick = onClick,
             modifier =
                 modifier
                     .padding(insets)
-                    .then(draggedContainer)
+                    .draggedContainer(dragged)
                     .semantics {
                         contentDescription = rowDescription(resources, item, title, preview.text)
                         if (open) this.selected = true
@@ -255,12 +256,13 @@ private fun ChatAvatar(
     title: String,
     selected: Boolean,
     open: Boolean,
+    compact: Boolean,
 ) {
     Avatar(
         photo = item.photo,
         name = title,
         id = item.id,
-        size = MaterialTheme.sizes.avatarRow,
+        size = if (compact) MaterialTheme.sizes.avatarSmall else MaterialTheme.sizes.avatarRow,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
         shape = item.avatarShape,

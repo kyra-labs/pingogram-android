@@ -209,7 +209,7 @@ Performance (the accepted results in #876's description, and the review):
 Features:
 - [ ] "Typing…" sent to the chat, with a setting to turn it off
 - [x] Incoming bubbles stand out in light theme
-- [ ] A compact chat list
+- [x] A compact chat list
 - [x] Drafts: every unsent draft on one page
 - [x] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
 - [x] Composer: silent sending by default, a confirmation before a bot command, undo and redo
