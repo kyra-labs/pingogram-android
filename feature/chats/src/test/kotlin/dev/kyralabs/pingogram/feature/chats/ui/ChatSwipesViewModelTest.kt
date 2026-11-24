@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatSwipesViewModelTest {
     private val settings = FakeChatListSettingsRepository()
+    private val compact = FakeCompactChatListRepository()
 
     @BeforeEach
     fun setUp() = Dispatchers.setMain(StandardTestDispatcher())
@@ -29,7 +31,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows the chosen swipes`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(ChatSwipes(SwipeAction.Read, SwipeAction.Archive), awaitItem())
 
                 settings.settings.value = ChatListSettings(startSwipe = SwipeAction.Pin, endSwipe = SwipeAction.None)
@@ -40,7 +42,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows whether swiping the list changes the folder`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(false, awaitItem().changesFolder)
 
                 settings.settings.value = ChatListSettings(swipeChangesFolder = true)
@@ -51,7 +53,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows whether the folder row starts with the Feed tab`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(true, awaitItem().feedTab)
 
                 settings.settings.value = ChatListSettings(showFeedTab = false)
@@ -60,9 +62,20 @@ class ChatSwipesViewModelTest {
         }
 
     @Test
+    fun `follows whether rows are compact`() =
+        runTest {
+            ChatSwipesViewModel(settings, compact).swipes.test {
+                assertEquals(false, awaitItem().compact)
+
+                compact.setEnabled(true)
+                assertEquals(ChatSwipes(compact = true), awaitItem())
+            }
+        }
+
+    @Test
     fun `follows whether the header offers Drafts`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(true, awaitItem().draftsButton)
 
                 settings.settings.value = ChatListSettings(showDraftsButton = false)
@@ -73,7 +86,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows whether the folder tabs show their unread counts`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(true, awaitItem().folderCounters)
 
                 settings.settings.value = ChatListSettings(showFolderTabCounters = false)
@@ -84,7 +97,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows whether the folder tabs end in Edit folders`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(true, awaitItem().editFoldersButton)
 
                 settings.settings.value = ChatListSettings(showEditFoldersButton = false)
@@ -95,7 +108,7 @@ class ChatSwipesViewModelTest {
     @Test
     fun `follows whether the rows show the kind of chat`() =
         runTest {
-            ChatSwipesViewModel(settings).swipes.test {
+            ChatSwipesViewModel(settings, compact).swipes.test {
                 assertEquals(true, awaitItem().chatTypeIcons)
 
                 settings.settings.value = ChatListSettings(showChatTypeIcons = false)

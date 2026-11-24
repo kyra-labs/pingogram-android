@@ -6,12 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.CompactChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.FolderTabStyle
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -25,7 +26,8 @@ import javax.inject.Inject
  * default), what the folder tabs show ([folderTabStyle], "Folder tabs", their names by default), whether the
  * Channel feed's tab starts them ([feedTab], "Show Feed tab", on by default), and whether they show their unread
  * counts ([folderCounters], "Unread counters", on by default), and whether the header offers Drafts ([draftsButton],
- * Settings → Chats → "Drafts button", on by default).
+ * Settings → Chats → "Drafts button", on by default), and whether rows are compact ([compact], Settings → Chats →
+ * "Compact chat list", off by default, `REQUIREMENTS.md` FR-X19).
  */
 @Immutable
 data class ChatSwipes(
@@ -38,6 +40,7 @@ data class ChatSwipes(
     val feedTab: Boolean = true,
     val folderCounters: Boolean = true,
     val draftsButton: Boolean = true,
+    val compact: Boolean = false,
 )
 
 /**
@@ -46,28 +49,32 @@ data class ChatSwipes(
  */
 internal val LocalChatSwipes = staticCompositionLocalOf { ChatSwipes() }
 
-/** The chat list's swipes, read from the device's settings ([ChatListSettingsRepository]) for its route to pass on. */
+/**
+ * The chat list's swipes, read from the device's settings ([ChatListSettingsRepository], and whether rows are compact
+ * from [CompactChatListRepository]) for its route to pass on.
+ */
 @HiltViewModel
 class ChatSwipesViewModel
     @Inject
     constructor(
         repository: ChatListSettingsRepository,
+        compactRepository: CompactChatListRepository,
     ) : ViewModel() {
         val swipes: StateFlow<ChatSwipes> =
-            repository.settings
-                .map {
-                    ChatSwipes(
-                        start = it.startSwipe,
-                        end = it.endSwipe,
-                        changesFolder = it.swipeChangesFolder,
-                        editFoldersButton = it.showEditFoldersButton,
-                        chatTypeIcons = it.showChatTypeIcons,
-                        folderTabStyle = it.folderTabStyle,
-                        feedTab = it.showFeedTab,
-                        folderCounters = it.showFolderTabCounters,
-                        draftsButton = it.showDraftsButton,
-                    )
-                }.distinctUntilChanged()
+            combine(repository.settings, compactRepository.enabled) { settings, compact ->
+                ChatSwipes(
+                    start = settings.startSwipe,
+                    end = settings.endSwipe,
+                    changesFolder = settings.swipeChangesFolder,
+                    editFoldersButton = settings.showEditFoldersButton,
+                    chatTypeIcons = settings.showChatTypeIcons,
+                    folderTabStyle = settings.folderTabStyle,
+                    feedTab = settings.showFeedTab,
+                    folderCounters = settings.showFolderTabCounters,
+                    draftsButton = settings.showDraftsButton,
+                    compact = compact,
+                )
+            }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())
 
         private companion object {

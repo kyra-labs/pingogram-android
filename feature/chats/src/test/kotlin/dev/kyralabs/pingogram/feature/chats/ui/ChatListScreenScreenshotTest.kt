@@ -117,6 +117,29 @@ class ChatListScreenScreenshotTest(
         )
     }
 
+    /**
+     * "Compact chat list" on (`REQUIREMENTS.md` FR-X19): smaller avatars on one-line rows, the preview after the name;
+     * the other goldens show it off, its default.
+     */
+    @Test
+    fun compactLight() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "compactLight", ChatSwipes(compact = true))
+    }
+
+    @Test
+    fun compactDark() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Dark, "compactDark", ChatSwipes(compact = true))
+    }
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun compactFontScale200() {
+        assumeTrue(stateName == "content")
+        capture(ScreenshotVariant.Light, "compactFontScale200", ChatSwipes(compact = true))
+    }
+
     /** The header's Catch-up chip after the status line, from five chats to catch up on (owner decision 2026-11-15). */
     @Test
     fun catchUpChip() {
