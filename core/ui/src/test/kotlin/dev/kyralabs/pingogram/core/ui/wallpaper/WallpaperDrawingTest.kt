@@ -41,7 +41,7 @@ class WallpaperDrawingTest {
     }
 
     @Test
-    fun `a blurred photo is shrunk to fit 450 pixels and loses its hard edges`() =
+    fun `a blurred photo is shrunk to fit 450 pixels, then as far as its blur allows, and loses its hard edges`() =
         runTest {
             // Black left half, white right half.
             val photo = Bitmap.createBitmap(1800, 900, Bitmap.Config.ARGB_8888)
@@ -52,10 +52,11 @@ class WallpaperDrawingTest {
 
             val blurred = WallpaperBlur.Photo.transform(photo, CoilSize.ORIGINAL)
 
-            assertEquals(450 to 225, blurred.width to blurred.height)
-            val edge = android.graphics.Color.red(blurred.getPixel(225, 112))
+            // 450 × 225, then halved: the photo's blur, 7.2 px there, is 3.6 px here.
+            assertEquals(225 to 113, blurred.width to blurred.height)
+            val edge = android.graphics.Color.red(blurred.getPixel(112, 56))
             assertTrue("the edge is gray, not a step: $edge", edge in 64..192)
-            assertEquals(0, android.graphics.Color.red(blurred.getPixel(10, 112)))
+            assertEquals(0, android.graphics.Color.red(blurred.getPixel(5, 56)))
         }
 
     private fun draw(fill: Wallpaper.Fill): ImageBitmap {

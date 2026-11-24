@@ -15,6 +15,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Folder tabs can leave out their unread counts: Settings → Chat folders → "Unread counters".
 
 ### Changed
+- Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer
+  waits for its turn to play; blurred wallpapers are made with a fraction of the work, and the media viewer decodes
+  photos at most 2048 px unless the screen shows them larger.
 - Someone going online or offline no longer makes an open chat, the contacts, profiles' members, the story viewer
   or the share sheet redo their work: they follow names and photos, and only the statuses they show.
 - In a chat, the quotes of the replied messages of a newly loaded page show together, in one redraw.
