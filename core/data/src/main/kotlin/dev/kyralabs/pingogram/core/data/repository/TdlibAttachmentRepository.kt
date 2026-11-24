@@ -67,6 +67,8 @@ class TdlibAttachmentRepository internal constructor(
     media: MediaProcessor,
     private val io: CoroutineDispatcher,
     private val scope: CoroutineScope,
+    // Null where options go as given; the app always has one.
+    private val sendDefaults: SendDefaults? = null,
 ) : AttachmentRepository {
     @Inject
     constructor(
@@ -75,7 +77,27 @@ class TdlibAttachmentRepository internal constructor(
         @ApplicationContext context: Context,
         @Dispatcher(IO) io: CoroutineDispatcher,
         @ApplicationScope scope: CoroutineScope,
-    ) : this(client, files, AndroidContentSource(context.contentResolver), AndroidMediaProcessor(), io, scope)
+        sendDefaults: SendDefaults,
+    ) : this(
+        client,
+        files,
+        AndroidContentSource(context.contentResolver),
+        AndroidMediaProcessor(),
+        io,
+        scope,
+        sendDefaults,
+    )
+
+    /** These options with their sound decided ([SendDefaults]). */
+    private suspend fun SendOptions.resolved(): SendOptions = sendDefaults?.resolve(this) ?: this
+
+    /** `sendMessage` of [content] to [chatId] with [options], their sound decided, replying as [replyTo] says. */
+    private suspend fun sendContent(
+        chatId: Long,
+        content: TdApi.InputMessageContent,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = client.sendMessage(chatId, content, options.resolved(), replyTo?.toInputMessageReplyTo())
 
     private val preparer = AttachmentPreparer(files, content, media)
 
@@ -134,7 +156,7 @@ class TdlibAttachmentRepository internal constructor(
         options: SendOptions,
         replyTo: ReplyTarget?,
     ): Outcome<Unit> {
-        val result = client.sendAttachments(chatId, attachments, caption, options, replyTo)
+        val result = client.sendAttachments(chatId, attachments, caption, options.resolved(), replyTo)
         result.failure?.let { failure ->
             discard(attachments.drop(result.sent))
             return failure
@@ -147,24 +169,21 @@ class TdlibAttachmentRepository internal constructor(
         contact: Contact,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> =
-        client.sendMessage(chatId, contact.toInputMessageContact(), options, replyTo?.toInputMessageReplyTo())
+    ): Outcome<Unit> = sendContent(chatId, contact.toInputMessageContact(), options, replyTo)
 
     override suspend fun sendLocation(
         chatId: Long,
         location: DeviceLocation,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> =
-        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyTo?.toInputMessageReplyTo())
+    ): Outcome<Unit> = sendContent(chatId, location.toInputMessageLocation(), options, replyTo)
 
     override suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> =
-        client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyTo?.toInputMessageReplyTo())
+    ): Outcome<Unit> = sendContent(chatId, sticker.toInputMessageSticker(), options, replyTo)
 
     override suspend fun sendGreetingSticker(
         chatId: Long,
@@ -193,14 +212,14 @@ class TdlibAttachmentRepository internal constructor(
         caption: FormattedText?,
         captionAbove: Boolean,
     ): Outcome<Unit> =
-        client.sendMessage(
+        sendContent(
             chatId,
             animation.toInputMessageAnimation(
                 caption?.takeIf { it.text.isNotBlank() }?.toTdFormattedText(),
                 captionAbove,
             ),
             options,
-            replyTo?.toInputMessageReplyTo(),
+            replyTo,
         )
 
     override suspend fun sendPoll(
@@ -208,15 +227,14 @@ class TdlibAttachmentRepository internal constructor(
         poll: NewPoll,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> = client.sendMessage(chatId, poll.toInputMessagePoll(), options, replyTo?.toInputMessageReplyTo())
+    ): Outcome<Unit> = sendContent(chatId, poll.toInputMessagePoll(), options, replyTo)
 
     override suspend fun sendChecklist(
         chatId: Long,
         checklist: NewChecklist,
         options: SendOptions,
         replyTo: ReplyTarget?,
-    ): Outcome<Unit> =
-        client.sendMessage(chatId, checklist.toInputMessageChecklist(), options, replyTo?.toInputMessageReplyTo())
+    ): Outcome<Unit> = sendContent(chatId, checklist.toInputMessageChecklist(), options, replyTo)
 
     /**
      * `editMessageMedia` of [attachment] with [caption], sent in the application [scope] and waited for without a

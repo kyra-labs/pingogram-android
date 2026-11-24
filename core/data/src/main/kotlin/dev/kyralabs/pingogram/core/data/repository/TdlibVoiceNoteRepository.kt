@@ -37,6 +37,8 @@ class TdlibVoiceNoteRepository internal constructor(
     private val cutter: VoiceNoteCutter,
     private val io: CoroutineDispatcher,
     private val scope: CoroutineScope,
+    // Null where options go as given; the app always has one.
+    private val sendDefaults: SendDefaults? = null,
 ) : VoiceNoteRepository {
     @Inject
     constructor(
@@ -44,7 +46,8 @@ class TdlibVoiceNoteRepository internal constructor(
         files: UploadFiles,
         @Dispatcher(IO) io: CoroutineDispatcher,
         @ApplicationScope scope: CoroutineScope,
-    ) : this(client, files, MediaVoiceNoteCutter, io, scope)
+        sendDefaults: SendDefaults,
+    ) : this(client, files, MediaVoiceNoteCutter, io, scope, sendDefaults)
 
     override suspend fun newVoiceNoteFile(extension: String): Outcome<String> =
         withContext(io) {
@@ -90,7 +93,8 @@ class TdlibVoiceNoteRepository internal constructor(
         replyTo: ReplyTarget?,
     ): Outcome<Unit> {
         val content = voiceNote.toInputMessageVoiceNote()
-        val result = client.sendMessage(chatId, content, options, replyTo?.toInputMessageReplyTo())
+        val resolved = sendDefaults?.resolve(options) ?: options
+        val result = client.sendMessage(chatId, content, resolved, replyTo?.toInputMessageReplyTo())
         if (result is Outcome.Failure) discardVoiceNote(voiceNote.path)
         return result
     }

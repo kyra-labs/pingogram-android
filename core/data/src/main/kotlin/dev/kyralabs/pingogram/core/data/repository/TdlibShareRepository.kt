@@ -49,6 +49,8 @@ class TdlibShareRepository internal constructor(
     private val io: CoroutineDispatcher,
     // Null where links go as written; the app always has one.
     private val outgoingLinks: OutgoingLinkCleaner? = null,
+    // Null where messages go with sound; the app always has one.
+    private val sendDefaults: SendDefaults? = null,
 ) : ShareRepository {
     @Inject
     constructor(
@@ -59,6 +61,7 @@ class TdlibShareRepository internal constructor(
         @ApplicationContext context: Context,
         @Dispatcher(IO) io: CoroutineDispatcher,
         outgoingLinks: OutgoingLinkCleaner,
+        sendDefaults: SendDefaults,
     ) : this(
         client,
         files,
@@ -68,6 +71,7 @@ class TdlibShareRepository internal constructor(
         linkPreviews,
         io,
         outgoingLinks,
+        sendDefaults,
     )
 
     private val preparer = AttachmentPreparer(files, content, media)
@@ -154,12 +158,13 @@ class TdlibShareRepository internal constructor(
         attachments: List<Attachment>,
         comment: FormattedText,
     ): Outcome.Failure? {
+        val options = sendDefaults?.resolve(SendOptions()) ?: SendOptions()
         if (comment.text.isNotBlank()) {
             (
                 client.sendMessage(
                     chatId,
                     textContent(chatId, comment),
-                    SendOptions(),
+                    options,
                     replyTo = null,
                 ) as? Outcome.Failure
             )?.let { return it }
@@ -169,15 +174,15 @@ class TdlibShareRepository internal constructor(
         return when {
             story != null -> {
                 val input = TdApi.InputMessageStory(story.posterChatId, story.storyId)
-                client.sendMessage(chatId, input, SendOptions(), replyTo = null) as? Outcome.Failure
+                client.sendMessage(chatId, input, options, replyTo = null) as? Outcome.Failure
             }
 
             attachments.isNotEmpty() -> {
-                client.sendAttachments(chatId, attachments, text, SendOptions(), replyTo = null).failure
+                client.sendAttachments(chatId, attachments, text, options, replyTo = null).failure
             }
 
             text.text.isNotBlank() -> {
-                client.sendMessage(chatId, textContent(chatId, text), SendOptions(), replyTo = null) as? Outcome.Failure
+                client.sendMessage(chatId, textContent(chatId, text), options, replyTo = null) as? Outcome.Failure
             }
 
             else -> {
