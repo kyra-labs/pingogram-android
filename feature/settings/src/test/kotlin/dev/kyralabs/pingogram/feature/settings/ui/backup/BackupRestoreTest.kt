@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
 import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
+import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
 import dev.kyralabs.pingogram.core.domain.model.Snippet
@@ -87,7 +88,7 @@ class BackupRestoreTest {
         }
 
     @Test
-    fun `a backup asks for its password, then shows what it holds for which account`() =
+    fun `a backup asks for its password, then shows what it holds for which account, birthday reminders counted`() =
         runTest {
             val viewModel = viewModel()
 
@@ -101,7 +102,7 @@ class BackupRestoreTest {
                     settings = true,
                     accounts =
                         persistentListOf(
-                            AccountSummary("Ada", bookmarks = 1, reminders = 0, keywordHits = 0, snippets = 1),
+                            AccountSummary("Ada", bookmarks = 1, reminders = 1, keywordHits = 0, snippets = 1),
                             AccountSummary(null, bookmarks = 0, reminders = 0, keywordHits = 0, snippets = 1),
                         ),
                 ),
@@ -217,6 +218,7 @@ class BackupRestoreTest {
                             ADA,
                             bookmarks = listOf(Bookmark(1, 2, savedAt = 3)),
                             snippets = listOf(Snippet(1, "a", "b")),
+                            birthdayReminders = listOf(BirthdayReminder(OTHER, 25, 11)),
                         ),
                         AccountBackup(OTHER, snippets = listOf(Snippet(1, "c", "d"))),
                     ),

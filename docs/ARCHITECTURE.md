@@ -2156,12 +2156,13 @@ its folder or its password.
 - **The sections**: `settings` holds the keys of `BackedUpSettings` (`core:datastore`'s
   `DataStoreSettingsBackupRepository`; `LeftOutSettings` names the others and why, and `SettingsBackupKeysTest` fails
   while a key of the settings file is in neither); `account`, per signed-in account of `AccountGraphs` (never the
-  demo) by Telegram user id, holds its bookmarks with their tags, reminders, keyword hits and snippets, without those
-  of locked or secret chats (`AccountJson.kt`).
+  demo) by Telegram user id, holds its bookmarks with their tags, reminders, keyword hits, snippets and birthday
+  reminders, without those of locked or secret chats (`AccountJson.kt`).
 - **Writing and restoring** (`BackupRepository`, `LocalBackupRepository`): restoring replaces the backed-up settings
   (the passcode stays) and merges each account section into the account with the same user id only, through its own
   repositories (`AccountRestore`: the newer bookmark wins, missing reminders come back, done once past, tags and
-  snippets match by name). Nothing is deleted and nothing reaches Telegram.
+  snippets match by name, a contact without a birthday reminder gets the backup's, which `BirthdayReminderAlarms`
+  schedules as it follows the repository). Nothing is deleted and nothing reaches Telegram.
 - **The folder** (`BackupFolderRepository`, `DocumentBackupFolderRepository` on `BackupDocuments`, the Storage Access
   Framework's `DocumentsContract`): the folder picked with `ACTION_OPEN_DOCUMENT_TREE`, its grant kept for good
   (`takePersistableUriPermission`) and its tree URI in `BackupSettingsRepository` (keys under `backup.`, never in a

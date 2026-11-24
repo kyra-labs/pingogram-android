@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
 import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
+import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
 import dev.kyralabs.pingogram.core.domain.model.Chat
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SettingsBackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.testing.FakeAccountGraphs
+import dev.kyralabs.pingogram.core.testing.FakeBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBookmarkRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordHitRepository
 import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
@@ -63,6 +65,7 @@ class LocalBackupRepositoryTest {
         val reminders = FakeReminderRepository()
         val hits = FakeKeywordHitRepository()
         val snippets = FakeSnippetRepository()
+        val birthdays = FakeBirthdayReminderRepository()
     }
 
     private val settings = FakeSettings(mapOf("appearance.theme_mode" to "Dark"))
@@ -98,6 +101,7 @@ class LocalBackupRepositoryTest {
             reminders.saved.value = listOf(MessageReminder(CHAT, 10, Instant.ofEpochSecond(PAST)))
             hits.hits.value = listOf(KeywordHit(CHAT, 13, "launch", date = 900), KeywordHit(SECRET_CHAT, 14, "x", 900))
             snippets.saved.value = listOf(Snippet(1, "addr", "1 Main St"))
+            birthdays.all.value = persistentListOf(BirthdayReminder(CHAT, 25, 11), BirthdayReminder(LOCKED_CHAT, 1, 1))
         }
 
     @Test
@@ -124,6 +128,7 @@ class LocalBackupRepositoryTest {
                             account.hits.hits.value
                                 .take(1),
                         snippets = account.snippets.saved.value,
+                        birthdayReminders = listOf(BirthdayReminder(CHAT, 25, 11)),
                     ),
                 ),
                 backup.accounts,
@@ -191,6 +196,7 @@ class LocalBackupRepositoryTest {
             phone.bookmarks.savedTags.value = listOf(BookmarkTag(id = 5, name = "work", color = 0))
             phone.bookmarks.saved.value = listOf(Bookmark(CHAT, 10, savedAt = 50, note = "older"))
             phone.snippets.saved.value = listOf(Snippet(3, "ADDR", "the phone's"))
+            phone.birthdays.all.value = persistentListOf(BirthdayReminder(OTHER_USER, 3, 3))
             settings.values = mapOf("appearance.theme_mode" to "Light", "passcode.hash" to "kept")
 
             val restored = repository(phone).restore(backup)
@@ -206,7 +212,28 @@ class LocalBackupRepositoryTest {
             )
             assertEquals(listOf(KeywordHit(CHAT, 13, "launch", date = 900)), phone.hits.hits.value)
             assertEquals(listOf(Snippet(3, "ADDR", "the phone's")), phone.snippets.saved.value)
+            assertEquals(
+                listOf(BirthdayReminder(OTHER_USER, 3, 3), BirthdayReminder(CHAT, 25, 11)),
+                phone.birthdays.all.value,
+            )
             assertEquals(mapOf("appearance.theme_mode" to "Dark"), settings.restored)
+        }
+
+    @Test
+    fun `a contact's birthday reminder on the phone stays as it is`() =
+        runTest {
+            val backup =
+                Backup(
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
+                    settings = null,
+                    accounts = listOf(AccountBackup(USER, birthdayReminders = listOf(BirthdayReminder(CHAT, 25, 11)))),
+                )
+            val phone = Account(USER)
+            phone.birthdays.all.value = persistentListOf(BirthdayReminder(CHAT, 26, 11))
+
+            repository(phone).restore(backup)
+
+            assertEquals(listOf(BirthdayReminder(CHAT, 26, 11)), phone.birthdays.all.value)
         }
 
     @Test
@@ -258,6 +285,10 @@ class LocalBackupRepositoryTest {
 
                 "snippetRepository" -> {
                     snippets
+                }
+
+                "birthdayReminderRepository" -> {
+                    birthdays
                 }
 
                 else -> {

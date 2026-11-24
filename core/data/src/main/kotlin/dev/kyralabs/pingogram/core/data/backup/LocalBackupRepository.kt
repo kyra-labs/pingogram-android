@@ -171,6 +171,13 @@ class LocalBackupRepository
                         .first()
                         .filter { kept(it.chatId) },
                 snippets = repositories.snippetRepository().snippets.first(),
+                // A private chat's id is its user's: a locked chat's contact keeps their reminder off the file.
+                birthdayReminders =
+                    repositories
+                        .birthdayReminderRepository()
+                        .reminders
+                        .first()
+                        .filter { it.userId !in locked },
             )
         }
 
