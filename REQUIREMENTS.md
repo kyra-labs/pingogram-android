@@ -304,6 +304,14 @@ decision 2026-11-23).
 - FR-X14 Should: **Save or unpin several messages** (owner decision 2026-11-23). The conversation's selection
   toolbar offers "Save to Downloads" where every selected message may be saved and has a file, and "Unpin" where every
   one is pinned; each acts on all of them and ends selection mode. No setting: they join the toolbar's other actions.
+- FR-X15 Should: **What a double tap does** (owner decision 2026-11-23). Settings → Chats → Messages →
+  "Double-tap to react": on others' messages and on the user's own, each React (the default), Reply or Nothing; the
+  switches saved before read as React or Nothing.
+- FR-X16 Should: **Drafts** (owner decision 2026-11-23). One page, opened from a button in the Chats tab's header,
+  listing every main or archived chat with a message the user started and has not sent, newest draft first, as the
+  chat list previews it (a draft that is only a reply is left out); a tap opens the chat with the draft in the message
+  box, and a draft sent or cleared there leaves the page. Settings → Chats → Chat list → "Drafts button", on by
+  default: off, the header has no Drafts button.
 
 ## 6. Non-functional requirements
 

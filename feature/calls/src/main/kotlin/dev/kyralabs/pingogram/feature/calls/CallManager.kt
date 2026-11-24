@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -511,18 +512,26 @@ class CallManager
         ) {
             call.connecting = true
             if (call.phase !is CallPhase.Connected) call.phase = CallPhase.Connecting
-            call.scope.launch {
+            // In the manager's scope, not the call's: the engine connects in native code that a cancelled call does
+            // not stop, and the session it opens (the microphone with it) must be closed if the call ended meanwhile.
+            scope.launch {
                 val session = engine.connect(callId, call.isOutgoing, connection)
-                val early =
+                val kept =
                     mutex.withLock {
                         if (live !== call || call.phase is CallPhase.Ended) {
-                            session.close()
-                            return@launch
+                            false
+                        } else {
+                            call.session = session
+                            earlySignaling.remove(callId)?.forEach { call.signaling.trySend(it) }
+                            true
                         }
-                        call.session = session
-                        earlySignaling.remove(callId).orEmpty()
                     }
-                for (data in early) session.receiveSignalingData(data)
+                if (!kept) {
+                    session.close()
+                    return@launch
+                }
+                // One by one, in the order they came: each the engine's next step.
+                call.scope.launch { for (data in call.signaling) session.receiveSignalingData(data) }
                 if (call.muted) session.setMuted(true)
                 // One collector each, so the engine gets the changes in order and the latest wins.
                 call.scope.launch { call.sinks.collect { session.setVideoSinks(it.local, it.remote) } }
@@ -632,7 +641,7 @@ class CallManager
             val call = live
             val session = call?.session
             if (session != null && call.callId == data.callId) {
-                call.scope.launch { session.receiveSignalingData(data.data()) }
+                call.signaling.trySend(data.data())
             } else if (data.callId !in seen || call?.callId == data.callId) {
                 // Before the engine of the call runs; a few packets at most.
                 val queue = earlySignaling.getOrPut(data.callId) { mutableListOf() }
@@ -867,6 +876,9 @@ class CallManager
             var videoOffered = false
             var system: SystemCall? = null
             var session: CallSession? = null
+
+            /** The other side's signaling data for [session], in the order it came: the engine takes it one by one. */
+            val signaling = Channel<ByteArray>(Channel.UNLIMITED)
 
             /** The user wants the camera on (it sends once the engine connects, and not while held). */
             var wantsCamera = false

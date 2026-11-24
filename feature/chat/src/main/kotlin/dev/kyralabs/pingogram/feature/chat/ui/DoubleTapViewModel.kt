@@ -5,6 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
@@ -15,21 +16,22 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 /**
- * What a double tap on a bubble adds: the account's quick reaction ([reaction], null while TDLib has not announced it),
- * on others' messages where [incoming] and on the user's own where [outgoing] (Settings → Appearance → Chats).
+ * What a double tap on a bubble does: on others' messages [incoming], on the user's own [outgoing] (Settings → Chats →
+ * Double-tap to react, `REQUIREMENTS.md` FR-X15), adding the account's quick reaction ([reaction], null while TDLib
+ * has not announced it) where that is React.
  */
 @Immutable
 data class DoubleTapReaction(
     val reaction: ReactionLabel?,
-    val incoming: Boolean,
-    val outgoing: Boolean,
+    val incoming: DoubleTapAction,
+    val outgoing: DoubleTapAction,
 ) {
-    /** The reaction a double tap adds to a message, outgoing or not; null where a double tap does nothing. */
-    fun on(isOutgoing: Boolean): ReactionLabel? = reaction?.takeIf { if (isOutgoing) outgoing else incoming }
+    /** What a double tap does on a message, outgoing or not. */
+    fun on(isOutgoing: Boolean): DoubleTapAction = if (isOutgoing) outgoing else incoming
 
     companion object {
         /** Where no conversation provides it (previews, other screens): double taps do nothing. */
-        val Off = DoubleTapReaction(reaction = null, incoming = false, outgoing = false)
+        val Off = DoubleTapReaction(reaction = null, DoubleTapAction.Nothing, DoubleTapAction.Nothing)
     }
 }
 

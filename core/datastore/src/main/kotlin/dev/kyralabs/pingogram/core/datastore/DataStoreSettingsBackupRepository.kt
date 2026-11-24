@@ -102,6 +102,8 @@ internal val BackedUpSettings: Set<String> =
         "calls.data_saving",
         "chat.double_tap.incoming",
         "chat.double_tap.outgoing",
+        "chat.double_tap.incoming_action",
+        "chat.double_tap.outgoing_action",
         "chat_list.archive_row",
         "chat_list.show_stories",
         "chat_list.swipe_start",

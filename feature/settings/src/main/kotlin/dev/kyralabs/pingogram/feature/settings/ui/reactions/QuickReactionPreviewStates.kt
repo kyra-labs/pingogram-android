@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui.reactions
 
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.DoubleTapReactions
 import kotlinx.collections.immutable.persistentListOf
 
@@ -32,7 +33,7 @@ internal object QuickReactionPreviewStates {
             reactions = reactions,
             chosen = "❤",
             isCustomEmoji = false,
-            doubleTap = DoubleTapReactions(incoming = true, outgoing = false),
+            doubleTap = DoubleTapReactions(incoming = DoubleTapAction.React, outgoing = DoubleTapAction.Reply),
         )
 
     val customEmoji = content.copy(chosen = null, isCustomEmoji = true, doubleTap = DoubleTapReactions())
