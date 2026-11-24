@@ -295,6 +295,9 @@ decision 2026-11-23).
   silently by default", off by default: on, messages sent from a chat (text, files and media, polls, checklists,
   locations, inline results, voice and round video messages) and from the share sheet go without a notification
   sound, and the send menus offer "Send with sound" in place of "Send without sound".
+- FR-X12 Should: **Confirm bot commands** (owner decision 2026-11-23). Settings → Chats → Messages → "Confirm bot
+  commands", off by default: on, a command picked from a bot's commands sheet or the suggestions above the composer
+  asks "Send /help?" first, kept across process death; a command typed and sent as text goes as before.
 
 ## 6. Non-functional requirements
 

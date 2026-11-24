@@ -144,6 +144,11 @@
     <string name="composer_send">Send</string>
     <string name="composer_send_silently">Send without sound</string>
     <string name="composer_send_with_sound">Send with sound</string>
+    <!-- The question before a bot command is sent (Settings → Chats → "Confirm bot commands"); %1$s is the command, "/help". -->
+    <string name="bot_command_confirm_title">Send %1$s?</string>
+    <string name="bot_command_confirm_body">The command goes to the chat as a message, and the bot answers it.</string>
+    <string name="bot_command_confirm_send">Send</string>
+    <string name="bot_command_confirm_cancel">Cancel</string>
     <!-- The button at the end of the empty message field that opens the system photo picker. -->
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->

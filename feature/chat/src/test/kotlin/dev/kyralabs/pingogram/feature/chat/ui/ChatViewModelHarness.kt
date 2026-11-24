@@ -200,6 +200,7 @@ abstract class ChatViewModelHarness {
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
                 videoNotes = VideoNoteRecording(camera, videoNotes, composerSettings),
+                confirmsBotCommands = composerSettings.confirmsBotCommands,
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,

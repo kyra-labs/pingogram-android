@@ -42,4 +42,10 @@ sealed interface BotEvent : ChatEvent {
 
     /** "Start" in an empty bot chat or after a start link: the bot is started, with the link's parameter if any. */
     data object Start : BotEvent
+
+    /** "Send" in the question before a command goes (`REQUIREMENTS.md` FR-X12): the command waiting is sent. */
+    data object ConfirmCommand : BotEvent
+
+    /** "Cancel", or the question dismissed: the command waiting is not sent. */
+    data object CancelCommand : BotEvent
 }
