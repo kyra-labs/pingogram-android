@@ -13,6 +13,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -111,14 +112,15 @@ class BubbleTapsTest {
     }
 
     @Test
-    fun `the quick reaction goes to the message on the sides the settings allow`() {
+    fun `the quick reaction goes to the message on the sides set to react`() {
         var incoming: (() -> Unit)? = null
         var outgoing: (() -> Unit)? = null
         var failed: (() -> Unit)? = null
         composeRule.setContent {
             val toggles = rememberReactionToggleState()
             CompositionLocalProvider(
-                LocalDoubleTapReaction provides DoubleTapReaction(HEART, incoming = true, outgoing = false),
+                LocalDoubleTapReaction provides
+                    DoubleTapReaction(HEART, incoming = DoubleTapAction.React, outgoing = DoubleTapAction.Nothing),
             ) {
                 incoming = rememberDoubleTapReaction(bubble(isOutgoing = false), toggles) { events += it }
                 outgoing = rememberDoubleTapReaction(bubble(isOutgoing = true), toggles) { events += it }
@@ -135,6 +137,27 @@ class BubbleTapsTest {
         assertEquals(listOf(ChatEvent.ToggleReaction(MESSAGE, HEART)), events)
         assertNull(outgoing)
         assertNull(failed)
+    }
+
+    @Test
+    fun `a side set to reply replies to the message, without the quick reaction`() {
+        var incoming: (() -> Unit)? = null
+        var outgoing: (() -> Unit)? = null
+        composeRule.setContent {
+            val toggles = rememberReactionToggleState()
+            CompositionLocalProvider(
+                LocalDoubleTapReaction provides
+                    DoubleTapReaction(reaction = null, DoubleTapAction.Reply, DoubleTapAction.Nothing),
+            ) {
+                incoming = rememberDoubleTapReaction(bubble(isOutgoing = false), toggles) { events += it }
+                outgoing = rememberDoubleTapReaction(bubble(isOutgoing = true), toggles) { events += it }
+            }
+        }
+
+        composeRule.runOnIdle { incoming!!.invoke() }
+
+        assertEquals(listOf<ChatEvent>(ChatEvent.Reply(MESSAGE)), events)
+        assertNull(outgoing)
     }
 
     @Test

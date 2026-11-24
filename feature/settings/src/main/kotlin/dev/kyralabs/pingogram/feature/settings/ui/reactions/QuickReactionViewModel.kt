@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.DoubleTapReactions
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
@@ -48,11 +49,11 @@ sealed interface QuickReactionEvent {
     ) : QuickReactionEvent
 
     data class SetIncoming(
-        val on: Boolean,
+        val action: DoubleTapAction,
     ) : QuickReactionEvent
 
     data class SetOutgoing(
-        val on: Boolean,
+        val action: DoubleTapAction,
     ) : QuickReactionEvent
 }
 
@@ -108,8 +109,8 @@ class QuickReactionViewModel
         fun onEvent(event: QuickReactionEvent) {
             when (event) {
                 is QuickReactionEvent.Choose -> choose(event.emoji)
-                is QuickReactionEvent.SetIncoming -> setDoubleTap { it.copy(incoming = event.on) }
-                is QuickReactionEvent.SetOutgoing -> setDoubleTap { it.copy(outgoing = event.on) }
+                is QuickReactionEvent.SetIncoming -> setDoubleTap { it.copy(incoming = event.action) }
+                is QuickReactionEvent.SetOutgoing -> setDoubleTap { it.copy(outgoing = event.action) }
             }
         }
 
