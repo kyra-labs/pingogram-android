@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.platform.testTag
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.StateCrossfade
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -75,6 +76,7 @@ internal fun ChatTitle(
     Column(
         modifier =
             Modifier
+                .testTag(CHAT_TITLE_TEST_TAG)
                 .titleClick(
                     when {
                         userId != null && onOpenProfile != null -> openLabel to { onOpenProfile(userId) }
@@ -301,3 +303,6 @@ private fun avatarTransformKey(
         openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
         else -> null
     }
+
+/** The conversation's title, which opens the profile, for the Baseline Profile's journeys. */
+internal const val CHAT_TITLE_TEST_TAG = "chat_title"
