@@ -325,8 +325,11 @@ private fun RowInputs.senderPrefix(
     }
 }
 
-/** The chat's draft unless it is only a reply, which the conversation's composer shows, not the chat list. */
-private val Chat.shownDraft: ChatDraft?
+/**
+ * The chat's draft unless it is only a reply, which the conversation's composer shows, not the chat list; also for
+ * the Drafts page.
+ */
+internal val Chat.shownDraft: ChatDraft?
     get() = draft?.takeUnless { (it.content as? DraftContent.Text)?.text?.text?.isEmpty() == true }
 
 /** When the [preview]ed message was sent: a newer draft's time while the draft shows. */

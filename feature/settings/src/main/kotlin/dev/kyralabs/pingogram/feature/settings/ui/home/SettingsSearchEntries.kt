@@ -30,6 +30,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
         setting(SettingsPage.Chats, R.string.settings_send_silently),
         setting(SettingsPage.Chats, R.string.settings_confirm_bot_commands),
         setting(SettingsPage.Chats, R.string.settings_undo_redo),
+        setting(SettingsPage.Chats, R.string.settings_drafts_button),
     )
 }
 

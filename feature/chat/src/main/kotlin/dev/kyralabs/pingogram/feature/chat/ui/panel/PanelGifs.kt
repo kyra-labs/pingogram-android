@@ -59,7 +59,7 @@ internal class PanelGifs(
                     ->
                     when (gifs) {
                         is Outcome.Failure -> GifTab.Error(gifs.error)
-                        is Outcome.Success -> GifTab.Content(gifs.value.toImmutableList(), canSearch, search)
+                        is Outcome.Success -> GifTab.Content(gifs.value.uniqueGifs(), canSearch, search)
                     }
                 }.onStart { emit(GifTab.Loading) }
             }
@@ -122,7 +122,7 @@ internal class PanelGifs(
                     nextOffset = found.value.nextOffset
                     val gifs = found.value.results.mapNotNull { (it as? InlineResult.Animation)?.animation }
                     current.copy(
-                        results = (if (offset.isEmpty()) gifs else current.results + gifs).toImmutableList(),
+                        results = (if (offset.isEmpty()) gifs else current.results + gifs).uniqueGifs(),
                         isLoading = false,
                         error = null,
                         hasMore = found.value.nextOffset.isNotEmpty(),
@@ -157,3 +157,9 @@ internal class PanelGifs(
         const val SEARCH_DELAY_MILLIS = 400L
     }
 }
+
+/**
+ * These GIFs, each once: the grid keys its cells by file, and a search bot's pages (or a saved list) can repeat a GIF,
+ * which would be the same key twice.
+ */
+private fun List<Animation>.uniqueGifs() = distinctBy { it.file.id }.toImmutableList()

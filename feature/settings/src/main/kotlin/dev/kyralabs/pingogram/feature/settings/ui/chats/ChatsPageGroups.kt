@@ -139,6 +139,7 @@ internal fun VoiceMessagesGroup(
 @Composable
 internal fun ChatListBehaviorGroup(
     chatList: ChatListSettings,
+    onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
@@ -153,6 +154,15 @@ internal fun ChatListBehaviorGroup(
         }
         item { shapes ->
             PageRow(R.string.shown_first_title, R.string.shown_first_summary, shapes, pages.onOpenShownFirst)
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_drafts_button),
+                summary = stringResource(R.string.settings_drafts_button_summary),
+                checked = chatList.showDraftsButton,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetShowDraftsButton(it)) },
+            )
         }
     }
 }

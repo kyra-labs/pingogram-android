@@ -115,6 +115,7 @@ internal val BackedUpSettings: Set<String> =
         "chat_list.catch_up_includes_muted",
         "chat_list.feed_tab",
         "chat_list.folder_tab_counters",
+        "chat_list.drafts_button",
         "composer.enter_sends_hardware",
         "composer.enter_sends_on_screen",
         "composer.send_with_ctrl_enter",
