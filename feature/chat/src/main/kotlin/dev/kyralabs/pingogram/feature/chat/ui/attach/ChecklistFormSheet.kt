@@ -171,7 +171,7 @@ internal fun ColumnScope.ChecklistForm(
                     SendButton(
                         canSchedule = sheet.canSchedule,
                         onSend = { onSend(SendOptions()) },
-                        onSendSilently = { onSend(SendOptions(silent = true)) },
+                        onSendSound = { onSend(SendOptions(silent = it)) },
                         onSchedule = onSchedule,
                         enabled = canSend,
                     )

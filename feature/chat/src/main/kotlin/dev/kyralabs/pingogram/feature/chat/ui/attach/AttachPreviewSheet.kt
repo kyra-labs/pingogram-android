@@ -328,7 +328,7 @@ private fun CaptionRow(
         SendButton(
             canSchedule = preview.canSchedule,
             onSend = { onSend(SendOptions()) },
-            onSendSilently = { onSend(SendOptions(silent = true)) },
+            onSendSound = { onSend(SendOptions(silent = it)) },
             onSchedule = onSchedule,
             enabled = preview.isReady,
         )

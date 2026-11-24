@@ -141,9 +141,7 @@ internal fun InlineResultsPanel(
             InlineSendActions(
                 canSchedule = canSchedule,
                 onSend = { entry, silent ->
-                    // A plain tap leaves the sound to "Send silently by default" (FR-X11).
-                    val options = SendOptions(silent = true.takeIf { silent })
-                    onEvent(InlineBotEvent.Send(entry.queryId, entry.result.id, options))
+                    onEvent(InlineBotEvent.Send(entry.queryId, entry.result.id, SendOptions(silent = silent)))
                 },
                 onSchedule = { scheduling = it },
             )

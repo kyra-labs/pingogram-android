@@ -268,7 +268,7 @@ private fun LocatingStep(
             SendButton(
                 canSchedule = canSchedule,
                 onSend = { onSend(location, SendOptions()) },
-                onSendSilently = { onSend(location, SendOptions(silent = true)) },
+                onSendSound = { onSend(location, SendOptions(silent = it)) },
                 onSchedule = onSchedule,
             )
         }

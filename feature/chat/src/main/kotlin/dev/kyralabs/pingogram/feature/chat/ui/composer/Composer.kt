@@ -409,7 +409,7 @@ private fun RowScope.ComposerAction(
                 SendButton(
                     canSchedule = composer.canSchedule,
                     onSend = { send(SendOptions()) },
-                    onSendSilently = { send(SendOptions(silent = true)) },
+                    onSendSound = { send(SendOptions(silent = it)) },
                     onSchedule = onSchedule,
                     onSuggestPost =
                         if (composer.canSuggestPost) {
