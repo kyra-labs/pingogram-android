@@ -72,10 +72,11 @@ class ComposerTest {
         text: ComposerText = ComposerText(),
         composer: ComposerUiState = ComposerUiState.Available(canSchedule = true),
         sendKeys: SendKeys = SendKeys(),
+        sendsSilently: Boolean = false,
     ): ComposerText {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalSendKeys provides sendKeys) {
+                CompositionLocalProvider(LocalSendKeys provides sendKeys, LocalSendsSilently provides sendsSilently) {
                     ChatBottomBar(
                         composer,
                         text,
@@ -211,6 +212,20 @@ class ComposerTest {
         clickText(R.string.composer_send_silently)
 
         assertEquals(listOf(SendOptions(silent = true)), sent)
+    }
+
+    @Test
+    fun `a tap leaves the sound to the default, which the send menu offers to override with sound`() {
+        setComposer(sendsSilently = true)
+        field().performTextInput("Shh")
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performClick()
+        field().performTextInput("Hey!")
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
+        composeRule.onNodeWithText(string(R.string.composer_send_silently)).assertDoesNotExist()
+        clickText(R.string.composer_send_with_sound)
+
+        assertEquals(listOf(SendOptions(), SendOptions(silent = false)), sent)
     }
 
     @Test

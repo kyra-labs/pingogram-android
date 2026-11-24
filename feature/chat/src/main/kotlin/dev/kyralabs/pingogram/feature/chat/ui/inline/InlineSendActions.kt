@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendOptionsMenu
+import dev.kyralabs.pingogram.feature.chat.ui.composer.soundChoice
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaLabel
 import dev.kyralabs.pingogram.feature.chat.ui.content.MinithumbnailPlaceholder
 import dev.kyralabs.pingogram.feature.chat.ui.content.StickerImage
@@ -65,14 +66,15 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.selectPhotoSize
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * How a result is sent: a tap sends it now ([onSend]); a long press (a `LongPress` haptic) opens the composer's send
- * menu, "Send without sound" and, where [canSchedule], "Schedule message" ([onSchedule], which asks for the time).
+ * How a result is sent: a tap sends it now ([onSend], its sound left to the default: null); a long press (a
+ * `LongPress` haptic) opens the composer's send menu, "Send without sound" or "Send with sound" ([soundChoice]) and,
+ * where [canSchedule], "Schedule message" ([onSchedule], which asks for the time).
  * Screen readers get both as custom actions.
  */
 @Immutable
 internal class InlineSendActions(
     val canSchedule: Boolean,
-    val onSend: (InlineResultEntry, silent: Boolean) -> Unit,
+    val onSend: (InlineResultEntry, silent: Boolean?) -> Unit,
     val onSchedule: (InlineResultEntry) -> Unit,
 )
 
@@ -93,11 +95,12 @@ internal fun InlineResultTarget(
     val kind = stringResource(entry.result.kindLabel())
     val title = entry.result.spokenTitle()
     val sendLabel = stringResource(R.string.inline_result_send)
-    val silentLabel = stringResource(R.string.composer_send_silently)
+    val sound = soundChoice()
+    val soundLabel = stringResource(sound.label)
     val scheduleLabel = stringResource(R.string.composer_schedule)
     val send = {
         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-        actions.onSend(entry, false)
+        actions.onSend(entry, null)
     }
     Box(
         modifier
@@ -117,8 +120,8 @@ internal fun InlineResultTarget(
                 }
                 customActions =
                     listOfNotNull(
-                        CustomAccessibilityAction(silentLabel) {
-                            actions.onSend(entry, true)
+                        CustomAccessibilityAction(soundLabel) {
+                            actions.onSend(entry, sound.silent)
                             true
                         },
                         if (actions.canSchedule) {
@@ -137,7 +140,7 @@ internal fun InlineResultTarget(
             expanded = menuOpen,
             canSchedule = actions.canSchedule,
             onDismiss = { menuOpen = false },
-            onSendSilently = { actions.onSend(entry, true) },
+            onSendSound = { actions.onSend(entry, it) },
             onSchedule = { actions.onSchedule(entry) },
         )
     }

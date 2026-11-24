@@ -43,22 +43,23 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The send button, the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`, `primary`,
  * `docs/DESIGN_SYSTEM.md` §6 Composer): a tap sends, a long press (with its haptic) opens the menu of other
- * ways to send below it (without sound; at a time, where [canSchedule]; as a post suggested to a channel, where
- * [onSuggestPost] is given), which screen readers reach as the button's custom actions. Its shape morphs while pressed.
+ * ways to send below it (without sound, or with sound while messages go silently by default, [onSendSound]; at a
+ * time, where [canSchedule]; as a post suggested to a channel, where [onSuggestPost] is given), which screen readers
+ * reach as the button's custom actions. Its shape morphs while pressed.
  * Not [enabled], it is disabled, e.g. while picked files are being prepared.
  */
 @Composable
 internal fun SendButton(
     canSchedule: Boolean,
     onSend: () -> Unit,
-    onSendSilently: () -> Unit,
+    onSendSound: (silent: Boolean) -> Unit,
     onSchedule: () -> Unit,
     enabled: Boolean = true,
     onSuggestPost: (() -> Unit)? = null,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
-    val actions = sendActions(canSchedule, onSendSilently, onSchedule, onSuggestPost)
+    val actions = sendActions(canSchedule, onSendSound, onSchedule, onSuggestPost)
     // The same lambda across recompositions, so the long-press gesture is not restarted.
     val openMenu =
         remember(haptics) {
@@ -90,7 +91,7 @@ internal fun SendButton(
             expanded = menuOpen,
             canSchedule = canSchedule,
             onDismiss = { menuOpen = false },
-            onSendSilently = onSendSilently,
+            onSendSound = onSendSound,
             onSchedule = onSchedule,
             onSuggestPost = onSuggestPost,
         )
@@ -101,10 +102,12 @@ internal fun SendButton(
 @Composable
 private fun sendActions(
     canSchedule: Boolean,
-    onSendSilently: () -> Unit,
+    onSendSound: (silent: Boolean) -> Unit,
     onSchedule: () -> Unit,
     onSuggestPost: (() -> Unit)?,
 ): List<CustomAccessibilityAction> {
+    val sound = soundChoice()
+
     fun action(
         label: String,
         onClick: () -> Unit,
@@ -113,7 +116,7 @@ private fun sendActions(
         true
     }
     return listOfNotNull(
-        action(stringResource(R.string.composer_send_silently), onSendSilently),
+        action(stringResource(sound.label)) { onSendSound(sound.silent) },
         if (canSchedule) action(stringResource(R.string.composer_schedule), onSchedule) else null,
         onSuggestPost?.let { action(stringResource(R.string.composer_suggest_post), it) },
     )
@@ -205,26 +208,28 @@ internal fun SaveEditButton(onSave: () -> Unit) {
 }
 
 /**
- * The other ways to send, under the send button (and an inline bot's result): without sound, at a time where
- * [canSchedule], and as a post suggested to a channel where [onSuggestPost] is given.
+ * The other ways to send, under the send button (and an inline bot's result): without sound, or with sound while
+ * messages go silently by default ([soundChoice], [onSendSound]), at a time where [canSchedule], and as a post
+ * suggested to a channel where [onSuggestPost] is given.
  */
 @Composable
 internal fun SendOptionsMenu(
     expanded: Boolean,
     canSchedule: Boolean,
     onDismiss: () -> Unit,
-    onSendSilently: () -> Unit,
+    onSendSound: (silent: Boolean) -> Unit,
     onSchedule: () -> Unit,
     onSuggestPost: (() -> Unit)? = null,
 ) {
+    val sound = soundChoice()
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.composer_send_silently)) },
+            text = { Text(stringResource(sound.label)) },
             onClick = {
                 onDismiss()
-                onSendSilently()
+                onSendSound(sound.silent)
             },
-            leadingIcon = { Icon(painterResource(UiR.drawable.ic_notifications_off), null) },
+            leadingIcon = { Icon(painterResource(sound.icon), null) },
         )
         if (canSchedule) {
             DropdownMenuItem(

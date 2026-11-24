@@ -13,6 +13,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Add contact has a "Share my phone number" switch, off unless you turn on "Share my phone number with new
   contacts" in Settings → Privacy and security → Contacts; the chat bar's "Add contact" follows that setting.
 - Folder tabs can leave out their unread counts: Settings → Chat folders → "Unread counters".
+- Send silently by default: Settings → Chats → Messages; touch and hold Send to send one with sound.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer

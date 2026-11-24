@@ -291,6 +291,10 @@ decision 2026-11-23).
 - FR-X10 Should: **Folder tabs without unread counters** (owner decision 2026-11-23). Settings → Chat folders →
   Folder tabs → "Unread counters", on by default: off, the folder tabs show no unread counts, whatever they show
   (names, icons and names, or icons), and screen readers hear their names alone.
+- FR-X11 Should: **Send silently by default** (owner decision 2026-11-23). Settings → Chats → Messages → "Send
+  silently by default", off by default: on, messages sent from a chat (text, files and media, polls, checklists,
+  locations, inline results, voice and round video messages) and from the share sheet go without a notification
+  sound, and the send menus offer "Send with sound" in place of "Send without sound".
 
 ## 6. Non-functional requirements
 

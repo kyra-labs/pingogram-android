@@ -143,6 +143,7 @@
     <string name="composer_placeholder">Message</string>
     <string name="composer_send">Send</string>
     <string name="composer_send_silently">Send without sound</string>
+    <string name="composer_send_with_sound">Send with sound</string>
     <!-- The button at the end of the empty message field that opens the system photo picker. -->
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->
