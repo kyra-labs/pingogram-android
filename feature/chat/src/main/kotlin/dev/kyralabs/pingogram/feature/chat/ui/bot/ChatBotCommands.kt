@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
@@ -57,8 +58,10 @@ import kotlinx.coroutines.launch
  *   command being typed ([commandQuery]), and does not edit, the commands it starts.
  * - **Sending** ([BotEvent.SendCommand]): the command goes out as a text message through [messages] (the topic's, in a
  *   topic), replying where the composer replies ([ChatComposer.takeReply], given back if it is refused); a command
- *   being typed in the field goes with it. Telegram finds the command in the text itself. **Inserting**
- *   ([BotEvent.InsertCommand]) puts it into the field with a space, for its arguments, and focuses the field.
+ *   being typed in the field goes with it. Telegram finds the command in the text itself. While "Confirm bot
+ *   commands" is on (FR-X12) it waits in [commandToConfirm], kept across process death, until
+ *   [BotEvent.ConfirmCommand] or [BotEvent.CancelCommand]. **Inserting** ([BotEvent.InsertCommand]) puts it into the
+ *   field with a space, for its arguments, and focuses the field.
  * - **Start** ([BotEvent.Start]): a private chat with a bot whose history is empty (no last message), or that a start
  *   link opened ([BotStartInbox], its parameter kept in [savedState] across process death), shows "Start" in the
  *   composer's place ([withBots]); a tap sends `sendBotStartMessage`, once at a time, with the parameter. Never by
@@ -80,7 +83,13 @@ internal class ChatBotCommands(
     private val scope: CoroutineScope,
     private val onEffect: (ChatEffect) -> Unit,
     private val log: ChatLog,
+    confirmsCommands: Flow<Boolean> = flowOf(false),
 ) {
+    private val confirms = confirmsCommands.stateIn(scope, SharingStarted.Eagerly, false)
+
+    /** The command waiting for "Send" in its question; null while none is. */
+    val commandToConfirm: StateFlow<String?> = savedState.getStateFlow(KEY_COMMAND_TO_CONFIRM, null)
+
     private val chatBots: SharedFlow<ChatBots> =
         sources.bots
             .chatBots(chatId)
@@ -206,14 +215,53 @@ internal class ChatBotCommands(
 
     fun onEvent(event: BotEvent) {
         when (event) {
-            BotEvent.OpenMenu -> openMenu()
-            BotEvent.DismissCommands -> closeSheets()
-            BotEvent.OpenSnippets -> snippetSheetOpen.value = true
-            is BotEvent.PickSnippet -> pickSnippet(event.id)
-            is BotEvent.SendCommand -> send(event.text)
-            is BotEvent.InsertCommand -> insert(event.text)
-            is BotEvent.InsertSnippet -> insertSnippet(event.id)
-            BotEvent.Start -> startBot()
+            BotEvent.OpenMenu -> {
+                openMenu()
+            }
+
+            BotEvent.DismissCommands -> {
+                closeSheets()
+            }
+
+            BotEvent.OpenSnippets -> {
+                snippetSheetOpen.value = true
+            }
+
+            is BotEvent.PickSnippet -> {
+                pickSnippet(event.id)
+            }
+
+            is BotEvent.SendCommand -> {
+                if (confirms.value) {
+                    sheetOpen.value = false
+                    savedState[KEY_COMMAND_TO_CONFIRM] = event.text
+                } else {
+                    send(event.text)
+                }
+            }
+
+            BotEvent.ConfirmCommand -> {
+                savedState.get<String>(KEY_COMMAND_TO_CONFIRM)?.let { command ->
+                    savedState[KEY_COMMAND_TO_CONFIRM] = null
+                    send(command)
+                }
+            }
+
+            BotEvent.CancelCommand -> {
+                savedState[KEY_COMMAND_TO_CONFIRM] = null
+            }
+
+            is BotEvent.InsertCommand -> {
+                insert(event.text)
+            }
+
+            is BotEvent.InsertSnippet -> {
+                insertSnippet(event.id)
+            }
+
+            BotEvent.Start -> {
+                startBot()
+            }
         }
     }
 
@@ -300,6 +348,9 @@ internal class ChatBotCommands(
     internal companion object {
         /** The start parameter of a link to this bot, until "Start" sent it. */
         const val KEY_START_PARAMETER = "chat.botStartParameter"
+
+        /** The command waiting for "Send" in its question. */
+        const val KEY_COMMAND_TO_CONFIRM = "chat.botCommandToConfirm"
 
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }

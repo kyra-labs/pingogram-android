@@ -387,6 +387,7 @@ class ChatViewModel internal constructor(
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
+    confirmsBotCommands: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
     private val appInfo: AppInfo = AppInfo(versionName = ""),
@@ -487,6 +488,7 @@ class ChatViewModel internal constructor(
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
+        confirmsBotCommands = composerSettings.confirmsBotCommands,
         targetPreferences = targetPreferences,
         cleanupScope = applicationScope,
         appInfo = appInfo,
@@ -722,10 +724,14 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
             log = log,
+            confirmsCommands = confirmsBotCommands,
         )
 
     /** The bots' commands sheet; null while it is closed. Kept out of [uiState], like the forward sheet. */
     val botCommandsSheet: StateFlow<BotCommandsSheet?> get() = bots.sheet
+
+    /** The bot command waiting for "Send" in its question (FR-X12); null while none is. Kept out of [uiState]. */
+    val botCommandToConfirm: StateFlow<String?> get() = bots.commandToConfirm
 
     /** The commands suggested above the composer while one is typed; null while none is. Kept out of [uiState]. */
     val commandSuggestions: StateFlow<CommandSuggestions?> get() = bots.suggestions
