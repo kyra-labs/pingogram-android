@@ -161,6 +161,21 @@ class DataStoreComposerSettingsRepositoryTest {
         }
 
     @Test
+    fun `undo and redo show until they are turned off, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStoreComposerSettingsRepository(dataStore(firstProcess))
+            assertEquals(true, first.showsUndoRedo.first())
+
+            assertEquals(Outcome.Success(Unit), first.setShowsUndoRedo(false))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStoreComposerSettingsRepository(dataStore())
+            assertEquals(false, again.showsUndoRedo.first())
+            assertEquals(false, again.confirmsBotCommands.first())
+        }
+
+    @Test
     fun `a record mode that cannot be read is voice, and saving it fails`() =
         runTest {
             val repository = DataStoreComposerSettingsRepository(FailingDataStore())

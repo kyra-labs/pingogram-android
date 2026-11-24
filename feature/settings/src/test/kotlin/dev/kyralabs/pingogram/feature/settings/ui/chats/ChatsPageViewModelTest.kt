@@ -150,6 +150,33 @@ class ChatsPageViewModelTest {
         }
 
     @Test
+    fun `undo and redo show at first, and turning them off saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.showsUndoRedo)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(false))
+            assertFalse(viewModel.content.showsUndoRedo)
+            assertFalse(composerSettings.undo.value)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(true))
+            assertTrue(viewModel.content.showsUndoRedo)
+        }
+
+    @Test
+    fun `undo and redo that cannot be saved stay on, with a snackbar`() =
+        runTest {
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatsPageEvent.SetShowsUndoRedo(false))
+
+            assertTrue(viewModel.content.showsUndoRedo)
+            assertTrue(effects.single() is ChatsPageEffect.ShowError)
+        }
+
+    @Test
     fun `raise to listen is on at first, and the split row's switch saves and shows`() =
         runTest {
             val viewModel = viewModel()

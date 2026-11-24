@@ -120,6 +120,7 @@ internal val BackedUpSettings: Set<String> =
         "composer.records_video_messages",
         "composer.send_silently",
         "composer.confirm_bot_commands",
+        "composer.undo_redo",
         "composer.recent_emoji",
         "contacts.share_phone_number",
         "focus.profiles",

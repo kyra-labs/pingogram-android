@@ -28,6 +28,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
         setting(SettingsPage.ChatFolders, R.string.settings_folder_tab_counters),
         setting(SettingsPage.Chats, R.string.settings_send_silently),
         setting(SettingsPage.Chats, R.string.settings_confirm_bot_commands),
+        setting(SettingsPage.Chats, R.string.settings_undo_redo),
     )
 }
 

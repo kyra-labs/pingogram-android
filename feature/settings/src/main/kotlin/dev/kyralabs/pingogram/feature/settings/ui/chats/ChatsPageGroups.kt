@@ -17,8 +17,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 
 /**
  * "Messages": the rows of Double-tap to react and of Snippets ([pages]), which Enter sends on a keyboard and on
- * the screen keyboard, whether messages go without sound unless chosen (`REQUIREMENTS.md` FR-X11), and whether a bot
- * command asks before it goes (FR-X12).
+ * the screen keyboard, whether messages go without sound unless chosen (`REQUIREMENTS.md` FR-X11), whether a bot
+ * command asks before it goes (FR-X12), and whether the message box's menu offers Undo and Redo (FR-X13).
  */
 @Composable
 internal fun MessagesGroup(
@@ -65,6 +65,15 @@ internal fun MessagesGroup(
                 checked = state.confirmsBotCommands,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetConfirmsBotCommands(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_undo_redo),
+                summary = stringResource(R.string.settings_undo_redo_summary),
+                checked = state.showsUndoRedo,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetShowsUndoRedo(it)) },
             )
         }
     }

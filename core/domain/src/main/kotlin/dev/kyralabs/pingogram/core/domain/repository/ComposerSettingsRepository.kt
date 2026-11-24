@@ -51,4 +51,13 @@ interface ComposerSettingsRepository {
 
     /** Saves [confirmsBotCommands]; fails with `DomainError.Unknown` if it cannot be written. */
     suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Whether the message box's menu offers Undo and Redo (`REQUIREMENTS.md` FR-X13, Settings → Chats → Messages),
+     * then every change; a keyboard's Ctrl+Z works either way. On when unreadable.
+     */
+    val showsUndoRedo: Flow<Boolean>
+
+    /** Saves [showsUndoRedo]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setShowsUndoRedo(enabled: Boolean): Outcome<Unit>
 }

@@ -19,8 +19,8 @@ import org.robolectric.annotation.Config
 
 /**
  * The Chats page (owner decision 2026-11-19): its defaults, the settings changed (raise to listen off, so "Pause when
- * lowered" is gone; send silently by default and confirm bot commands on, FR-X11 and FR-X12, light and dark),
- * loading, 200% font scale, and the audit's variants (`docs/DESIGN_SYSTEM.md` §12).
+ * lowered" is gone; send silently by default and confirm bot commands on and undo and redo off, FR-X11 to FR-X13,
+ * light and dark), loading, 200% font scale, and the audit's variants (`docs/DESIGN_SYSTEM.md` §12).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -72,6 +72,7 @@ class ChatsPageScreenshotTest {
             skipSilence = true,
             sendsSilently = true,
             confirmsBotCommands = true,
+            showsUndoRedo = false,
         )
 
     private fun captureAudit(variant: ScreenshotVariant) =

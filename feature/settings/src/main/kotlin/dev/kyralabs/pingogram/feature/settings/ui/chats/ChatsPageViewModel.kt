@@ -34,10 +34,10 @@ sealed interface ChatsPageUiState {
     /**
      * Which Enter sends the composer's messages ([sendKeys]), whether they go without sound unless chosen
      * ([sendsSilently], `REQUIREMENTS.md` FR-X11), whether a bot command asks before it goes ([confirmsBotCommands],
-     * FR-X12), how voice messages play at the ear ([raiseToListen]),
-     * whether they skip their silences ([skipSilence]), the chat list's swipes, which the Swipe actions row sums up
-     * ([chatList]), and whether voice messages are transcribed as they show ([transcribeAutomatically]; null where
-     * the phone cannot transcribe).
+     * FR-X12), whether the message box's menu offers Undo and Redo ([showsUndoRedo], FR-X13), how voice messages
+     * play at the ear ([raiseToListen]), whether they skip their silences ([skipSilence]), the chat list's swipes,
+     * which the Swipe actions row sums up ([chatList]), and whether voice messages are transcribed as they show
+     * ([transcribeAutomatically]; null where the phone cannot transcribe).
      */
     data class Content(
         val sendKeys: SendKeys = SendKeys(),
@@ -47,6 +47,7 @@ sealed interface ChatsPageUiState {
         val transcribeAutomatically: Boolean? = null,
         val sendsSilently: Boolean = false,
         val confirmsBotCommands: Boolean = false,
+        val showsUndoRedo: Boolean = true,
     ) : ChatsPageUiState
 }
 
@@ -64,6 +65,11 @@ sealed interface ChatsPageEvent {
 
     /** "Confirm bot commands" turned on or off. */
     data class SetConfirmsBotCommands(
+        val enabled: Boolean,
+    ) : ChatsPageEvent
+
+    /** "Undo and redo" turned on or off. */
+    data class SetShowsUndoRedo(
         val enabled: Boolean,
     ) : ChatsPageEvent
 
@@ -120,6 +126,7 @@ class ChatsPageViewModel
                     composerSettingsRepository.sendKeys,
                     composerSettingsRepository.sendsSilently,
                     composerSettingsRepository.confirmsBotCommands,
+                    composerSettingsRepository.showsUndoRedo,
                     ::ComposerChoices,
                 ),
                 playbackSettingsRepository.raiseToListen,
@@ -136,6 +143,7 @@ class ChatsPageViewModel
                     automatic,
                     composer.sendsSilently,
                     composer.confirmsBotCommands,
+                    composer.showsUndoRedo,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
@@ -162,6 +170,10 @@ class ChatsPageViewModel
                     composerSettingsRepository.setConfirmsBotCommands(event.enabled)
                 }
 
+                is ChatsPageEvent.SetShowsUndoRedo -> {
+                    composerSettingsRepository.setShowsUndoRedo(event.enabled)
+                }
+
                 is ChatsPageEvent.SetRaiseToListen -> {
                     playbackSettingsRepository.setRaiseToListen(event.enabled)
                 }
@@ -181,4 +193,5 @@ private data class ComposerChoices(
     val sendKeys: SendKeys,
     val sendsSilently: Boolean,
     val confirmsBotCommands: Boolean,
+    val showsUndoRedo: Boolean,
 )
