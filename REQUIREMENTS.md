@@ -288,6 +288,9 @@ decision 2026-11-23).
   contact (by phone number or by username) and "Add to contacts" have "Share my phone number", which starts from
   Settings → Privacy and security → Contacts → "Share my phone number with new contacts", off by default; the chat
   bar's "Add contact" follows that setting. Editing an existing contact starts with the number not shared.
+- FR-X10 Should: **Folder tabs without unread counters** (owner decision 2026-11-23). Settings → Chat folders →
+  Folder tabs → "Unread counters", on by default: off, the folder tabs show no unread counts, whatever they show
+  (names, icons and names, or icons), and screen readers hear their names alone.
 
 ## 6. Non-functional requirements
 

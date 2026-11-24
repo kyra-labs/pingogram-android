@@ -128,6 +128,21 @@ private fun ChatFoldersScreenNoFoldersPreview() {
     }
 }
 
+/** The folder tabs' "Unread counters" off (`REQUIREMENTS.md` FR-X10). */
+@PingogramPreviews
+@Composable
+private fun ChatFoldersScreenCountersOffPreview() {
+    PingogramPreview {
+        ChatFoldersScreen(
+            state = ChatFoldersPreviewStates.content,
+            onEvent = {},
+            onOpenFolder = {},
+            onBack = {},
+            tabs = ChatListSettings(showFolderTabCounters = false),
+        )
+    }
+}
+
 @PingogramPreviews
 @Composable
 private fun ChatFoldersScreenLoadingPreview() {

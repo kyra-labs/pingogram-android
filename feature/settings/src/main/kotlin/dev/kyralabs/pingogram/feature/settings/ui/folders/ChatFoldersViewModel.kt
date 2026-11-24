@@ -90,6 +90,7 @@ class ChatFoldersViewModel
                 is ChatFoldersEvent.SetFolderTabStyle -> saveTabs { setFolderTabStyle(event.style) }
                 is ChatFoldersEvent.SetShowEditFoldersButton -> saveTabs { setShowEditFoldersButton(event.show) }
                 is ChatFoldersEvent.SetShowFeedTab -> saveTabs { setShowFeedTab(event.show) }
+                is ChatFoldersEvent.SetShowFolderTabCounters -> saveTabs { setShowFolderTabCounters(event.show) }
             }
         }
 

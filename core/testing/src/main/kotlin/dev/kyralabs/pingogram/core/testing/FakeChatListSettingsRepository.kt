@@ -66,4 +66,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(showFeedTab = show)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setShowFolderTabCounters(show: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(showFolderTabCounters = show)
+        return Outcome.Success(Unit)
+    }
 }
