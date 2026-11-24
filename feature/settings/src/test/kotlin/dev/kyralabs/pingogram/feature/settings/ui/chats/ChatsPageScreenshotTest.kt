@@ -19,7 +19,8 @@ import org.robolectric.annotation.Config
 
 /**
  * The Chats page (owner decision 2026-11-19): its defaults, the settings changed (raise to listen off, so "Pause when
- * lowered" is gone), loading, 200% font scale, and the audit's variants (`docs/DESIGN_SYSTEM.md` §12).
+ * lowered" is gone; send silently by default on, FR-X11, light and dark), loading, 200% font scale, and the audit's
+ * variants (`docs/DESIGN_SYSTEM.md` §12).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -38,6 +39,9 @@ class ChatsPageScreenshotTest {
 
     @Test
     fun changedLight() = capture("changedLight", ThemeMode.Light, changed)
+
+    @Test
+    fun changedDark() = capture("changedDark", ThemeMode.Dark, changed)
 
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, ChatsPageUiState.Loading)
@@ -66,6 +70,7 @@ class ChatsPageScreenshotTest {
             sendKeys = SendKeys(hardwareKeyboard = false, onScreenKeyboard = true),
             raiseToListen = RaiseToListenSettings(enabled = false),
             skipSilence = true,
+            sendsSilently = true,
         )
 
     private fun captureAudit(variant: ScreenshotVariant) =

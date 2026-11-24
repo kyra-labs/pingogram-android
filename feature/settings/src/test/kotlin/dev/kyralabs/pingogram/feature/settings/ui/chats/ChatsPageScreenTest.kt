@@ -168,4 +168,29 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetSkipSilence(true)), events)
     }
+
+    @Test
+    fun `send silently by default is a switch, off at first, whose tap turns it on`() {
+        setScreen()
+
+        switchRow(R.string.settings_send_silently)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.Off))
+            .assert(hasText(string(R.string.settings_send_silently_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetSendsSilently(true)), events)
+    }
+
+    @Test
+    fun `send silently by default shows on, and a tap turns it off`() {
+        setScreen(ChatsPageUiState.Content(sendsSilently = true))
+
+        switchRow(R.string.settings_send_silently)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetSendsSilently(false)), events)
+    }
 }

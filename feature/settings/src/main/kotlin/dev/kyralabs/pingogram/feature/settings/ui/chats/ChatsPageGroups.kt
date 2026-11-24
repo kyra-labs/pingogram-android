@@ -16,15 +16,16 @@ import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 
 /**
- * "Messages": the rows of Double-tap to react and of Snippets ([pages]), and which Enter sends on a keyboard and on
- * the screen keyboard.
+ * "Messages": the rows of Double-tap to react and of Snippets ([pages]), which Enter sends on a keyboard and on
+ * the screen keyboard, and whether messages go without sound unless chosen (`REQUIREMENTS.md` FR-X11).
  */
 @Composable
 internal fun MessagesGroup(
-    sendKeys: SendKeys,
+    state: ChatsPageUiState.Content,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
+    val sendKeys = state.sendKeys
     SettingsGroup(title = stringResource(R.string.settings_chat_section_messages)) {
         item { shapes ->
             PageRow(
@@ -45,6 +46,15 @@ internal fun MessagesGroup(
                 checked = sendKeys.onScreenKeyboard,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetSendKeys(sendKeys.copy(onScreenKeyboard = it))) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_send_silently),
+                summary = stringResource(R.string.settings_send_silently_summary),
+                checked = state.sendsSilently,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetSendsSilently(it)) },
             )
         }
     }
