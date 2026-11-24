@@ -13,6 +13,12 @@ import java.util.regex.Pattern
  * Journeys.kt's: they need a signed-in app whose open conversation shows a photo.
  */
 
+/** Whether the open conversation shows a photo, which [openNewestPhoto] can open. */
+internal fun MacrobenchmarkScope.photoOnScreen(): Boolean {
+    val list = messageList()
+    return device.findObjects(By.desc(PHOTO_ROW)).any { list.visibleBounds.contains(it.visibleBounds) }
+}
+
 /**
  * Opens the newest photo of the open conversation in the media viewer, as a tap on its bubble does, and waits for the
  * viewer. The bubbles' semantics are merged, so the photo is found through its row: the lowest row whose description

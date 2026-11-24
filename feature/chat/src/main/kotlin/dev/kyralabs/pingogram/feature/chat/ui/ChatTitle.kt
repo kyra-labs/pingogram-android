@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -75,6 +76,7 @@ internal fun ChatTitle(
     Column(
         modifier =
             Modifier
+                .testTag(CHAT_TITLE_TEST_TAG)
                 .titleClick(
                     when {
                         userId != null && onOpenProfile != null -> openLabel to { onOpenProfile(userId) }
@@ -301,3 +303,6 @@ private fun avatarTransformKey(
         openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
         else -> null
     }
+
+/** The conversation's title, which opens the profile, for the Baseline Profile's journeys. */
+internal const val CHAT_TITLE_TEST_TAG = "chat_title"
