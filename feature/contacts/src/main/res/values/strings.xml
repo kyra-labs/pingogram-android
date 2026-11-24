@@ -157,6 +157,9 @@
     <!-- For screen readers: the toggle that sets a yearly reminder. %1$s is the contact's name. -->
     <string name="birthdays_remind_me">Remind me of %1$s\'s birthday</string>
     <string name="birthdays_add_to_calendar">Add %1$s\'s birthday to calendar</string>
+    <string name="birthdays_calendar_event">%1$s\'s birthday</string>
+    <string name="birthdays_no_calendar">No calendar app to add it to</string>
+    <string name="birthdays_reminder_failed">Couldn\'t save the reminder: %1$s</string>
     <string name="birthdays_empty_title">No birthdays soon</string>
     <string name="birthdays_empty_body">When a contact\'s birthday comes near, it shows here.</string>
 </resources>

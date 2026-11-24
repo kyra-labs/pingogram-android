@@ -10,8 +10,8 @@ import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.scanner.navigation.navigateToQrScanner
 
 /**
- * The Contacts tab, with a contact's chat, Add contact and Edit contact pushed above it, and from its top bar the
- * user's own QR code and the QR code scanner. Add and Edit contact go back
+ * The Contacts tab, with a contact's chat, Add contact, Edit contact and Birthdays pushed above it, and from its top
+ * bar the user's own QR code and the QR code scanner. Add and Edit contact go back
  * to where they were opened from once done: the contacts list, New chat, or a profile.
  */
 internal fun NavGraphBuilder.contacts(
@@ -25,5 +25,5 @@ internal fun NavGraphBuilder.contacts(
         onOpenMyQrCode = { navController.navigate(MyQrCodeRoute) { launchSingleTop = true } },
         onScanQrCode = { navController.navigateToQrScanner() },
     )
-    contactScreens(onBack = { navController.popBackStack() })
+    contactScreens(onBack = { navController.popBackStack() }, onOpenChat = openChat)
 }
