@@ -59,5 +59,6 @@ internal class UpdateStore<S : Any>(
     fun update(transform: (S) -> S) = mutableState.update(transform)
 }
 
-private fun TdApi.Update.closesTdlib() =
+/** Whether this update says TDLib closed: its ids mean nothing to the next instance. */
+internal fun TdApi.Update.closesTdlib() =
     this is TdApi.UpdateAuthorizationState && authorizationState is TdApi.AuthorizationStateClosed
