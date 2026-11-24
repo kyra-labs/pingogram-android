@@ -1548,7 +1548,8 @@ class ChatViewModel internal constructor(
                 .firstOrNull()
                 ?.messages
                 .orEmpty()
-        val shown = messages.filter { it.id in messageIds }
+        // Looked up by id (the history is sorted), newest first as in the history: not a pass over all of it.
+        val shown = messageIds.sortedDescending().mapNotNull(messages::findById)
         autoDownloads.setVisible(shown.map { it.content })
         customEmojis.setVisible(shown)
     }

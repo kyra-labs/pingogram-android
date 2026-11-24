@@ -159,7 +159,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   the next page when the user is 20 items from the end, in both directions. A chat with unread
   messages opens around the first unread one (`from_message_id = last_read_inbox_message_id`,
   `offset = -30`), a jump to a message far back loads the page around it, never every page up to
-  it; the conversation shows nothing until that page is there, so it never jumps.
+  it; the conversation shows nothing until that page is there, so it never jumps. A history holds at most 300
+  messages (six pages, `HistoryCache`'s `MAX_WINDOW_MESSAGES`): a page loaded past that drops as many from the other
+  end, which loads again as pages when the list comes back to it.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
   `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
   concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).

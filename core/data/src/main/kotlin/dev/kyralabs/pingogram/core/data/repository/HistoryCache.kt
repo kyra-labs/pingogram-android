@@ -25,6 +25,12 @@ import org.drinkless.tdlib.TdApi
 private const val MAX_WINDOWS = 3
 
 /**
+ * Messages a window holds at most (`docs/PERFORMANCE.md` §3, six pages): loading a page past it drops as many from the
+ * other end, which pages load again when the list comes back there.
+ */
+internal const val MAX_WINDOW_MESSAGES = 300
+
+/**
  * The state of [TdlibMessageRepository]: a [HistoryWindow] per history ([HistoryKey]: a chat, or one of its forum
  * topics or message threads), for the histories being observed, which are never evicted, and for the most recently
  * used others, up to [MAX_WINDOWS] windows in all; [clock] counts the uses. Updates of chats without a window are
@@ -38,14 +44,16 @@ internal data class HistoryCache(
     val clock: Long = 0,
 ) {
     fun reduce(update: TdApi.Update): HistoryCache {
-        val (keys, change) =
+        val keys =
             if (update is TdApi.UpdatePoll) {
-                windows.keys to HistoryChange.ReplacePoll(update.poll.toPoll())
+                windows.keys
             } else {
                 val chatId = update.historyChatId()
-                val change = chatId?.let { update.toHistoryChange() } ?: return this
-                windows.keys.filter { it.chatId == chatId } to change
+                if (chatId == null) emptySet() else windows.keys.filter { it.chatId == chatId }
             }
+        // The windows are looked for before the update is mapped: most updates are of chats no one has open.
+        val change = if (keys.isEmpty()) null else update.toHistoryChange()
+        if (change == null) return this
         return keys
             .fold(this) { cache, key ->
                 val within = change.within(key)
@@ -303,19 +311,35 @@ internal data class HistoryWindow(
     /**
      * Adds the [page]'s messages to the loaded ones, or puts them in their place for a [HistoryPage.Kind.Replacing]
      * page. The loaded ones are as new as the changes applied to them, so only messages before or after them are added.
+     * Past [MAX_WINDOW_MESSAGES], an older page drops the newest messages and a newer page the oldest: the list is at
+     * the end the page loaded at, and the other end loads again when the list comes back to it.
      */
     private fun merging(page: HistoryPage): HistoryWindow =
         when (page.kind) {
             HistoryPage.Kind.Older -> {
                 val oldestId = messages.lastOrNull()?.id ?: Long.MAX_VALUE
                 val older = page.messages.filter { it.id < oldestId }.sortedByDescending { it.id }
-                copy(messages = messages.addingAll(older), reachedStart = page.reachedStart)
+                val merged = messages.addingAll(older)
+                val excess = merged.size - MAX_WINDOW_MESSAGES
+                if (excess <= 0) {
+                    copy(messages = merged, reachedStart = page.reachedStart)
+                } else {
+                    val kept = merged.mutate { it.subList(0, excess).clear() }
+                    copy(messages = kept, reachedStart = page.reachedStart, reachedEnd = false)
+                }
             }
 
             HistoryPage.Kind.Newer -> {
                 val newestId = messages.firstOrNull()?.id ?: Long.MIN_VALUE
                 val newer = page.messages.filter { it.id > newestId }.sortedByDescending { it.id }
-                copy(messages = messages.mutate { it.addAll(0, newer) }, reachedEnd = page.reachedEnd)
+                val merged = messages.mutate { it.addAll(0, newer) }
+                val excess = merged.size - MAX_WINDOW_MESSAGES
+                if (excess <= 0) {
+                    copy(messages = merged, reachedEnd = page.reachedEnd)
+                } else {
+                    val kept = merged.mutate { it.subList(MAX_WINDOW_MESSAGES, it.size).clear() }
+                    copy(messages = kept, reachedStart = false, reachedEnd = page.reachedEnd)
+                }
             }
 
             HistoryPage.Kind.Replacing -> {
@@ -406,12 +430,17 @@ private fun TdApi.Update.historyChatId(): Long? =
     }
 
 /**
- * The change [this] makes to the history of its chat. The other `updateMessage*` updates concern what [Message] does
- * not hold: unread reactions and poll votes, fact-checks, suggested posts, ephemeral content, send acknowledgements,
- * live location views, and reactions for bots.
+ * The change [this] makes to the history of its chat, or, for `updatePoll`, which names no chat, to every history
+ * that shows the poll. The other `updateMessage*` updates concern what [Message] does not hold: unread reactions and
+ * poll votes, fact-checks, suggested posts, ephemeral content, send acknowledgements, live location views, and
+ * reactions for bots.
  */
 private fun TdApi.Update.toHistoryChange(): HistoryChange? =
     when (this) {
+        is TdApi.UpdatePoll -> {
+            HistoryChange.ReplacePoll(poll.toPoll())
+        }
+
         is TdApi.UpdateNewMessage -> {
             message.toPut(replacedId = null)
         }

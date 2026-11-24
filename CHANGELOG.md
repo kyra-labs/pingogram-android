@@ -14,6 +14,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   or the share sheet redo their work: they follow names and photos, and only the statuses they show.
 - In a chat, the quotes of the replied messages of a newly loaded page show together, in one redraw.
 - In a chat, a file downloading or a photo or file being sent redraws only its own message as it moves along.
+- A long chat keeps at most 300 messages in memory while you scroll through it, loading the rest again as you come
+  back to them, and a message's menu opens without waiting for the device to look for dates and addresses in it:
+  "Add to calendar" and "Open in maps" join it once found.
 
 ## [2.4.0] - 2026-11-23
 
