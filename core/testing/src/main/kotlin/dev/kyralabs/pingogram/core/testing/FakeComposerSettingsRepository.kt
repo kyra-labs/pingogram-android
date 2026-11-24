@@ -16,6 +16,7 @@ class FakeComposerSettingsRepository(
     originalQuality: Boolean = false,
     videoMessages: Boolean = false,
     silently: Boolean = false,
+    confirmCommands: Boolean = false,
 ) : ComposerSettingsRepository {
     private val saved = MutableStateFlow(initial)
 
@@ -27,6 +28,9 @@ class FakeComposerSettingsRepository(
 
     /** What [sendsSilently] holds. */
     val silent = MutableStateFlow(silently)
+
+    /** What [confirmsBotCommands] holds. */
+    val confirm = MutableStateFlow(confirmCommands)
 
     /** What the setter fails with; null saves. */
     var failure: DomainError? = null
@@ -60,6 +64,14 @@ class FakeComposerSettingsRepository(
     override suspend fun setSendsSilently(enabled: Boolean): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }
         silent.value = enabled
+        return Outcome.Success(Unit)
+    }
+
+    override val confirmsBotCommands: Flow<Boolean> = confirm
+
+    override suspend fun setConfirmsBotCommands(enabled: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        confirm.value = enabled
         return Outcome.Success(Unit)
     }
 }

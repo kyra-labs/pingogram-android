@@ -171,6 +171,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the confirm bot commands switch by its name`() {
+        show()
+        search("bot commands")
+
+        composeRule.onNode(hasText(string(R.string.settings_confirm_bot_commands)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)

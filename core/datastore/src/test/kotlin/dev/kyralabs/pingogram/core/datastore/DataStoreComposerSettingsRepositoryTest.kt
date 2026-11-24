@@ -146,6 +146,21 @@ class DataStoreComposerSettingsRepositoryTest {
         }
 
     @Test
+    fun `bot commands go at once until confirming them is turned on, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStoreComposerSettingsRepository(dataStore(firstProcess))
+            assertEquals(false, first.confirmsBotCommands.first())
+
+            assertEquals(Outcome.Success(Unit), first.setConfirmsBotCommands(true))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStoreComposerSettingsRepository(dataStore())
+            assertEquals(true, again.confirmsBotCommands.first())
+            assertEquals(false, again.sendsSilently.first())
+        }
+
+    @Test
     fun `a record mode that cannot be read is voice, and saving it fails`() =
         runTest {
             val repository = DataStoreComposerSettingsRepository(FailingDataStore())

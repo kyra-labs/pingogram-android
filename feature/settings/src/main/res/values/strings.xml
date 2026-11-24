@@ -1205,6 +1205,8 @@
     <string name="settings_enter_sends_on_screen_summary">The on-screen keyboard’s Enter key becomes Send</string>
     <string name="settings_send_silently">Send silently by default</string>
     <string name="settings_send_silently_summary">Messages arrive without a sound. Touch and hold Send to send with sound.</string>
+    <string name="settings_confirm_bot_commands">Confirm bot commands</string>
+    <string name="settings_confirm_bot_commands_summary">Asks before a command picked from a bot’s menu is sent</string>
 
     <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
     <string name="settings_section_network">Network</string>
