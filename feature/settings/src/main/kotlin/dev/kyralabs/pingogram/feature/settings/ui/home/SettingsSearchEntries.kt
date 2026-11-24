@@ -23,6 +23,7 @@ internal val SearchEntries: List<HomeEntry> by lazy {
 internal val SettingEntries: List<HomeEntry> by lazy {
     listOf(
         setting(SettingsPage.PrivacySecurity, R.string.settings_incognito_keyboard),
+        setting(SettingsPage.PrivacySecurity, R.string.settings_clean_links),
     )
 }
 

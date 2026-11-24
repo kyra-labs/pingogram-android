@@ -91,6 +91,20 @@ class PrivacySecurityScreenScreenshotTest {
             incognitoKeyboard = true,
         )
 
+    /**
+     * The whole page with "Remove tracking from links" off (REQUIREMENTS.md FR-X8), at the Privacy group's end; the other
+     * captures show it on, its default.
+     */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun cleanLinksOffLight() =
+        capture("cleanLinksOffLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, cleanLinks = false)
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun cleanLinksOffDark() =
+        capture("cleanLinksOffDark", ThemeMode.Dark, SettingsPreviewData.privacySecurity, cleanLinks = false)
+
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
     @Config(qualifiers = TALL)
@@ -198,6 +212,7 @@ class PrivacySecurityScreenScreenshotTest {
         secretChatPreviews: Boolean = false,
         phoneNumbersHidden: Boolean = false,
         incognitoKeyboard: Boolean = false,
+        cleanLinks: Boolean = true,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -208,6 +223,7 @@ class PrivacySecurityScreenScreenshotTest {
             secretChatPreviews = secretChatPreviews,
             phoneNumbersHidden = phoneNumbersHidden,
             incognitoKeyboard = incognitoKeyboard,
+            cleanLinks = cleanLinks,
         )
     }
 }

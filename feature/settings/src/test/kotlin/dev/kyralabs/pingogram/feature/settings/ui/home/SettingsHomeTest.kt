@@ -131,6 +131,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the link cleaning switch by a word of its name`() {
+        show()
+        search("tracking")
+
+        composeRule.onNode(hasText(string(R.string.settings_clean_links)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)
