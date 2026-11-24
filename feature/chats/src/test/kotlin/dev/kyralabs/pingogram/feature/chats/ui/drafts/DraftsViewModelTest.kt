@@ -4,11 +4,11 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.draft
-import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeGroupRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeTimePatterns
@@ -57,8 +57,7 @@ class DraftsViewModelTest {
     private fun TestScope.viewModel(): DraftsViewModel {
         val viewModel =
             DraftsViewModel(
-                chatRepository = chats,
-                chatLock = chatLock,
+                draftChats = DraftChats(chats, chatLock),
                 userRepository = users,
                 groupRepository = FakeGroupRepository(),
                 clock = FakeWallClock(NOW),
