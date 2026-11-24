@@ -439,6 +439,45 @@ class TdlibMessageRepositoryWindowTest {
             assertEquals((180L downTo 32L).toList(), repository.ids())
         }
 
+    // At most MAX_WINDOW_MESSAGES
+
+    @Test
+    fun `older pages past the bound drop the newest messages, which newer pages load again`() =
+        runTest {
+            serveChat(1L..1_000L)
+            val repository = repository()
+            repository.loadNewest(CHAT)
+
+            repeat(6) { repository.loadOlder(CHAT) }
+
+            // 50 newest and 6 × 49 older: the 44 newest go.
+            assertEquals((956L downTo 657L).toList(), repository.ids())
+            assertFalse(repository.snapshot().reachedEnd)
+
+            repository.loadNewer(CHAT)
+
+            assertEquals((1_000L downTo 701L).toList(), repository.ids())
+            assertTrue(repository.snapshot().reachedEnd)
+        }
+
+    @Test
+    fun `newer pages past the bound drop the oldest messages, which older pages load again`() =
+        runTest {
+            serveChat(1L..1_000L)
+            val repository = repository()
+            repository.loadAround(CHAT, 100)
+
+            repeat(6) { repository.loadNewer(CHAT) }
+
+            assertEquals((430L downTo 131L).toList(), repository.ids())
+            assertFalse(repository.snapshot().reachedStart)
+
+            repository.loadOlder(CHAT)
+
+            assertEquals((381L downTo 82L).toList(), repository.ids())
+            assertFalse(repository.snapshot().reachedEnd)
+        }
+
     private companion object {
         const val CHAT = 100L
     }
