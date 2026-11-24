@@ -45,8 +45,8 @@ class ComposerText(
     private var formatting by mutableStateOf(Formatting(initial.text, initial.entities.toList()))
 
     /**
-     * How many edits the user made: typing, pasting, the emoji panel, a command or snippet put in; never a text set from
-     * code ([setContent]). The conversation tells the chat the user is typing from it.
+     * How many edits the user made: typing, pasting, the emoji panel, a command or snippet put in; never a text set
+     * from code ([setContent]). The conversation tells the chat the user is typing from it.
      */
     var userEdits by mutableIntStateOf(0)
         private set

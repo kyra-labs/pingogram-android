@@ -10,7 +10,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,8 +26,9 @@ import kotlin.math.roundToInt
 /**
  * Tells the chat what the user is doing in it (`REQUIREMENTS.md` FR-X16): typing while they write, recording a voice or
  * round video message, uploading a photo or a file. The others see an action for a few seconds, so it is sent again,
- * at most every [RESEND_MILLIS], while it goes on, and ended when it stops. Recording and uploading come before
- * typing. Nothing at all is sent, an ending included, while "Send typing status" is off ([enabled]).
+ * at most every [RESEND_MILLIS], while it goes on: typing on the next edit after that, a recording or an upload when
+ * the time comes. It is ended when it stops. Recording and uploading come before typing. Nothing at all is sent, an
+ * ending included, while "Send typing status" is off ([enabled]).
  *
  * Runs in [scope], the view model's; [send] goes out one at a time, in order.
  */
@@ -43,6 +46,9 @@ internal class ChatActionSender(
 
     /** The recording or upload going on, which typing does not replace. */
     private var ongoing: ChatAction? = null
+
+    /** Sends [ongoing] again each time the last one is [RESEND_MILLIS] old, while there is one. */
+    private var resending: Job? = null
 
     /**
      * Follows [writing] (true on each edit that leaves text to send, false once there is none) and [ongoing], each of
@@ -65,7 +71,23 @@ internal class ChatActionSender(
     private fun onOngoing(action: ChatAction?) {
         val was = ongoing
         ongoing = action
-        if (action != null) act(action) else if (was != null) end()
+        if (action == null) {
+            resending?.cancel()
+            resending = null
+            if (was != null) end()
+            return
+        }
+        act(action)
+        if (resending == null) resending = scope.launch { resendOngoing() }
+    }
+
+    private suspend fun resendOngoing() {
+        while (true) {
+            // Nothing was sent while the switch is off: then it checks again a whole interval later.
+            val wait = sentAt + RESEND_MILLIS - now()
+            delay(if (wait > 0) wait else RESEND_MILLIS)
+            ongoing?.let(::act)
+        }
     }
 
     private fun act(action: ChatAction) {
@@ -112,7 +134,10 @@ internal fun ongoingAction(
 ): Flow<ChatAction?> =
     combine(recording, history, uploads) { recorded, loaded, uploading ->
         recorded?.action ?: uploading.firstNotNullOfOrNull { (messageId, upload) ->
-            loaded.messages.findById(messageId)?.content?.uploading(upload)
+            loaded.messages
+                .findById(messageId)
+                ?.content
+                ?.uploading(upload)
         }
     }
 

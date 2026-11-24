@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.text.TextRange
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.Document
 import dev.kyralabs.pingogram.core.domain.model.FileRef
@@ -86,6 +87,7 @@ class ChatTypingStatusTest : ChatViewModelHarness() {
             val viewModel = privateChat()
             type(viewModel, "H")
 
+            viewModel.composerText.state.edit { selection = TextRange(0, length) }
             viewModel.composerText.deleteBackward()
             settle()
 
@@ -171,9 +173,9 @@ class ChatTypingStatusTest : ChatViewModelHarness() {
             messages.setHistory(ADA, history(pending(-1, document)))
             viewModel()
 
-            wait(ChatActionSender.RESEND_MILLIS)
             files.uploads.value = mapOf(UPLOAD_FILE to FileUpload(500, 2_000, isActive = true, isCompleted = false))
             runCurrent()
+            wait(ChatActionSender.RESEND_MILLIS)
 
             assertEquals(listOf(ChatAction.UploadingDocument(0), ChatAction.UploadingDocument(25)), sentActions)
         }
