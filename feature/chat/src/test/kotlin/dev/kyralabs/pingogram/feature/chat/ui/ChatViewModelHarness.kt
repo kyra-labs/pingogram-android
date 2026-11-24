@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeTypingStatusRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -96,6 +97,7 @@ abstract class ChatViewModelHarness {
     /** What the device finds in messages' texts: nothing unless a test says so. */
     protected val textFinder = FakeDeviceTextFinder()
     protected val playbackSettings = FakePlaybackSettingsRepository()
+    protected val typingStatus = FakeTypingStatusRepository()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     internal val camera = FakeVideoNoteRecorder()
@@ -224,16 +226,22 @@ abstract class ChatViewModelHarness {
                 recordingClock = { testScheduler.currentTime },
                 topic = topic,
                 sendsPhotosInOriginalQuality = flowOf(originalQuality),
+                sendsTypingStatus = typingStatus.enabled,
                 appInfo = appInfo,
                 transcriptionRepositories = transcription,
                 places = chatPlaces,
                 textFinder = textFinder,
                 playbackSettings = playbackSettings,
             )
+        opened(viewModel)
+        return viewModel
+    }
+
+    /** Keeps [viewModel] for [runViewModelTest] and collects it as the screen does. */
+    private fun TestScope.opened(viewModel: ChatViewModel) {
         created += viewModel
         collectAsTheScreen(viewModel)
         runCurrent()
-        return viewModel
     }
 
     /**

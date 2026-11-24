@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.testing.FakeShownChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeTypingStatusRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
@@ -133,6 +134,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 places = ChatPlaces(),
                 textFinder = FakeDeviceTextFinder(),
                 playbackSettings = FakePlaybackSettingsRepository(),
+                typingStatus = FakeTypingStatusRepository(),
                 applicationScope = backgroundScope,
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
