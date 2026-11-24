@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.raisetolisten
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
@@ -111,6 +112,7 @@ class RaiseToListenViewModelTest {
                     FakeComposerSettingsRepository(),
                     playbackSettings,
                     FakeChatListSettingsRepository(),
+                    FakeCompactChatListRepository(),
                     FakeTranscriptionSettingsRepository(),
                     FakeVoiceTranscriber(),
                 ).also { runCurrent() }

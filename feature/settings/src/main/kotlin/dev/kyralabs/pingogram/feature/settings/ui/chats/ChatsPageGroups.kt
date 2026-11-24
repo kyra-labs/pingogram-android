@@ -135,10 +135,14 @@ internal fun VoiceMessagesGroup(
     }
 }
 
-/** "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first. */
+/**
+ * "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first, then
+ * "Drafts button" and "Compact chat list" ([compact], `REQUIREMENTS.md` FR-X19).
+ */
 @Composable
 internal fun ChatListBehaviorGroup(
     chatList: ChatListSettings,
+    compact: Boolean,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
@@ -162,6 +166,15 @@ internal fun ChatListBehaviorGroup(
                 checked = chatList.showDraftsButton,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetShowDraftsButton(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_compact_chat_list),
+                summary = stringResource(R.string.settings_compact_chat_list_summary),
+                checked = compact,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetCompactChatList(it)) },
             )
         }
     }

@@ -221,6 +221,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the compact chat list switch by its name`() {
+        show()
+        search("compact")
+
+        composeRule.onNode(hasText(string(R.string.settings_compact_chat_list)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)

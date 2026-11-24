@@ -1466,6 +1466,9 @@
     <string name="settings_section_chat_list">Chat list</string>
     <string name="settings_drafts_button">Drafts button</string>
     <string name="settings_drafts_button_summary">Shows a button for your unsent messages at the top of Chats</string>
+    <!-- Settings → Chats → Chat list (FR-X19): smaller avatars on lower rows. -->
+    <string name="settings_compact_chat_list">Compact chat list</string>
+    <string name="settings_compact_chat_list_summary">Smaller pictures and lower rows, so more chats fit</string>
     <string name="settings_show_stories">Show stories</string>
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
     <string name="settings_edit_folders_button">Edit folders button</string>
