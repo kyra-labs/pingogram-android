@@ -251,7 +251,7 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 `updateMessageInteractionInfo`, `updateChatAction`, `updateFile`, `updateFileDownloads`,
 `updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`, `updateHavePendingNotifications`,
 `updateUnreadMessageCount`, `updateUnreadChatCount`, `updateScopeNotificationSettings`,
-`updateDefaultReactionType`, `updateAvailableMessageEffects`, `updateStickerSet`,
+`updateDefaultReactionType`, `updateContactCloseBirthdays`, `updateAvailableMessageEffects`, `updateStickerSet`,
 `updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`, `updateMessageIsPinned` (pinned
 messages), `updateForumTopicInfo`, `updateForumTopic` (forum topics, while a forum is observed),
 `updateDefaultBackground`, `updateChatBackground` (wallpapers, "Backgrounds" below).

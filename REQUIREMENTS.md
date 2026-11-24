@@ -317,6 +317,12 @@ decision 2026-11-23).
   message, uploading a photo, a video, a file or a voice or round video message; a GIF shows nothing), sent again at
   most every five seconds while it lasts and ended when the message goes, the text is cleared, or the user leaves the
   conversation or its screen stops; while off, nothing is sent, not even an action's end.
+- FR-X18 Should: **Birthdays** (owner decision 2026-11-23). While Telegram names contacts with a birthday these days,
+  the Contacts tab shows a "Birthdays" row above the contacts, opening a page that lists them with the day and, where
+  shared, the age they turn. Each offers "Send a message"; "Remind me", which only the user sets, one reminder a year
+  per contact, kept on the phone and ringing on the day; and "Add to calendar", which hands a yearly event to the
+  calendar app. Settings → Privacy and security → Contacts → "Birthdays", on by default: off, the row is hidden, and
+  reminders already set still ring.
 
 ## 6. Non-functional requirements
 
