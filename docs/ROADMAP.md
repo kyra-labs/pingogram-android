@@ -186,32 +186,37 @@ performance work behind 2.4.0's accepted benchmark results and the small feature
 2.4.0 before then is fixed on `hotfix/2.4.1` from the `v2.4.0` tag (`docs/RELEASE.md`, Hotfix).
 
 Fixes:
-- [ ] The call service promotes itself to the foreground at once with a minimal notification, then updates it
-- [ ] A 1:1 call that ends while it connects closes its native session (the microphone stays open today); a group call
+- [x] The call service promotes itself to the foreground at once with a minimal notification, then updates it
+- [x] A 1:1 call that ends while it connects closes its native session (the microphone stays open today); a group call
   join survives its screen closing
-- [ ] An account slot is not reused while its old client is still closing
-- [ ] Crash hardening: duplicate keys in GIF search, a malformed animated sticker, the scanner's camera start, the order
+- [x] An account slot is not reused while its old client is still closing
+- [x] Crash hardening: duplicate keys in GIF search, a malformed animated sticker, the scanner's camera start, the order
   of call signaling packets (check each first)
-- [ ] Opening a chat with a photo wallpaper decodes the photo once, not twice
-- [ ] Pull requests run the release build's lint, as `release.yml` does
+- [x] Opening a chat with a photo wallpaper decodes the photo once, not twice
+- [x] Pull requests run the release build's lint, as `release.yml` does
 
 Performance (the accepted results in #876's description, and the review):
-- [ ] Cold start: the account registry read off the main thread's path, a startup profile collected on its own, and
-  v2.3.0 measured on the same account to separate the database's growth from the code
-- [ ] The users map projected per screen, off the main thread
-- [ ] Conversation: reply quotes in one update, transfer progress out of the screen's state, a bounded history window
-- [ ] Files: a state per file, no `getFile` for a file already on disk
-- [ ] Chat list scrolling within its budget (the shadow decision, the bars' state)
-- [ ] Media viewer decode size, minithumbnails off the main thread, sticker frame timing, a cheaper wallpaper blur
-- [ ] The late-frames budget revisited (an ADR); profile and benchmark journeys widened; a new baseline
-- [ ] `docs/PERFORMANCE.md` matches the code (download limit, history window, animated images)
+- [x] Cold start: the account registry read off the main thread's path
+- [ ] Cold start: the profiles regenerated from an APK without one (`tools/benchmark/generate-profiles`), so the startup
+  profile holds startup code only; v2.3.0 measured on the same account to separate the database's growth from the code
+- [x] The users map projected per screen, off the main thread
+- [x] Conversation: reply quotes in one update, transfer progress out of the screen's state, a bounded history window
+- [x] Files: a state per file, no `getFile` for a file already on disk
+- [ ] Chat list scrolling within its budget: the bars' state and the rows done; the bars' shadow decided with the
+  release benchmark
+- [x] Media viewer decode size, sticker frame timing, a cheaper wallpaper blur (minithumbnails stay as they are: cached,
+  one 40 px decode each)
+- [x] The late-frames budget revisited (ADR 0042, a stutter budget); profile and benchmark journeys widened
+- [ ] A new benchmark baseline recorded on the release build
+- [x] `docs/PERFORMANCE.md` matches the code (download limit, history window, animated images)
 
 Features:
-- [ ] "Typing…" sent to the chat, with a setting to turn it off
+- [x] "Typing…" sent to the chat, with a setting to turn it off
 - [x] Incoming bubbles stand out in light theme
 - [x] A compact chat list
 - [x] Drafts: every unsent draft on one page
 - [x] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
+- [ ] Birthday reminders in the backup, like bookmarks and message reminders
 - [x] Composer: silent sending by default, a confirmation before a bot command, undo and redo
 - [x] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages
 - [x] Folder tabs without unread counters, as an option
@@ -219,25 +224,67 @@ Features:
 - [x] Links without tracking parameters, when sent and opened
 - [x] Adding a contact does not share the phone number unless chosen
 
+Translations (the owner, on Weblate):
+- [ ] Every module a Weblate component, not only Settings (`docs/TRANSLATING.md`), so a language can reach the 80% it
+  needs to ship
+- [ ] Brazilian Portuguese added
+
 ## v2.6.0
 
-The owner's decision of 2026-11-23:
+The owner's decisions of 2026-11-23 and 2026-11-24, in two parts that can go side by side. Every feature can be turned
+off in Settings (`REQUIREMENTS.md` §5.10).
 
-- [ ] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
-  Catch-up
-- [ ] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
-  with Reply and Dismiss; it never sends anything
-- [ ] Listen to posts: Android's on-device text-to-speech reads a message or a channel's unread posts aloud
+The rest of the review of 2026-11-23, in this order:
+1. [ ] `MainActivity` handles rotation, folding, resizing and dark mode without being recreated (`configChanges`, as
+   the call and media activities already do), each screen checked (owner, 2026-11-24)
+2. [ ] ntgcalls linked with a version script, `--gc-sections` and packed relocations: about 1–1.5 MB off the arm64 APK
+   (owner, 2026-11-24)
+3. [ ] detekt rules for what is banned today only by discipline: `GlobalScope`, `runBlocking`, `composed {}`,
+   `SubcomposeAsyncImage`
+4. [ ] The Compose stability configuration made true: the plain `List`, `Set` and `Map` properties of
+   `core.domain.model` become immutable collections, or the configuration stops calling them stable
+5. [ ] `docs/PERFORMANCE.md` says how budgets are checked (`compare.py` on the owner's phone before each release, not
+   CI); a memory benchmark for "chat list idle"; JankStats added where the doc names it, or removed from the doc
+6. [ ] `ChatViewModel` split into parts, with no change in behaviour, before the features below touch it
+7. [ ] The message menu's blur stops re-rendering while stickers and typing dots animate under it
+8. [ ] Conversation: no bubble copies on each update while translation or search is on; one download tap does not
+   rebuild every bubble; item keys without allocation; anchor lookups without scanning every item; the sponsored-view
+   reporter without work per scroll frame (it reports exactly what it does today)
+9. [ ] Rendering: no path clips on scrolling content (polygon avatars, custom emoji; §5); shared-element setup only on
+   the tapped bubble; no hidden emoji text under static stickers; the video player's buffer sized for local files; call
+   video set up off the main thread; the emoji panel's cells cached
+10. [ ] The channel feed local-first (§3): what TDLib has on the phone before any request to the server
+11. [ ] Chat list: sub-flows shared, not collected several times; one swipe state per row; no exception thrown on each
+    navigation; the widget's chat picker off the main thread
+12. [ ] Profile and benchmark journeys for calls and stories
+13. [ ] Measured on the owner's phone, then fixed only if slow: the passcode's PBKDF2, the transcription resampler's
+    allocations, QR scanning cropped to its frame
+
+Features, in this order:
 - [ ] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
 - [ ] Muted words: group messages with chosen words collapse into a line to tap open; never sponsored messages
+- [ ] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
+  with Reply and Dismiss; it never sends anything
+- [ ] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
+  Catch-up
 - [ ] Cleanup suggestions: chats not opened for a chosen time, with Mute, Archive or Leave decided one by one
 - [ ] A Quick Settings tile that blurs message text and photos until tapped
+- [ ] Listen to posts: Android's on-device text-to-speech reads a message or a channel's unread posts aloud
 - [ ] Proxies: added from a QR code, their speed tested, and a working one chosen when the current one fails
+- [ ] Two-line compact chat list rows, if the owner wants them after trying the one-line rows
 
 ## Later
 
 - [ ] UnifiedPush for `foss` (ADR 0004, "UnifiedPush for `foss`"): a spike against several distributors, then an ADR
 - [ ] One look for the theme and the wallpaper (an ADR first)
+- [ ] Refactors from the review of 2026-11-23, each when a feature next touches its area: `CallManager` and
+  `GroupCallManager` share their call binding, camera, hold and finish code; `MainRoutes` split so a route edit stops
+  recompiling every feature; `ChatListViewModel`'s 20 parameters; the code `ProfileViewModel` and `ChatInfoViewModel`
+  duplicate; `StoryViewerViewModel`'s own downloads and ticker; `flowOn` and fewer `SharingStarted.Eagerly` in
+  `feature:settings`; per-chat DataStore keys removed with their chat
+- [ ] A native sticker renderer only if a trace shows Lottie's software rendering missing frames after v2.5.0's
+  scheduling fixes; no Rust toolchain (the review of 2026-11-23: the slow paths are mapping and flows, and the APK
+  budget is tight)
 
 Not planned, as they break Telegram's terms or `CLAUDE.md`'s rules (owner, 2026-11-23): appearing offline while online,
 reading without read receipts, keeping deleted or edited messages, hiding or filtering sponsored messages, poll results
