@@ -224,7 +224,8 @@ class FakeTimePatterns : TimePatterns {
     ): String = PATTERNS[skeleton] ?: error("No pattern for $skeleton")
 
     private companion object {
-        val PATTERNS = mapOf("Hm" to "HH:mm", "hm" to "h:mm a", "MMMd" to "MMM d", "yMd" to "M/d/y")
+        val PATTERNS =
+            mapOf("Hm" to "HH:mm", "hm" to "h:mm a", "MMMd" to "MMM d", "MMMMd" to "MMMM d", "yMd" to "M/d/y")
     }
 }
 
