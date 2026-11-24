@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -211,6 +212,62 @@ class ChatSelectionTest : ChatViewModelHarness() {
                 val viewModel = selecting(2, 3)
 
                 assertEquals(listOf(MessageAction.Copy, MessageAction.Delete), viewModel.selection?.actions)
+            }
+
+        @Test
+        fun `pinned messages offer unpinning, and unpinning unpins each one and ends selection mode`() =
+            runViewModelTest {
+                users.setUsers(user(ADA, firstName = "Ada"), user(ME, firstName = "Me"))
+                chats.setChats(chat(title = "Ada Lovelace"))
+                messages.setHistory(
+                    PRIVATE_CHAT,
+                    history(
+                        message(1, content = MessageContent.Text(text("Hello"), null)).copy(isPinned = true),
+                        message(2, content = MessageContent.Text(text("Again"), null)).copy(isPinned = true),
+                        message(3, content = MessageContent.Text(text("Not pinned"), null)),
+                    ),
+                )
+                val viewModel = viewModel()
+                send(viewModel, SelectionEvent.Select(1))
+                send(viewModel, SelectionEvent.Toggle(2))
+                assertTrue(MessageAction.Unpin in viewModel.selection!!.actions)
+
+                send(viewModel, SelectionEvent.Act(MessageAction.Unpin))
+
+                assertEquals(listOf("unpin:$PRIVATE_CHAT:1", "unpin:$PRIVATE_CHAT:2"), messageActions.calls)
+                assertNull(viewModel.selection)
+            }
+
+        @Test
+        fun `a selection with a message that is not pinned offers no unpinning`() =
+            runViewModelTest {
+                val viewModel = selecting(1, 2)
+
+                assertFalse(MessageAction.Unpin in viewModel.selection!!.actions)
+            }
+
+        @Test
+        fun `messages with files offer saving to Downloads, with a text among them they do not`() =
+            runViewModelTest {
+                val viewModel = selecting(4)
+                assertTrue(MessageAction.SaveToDownloads in viewModel.selection!!.actions)
+
+                send(viewModel, SelectionEvent.Toggle(2))
+
+                assertFalse(MessageAction.SaveToDownloads in viewModel.selection!!.actions)
+            }
+
+        @Test
+        fun `saving the selection saves every file to Downloads and ends selection mode`() =
+            runViewModelTest {
+                files.setFile(PHOTO_FILE + 2, FileState.Downloaded("/files/photos/4.jpg", 1_000))
+                files.setFile(PHOTO_FILE + 12, FileState.Downloaded("/files/photos/5.jpg", 1_000))
+                val viewModel = selecting(4)
+
+                send(viewModel, SelectionEvent.Act(MessageAction.SaveToDownloads))
+
+                assertEquals(2, sharedStorage.savedToDownloads.size)
+                assertNull(viewModel.selection)
             }
 
         @Test
