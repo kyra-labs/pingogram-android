@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatInvite
@@ -784,6 +785,18 @@ class FakeChatActionRepository : ChatActionRepository {
         topic: MessageTopic,
     ): Flow<ImmutableList<SenderAction>> =
         topicActionMap.map { it[chatId to topic] ?: persistentListOf() }.distinctUntilChanged()
+
+    /** Every action the user sent, in order: the chat, its topic, and the action (null: the end of one). */
+    val sent = mutableListOf<Triple<Long, MessageTopic?, ChatAction?>>()
+
+    override suspend fun send(
+        chatId: Long,
+        topic: MessageTopic?,
+        action: ChatAction?,
+    ): Outcome<Unit> {
+        sent += Triple(chatId, topic, action)
+        return Outcome.Success(Unit)
+    }
 }
 
 /** A wall clock at [now] in UTC; [setTime] moves it and emits the new time as the minute. */

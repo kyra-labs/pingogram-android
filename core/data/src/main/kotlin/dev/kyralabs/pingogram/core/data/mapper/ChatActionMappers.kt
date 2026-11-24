@@ -22,3 +22,23 @@ internal fun TdApi.ChatAction.toChatAction(): ChatAction? =
         is TdApi.ChatActionWatchingAnimations -> ChatAction.WatchingAnimations(emoji)
         else -> null
     }
+
+/** TDLib's action for [this], to send (`sendChatAction`); null ends the user's action ([TdApi.ChatActionCancel]). */
+internal fun ChatAction?.toTdChatAction(): TdApi.ChatAction =
+    when (this) {
+        null -> TdApi.ChatActionCancel()
+        ChatAction.Typing -> TdApi.ChatActionTyping()
+        ChatAction.RecordingVoiceNote -> TdApi.ChatActionRecordingVoiceNote()
+        is ChatAction.UploadingVoiceNote -> TdApi.ChatActionUploadingVoiceNote(progress)
+        ChatAction.RecordingVideo -> TdApi.ChatActionRecordingVideo()
+        is ChatAction.UploadingVideo -> TdApi.ChatActionUploadingVideo(progress)
+        ChatAction.RecordingVideoNote -> TdApi.ChatActionRecordingVideoNote()
+        is ChatAction.UploadingVideoNote -> TdApi.ChatActionUploadingVideoNote(progress)
+        is ChatAction.UploadingPhoto -> TdApi.ChatActionUploadingPhoto(progress)
+        is ChatAction.UploadingDocument -> TdApi.ChatActionUploadingDocument(progress)
+        ChatAction.ChoosingSticker -> TdApi.ChatActionChoosingSticker()
+        ChatAction.ChoosingLocation -> TdApi.ChatActionChoosingLocation()
+        ChatAction.ChoosingContact -> TdApi.ChatActionChoosingContact()
+        ChatAction.PlayingGame -> TdApi.ChatActionStartPlayingGame()
+        is ChatAction.WatchingAnimations -> TdApi.ChatActionWatchingAnimations(emoji)
+    }

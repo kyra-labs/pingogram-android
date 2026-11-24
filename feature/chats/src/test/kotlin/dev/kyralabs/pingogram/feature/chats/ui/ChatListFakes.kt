@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ArchiveSettings
 import dev.kyralabs.pingogram.core.domain.model.ArchiveSettingsAvailability
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
@@ -269,6 +270,12 @@ class FakeChatActionRepository : ChatActionRepository {
         chatId: Long,
         topic: MessageTopic,
     ): Flow<ImmutableList<SenderAction>> = unused()
+
+    override suspend fun send(
+        chatId: Long,
+        topic: MessageTopic?,
+        action: ChatAction?,
+    ): Outcome<Unit> = unused()
 }
 
 class FakeConnectionRepository : ConnectionRepository {

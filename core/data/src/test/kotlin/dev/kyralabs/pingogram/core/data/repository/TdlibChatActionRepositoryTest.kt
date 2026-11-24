@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
+import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateChatAction
@@ -13,6 +14,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class TdlibChatActionRepositoryTest {
@@ -26,6 +29,25 @@ class TdlibChatActionRepositoryTest {
     private val cancel = TdApi.ChatActionCancel()
 
     private fun typing(userId: Long) = SenderAction(MessageSender.User(userId), ChatAction.Typing)
+
+    @Test
+    fun `sends what the user does in a chat's topic, and its end`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.SendChatAction::class, TdResult.Success(TdApi.Ok()))
+
+            repository.send(CHAT_ID, MessageTopic.Forum(7), ChatAction.Typing)
+            repository.send(CHAT_ID, null, ChatAction.UploadingPhoto(40))
+            repository.send(CHAT_ID, null, null)
+
+            val sent = client.sentOf<TdApi.SendChatAction>()
+            assertEquals(listOf(CHAT_ID, CHAT_ID, CHAT_ID), sent.map { it.chatId })
+            assertEquals(7, (sent[0].topicId as TdApi.MessageTopicForum).forumTopicId)
+            assertTrue(sent[0].action is TdApi.ChatActionTyping)
+            assertNull(sent[1].topicId)
+            assertEquals(40, (sent[1].action as TdApi.ChatActionUploadingPhoto).progress)
+            assertTrue(sent[2].action is TdApi.ChatActionCancel)
+        }
 
     @Test
     fun `there are no actions before TDLib reports one`() =
