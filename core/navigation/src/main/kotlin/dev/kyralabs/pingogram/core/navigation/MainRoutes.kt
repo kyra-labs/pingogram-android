@@ -25,6 +25,13 @@ data object ContactsRoute
 data object NewContactRoute
 
 /**
+ * Birthdays (`REQUIREMENTS.md` FR-X18), `:feature:contacts`: the contacts with a birthday these days, pushed above the
+ * Contacts tab from its Birthdays row.
+ */
+@Serializable
+data object BirthdaysRoute
+
+/**
  * Adding Telegram user [userId] to the contacts, or editing or deleting them as one (`REQUIREMENTS.md` FR-P1),
  * `:feature:contacts`, pushed above the screen it is opened from: the contacts list, or the user's profile.
  */
