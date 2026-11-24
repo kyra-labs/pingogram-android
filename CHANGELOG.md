@@ -144,6 +144,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
+  notification shows at once and fills in its name and photo as they come.
 - Pingogram no longer sometimes closes right as it opens.
 - The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
   start-up work, so the app opens faster again.

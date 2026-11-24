@@ -90,7 +90,32 @@ class CallNotifications
                 leave = CallActionReceiver.pendingIntent(context, CallActionReceiver.ACTION_LEAVE),
             )
 
-        /** The notification [call] shows now; [CallService] starts with it. */
+        /**
+         * A notification [CallService] can enter the foreground with at once, without looking anything up: the call's
+         * own if it shows already (so a ringing call keeps ringing), else a silent one saying where the call or voice
+         * chat going on is. [build] replaces it.
+         */
+        fun immediate(): Notification {
+            val shown =
+                context
+                    .getSystemService(NotificationManager::class.java)
+                    .activeNotifications
+                    .firstOrNull { it.id == ID }
+                    ?.notification
+            if (shown != null) return shown
+            val call = callManager.call.value?.takeIf { it.phase !is CallPhase.Ended }
+            val group = groupCallManager.call.value?.takeIf { !it.isOver() }
+            val status = call?.statusText() ?: group?.statusText()
+            val content =
+                if (call == null && group != null) {
+                    GroupCallActivity.pendingIntent(context, GroupCallActivity.ACTION_SHOW)
+                } else {
+                    CallActivity.pendingIntent(context, CallActivity.ACTION_SHOW)
+                }
+            return builder.placeholder(status?.let { context.getString(it) }, content)
+        }
+
+        /** The notification [call] shows now; [CallService] replaces its first one ([immediate]) with it. */
         suspend fun build(call: ActiveCall): Notification {
             val content = CallActivity.pendingIntent(context, CallActivity.ACTION_SHOW)
             return if (!call.isOutgoing && call.phase is CallPhase.Ringing) {

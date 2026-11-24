@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.calls.service
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -63,6 +64,9 @@ class CallService : Service() {
     private var camera = false
     private var screen = false
 
+    /** Whether it has entered the foreground: Android wants that before anything else, stopping included. */
+    private var foreground = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -100,14 +104,17 @@ class CallService : Service() {
     ): Int {
         microphone = microphone || intent?.getBooleanExtra(EXTRA_MICROPHONE, false) == true
         if (intent?.hasExtra(EXTRA_SCREEN) == true) screen = intent.getBooleanExtra(EXTRA_SCREEN, false)
+        // At once, before looking anything up: a service started for the foreground that stops or waits first is a
+        // crash on Android 12+.
+        if (!foreground) runInForeground(notifications.immediate())
         scope.launch { promote() }
         return START_NOT_STICKY
     }
 
     /**
-     * Runs in the foreground with the call's notification and the types the call needs now. Android asks for it within
-     * a few seconds: the notification needs the caller's avatar, which TDLib usually has at once; a placeholder-free
-     * notification is never shown.
+     * Runs in the foreground with the call's notification and the types the call needs now, or stops once there is no
+     * call. The notification needs the caller's avatar, which TDLib usually has at once; until it is built, or if it
+     * cannot be, the first one stays.
      */
     private suspend fun promote() {
         val call = callManager.call.value?.takeIf { it.phase !is CallPhase.Ended }
@@ -119,11 +126,12 @@ class CallService : Service() {
         val notification =
             withTimeoutOrNull(BUILD_TIMEOUT) {
                 if (call != null) notifications.build(call) else group?.let { notifications.build(it) }
-            }
-        if (notification == null) {
-            stop()
-            return
-        }
+            } ?: return
+        runInForeground(notification)
+    }
+
+    private fun runInForeground(notification: Notification) {
+        foreground = true
         try {
             ServiceCompat.startForeground(this, CallNotifications.ID, notification, types())
             // types() includes mediaProjection from Android 10 on: before, there are no types to wait for.
@@ -173,6 +181,8 @@ class CallService : Service() {
     }
 
     private fun stop() {
+        // Started for the foreground, it must have entered it before it stops.
+        if (!foreground) runInForeground(notifications.immediate())
         setProximity(false)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
