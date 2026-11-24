@@ -301,6 +301,9 @@ decision 2026-11-23).
 - FR-X13 Should: **Undo and redo in the message box** (owner decision 2026-11-23). Settings → Chats → Messages →
   "Undo and redo", on by default: the message box's menu and its screen-reader actions offer "Undo" and "Redo" while
   its history allows them; off, they leave the menu. A keyboard's Ctrl+Z works either way.
+- FR-X14 Should: **Save or unpin several messages** (owner decision 2026-11-23). The conversation's selection
+  toolbar offers "Save to Downloads" where every selected message may be saved and has a file, and "Unpin" where every
+  one is pinned; each acts on all of them and ends selection mode. No setting: they join the toolbar's other actions.
 
 ## 6. Non-functional requirements
 

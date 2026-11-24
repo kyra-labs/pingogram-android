@@ -18,7 +18,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of selection mode and of reporting messages on a compact phone (`docs/TESTING.md`), light and dark: three
- * messages of a private chat selected, with the selection bar and the toolbar in the composer's place; the report sheet
+ * messages of a private chat selected, with the selection bar and the toolbar in the composer's place (also with all
+ * six of its actions, saving and unpinning among them, FR-X14); the report sheet
  * at Telegram's reasons; and at its comment. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -72,6 +73,7 @@ class SelectionScreenshotTest(
         val STATES =
             mapOf(
                 "selecting" to SelectionPreviewData.selecting,
+                "allActions" to SelectionPreviewData.allActions,
                 "report" to SelectionPreviewData.reporting,
                 "comment" to
                     SelectionPreviewData.selecting.copy(report = ReportSheet(ReportStep.Comment(isOptional = false))),
