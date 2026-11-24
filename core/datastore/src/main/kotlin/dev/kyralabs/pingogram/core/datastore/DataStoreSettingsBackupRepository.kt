@@ -149,6 +149,7 @@ internal val BackedUpSettings: Set<String> =
         "privacy.direct_share",
         "privacy.show_ids",
         "privacy.incognito_keyboard",
+        "privacy.send_typing_status",
         "privacy.clean_links",
         "share.chats_shown_first",
         "stickers.suggestions",

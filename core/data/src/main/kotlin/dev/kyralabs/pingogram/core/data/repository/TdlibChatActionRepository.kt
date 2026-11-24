@@ -1,10 +1,14 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatAction
 import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toMessageTopic
+import dev.kyralabs.pingogram.core.data.mapper.toTdChatAction
+import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
@@ -43,7 +47,7 @@ import kotlin.reflect.KClass
 class TdlibChatActionRepository
     @Inject
     constructor(
-        client: TdlibClient,
+        private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
     ) : ChatActionRepository,
         TdlibUpdateCache {
@@ -60,6 +64,15 @@ class TdlibChatActionRepository
             chatId: Long,
             topic: MessageTopic,
         ): Flow<ImmutableList<SenderAction>> = store.state.map { it.inTopic(chatId, topic) }.distinctUntilChanged()
+
+        override suspend fun send(
+            chatId: Long,
+            topic: MessageTopic?,
+            action: ChatAction?,
+        ): Outcome<Unit> =
+            client
+                .request(TdApi.SendChatAction(chatId, topic?.toTdMessageTopic(), "", action.toTdChatAction()))
+                .map {}
     }
 
 /** Senders' actions in order; a chat or topic without actions has no entry. */

@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
+import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ChatAction
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import kotlinx.collections.immutable.ImmutableList
@@ -35,4 +37,15 @@ interface ChatActionRepository {
         chatId: Long,
         topic: MessageTopic,
     ): Flow<ImmutableList<SenderAction>>
+
+    /**
+     * Tells chat [chatId], in [topic] where it has one, what the user is doing now ([action]: typing, recording,
+     * uploading); a null [action] ends it. The others see it for a few seconds: the caller sends it again, at most
+     * every five seconds, while it lasts. Whether to send at all is the caller's (`TypingStatusRepository`).
+     */
+    suspend fun send(
+        chatId: Long,
+        topic: MessageTopic?,
+        action: ChatAction?,
+    ): Outcome<Unit>
 }
