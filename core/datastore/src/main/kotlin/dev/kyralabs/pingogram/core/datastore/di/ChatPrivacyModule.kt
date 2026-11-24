@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreIncognitoKeyboardRepositor
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLockedChatIdsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreSharePhoneNumberRepository
 import dev.kyralabs.pingogram.core.domain.repository.AiEditorConsentRepository
 import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeclinedBirthdaysRepository
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharePhoneNumberRepository
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that keep what the screen and Telegram see of the user's
@@ -50,6 +52,9 @@ interface ChatPrivacyModule {
 
     @Binds
     fun cleanLinksRepository(repository: DataStoreCleanLinksRepository): CleanLinksRepository
+
+    @Binds
+    fun sharePhoneNumberRepository(repository: DataStoreSharePhoneNumberRepository): SharePhoneNumberRepository
 
     @Binds
     fun directShareRepository(repository: DataStoreDirectShareRepository): DirectShareRepository

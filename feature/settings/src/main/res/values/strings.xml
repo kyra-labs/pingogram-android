@@ -1438,6 +1438,8 @@
     <string name="settings_hide_phone_numbers">Hide phone numbers</string>
     <!-- "Calling code", the "+44" part, never "country code": some places are regions. -->
     <string name="settings_hide_phone_numbers_summary">Shows only their calling code everywhere in Pingogram, for sharing your screen or streaming</string>
+    <string name="settings_share_phone_number">Share my phone number with new contacts</string>
+    <string name="settings_share_phone_number_summary">When you add someone, they can see your number. You can still change this on each contact’s form.</string>
     <string name="settings_clean_links">Remove tracking from links</string>
     <string name="settings_clean_links_summary">Links you send and open lose the parts that only tell sites where you came from, such as utm_source</string>
     <string name="settings_incognito_keyboard">Incognito keyboard</string>

@@ -57,6 +57,7 @@ internal fun PrivacySecurityRoute(
     idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
     incognitoKeyboardViewModel: IncognitoKeyboardViewModel = hiltViewModel(),
     cleanLinksViewModel: CleanLinksViewModel = hiltViewModel(),
+    sharePhoneNumberViewModel: SharePhoneNumberViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
@@ -79,6 +80,7 @@ internal fun PrivacySecurityRoute(
         directShareViewModel.errors,
         incognitoKeyboardViewModel.errors,
         cleanLinksViewModel.errors,
+        sharePhoneNumberViewModel.errors,
     )
     PrivacySecurityRefreshAndSync(viewModel, contactSyncViewModel, snackbarHostState)
     PrivacySecurityScreen(
@@ -102,6 +104,8 @@ internal fun PrivacySecurityRoute(
         onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
         cleanLinks = cleanLinksViewModel.enabled.collectAsStateWithLifecycle().value,
         onCleanLinksChange = cleanLinksViewModel::onCheckedChange,
+        sharesPhoneNumber = sharePhoneNumberViewModel.enabled.collectAsStateWithLifecycle().value,
+        onSharesPhoneNumberChange = sharePhoneNumberViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
         drafts = drafts,
@@ -118,8 +122,8 @@ internal fun PrivacySecurityRoute(
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page, then
  *   "Remove tracking from links" ([cleanLinks], on by default, `REQUIREMENTS.md` FR-X8), a switch;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
- *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), and "Suggest frequent contacts"
- *   ([suggestsFrequent]);
+ *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), "Suggest frequent contacts"
+ *   ([suggestsFrequent]) and "Share my phone number with new contacts" ([sharesPhoneNumber], FR-X9);
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
@@ -151,6 +155,8 @@ internal fun PrivacySecurityScreen(
     onIncognitoKeyboardChange: (Boolean) -> Unit = {},
     cleanLinks: Boolean? = null,
     onCleanLinksChange: (Boolean) -> Unit = {},
+    sharesPhoneNumber: Boolean? = null,
+    onSharesPhoneNumberChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
     drafts: DataOptionsUiState = DataOptionsUiState(),
@@ -178,7 +184,14 @@ internal fun PrivacySecurityScreen(
                     SecuritySection(state, onOpen, incognitoKeyboard, onIncognitoKeyboardChange)
                 }
                 PrivacySection(state, onOpen, cleanLinks, onCleanLinksChange)
-                ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
+                ContactsSection(
+                    contactSync,
+                    onContactSyncChange,
+                    suggestsFrequent,
+                    onSuggestsFrequentChange,
+                    sharesPhoneNumber,
+                    onSharesPhoneNumberChange,
+                )
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(
                     hidden = phoneNumbersHidden,
@@ -204,12 +217,7 @@ internal fun PrivacySecurityScreen(
             }
         }
     }
-    if (drafts.isDeleteDraftsDialogOpen) {
-        DeleteDraftsDialog(
-            onConfirm = { onDraftsEvent(DataOptionsEvent.ConfirmDeleteDrafts) },
-            onDismiss = { onDraftsEvent(DataOptionsEvent.DismissDeleteDrafts) },
-        )
-    }
+    DeleteDraftsDialogHost(drafts, onDraftsEvent)
 }
 
 @Composable

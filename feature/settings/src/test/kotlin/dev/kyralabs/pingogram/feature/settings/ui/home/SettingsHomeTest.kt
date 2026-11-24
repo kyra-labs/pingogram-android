@@ -141,6 +141,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the phone number sharing switch by its name`() {
+        show()
+        search("new contacts")
+
+        composeRule.onNode(hasText(string(R.string.settings_share_phone_number)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)
