@@ -108,8 +108,9 @@ class FakeContactRepository : ContactRepository {
         phoneNumber: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<AddContactResult> {
-        calls += "addByPhoneNumber:$phoneNumber:$firstName:$lastName"
+        calls += "addByPhoneNumber:$phoneNumber:$firstName:$lastName:$sharePhoneNumber"
         return onAddByPhoneNumber(phoneNumber, firstName, lastName)
     }
 
@@ -117,8 +118,9 @@ class FakeContactRepository : ContactRepository {
         username: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<Long> {
-        calls += "addByUsername:$username:$firstName:$lastName"
+        calls += "addByUsername:$username:$firstName:$lastName:$sharePhoneNumber"
         return onAddByUsername(username, firstName, lastName)
     }
 

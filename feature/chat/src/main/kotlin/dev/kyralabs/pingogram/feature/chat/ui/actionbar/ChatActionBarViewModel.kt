@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionBarRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharePhoneNumberRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ActionBarEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,9 +39,9 @@ import kotlinx.coroutines.launch
  * The action bar of chat [chatId] (td_api.tl `chat.action_bar`, `docs/DESIGN_SYSTEM.md` §6 "Chat action bar"): what
  * TDLib suggests doing about a chat someone new started, with that person's name. Blocking asks first ([blockDialog],
  * kept across process death), then blocks the other user and dismisses the bar; "Add contact" adds them by their
- * name; "Share my phone number" shares it with them; the close button dismisses the bar (`removeChatActionBar`). Each
- * only on the user's tap; results and refusals reach the conversation's snackbar through [effects]. TDLib then reports
- * the bar's change, which [bar] follows.
+ * name, sharing the user's number only by their default (FR-X9); "Share my phone number" shares it with them; the
+ * close button dismisses the bar (`removeChatActionBar`). Each only on the user's tap; results and refusals reach the
+ * conversation's snackbar through [effects]. TDLib then reports the bar's change, which [bar] follows.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ChatActionBarViewModel.Factory::class)
@@ -55,6 +56,7 @@ class ChatActionBarViewModel
         private val contacts: ContactRepository,
         private val blockList: BlockListRepository,
         private val actionBars: ChatActionBarRepository,
+        private val sharingDefault: SharePhoneNumberRepository,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -126,7 +128,8 @@ class ChatActionBarViewModel
         private fun addContact() =
             act(ActionBarEffect.ContactAdded) { userId ->
                 val user: User? = users.user(userId).first()
-                contacts.save(userId, user?.firstName.orEmpty(), user?.lastName.orEmpty(), sharePhoneNumber = false)
+                val share = sharingDefault.enabled.first()
+                contacts.save(userId, user?.firstName.orEmpty(), user?.lastName.orEmpty(), sharePhoneNumber = share)
             }
 
         private fun sharePhoneNumber() = act(ActionBarEffect.PhoneNumberShared) { actionBars.sharePhoneNumber(it) }

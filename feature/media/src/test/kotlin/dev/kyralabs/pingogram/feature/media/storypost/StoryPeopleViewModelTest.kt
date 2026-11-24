@@ -173,12 +173,14 @@ internal class FakeContacts : ContactRepository {
         phoneNumber: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<AddContactResult> = Outcome.Failure(DomainError.NotFound)
 
     override suspend fun addByUsername(
         username: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<Long> = Outcome.Failure(DomainError.NotFound)
 
     override suspend fun editableContact(userId: Long): Outcome<EditableContact> = Outcome.Failure(DomainError.NotFound)

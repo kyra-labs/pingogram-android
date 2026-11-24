@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.EditableContact
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharePhoneNumberRepository
 import dev.kyralabs.pingogram.core.navigation.EditContactRoute
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -30,8 +32,9 @@ import kotlin.time.Duration.Companion.seconds
  *
  * - **Loading**: [ContactRepository.editableContact], after the screen's first frame; a failure shows its error until
  *   [EditContactEvent.Retry]. The fields start with the contact's names (for a user who is no contact yet, the user's
- *   own) and the note the current user keeps about them, and "Share my phone number" off, offered only where the user
- *   cannot see the number yet.
+ *   own) and the note the current user keeps about them. "Share my phone number", offered only where the user cannot
+ *   see the number yet, starts off for a contact and from the user's default for someone added
+ *   ([SharePhoneNumberRepository], `REQUIREMENTS.md` FR-X9).
  * - **Fields** are kept in the [SavedStateHandle] as they are typed, and so is the delete question, so they survive
  *   process death; names at most Telegram's 64 characters, the note `ProfileLimits.NOTE_LENGTH_MAX`.
  * - **The note** goes with the names only where it was changed, as plain text; unchanged, the contact keeps theirs,
@@ -46,12 +49,19 @@ class EditContactViewModel internal constructor(
     private val userId: Long,
     private val savedStateHandle: SavedStateHandle,
     private val contactRepository: ContactRepository,
+    private val sharePhoneNumberRepository: SharePhoneNumberRepository,
 ) : ViewModel() {
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
         contactRepository: ContactRepository,
-    ) : this(savedStateHandle.toRoute<EditContactRoute>().userId, savedStateHandle, contactRepository)
+        sharePhoneNumberRepository: SharePhoneNumberRepository,
+    ) : this(
+        savedStateHandle.toRoute<EditContactRoute>().userId,
+        savedStateHandle,
+        contactRepository,
+        sharePhoneNumberRepository,
+    )
 
     private val mutableUiState = MutableStateFlow<EditContactUiState>(EditContactUiState.Loading)
     val uiState: StateFlow<EditContactUiState> = mutableUiState.asStateFlow()
@@ -120,14 +130,23 @@ class EditContactViewModel internal constructor(
         loadJob =
             viewModelScope.launch {
                 when (val loaded = contactRepository.editableContact(userId)) {
-                    is Outcome.Success -> mutableUiState.value = loaded.value.toContent()
-                    is Outcome.Failure -> mutableUiState.value = EditContactUiState.Error(loaded.error)
+                    is Outcome.Success -> {
+                        val sharesByDefault = !loaded.value.user.isContact && sharePhoneNumberRepository.enabled.first()
+                        mutableUiState.value = loaded.value.toContent(sharesByDefault)
+                    }
+
+                    is Outcome.Failure -> {
+                        mutableUiState.value = EditContactUiState.Error(loaded.error)
+                    }
                 }
             }
     }
 
-    /** The screen for [this] contact, with what was typed before process death, if anything, in its fields. */
-    private fun EditableContact.toContent(): EditContactUiState.Content =
+    /**
+     * The screen for [this] contact, with what was typed before process death, if anything, in its fields; sharing the
+     * number as [sharesByDefault] where nothing was chosen yet.
+     */
+    private fun EditableContact.toContent(sharesByDefault: Boolean): EditContactUiState.Content =
         EditContactUiState.Content(
             userId = user.id,
             name = user.contactName(),
@@ -137,7 +156,7 @@ class EditContactViewModel internal constructor(
             canSharePhoneNumber = canSharePhoneNumber,
             firstName = savedStateHandle.get<String>(KEY_FIRST_NAME) ?: user.firstName,
             lastName = savedStateHandle.get<String>(KEY_LAST_NAME) ?: user.lastName,
-            sharePhoneNumber = canSharePhoneNumber && savedStateHandle.get<Boolean>(KEY_SHARE) == true,
+            sharePhoneNumber = canSharePhoneNumber && (savedStateHandle.get<Boolean>(KEY_SHARE) ?: sharesByDefault),
             note = savedStateHandle.get<String>(KEY_NOTE) ?: note,
             savedNote = note,
             showsDeleteDialog = user.isContact && savedStateHandle.get<Boolean>(KEY_DELETE) == true,

@@ -134,7 +134,7 @@ class NewContactViewModel
                 return
             }
             request(
-                action = { contactRepository.addByPhoneNumber("+$digits", state.firstName, state.lastName) },
+                action = { contactRepository.addByPhoneNumber("+$digits", state.firstName, state.lastName, false) },
                 onSuccess = { result ->
                     when (result) {
                         is AddContactResult.Added -> effectChannel.trySend(NewContactEffect.Added(result.userId))
@@ -151,7 +151,7 @@ class NewContactViewModel
                 return
             }
             request(
-                action = { contactRepository.addByUsername(username, state.firstName, state.lastName) },
+                action = { contactRepository.addByUsername(username, state.firstName, state.lastName, false) },
                 onSuccess = { userId -> effectChannel.trySend(NewContactEffect.Added(userId)) },
             )
         }

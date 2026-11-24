@@ -118,11 +118,20 @@ class TdlibContactRepository
             phoneNumber: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<AddContactResult> {
             val contact = TdApi.ImportedContact(phoneNumber.trim(), firstName.trim(), lastName.trim(), emptyNote())
-            return client.request(TdApi.ImportContacts(arrayOf(contact))).map { imported ->
-                val userId = imported.userIds.firstOrNull() ?: 0L
-                if (userId == 0L) AddContactResult.NotOnTelegram else AddContactResult.Added(userId)
+            val imported = client.request(TdApi.ImportContacts(arrayOf(contact)))
+            val userId = (imported as? Outcome.Success)?.value?.userIds?.firstOrNull() ?: 0L
+            return when {
+                imported is Outcome.Failure -> imported
+
+                userId == 0L -> Outcome.Success(AddContactResult.NotOnTelegram)
+
+                !sharePhoneNumber -> Outcome.Success(AddContactResult.Added(userId))
+
+                // importContacts cannot share the number; addContact, with the same names, does.
+                else -> client.request(TdApi.AddContact(userId, contact, true)).map { AddContactResult.Added(userId) }
             }
         }
 
@@ -130,6 +139,7 @@ class TdlibContactRepository
             username: String,
             firstName: String,
             lastName: String,
+            sharePhoneNumber: Boolean,
         ): Outcome<Long> =
             when (val found = publicUser(username.trim().removePrefix("@"))) {
                 is Outcome.Success -> {
@@ -137,7 +147,7 @@ class TdlibContactRepository
                     val first = firstName.trim().ifEmpty { user.firstName }
                     val last = if (firstName.isBlank()) user.lastName else lastName.trim()
                     val contact = TdApi.ImportedContact(user.phoneNumber, first, last, currentNote(user.id))
-                    client.request(TdApi.AddContact(user.id, contact, false)).map { user.id }
+                    client.request(TdApi.AddContact(user.id, contact, sharePhoneNumber)).map { user.id }
                 }
 
                 is Outcome.Failure -> {

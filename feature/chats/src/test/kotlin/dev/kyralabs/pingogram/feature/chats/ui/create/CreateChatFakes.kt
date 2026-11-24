@@ -59,12 +59,14 @@ class FakeContactRepository : ContactRepository {
         phoneNumber: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<AddContactResult> = unused()
 
     override suspend fun addByUsername(
         username: String,
         firstName: String,
         lastName: String,
+        sharePhoneNumber: Boolean,
     ): Outcome<Long> = unused()
 
     override suspend fun editableContact(userId: Long): Outcome<EditableContact> = unused()
