@@ -30,6 +30,10 @@
     <string name="reminder_notification_locked">A message in a locked chat</string>
     <string name="reminder_action_open">Open</string>
     <string name="reminder_action_snooze">Snooze 1 h</string>
+    <!-- A birthday reminder the user set on the Birthdays page (FR-X18). %1$s is the contact's name. -->
+    <string name="birthday_notification_title">%1$s\'s birthday</string>
+    <string name="birthday_notification_title_unnamed">A birthday today</string>
+    <string name="birthday_notification_text">Today is their birthday. Send them a message?</string>
     <string name="notification_channel_keyword_alerts">Keyword alerts</string>
     <string name="notification_channel_keyword_alerts_description">Messages with your keyword alert words from muted chats, matched on this phone.</string>
     <!-- A keyword alert's subtext, beside the app's name: the word that matched, and that its chat is muted (alerts come for muted chats only). -->
