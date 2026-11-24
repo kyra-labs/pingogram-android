@@ -16,6 +16,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Send silently by default: Settings → Chats → Messages; touch and hold Send to send one with sound.
 - Confirm bot commands: Settings → Chats → Messages asks before a command from a bot's menu is sent.
 - Undo and redo in the message box's menu; Settings → Chats → Messages can leave them out.
+- Save to Downloads and Unpin for several selected messages at once.
+- What a double tap does, for messages you received and for your own: react, reply or nothing.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer
@@ -144,6 +146,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
+  notification shows at once and fills in its name and photo as they come.
+- A call that ends while it is still connecting no longer leaves the microphone on, and closing a voice chat's screen
+  while it joins no longer leaves it stuck at "Joining".
+- Calls connect more reliably: what the other phone sends to set up the call reaches it in the order it was sent.
 - Adding an account just after another one logged out no longer signs in to the account that is leaving, whose
   data was then deleted.
 - With more than one account, Pingogram opens without waiting for the other accounts to start: they start in the

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.reactions
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.DoubleTapReactions
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.testing.FakeDoubleTapSettingsRepository
@@ -149,24 +150,28 @@ class QuickReactionViewModelTest {
         }
 
     @Test
-    fun `the switches save where a double tap reacts`() =
+    fun `each side's choice saves what a double tap does there`() =
         runTest(dispatcher) {
             val viewModel = viewModel()
             announceEmoji("👍")
             runCurrent()
 
-            viewModel.onEvent(QuickReactionEvent.SetOutgoing(false))
+            viewModel.onEvent(QuickReactionEvent.SetOutgoing(DoubleTapAction.Reply))
             runCurrent()
-            assertEquals(DoubleTapReactions(incoming = true, outgoing = false), doubleTap.doubleTap.first())
-            assertEquals(DoubleTapReactions(incoming = true, outgoing = false), viewModel.content.doubleTap)
+            val replyOnOwn = DoubleTapReactions(incoming = DoubleTapAction.React, outgoing = DoubleTapAction.Reply)
+            assertEquals(replyOnOwn, doubleTap.doubleTap.first())
+            assertEquals(replyOnOwn, viewModel.content.doubleTap)
 
-            viewModel.onEvent(QuickReactionEvent.SetIncoming(false))
+            viewModel.onEvent(QuickReactionEvent.SetIncoming(DoubleTapAction.Nothing))
             runCurrent()
-            assertEquals(DoubleTapReactions(incoming = false, outgoing = false), viewModel.content.doubleTap)
+            assertEquals(
+                DoubleTapReactions(incoming = DoubleTapAction.Nothing, outgoing = DoubleTapAction.Reply),
+                viewModel.content.doubleTap,
+            )
         }
 
     @Test
-    fun `a switch that cannot be saved is a snackbar`() =
+    fun `a choice that cannot be saved is a snackbar`() =
         runTest(dispatcher) {
             doubleTap.failure = DomainError.Unknown(code = 0, message = "Disk full")
             val viewModel = viewModel()
@@ -174,7 +179,7 @@ class QuickReactionViewModelTest {
             runCurrent()
 
             viewModel.effects.test {
-                viewModel.onEvent(QuickReactionEvent.SetIncoming(false))
+                viewModel.onEvent(QuickReactionEvent.SetIncoming(DoubleTapAction.Nothing))
                 runCurrent()
 
                 assertTrue((awaitItem() as QuickReactionEffect.ShowError).error is DomainError.Unknown)

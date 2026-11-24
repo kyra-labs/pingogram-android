@@ -35,9 +35,11 @@ import kotlinx.coroutines.launch
  *   and back ([clear]).
  * - **Kept** in the [savedState] by message id, so selection mode survives rotation and process death. Only loaded
  *   messages show as selected: a deleted message drops out at once, and the next change keeps only loaded ones.
- * - **Toolbar** ([actionsFor]): copying where every message may be saved and one has a text, forwarding, reporting and
- *   deleting where TDLib allows it for every one of them (`getMessageProperties`, asked for all at once, from
- *   memory). While TDLib answers for a changed selection, the toolbar keeps what it offered.
+ * - **Toolbar** ([actionsFor]): copying where every message may be saved and one has a text, forwarding, saving
+ *   their files to Downloads where every one may be saved and has a file, unpinning where every one is pinned,
+ *   reporting and deleting where TDLib allows it for every one of them (`getMessageProperties`, asked for all at
+ *   once, from memory; `REQUIREMENTS.md` FR-X14). While TDLib answers for a changed selection, the toolbar keeps
+ *   what it offered.
  * - **Acting** ([perform]) asks TDLib again, as the properties change with time, and runs the action on the selected
  *   messages, oldest first, only if it is still allowed for all of them; else a snackbar says it is not available.
  *
@@ -185,6 +187,10 @@ internal class ChatSelection(
                     add(MessageAction.Copy)
                 }
                 if (properties.all { it.canBeForwarded }) add(MessageAction.Forward)
+                if (properties.all { it.canBeSaved } && messages.all { it.downloadsFile != null }) {
+                    add(MessageAction.SaveToDownloads)
+                }
+                if (messages.all { it.isPinned } && properties.all { it.canBePinned }) add(MessageAction.Unpin)
                 if (properties.all { it.canBeReported }) add(MessageAction.Report)
                 if (properties.all { it.canBeDeletedOnlyForSelf || it.canBeDeletedForAllUsers }) {
                     add(
