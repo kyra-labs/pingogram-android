@@ -187,7 +187,7 @@ class TdlibContactRepositoryTest {
                 TdApi.ImportContacts::class,
             ) { TdResult.Success(TdApi.ImportedContacts(longArrayOf(7), intArrayOf(0))) }
 
-            val result = repository().addByPhoneNumber(" +44 7911 123456 ", " Grace ", "Hopper ")
+            val result = repository().addByPhoneNumber(" +44 7911 123456 ", " Grace ", "Hopper ", false)
 
             assertEquals(Outcome.Success(AddContactResult.Added(7)), result)
             val contact =
@@ -200,6 +200,25 @@ class TdlibContactRepositoryTest {
             assertEquals("Grace", contact.firstName)
             assertEquals("Hopper", contact.lastName)
             assertEquals("", contact.note.text)
+            assertTrue(client.sentOf<TdApi.AddContact>().isEmpty())
+        }
+
+    @Test
+    fun `adding by phone number with the number shared adds the imported user again, sharing it`() =
+        runTest {
+            client.on(
+                TdApi.ImportContacts::class,
+            ) { TdResult.Success(TdApi.ImportedContacts(longArrayOf(7), intArrayOf(0))) }
+            client.on(TdApi.AddContact::class) { TdResult.Success(TdApi.Ok()) }
+
+            val result = repository().addByPhoneNumber("+447911123456", "Grace", "Hopper", true)
+
+            assertEquals(Outcome.Success(AddContactResult.Added(7)), result)
+            val add = client.sentOf<TdApi.AddContact>().single()
+            assertEquals(7L, add.userId)
+            assertEquals("Grace", add.contact.firstName)
+            assertEquals("Hopper", add.contact.lastName)
+            assertTrue(add.sharePhoneNumber)
         }
 
     @Test
@@ -211,8 +230,9 @@ class TdlibContactRepositoryTest {
 
             assertEquals(
                 Outcome.Success(AddContactResult.NotOnTelegram),
-                repository().addByPhoneNumber("+447911123456", "Grace", ""),
+                repository().addByPhoneNumber("+447911123456", "Grace", "", true),
             )
+            assertTrue(client.sentOf<TdApi.AddContact>().isEmpty())
         }
 
     @Test
@@ -222,7 +242,7 @@ class TdlibContactRepositoryTest {
 
             assertEquals(
                 Outcome.Failure(DomainError.PhoneNumberInvalid),
-                repository().addByPhoneNumber("+1", "Grace", ""),
+                repository().addByPhoneNumber("+1", "Grace", "", false),
             )
         }
 
@@ -235,7 +255,7 @@ class TdlibContactRepositoryTest {
             client.on(TdApi.GetUserFullInfo::class, failure(400, "User not found"))
             client.on(TdApi.AddContact::class) { TdResult.Success(TdApi.Ok()) }
 
-            assertEquals(Outcome.Success(7L), repository.addByUsername(" @grace ", "", ""))
+            assertEquals(Outcome.Success(7L), repository.addByUsername(" @grace ", "", "", false))
 
             assertEquals("grace", client.sentOf<TdApi.SearchPublicChat>().single().username)
             val add = client.sentOf<TdApi.AddContact>().single()
@@ -254,11 +274,25 @@ class TdlibContactRepositoryTest {
             client.on(TdApi.GetUserFullInfo::class, failure(400, "User not found"))
             client.on(TdApi.AddContact::class) { TdResult.Success(TdApi.Ok()) }
 
-            repository.addByUsername("grace", "Admiral", "")
+            repository.addByUsername("grace", "Admiral", "", false)
 
             val contact = client.sentOf<TdApi.AddContact>().single().contact
             assertEquals("Admiral", contact.firstName)
             assertEquals("", contact.lastName)
+        }
+
+    @Test
+    fun `adding by username with the number shared tells TDLib to share it`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 7, firstName = "Grace", lastName = "Hopper")))
+            client.on(TdApi.SearchPublicChat::class) { TdResult.Success(chat(id = 7, type = TdApi.ChatTypePrivate(7))) }
+            client.on(TdApi.GetUserFullInfo::class, failure(400, "User not found"))
+            client.on(TdApi.AddContact::class) { TdResult.Success(TdApi.Ok()) }
+
+            repository.addByUsername("grace", "", "", true)
+
+            assertTrue(client.sentOf<TdApi.AddContact>().single().sharePhoneNumber)
         }
 
     @Test
@@ -268,14 +302,14 @@ class TdlibContactRepositoryTest {
             client.on(TdApi.SearchPublicChat::class) {
                 TdResult.Success(chat(id = -100, type = TdApi.ChatTypeSupergroup(100, true)))
             }
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("news", "", ""))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("news", "", "", false))
 
             client.emit(updateUser(user(id = 9, firstName = "Bot", type = TdApi.UserTypeBot())))
             client.on(TdApi.SearchPublicChat::class) { TdResult.Success(chat(id = 9, type = TdApi.ChatTypePrivate(9))) }
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("somebot", "", ""))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("somebot", "", "", false))
 
             client.on(TdApi.SearchPublicChat::class, failure(400, "USERNAME_NOT_OCCUPIED"))
-            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("nobody", "", ""))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.addByUsername("nobody", "", "", false))
             assertTrue(client.sentOf<TdApi.AddContact>().isEmpty())
         }
 

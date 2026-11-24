@@ -146,7 +146,7 @@ class NewContactViewModelTest {
 
             send(viewModel, NewContactEvent.Submit)
 
-            assertTrue(contacts.calls.contains("addByPhoneNumber:+447911123456:Grace:Hopper"))
+            assertTrue(contacts.calls.contains("addByPhoneNumber:+447911123456:Grace:Hopper:false"))
             assertEquals(listOf(NewContactEffect.Added(7)), effects)
         }
 
@@ -298,7 +298,7 @@ class NewContactViewModelTest {
 
             send(viewModel, NewContactEvent.Submit)
 
-            assertTrue(contacts.calls.contains("addByUsername:grace::"))
+            assertTrue(contacts.calls.contains("addByUsername:grace:::false"))
             assertEquals(listOf(NewContactEffect.Added(7)), effects)
         }
 
