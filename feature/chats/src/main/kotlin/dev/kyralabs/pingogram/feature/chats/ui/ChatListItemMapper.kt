@@ -76,9 +76,9 @@ internal class ChatListItemMapper {
         var reusedAll = chats.size == previousItems.size
         val items =
             chats.mapIndexed { index, chat ->
-                val inputs = sources.inputsOf(chat)
-                val reused = previous[chat.id]?.takeIf { it.inputs == inputs }
-                val row = reused ?: Row(inputs, inputs.toItem(sources))
+                // Compared before anything is built: most rows stay as they were.
+                val reused = previous[chat.id]?.takeIf { it.inputs.matches(chat, sources) }
+                val row = reused ?: sources.inputsOf(chat).let { inputs -> Row(inputs, inputs.toItem(sources)) }
                 rows[chat.id] = row
                 if (reusedAll && (reused == null || previousItems[index] !== row.item)) reusedAll = false
                 row.item
@@ -97,7 +97,7 @@ internal class ChatListItemMapper {
 
 /**
  * Everything one row is made from. [referencedUsers] are the users whose names it may show (the last message's sender,
- * members of a service message, people typing), in the order [referencedUserIds] lists them.
+ * members of a service message, people typing), in the order [forEachReferencedUserId] gives them.
  */
 private data class RowInputs(
     val chat: Chat,
@@ -111,7 +111,43 @@ private data class RowInputs(
     val myUserId: Long?,
     val now: Instant,
     val timeFormatter: ChatListTimeFormatter,
-)
+) {
+    /** Whether these are the inputs [chat] has in [sources] ([inputsOf]), found without building those. */
+    fun matches(
+        chat: Chat,
+        sources: RowSources,
+    ): Boolean {
+        val snapshot = sources.snapshot
+        val sameList =
+            list == sources.list &&
+                myUserId == snapshot.myUserId &&
+                now == snapshot.now &&
+                timeFormatter == sources.timeFormatter
+        return sameList && this.chat == chat && sameAround(chat, sources)
+    }
+
+    /** Whether what [chat]'s row shows besides the chat itself is the same in [sources]. */
+    private fun sameAround(
+        chat: Chat,
+        sources: RowSources,
+    ): Boolean {
+        val snapshot = sources.snapshot
+        val users = snapshot.users
+        val actions = snapshot.actionsByChat[chat.id]
+        val sameChats =
+            user == chat.userId?.let(users::get) &&
+                supergroup == (chat.type as? ChatType.Supergroup)?.let { snapshot.supergroups[it.supergroupId] } &&
+                secretChat == (chat.type as? ChatType.Secret)?.let { snapshot.secretChats[it.secretChatId] }
+        if (!sameChats || this.actions != actions || forumTopics != sources.forumTopics[chat.id]) return false
+        var index = 0
+        var sameUsers = true
+        forEachReferencedUserId(chat, actions) { id ->
+            sameUsers = sameUsers && index < referencedUsers.size && referencedUsers[index] == users[id]
+            index++
+        }
+        return sameUsers && index == referencedUsers.size
+    }
+}
 
 private fun RowSources.inputsOf(chat: Chat): RowInputs {
     val actions = snapshot.actionsByChat[chat.id]
@@ -124,28 +160,28 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         secretChat = (chat.type as? ChatType.Secret)?.let { snapshot.secretChats[it.secretChatId] },
         actions = actions,
         forumTopics = forumTopics[chat.id],
-        referencedUsers = referencedUserIds(chat, actions).map(users::get),
+        referencedUsers = buildList { forEachReferencedUserId(chat, actions) { add(users[it]) } },
         myUserId = snapshot.myUserId,
         now = snapshot.now,
         timeFormatter = timeFormatter,
     )
 }
 
-/** The users whose names a row may show; [toItem] looks up no others. */
-private fun referencedUserIds(
+/** Each user whose name a row may show, in order; [toItem] looks up no others. */
+private inline fun forEachReferencedUserId(
     chat: Chat,
     actions: List<SenderAction>?,
-): List<Long> =
-    buildList {
-        val message = chat.lastMessage
-        (message?.sender as? MessageSender.User)?.let { add(it.userId) }
-        when (val action = (message?.content as? MessageContent.Service)?.action) {
-            is ServiceAction.MembersAdded -> action.userIds.singleOrNull()?.let(::add)
-            is ServiceAction.MemberRemoved -> add(action.userId)
-            else -> Unit
-        }
-        actions?.forEach { (it.sender as? MessageSender.User)?.let { sender -> add(sender.userId) } }
+    onUser: (Long) -> Unit,
+) {
+    val message = chat.lastMessage
+    (message?.sender as? MessageSender.User)?.let { onUser(it.userId) }
+    when (val action = (message?.content as? MessageContent.Service)?.action) {
+        is ServiceAction.MembersAdded -> action.userIds.singleOrNull()?.let(onUser)
+        is ServiceAction.MemberRemoved -> onUser(action.userId)
+        else -> Unit
     }
+    actions?.forEach { (it.sender as? MessageSender.User)?.let { sender -> onUser(sender.userId) } }
+}
 
 private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId

@@ -118,6 +118,12 @@ class TdlibChatRepository
 
         override fun chat(id: Long): Flow<Chat?> = store.state.map { it.chats[id]?.chat }.distinctUntilChanged()
 
+        override fun chats(ids: Set<Long>): Flow<Map<Long, Chat>> =
+            store.state
+                .map { state -> ids.mapNotNull { id -> state.chats[id]?.chat?.let { id to it } }.toMap() }
+                // The store keeps an unchanged chat's instance.
+                .distinctUntilChanged { old, new -> old.size == new.size && old.all { (id, chat) -> new[id] === chat } }
+
         override suspend fun getChat(id: Long): Outcome<Chat> {
             val cached = store.state.value.chats[id]
             if (cached != null) return Outcome.Success(cached.chat)

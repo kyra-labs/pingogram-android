@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeWallClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -101,6 +102,16 @@ class CatchUpViewModelTest {
         )
 
     private val CatchUpViewModel.cards get() = uiState.value.stage as CatchUpStage.Cards
+
+    @Test
+    fun `the count is how many chats Catch-up goes through`() =
+        runTest {
+            chats.setChats(ChatListType.Main, unread(2), unread(3, muted = true), unread(4), chat(id = 5))
+            val catchUp = CatchUpChats(chats, settings, chatLock)
+
+            assertEquals(catchUp.chats.first().size, catchUp.count.first())
+            assertEquals(2, catchUp.count.first())
+        }
 
     @Test
     fun `goes through the unread chats, mentions first, then the most recent`() =

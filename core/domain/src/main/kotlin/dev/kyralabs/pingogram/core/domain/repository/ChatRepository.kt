@@ -10,7 +10,9 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.UnreadMessageCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /**
  * The chats TDLib announced in this session, kept in memory (`docs/ARCHITECTURE.md`, Repositories), their lists,
@@ -44,6 +46,19 @@ interface ChatRepository {
 
     /** The chat with [id], then every change; null while TDLib has not announced the chat (see [getChat]). */
     fun chat(id: Long): Flow<Chat?>
+
+    /**
+     * The chats of [ids] TDLib has announced, by id, then every change of any of them: one flow for them all, where a
+     * [chat] per id would each follow every chat's changes (`docs/PERFORMANCE.md` §3).
+     */
+    fun chats(ids: Set<Long>): Flow<Map<Long, Chat>> =
+        if (ids.isEmpty()) {
+            flowOf(emptyMap())
+        } else {
+            combine(ids.map { id -> chat(id).map { chat -> id to chat } }) { chats ->
+                chats.mapNotNull { (id, chat) -> chat?.let { id to it } }.toMap()
+            }
+        }
 
     /**
      * The chat with [id] from memory, else from TDLib: `DomainError.NotFound` for a chat it does not know. A request
