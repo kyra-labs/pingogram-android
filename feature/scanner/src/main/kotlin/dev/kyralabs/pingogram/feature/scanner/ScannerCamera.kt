@@ -5,6 +5,7 @@ import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.InitializationException
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -61,7 +62,11 @@ internal fun ScannerCamera(
     var camera by remember { mutableStateOf<Camera?>(null) }
     LaunchedEffect(scanning, analyzer) { if (scanning) analyzer.resume() else analyzer.pause() }
     LaunchedEffect(lifecycleOwner, analyzer) {
-        val provider = ProcessCameraProvider.awaitInstance(context)
+        val provider = startedOrNull { ProcessCameraProvider.awaitInstance(context) }
+        if (provider == null) {
+            currentOnUnavailable()
+            return@LaunchedEffect
+        }
         val preview = Preview.Builder().build().also { it.setSurfaceProvider { request -> surfaceRequest = request } }
         val executor = Executors.newSingleThreadExecutor()
         val analysis =
@@ -99,6 +104,19 @@ internal fun ScannerCamera(
     LaunchedEffect(camera, torchOn) { camera?.cameraControl?.enableTorch(torchOn) }
     surfaceRequest?.let { request -> CameraXViewfinder(surfaceRequest = request, modifier = modifier.fillMaxSize()) }
 }
+
+/**
+ * What [start] gives, or null where the camera cannot start: CameraX fails to initialize (no usable camera, the
+ * camera service unavailable) or is in a state that refuses it. The scanner then says the camera is unavailable.
+ */
+internal suspend fun <T : Any> startedOrNull(start: suspend () -> T): T? =
+    try {
+        start()
+    } catch (_: InitializationException) {
+        null
+    } catch (_: IllegalStateException) {
+        null
+    }
 
 /** Frames of about 720p for the analysis: enough for codes across a room, little work per frame. */
 private val ANALYSIS_RESOLUTION =
