@@ -147,6 +147,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
   notification shows at once and fills in its name and photo as they come.
+- The GIF panel no longer closes the app when a search's next page, or your saved GIFs, repeat a GIF: each shows once.
+- A malformed animated sticker shows nothing instead of closing the app, and the QR scanner says the camera is
+  unavailable instead of closing the app where the camera cannot start.
 - Pingogram no longer sometimes closes right as it opens.
 - The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
   start-up work, so the app opens faster again.

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.ui.sticker
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.util.Log
 import com.airbnb.lottie.LottieComposition
 import com.airbnb.lottie.LottieCompositionFactory
 import com.airbnb.lottie.LottieDrawable
@@ -54,6 +55,8 @@ private class LottieFrameRenderer(
     ) {
         bitmap.eraseColor(Color.TRANSPARENT)
         val bounds = composition.bounds
+        // A sticker without a size has nothing to scale: its frames stay blank.
+        if (bounds.isEmpty) return
         val scale = min(bitmap.width / bounds.width().toFloat(), bitmap.height / bounds.height().toFloat())
         val width = (bounds.width() * scale).roundToInt()
         val height = (bounds.height() * scale).roundToInt()
@@ -62,9 +65,20 @@ private class LottieFrameRenderer(
         drawable.setBounds(left, top, left + width, top + height)
         drawable.frame = startFrame + frame
         canvas.setBitmap(bitmap)
-        drawable.draw(canvas)
+        try {
+            drawable.draw(canvas)
+        } catch (
+            // A malformed sticker that parsed fails while drawing, in whatever way Lottie meets it; this runs on the
+            // render thread, where it would take the app down. Its frame stays blank instead.
+            @Suppress("TooGenericExceptionCaught") e: RuntimeException,
+        ) {
+            bitmap.eraseColor(Color.TRANSPARENT)
+            Log.w(TAG, "Could not draw a sticker frame: ${e.javaClass.simpleName}")
+        }
     }
 }
+
+private const val TAG = "LottieStickerDecoder"
 
 /** Telegram's animated stickers run at 30 or 60 frames per second; a file without a rate gets the lower one. */
 private const val DEFAULT_FRAME_RATE = 30f
