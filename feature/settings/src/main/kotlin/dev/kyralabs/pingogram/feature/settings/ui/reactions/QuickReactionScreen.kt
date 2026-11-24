@@ -1,11 +1,15 @@
 package dev.kyralabs.pingogram.feature.settings.ui.reactions
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -25,16 +29,20 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.ChoiceRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
+import dev.kyralabs.pingogram.feature.settings.ui.SettingsListItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSegment
-import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
+import dev.kyralabs.pingogram.feature.settings.ui.nestedItemColors
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
 /** The double-tap page: hoists [QuickReactionViewModel]; a refused change is a snackbar. */
@@ -157,7 +165,10 @@ private fun ReactionChoices(
     }
 }
 
-/** Where a double tap adds the quick reaction. */
+/**
+ * What a double tap does (`REQUIREMENTS.md` FR-X15): on others' messages and on the user's own, each React, Reply or
+ * Nothing, as [ChoiceRow]'s connected buttons in a segment of their own.
+ */
 @Composable
 private fun DoubleTapGroup(
     state: QuickReactionUiState.Content,
@@ -168,22 +179,62 @@ private fun DoubleTapGroup(
         footer = stringResource(R.string.settings_double_tap_footer),
     ) {
         item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_double_tap_incoming),
-                summary = stringResource(R.string.settings_double_tap_incoming_summary),
-                checked = state.doubleTap.incoming,
+            DoubleTapChoice(
+                title = R.string.settings_double_tap_incoming,
+                summary = R.string.settings_double_tap_incoming_summary,
+                selected = state.doubleTap.incoming,
                 shapes = shapes,
-                onCheckedChange = { onEvent(QuickReactionEvent.SetIncoming(it)) },
+                onSelect = { onEvent(QuickReactionEvent.SetIncoming(it)) },
             )
         }
         item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_double_tap_outgoing),
-                summary = stringResource(R.string.settings_double_tap_outgoing_summary),
-                checked = state.doubleTap.outgoing,
+            DoubleTapChoice(
+                title = R.string.settings_double_tap_outgoing,
+                summary = R.string.settings_double_tap_outgoing_summary,
+                selected = state.doubleTap.outgoing,
                 shapes = shapes,
-                onCheckedChange = { onEvent(QuickReactionEvent.SetOutgoing(it)) },
+                onSelect = { onEvent(QuickReactionEvent.SetOutgoing(it)) },
             )
         }
     }
 }
+
+@Composable
+private fun DoubleTapChoice(
+    @StringRes title: Int,
+    @StringRes summary: Int,
+    selected: DoubleTapAction,
+    shapes: ListItemShapes,
+    onSelect: (DoubleTapAction) -> Unit,
+) {
+    SettingsSegment(shapes) {
+        SettingsListItem(
+            shapes = ListItemDefaults.shapes(),
+            supportingContent = { Text(stringResource(summary)) },
+            colors = nestedItemColors(),
+        ) {
+            Text(stringResource(title))
+        }
+        ChoiceRow(
+            options = DoubleTapActions,
+            selected = selected,
+            label = { stringResource(it.labelRes()) },
+            onSelect = onSelect,
+            contentPadding =
+                PaddingValues(
+                    start = MaterialTheme.spacing.large,
+                    end = MaterialTheme.spacing.large,
+                    bottom = MaterialTheme.spacing.large,
+                ),
+        )
+    }
+}
+
+private val DoubleTapActions = DoubleTapAction.entries.toImmutableList()
+
+private fun DoubleTapAction.labelRes(): Int =
+    when (this) {
+        DoubleTapAction.React -> R.string.settings_double_tap_react
+        DoubleTapAction.Reply -> R.string.settings_double_tap_reply
+        DoubleTapAction.Nothing -> R.string.settings_double_tap_nothing
+    }

@@ -3,10 +3,13 @@ package dev.kyralabs.pingogram.core.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
 import dev.kyralabs.pingogram.core.domain.model.DoubleTapReactions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -18,6 +21,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -38,7 +42,7 @@ class DataStoreDoubleTapSettingsRepositoryTest {
     fun `a double tap reacts on every message until changed`() =
         runTest {
             assertEquals(
-                DoubleTapReactions(incoming = true, outgoing = true),
+                DoubleTapReactions(incoming = DoubleTapAction.React, outgoing = DoubleTapAction.React),
                 DataStoreDoubleTapSettingsRepository(dataStore()).doubleTap.first(),
             )
         }
@@ -51,11 +55,13 @@ class DataStoreDoubleTapSettingsRepositoryTest {
             repository.doubleTap.test {
                 assertEquals(DoubleTapReactions(), awaitItem())
 
-                assertEquals(Outcome.Success(Unit), repository.setDoubleTap(DoubleTapReactions(outgoing = false)))
-                assertEquals(DoubleTapReactions(outgoing = false), awaitItem())
+                val reply = DoubleTapReactions(outgoing = DoubleTapAction.Reply)
+                assertEquals(Outcome.Success(Unit), repository.setDoubleTap(reply))
+                assertEquals(reply, awaitItem())
 
-                repository.setDoubleTap(DoubleTapReactions(incoming = false, outgoing = false))
-                assertEquals(DoubleTapReactions(incoming = false, outgoing = false), awaitItem())
+                val nothing = DoubleTapReactions(DoubleTapAction.Nothing, DoubleTapAction.Nothing)
+                repository.setDoubleTap(nothing)
+                assertEquals(nothing, awaitItem())
             }
         }
 
@@ -64,13 +70,33 @@ class DataStoreDoubleTapSettingsRepositoryTest {
         runTest {
             val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
             DataStoreDoubleTapSettingsRepository(dataStore(firstProcess))
-                .setDoubleTap(DoubleTapReactions(incoming = false))
+                .setDoubleTap(DoubleTapReactions(incoming = DoubleTapAction.Reply))
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
             assertEquals(
-                DoubleTapReactions(incoming = false),
+                DoubleTapReactions(incoming = DoubleTapAction.Reply),
                 DataStoreDoubleTapSettingsRepository(dataStore()).doubleTap.first(),
             )
+        }
+
+    @Test
+    fun `the switches saved before there were actions read as react or nothing until the next save`() =
+        runTest {
+            val store = dataStore()
+            store.edit {
+                it[booleanPreferencesKey("chat.double_tap.incoming")] = false
+                it[booleanPreferencesKey("chat.double_tap.outgoing")] = true
+            }
+            val repository = DataStoreDoubleTapSettingsRepository(store)
+            assertEquals(
+                DoubleTapReactions(incoming = DoubleTapAction.Nothing, outgoing = DoubleTapAction.React),
+                repository.doubleTap.first(),
+            )
+
+            repository.setDoubleTap(DoubleTapReactions(incoming = DoubleTapAction.Reply))
+
+            assertEquals(DoubleTapReactions(incoming = DoubleTapAction.Reply), repository.doubleTap.first())
+            assertFalse(booleanPreferencesKey("chat.double_tap.incoming") in store.data.first())
         }
 
     @Test
@@ -79,7 +105,7 @@ class DataStoreDoubleTapSettingsRepositoryTest {
             val repository = DataStoreDoubleTapSettingsRepository(FailingDataStore())
 
             assertEquals(DoubleTapReactions(), repository.doubleTap.first())
-            val saved = repository.setDoubleTap(DoubleTapReactions(incoming = false))
+            val saved = repository.setDoubleTap(DoubleTapReactions(incoming = DoubleTapAction.Nothing))
             assertTrue((saved as Outcome.Failure).error is DomainError.Unknown)
         }
 

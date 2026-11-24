@@ -2,6 +2,8 @@ package dev.kyralabs.pingogram.feature.settings.ui.reactions
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapAction
+import dev.kyralabs.pingogram.core.domain.model.DoubleTapReactions
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
@@ -17,7 +19,8 @@ import org.robolectric.annotation.Config
 
 /**
  * The double-tap page, light and dark, in AMOLED black, high contrast, right to left, a 700 dp window and at twice the
- * font size (`docs/DESIGN_SYSTEM.md` §12), with a custom emoji set elsewhere, and loading.
+ * font size (`docs/DESIGN_SYSTEM.md` §12), with a custom emoji set elsewhere, and loading. The double tap reacts on
+ * others' messages and replies on the user's own (FR-X15); it does nothing on either in `nothingDark`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = TALL)
@@ -36,6 +39,16 @@ class QuickReactionScreenshotTest {
 
     @Test
     fun customEmojiLight() = capture("customEmojiLight", ThemeMode.Light, QuickReactionPreviewStates.customEmoji)
+
+    @Test
+    fun nothingDark() =
+        capture(
+            "nothingDark",
+            ThemeMode.Dark,
+            QuickReactionPreviewStates.content.copy(
+                doubleTap = DoubleTapReactions(DoubleTapAction.Nothing, DoubleTapAction.Nothing),
+            ),
+        )
 
     @Test
     @Config(qualifiers = COMPACT)
