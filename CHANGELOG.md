@@ -144,6 +144,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
+- Adding an account just after another one logged out no longer signs in to the account that is leaving, whose
+  data was then deleted.
+- With more than one account, Pingogram opens without waiting for the other accounts to start: they start in the
+  background.
 - Pingogram no longer sometimes closes right as it opens.
 - The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
   start-up work, so the app opens faster again.
