@@ -153,6 +153,17 @@ class PrivacySecurityScreenScreenshotTest {
             sharesPhoneNumber = true,
         )
 
+    /** The Contacts group ending in "Birthdays" (`REQUIREMENTS.md` FR-X18), on as by default, then off. */
+    @Test
+    @Config(qualifiers = ON_SCREEN)
+    fun birthdaysOnLight() =
+        capture("birthdaysOnLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, showsBirthdays = true)
+
+    @Test
+    @Config(qualifiers = ON_SCREEN)
+    fun birthdaysOffLight() =
+        capture("birthdaysOffLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, showsBirthdays = false)
+
     /** The Contacts group with "Suggest frequent contacts" (on) under "Sync contacts". */
     @Test
     @Config(qualifiers = TALL)
@@ -263,6 +274,7 @@ class PrivacySecurityScreenScreenshotTest {
         cleanLinks: Boolean = true,
         sharesPhoneNumber: Boolean = false,
         typingStatus: Boolean = true,
+        showsBirthdays: Boolean? = null,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
         PrivacySecurityScreen(
             state = state,
@@ -276,6 +288,7 @@ class PrivacySecurityScreenScreenshotTest {
             cleanLinks = cleanLinks,
             sharesPhoneNumber = sharesPhoneNumber,
             typingStatus = typingStatus,
+            showsBirthdays = showsBirthdays,
         )
     }
 }

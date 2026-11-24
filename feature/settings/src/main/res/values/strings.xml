@@ -1449,6 +1449,9 @@
     <string name="settings_hide_phone_numbers_summary">Shows only their calling code everywhere in Pingogram, for sharing your screen or streaming</string>
     <string name="settings_share_phone_number">Share my phone number with new contacts</string>
     <string name="settings_share_phone_number_summary">When you add someone, they can see your number. You can still change this on each contact’s form.</string>
+    <!-- Privacy and security → Contacts (FR-X18): whether the Contacts tab shows its Birthdays row. -->
+    <string name="settings_birthdays_row">Birthdays</string>
+    <string name="settings_birthdays_row_summary">Shows your contacts\' birthdays these days at the top of Contacts. Reminders you set still ring.</string>
     <string name="settings_clean_links">Remove tracking from links</string>
     <string name="settings_clean_links_summary">Links you send and open lose the parts that only tell sites where you came from, such as utm_source</string>
     <string name="settings_send_typing_status">Send typing status</string>

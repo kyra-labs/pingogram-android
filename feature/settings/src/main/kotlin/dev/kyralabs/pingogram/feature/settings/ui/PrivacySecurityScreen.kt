@@ -28,7 +28,6 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsEvent
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
@@ -59,6 +58,7 @@ internal fun PrivacySecurityRoute(
     cleanLinksViewModel: CleanLinksViewModel = hiltViewModel(),
     typingStatusViewModel: TypingStatusViewModel = hiltViewModel(),
     sharePhoneNumberViewModel: SharePhoneNumberViewModel = hiltViewModel(),
+    birthdaysRowViewModel: BirthdaysRowViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
@@ -110,6 +110,8 @@ internal fun PrivacySecurityRoute(
         onTypingStatusChange = typingStatusViewModel::onCheckedChange,
         sharesPhoneNumber = sharePhoneNumberViewModel.enabled.collectAsStateWithLifecycle().value,
         onSharesPhoneNumberChange = sharePhoneNumberViewModel::onCheckedChange,
+        showsBirthdays = birthdaysRowViewModel.enabled.collectAsStateWithLifecycle().value,
+        onShowsBirthdaysChange = birthdaysRowViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
         drafts = drafts,
@@ -128,7 +130,8 @@ internal fun PrivacySecurityRoute(
  *   ([typingStatus], on by default), switches;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]), "Suggest frequent contacts"
- *   ([suggestsFrequent]) and "Share my phone number with new contacts" ([sharesPhoneNumber], FR-X9);
+ *   ([suggestsFrequent]), "Share my phone number with new contacts" ([sharesPhoneNumber], FR-X9) and "Birthdays"
+ *   ([showsBirthdays], FR-X18);
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
@@ -164,6 +167,8 @@ internal fun PrivacySecurityScreen(
     onTypingStatusChange: (Boolean) -> Unit = {},
     sharesPhoneNumber: Boolean? = null,
     onSharesPhoneNumberChange: (Boolean) -> Unit = {},
+    showsBirthdays: Boolean? = null,
+    onShowsBirthdaysChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
     drafts: DataOptionsUiState = DataOptionsUiState(),
@@ -202,6 +207,8 @@ internal fun PrivacySecurityScreen(
                     onSuggestsFrequentChange,
                     sharesPhoneNumber,
                     onSharesPhoneNumberChange,
+                    showsBirthdays,
+                    onShowsBirthdaysChange,
                 )
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 OnScreenSection(
@@ -212,19 +219,7 @@ internal fun PrivacySecurityScreen(
                     directShare = directShare,
                     onDirectShareChange = onDirectShareChange,
                 )
-                AccountGroup(
-                    loginEmailPattern = state.loginEmailPattern,
-                    autoDeleteSeconds = state.defaultAutoDeleteSeconds,
-                    accountTtlDays = state.accountTtlDays,
-                    onOpen = onOpen,
-                    beforeDeleteAccount = {
-                        item(key = DELETE_DRAFTS) { shapes ->
-                            DeleteDraftsItem(drafts.isDeletingDrafts, shapes) {
-                                onDraftsEvent(DataOptionsEvent.DeleteDrafts)
-                            }
-                        }
-                    },
-                )
+                PrivacyAccountGroup(state, onOpen, drafts, onDraftsEvent)
             }
         }
     }
@@ -287,9 +282,6 @@ private class PrivacySwitches(
 
 /** The key of the "Messages" row among the privacy settings' rows. */
 private const val NEW_CHATS = "newChats"
-
-/** The key of "Delete cloud drafts" among the Account group's rows. */
-private const val DELETE_DRAFTS = "deleteDrafts"
 
 /** A privacy setting and its main choice. */
 @Composable

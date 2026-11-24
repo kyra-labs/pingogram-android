@@ -16,7 +16,6 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
-import dev.kyralabs.pingogram.core.data.repository.FileBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
@@ -135,7 +134,6 @@ import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
-import dev.kyralabs.pingogram.core.domain.repository.BirthdayReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BirthdayRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
@@ -566,9 +564,6 @@ interface RepositoryModule {
 
     @Binds
     fun reminderRepository(repository: FileReminderRepository): ReminderRepository
-
-    @Binds
-    fun birthdayReminderRepository(repository: FileBirthdayReminderRepository): BirthdayReminderRepository
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository
