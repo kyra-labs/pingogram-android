@@ -8,8 +8,9 @@ import org.junit.runner.RunWith
 
 /**
  * Collects the Baseline Profile and Startup Profile that `:app` ships (`docs/PERFORMANCE.md` §2). Run it through
- * `./gradlew :app:generateBaselineProfile`, which needs a device on API 33+ (or a rooted one on API 28+) with the app
- * signed in (§9), and commit the result in `app/src/main/generated/baselineProfiles/`.
+ * `tools/benchmark/generate-profiles.sh` (`.ps1` on Windows), which needs a device on API 33+ (or a rooted one on
+ * API 28+) with the app signed in (§9), and commit the result in `app/src/main/generated/baselineProfiles/`. The
+ * script deletes the committed profiles first: collected from an APK that embeds one, every profile inherits it.
  *
  * The startup profile covers the start up to the chat list; the Baseline Profile adds scrolling the chat list,
  * opening and scrolling a conversation, and opening it again from the chat list with its history cached, as
