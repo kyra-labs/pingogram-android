@@ -161,6 +161,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the Birthdays switch by its name`() {
+        show()
+        search("birthdays")
+
+        composeRule.onNode(hasText(string(R.string.settings_birthdays_row)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.PrivacySecurity), opened)
+    }
+
+    @Test
     fun `search finds the folder tabs' unread counters switch by its name`() {
         show()
         search("unread counters")

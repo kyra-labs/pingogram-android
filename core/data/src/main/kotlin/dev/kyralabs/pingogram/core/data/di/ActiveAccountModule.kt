@@ -12,7 +12,6 @@ import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
-import dev.kyralabs.pingogram.core.domain.repository.BirthdayReminderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BirthdayRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BookmarkRepository
@@ -453,10 +452,6 @@ object ActiveAccountModule {
 
     @Provides
     fun reminderRepository(accounts: Accounts): ReminderRepository = accounts.active.reminderRepository()
-
-    @Provides
-    fun birthdayReminderRepository(accounts: Accounts): BirthdayReminderRepository =
-        accounts.active.birthdayReminderRepository()
 
     @Provides
     fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()

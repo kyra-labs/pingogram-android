@@ -214,8 +214,6 @@ interface AccountRepositories {
 
     fun reminderRepository(): ReminderRepository
 
-    fun birthdayReminderRepository(): BirthdayReminderRepository
-
     fun bookmarkRepository(): BookmarkRepository
 
     fun snippetRepository(): SnippetRepository

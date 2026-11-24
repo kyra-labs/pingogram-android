@@ -15,7 +15,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
  * "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused; then "Suggest
  * frequent contacts" once read ([suggestsFrequent]), whose summary says that turning it off clears them; then "Share my
  * phone number with new contacts" once read ([sharesPhoneNumber], off by default, `REQUIREMENTS.md` FR-X9), the choice
- * each new contact's form starts from.
+ * each new contact's form starts from; then "Birthdays" once read ([showsBirthdays], on by default, FR-X18), whether
+ * the Contacts tab shows its Birthdays row.
  */
 @Composable
 internal fun ContactsSection(
@@ -25,6 +26,8 @@ internal fun ContactsSection(
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
     sharesPhoneNumber: Boolean? = null,
     onSharesPhoneNumberChange: (Boolean) -> Unit = {},
+    showsBirthdays: Boolean? = null,
+    onShowsBirthdaysChange: (Boolean) -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_contacts)) {
         item { shapes ->
@@ -62,6 +65,17 @@ internal fun ContactsSection(
                     checked = sharesPhoneNumber,
                     shapes = shapes,
                     onCheckedChange = onSharesPhoneNumberChange,
+                )
+            }
+        }
+        if (showsBirthdays != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_birthdays_row),
+                    summary = stringResource(R.string.settings_birthdays_row_summary),
+                    checked = showsBirthdays,
+                    shapes = shapes,
+                    onCheckedChange = onShowsBirthdaysChange,
                 )
             }
         }
