@@ -80,6 +80,8 @@ internal val ChatListUiState.folderBar: FolderBarState
  * @property mentionChats the main list's chats with unread mentions of the user, among those loaded; locked chats
  *   never count.
  * @property account the signed-in user, for the header's avatar; null until TDLib named them.
+ * @property hasDrafts a main or archived chat among those loaded has a draft the chat list shows: the header offers
+ *   Drafts (`REQUIREMENTS.md` FR-X16). Locked chats never count.
  */
 @Immutable
 data class ChatListSummary(
@@ -88,6 +90,7 @@ data class ChatListSummary(
     val account: HeaderAccount? = null,
     /** The chats Catch-up would go through (`CatchUpChats`). */
     val catchUpChats: Int = 0,
+    val hasDrafts: Boolean = false,
 ) {
     /** The status line shows: something is unread. */
     val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0

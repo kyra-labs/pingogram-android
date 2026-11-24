@@ -439,7 +439,8 @@ class ChatListViewModel internal constructor(
 
     /**
      * What the Chats tab's header says ([ChatListSummary]): the main list's unread chats and the chats among them that
-     * mention the user, the chats Catch-up would go through ([CatchUpChats]), and the signed-in user for its avatar.
+     * mention the user, the chats Catch-up would go through ([CatchUpChats]), whether a chat has a draft (main or
+     * archived) for the Drafts button, and the signed-in user for its avatar.
      * Apart from [uiState], so a count changing recomposes the header alone; at most one change every [COUNT_PACE]
      * ([atCountPace]). Nothing in the archive, whose header has no status line.
      */
@@ -459,17 +460,28 @@ class ChatListViewModel internal constructor(
                     id?.let(users::get)?.let { HeaderAccount(it.id, it.fullName(), it.profilePhoto) }
                 }.distinctUntilChanged()
             val catchUp = catchUpChats.count
+            val hasDrafts =
+                combine(chatRepository.chatList(ChatListType.Main), chatRepository.chatList(ChatListType.Archive)) {
+                    main,
+                    archive,
+                    ->
+                    main + archive
+                }.without(lockedChatIds)
+                    .map { chats -> chats.any { it.shownDraft != null } }
+                    .distinctUntilChanged()
             combine(
                 chatRepository.unreadChatCount(ChatListType.Main),
                 mentions,
                 account,
                 catchUp,
-            ) { unread, mentioned, me, catchUpCount ->
+                hasDrafts,
+            ) { unread, mentioned, me, catchUpCount, drafts ->
                 ChatListSummary(
                     unreadChats = unread.unreadUnmutedCount,
                     mentionChats = mentioned,
                     account = me,
                     catchUpChats = catchUpCount,
+                    hasDrafts = drafts,
                 )
             }.distinctUntilChanged()
                 .atCountPace()

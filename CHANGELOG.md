@@ -20,6 +20,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - What a double tap does, for messages you received and for your own: react, reply or nothing.
 - Chats see when you're typing, recording a voice or round video message, or sending a photo or a file; turn it off
   with "Send typing status" in Settings → Privacy and security.
+- Drafts: while a chat has an unsent draft, a button in the Chats header opens every draft on one page, newest
+  first; Settings → Chats → "Drafts button" can leave it out.
 
 ### Changed
 - Animated stickers keep their pace on a busy phone, several decode at once, and one that scrolled away no longer

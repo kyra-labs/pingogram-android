@@ -1,7 +1,11 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -95,6 +99,42 @@ class ChatListHeaderTest {
     }
 
     @Test
+    fun `while a chat has a draft the header offers Drafts, unless it is turned off`() {
+        var drafts = 0
+        val withDrafts = ChatListPreviewData.summary.copy(hasDrafts = true)
+        val label = string(R.string.drafts_title)
+
+        show(summary = ChatListPreviewData.summary)
+        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+
+        val withOpenDrafts =
+            ChatListHeaderActions(
+                search = GlobalSearchState(),
+                searchOpen = mutableStateOf(false),
+                openSearch = {},
+                openAccount = {},
+                openDrafts = { drafts++ },
+            )
+        show(summary = withDrafts, actions = withOpenDrafts)
+        composeRule.onNodeWithContentDescription(label).assertHasClickAction().performClick()
+        assertEquals(1, drafts)
+
+        show(summary = withDrafts, swipes = ChatSwipes(draftsButton = false))
+        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+    }
+
+    @Test
+    fun draftsButtonLight() = captureExpanded("draftsButton.light", ChatListPreviewData.summary.copy(hasDrafts = true))
+
+    @Test
+    fun draftsButtonOffLight() =
+        captureExpanded(
+            "draftsButtonOff.light",
+            ChatListPreviewData.summary.copy(hasDrafts = true),
+            ChatSwipes(draftsButton = false),
+        )
+
+    @Test
     fun `scrolling the list collapses the header to its title and buttons`() {
         show()
 
@@ -124,22 +164,41 @@ class ChatListHeaderTest {
         captureScreenRoboImage(goldenPath(javaClass, name))
     }
 
+    /** The expanded header with [summary] and [swipes], as a golden. */
+    private fun captureExpanded(
+        name: String,
+        summary: ChatListSummary,
+        swipes: ChatSwipes = ChatSwipes(),
+    ) {
+        show(summary = summary, swipes = swipes)
+        captureScreenRoboImage(goldenPath(javaClass, name))
+    }
+
+    private var content by mutableStateOf<(@Composable () -> Unit)?>(null)
+
     private fun show(
         variant: ScreenshotVariant = ScreenshotVariant.Light,
         state: ChatListUiState = ChatListPreviewData.content,
         summary: ChatListSummary = ChatListPreviewData.summary,
+        actions: ChatListHeaderActions = this.actions,
+        swipes: ChatSwipes = ChatSwipes(),
     ) {
-        composeRule.setContent {
+        val shown: @Composable () -> Unit = {
             ScreenshotTheme(variant) {
-                ChatListScreen(
-                    state = state,
-                    onEvent = {},
-                    summary = { summary },
-                    headerActions = actions,
-                    onEditFolder = {},
-                )
+                CompositionLocalProvider(LocalChatSwipes provides swipes) {
+                    ChatListScreen(
+                        state = state,
+                        onEvent = {},
+                        summary = { summary },
+                        headerActions = actions,
+                        onEditFolder = {},
+                    )
+                }
             }
         }
+        // setContent runs once per test: later calls swap what it shows.
+        if (content == null) composeRule.setContent { content?.invoke() }
+        content = shown
         composeRule.waitForIdle()
     }
 

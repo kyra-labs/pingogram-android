@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.draft
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -73,6 +74,22 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
             chatLock.lock(setOf(3L))
 
             assertEquals(1, summaryOf(createViewModel())().mentionChats)
+        }
+
+    @Test
+    fun `offers Drafts while a main or archived chat has a draft, reply-only drafts and locked chats left out`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(id = 2), chat(id = 3, draft = draft("")))
+            val summary = summaryOf(createViewModel())
+            assertFalse(summary().hasDrafts)
+
+            chats.setChats(ChatListType.Archive, chat(id = 4, draft = draft("later")))
+            afterCountPace()
+            assertTrue(summary().hasDrafts)
+
+            chatLock.lock(setOf(4L))
+            afterCountPace()
+            assertFalse(summary().hasDrafts)
         }
 
     @Test
