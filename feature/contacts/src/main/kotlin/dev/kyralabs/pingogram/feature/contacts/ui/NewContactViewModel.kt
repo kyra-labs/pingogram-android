@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.AddContactResult
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharePhoneNumberRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,6 +38,8 @@ import kotlin.time.Duration.Companion.seconds
  *   sent as `+` and its digits. A number no one uses Telegram with turns the screen into an invitation
  *   ([NewContactUiState.notOnTelegram]), shared through the share sheet ([NewContactEffect.ShareInvite]).
  * - **Adding by username** takes `@name` or a `t.me/name` link; without names the contact keeps the user's own.
+ * - **"Share my phone number"** starts from the user's default ([SharePhoneNumberRepository], off unless they chose
+ *   otherwise; `REQUIREMENTS.md` FR-X9) and goes with either way of adding.
  * - **Errors**: what concerns a field shows at it ([ContactFieldError]); `FLOOD_WAIT` counts down while "Add" waits;
  *   anything else is a snackbar. Once added, the screen closes ([NewContactEffect.Added]).
  */
@@ -48,6 +52,7 @@ class NewContactViewModel
         private val contactRepository: ContactRepository,
         private val countryRepository: CountryRepository,
         private val userRepository: UserRepository,
+        private val sharePhoneNumberRepository: SharePhoneNumberRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -60,6 +65,7 @@ class NewContactViewModel
                     lastName = savedStateHandle[KEY_LAST_NAME] ?: "",
                     phoneNumber = savedStateHandle[KEY_PHONE_NUMBER] ?: "",
                     username = savedStateHandle[KEY_USERNAME] ?: "",
+                    sharePhoneNumber = savedStateHandle[KEY_SHARE] ?: false,
                 ),
             )
         val uiState: StateFlow<NewContactUiState> = mutableUiState.asStateFlow()
@@ -74,6 +80,7 @@ class NewContactViewModel
         init {
             // Dispatched: after the screen's first frame (docs/PERFORMANCE.md §4).
             viewModelScope.launch {
+                startSharingFromDefault()
                 if (uiState.value.phoneNumber.isEmpty()) prefillCallingCode()
                 lookUpCountry(uiState.value.phoneNumber, pause = false)
             }
@@ -86,6 +93,7 @@ class NewContactViewModel
                 is NewContactEvent.LastNameChanged -> editName(KEY_LAST_NAME, event.value) { copy(lastName = it) }
                 is NewContactEvent.PhoneNumberChanged -> editPhoneNumber(event.value)
                 is NewContactEvent.UsernameChanged -> edit(KEY_USERNAME, event.value) { copy(username = event.value) }
+                is NewContactEvent.SharePhoneNumberChanged -> setSharePhoneNumber(event.share)
                 NewContactEvent.Submit -> if (uiState.value.canSubmit) submit()
                 NewContactEvent.Invite -> invite()
                 NewContactEvent.ChangeNumber -> mutableUiState.update { it.copy(notOnTelegram = false) }
@@ -111,6 +119,22 @@ class NewContactViewModel
             edit(key, name) { transform(name) }
         }
 
+        private fun setSharePhoneNumber(share: Boolean) {
+            if (uiState.value.isWorking) return
+            savedStateHandle[KEY_SHARE] = share
+            mutableUiState.update { it.copy(sharePhoneNumber = share) }
+        }
+
+        /** The user's default for "Share my phone number", unless the form has a choice already (process death). */
+        private suspend fun startSharingFromDefault() {
+            if (savedStateHandle.get<Boolean>(KEY_SHARE) != null) return
+            val default = sharePhoneNumberRepository.enabled.first()
+            // Unless the user chose meanwhile.
+            if (savedStateHandle.get<Boolean>(KEY_SHARE) == null) {
+                mutableUiState.update { it.copy(sharePhoneNumber = default) }
+            }
+        }
+
         private fun editPhoneNumber(value: String) {
             // Digits and what people type between them; the rest (letters pasted along) is left out.
             val number = value.filter { it.isDigit() || it in PHONE_CHARACTERS }
@@ -134,7 +158,10 @@ class NewContactViewModel
                 return
             }
             request(
-                action = { contactRepository.addByPhoneNumber("+$digits", state.firstName, state.lastName, false) },
+                action = {
+                    val number = "+$digits"
+                    contactRepository.addByPhoneNumber(number, state.firstName, state.lastName, state.sharePhoneNumber)
+                },
                 onSuccess = { result ->
                     when (result) {
                         is AddContactResult.Added -> effectChannel.trySend(NewContactEffect.Added(result.userId))
@@ -151,7 +178,9 @@ class NewContactViewModel
                 return
             }
             request(
-                action = { contactRepository.addByUsername(username, state.firstName, state.lastName, false) },
+                action = {
+                    contactRepository.addByUsername(username, state.firstName, state.lastName, state.sharePhoneNumber)
+                },
                 onSuccess = { userId -> effectChannel.trySend(NewContactEffect.Added(userId)) },
             )
         }
@@ -255,6 +284,7 @@ class NewContactViewModel
             const val KEY_LAST_NAME = "newContact.lastName"
             const val KEY_PHONE_NUMBER = "newContact.phoneNumber"
             const val KEY_USERNAME = "newContact.username"
+            const val KEY_SHARE = "newContact.sharePhoneNumber"
 
             /** What people type between the digits of a phone number, kept as typed. */
             const val PHONE_CHARACTERS = "+ -()"

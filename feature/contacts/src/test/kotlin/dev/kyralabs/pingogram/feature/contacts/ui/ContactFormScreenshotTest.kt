@@ -9,10 +9,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of Add contact and Edit contact (`docs/DESIGN_SYSTEM.md` §12): each form light and dark, a username Telegram
- * does not know, the `FLOOD_WAIT` countdown, a number not on Telegram, a user to add with the switch, and an expanded
- * window; each form also with true-black surfaces, high contrast, right to left (Add contact), a medium window and 200%
- * font.
+ * Goldens of Add contact and Edit contact (`docs/DESIGN_SYSTEM.md` §12): each form light and dark, Add contact sharing
+ * the user's number (FR-X9; the others show it off, the default), a username Telegram does not know, the `FLOOD_WAIT`
+ * countdown, a number not on Telegram, a user to add with the switch, and an expanded window; each form also with
+ * true-black surfaces, high contrast, right to left (Add contact), a medium window and 200% font.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -22,6 +22,13 @@ class ContactFormScreenshotTest {
 
     @Test
     fun newContactDark() = newContact(ScreenshotVariant.Dark, NewContactPreviewData.phoneNumber)
+
+    @Test
+    fun newContactSharePhoneNumberLight() =
+        newContact(ScreenshotVariant.Light, NewContactPreviewData.sharingPhoneNumber)
+
+    @Test
+    fun newContactSharePhoneNumberDark() = newContact(ScreenshotVariant.Dark, NewContactPreviewData.sharingPhoneNumber)
 
     @Test
     fun newContactUsername() = newContact(ScreenshotVariant.Light, NewContactPreviewData.username)

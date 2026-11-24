@@ -29,7 +29,8 @@ data class ContactFieldError(
 
 /**
  * The Add contact screen (`REQUIREMENTS.md` FR-P1): the names and the phone number or the username ([method]) as typed,
- * the country the number belongs to as far as its digits tell ([country]), what a field has wrong ([fieldError]), and
+ * the country the number belongs to as far as its digits tell ([country]), whether the contact may see the user's own
+ * number ([sharePhoneNumber]), what a field has wrong ([fieldError]), and
  * the request on its way ([isWorking]) or the `FLOOD_WAIT` counting down ([floodWaitSeconds], from
  * [floodWaitTotalSeconds]). [notOnTelegram]: no one uses Telegram with the number, so the screen offers to invite them.
  */
@@ -41,6 +42,7 @@ data class NewContactUiState(
     val phoneNumber: String = "",
     val username: String = "",
     val country: String? = null,
+    val sharePhoneNumber: Boolean = false,
     val fieldError: ContactFieldError? = null,
     val isWorking: Boolean = false,
     val floodWaitSeconds: Long? = null,
@@ -82,6 +84,11 @@ sealed interface NewContactEvent {
 
     data class UsernameChanged(
         val value: String,
+    ) : NewContactEvent
+
+    /** "Share my phone number" turned on or off. */
+    data class SharePhoneNumberChanged(
+        val share: Boolean,
     ) : NewContactEvent
 
     /** "Add". */
