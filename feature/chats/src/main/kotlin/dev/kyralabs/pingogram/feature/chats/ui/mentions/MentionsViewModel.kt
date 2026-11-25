@@ -9,11 +9,13 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.MentionRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
+import dev.kyralabs.pingogram.feature.chats.ui.SearchRowInputs
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRowSources
 import dev.kyralabs.pingogram.feature.chats.ui.toSearchItem
 import kotlinx.collections.immutable.toImmutableList
@@ -51,8 +53,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MentionsViewModel internal constructor(
     private val mentionRepository: MentionRepository,
-    userRepository: UserRepository,
-    groupRepository: GroupRepository,
+    rowInputs: SearchRowInputs,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -61,12 +62,18 @@ class MentionsViewModel internal constructor(
     @Inject
     constructor(
         mentionRepository: MentionRepository,
-        userRepository: UserRepository,
-        groupRepository: GroupRepository,
+        rowInputs: SearchRowInputs,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
-    ) : this(mentionRepository, userRepository, groupRepository, clock, timePatterns, dispatcher, Locale::getDefault)
+    ) : this(
+        mentionRepository,
+        rowInputs,
+        clock,
+        timePatterns,
+        dispatcher,
+        Locale::getDefault,
+    )
 
     /** Each read asked for: a retry shows the loading state, a refresh keeps the rows meanwhile. */
     private val reads = MutableStateFlow(Read(number = 0, showsLoading = true))
@@ -86,15 +93,7 @@ class MentionsViewModel internal constructor(
         }
 
     private val sources =
-        combine(
-            userRepository.users,
-            groupRepository.supergroups,
-            groupRepository.basicGroups,
-            userRepository.myUserId,
-            clock.minutes,
-        ) { users, supergroups, basicGroups, myUserId, now ->
-            SearchRowSources(users, supergroups, basicGroups, myUserId, now, timeFormatter())
-        }
+        rowInputs.sources(clock.minutes, ::timeFormatter)
 
     val uiState: StateFlow<MentionsUiState> =
         combine(mentions, sources, ::toUiState)

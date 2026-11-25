@@ -8,9 +8,11 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListTimeFormatter
+import dev.kyralabs.pingogram.feature.chats.ui.SearchRowInputs
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRowSources
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
@@ -40,8 +42,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DraftsViewModel internal constructor(
     draftChats: DraftChats,
-    userRepository: UserRepository,
-    groupRepository: GroupRepository,
+    rowInputs: SearchRowInputs,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -50,15 +51,13 @@ class DraftsViewModel internal constructor(
     @Inject
     constructor(
         draftChats: DraftChats,
-        userRepository: UserRepository,
-        groupRepository: GroupRepository,
+        rowInputs: SearchRowInputs,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
     ) : this(
         draftChats = draftChats,
-        userRepository = userRepository,
-        groupRepository = groupRepository,
+        rowInputs = rowInputs,
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = dispatcher,
@@ -73,15 +72,7 @@ class DraftsViewModel internal constructor(
     val effects: Flow<DraftsEffect> = effectChannel.receiveAsFlow()
 
     private val sources =
-        combine(
-            userRepository.users,
-            groupRepository.supergroups,
-            groupRepository.basicGroups,
-            userRepository.myUserId,
-            clock.minutes,
-        ) { users, supergroups, basicGroups, myUserId, now ->
-            SearchRowSources(users, supergroups, basicGroups, myUserId, now, timeFormatter())
-        }
+        rowInputs.sources(clock.minutes, ::timeFormatter)
 
     val uiState: StateFlow<DraftsUiState> =
         combine(draftChats.drafts, draftChats.loaded, sources, ::toUiState)

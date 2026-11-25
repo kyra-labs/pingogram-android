@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.repository.MentionRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -13,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.FakeGroupRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeTimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeWallClock
+import dev.kyralabs.pingogram.feature.chats.ui.SearchRowInputs
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
@@ -57,8 +59,7 @@ class MentionsViewModelTest {
         val viewModel =
             MentionsViewModel(
                 mentionRepository = repository,
-                userRepository = users,
-                groupRepository = FakeGroupRepository(),
+                rowInputs = SearchRowInputs(users, FakeGroupRepository(), FakeLocalChatNamesRepository()),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

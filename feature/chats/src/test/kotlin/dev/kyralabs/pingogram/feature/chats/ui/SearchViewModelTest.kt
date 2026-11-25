@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.KEY_FIL
 import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.KEY_QUERY
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CompletableDeferred
@@ -64,6 +66,7 @@ class SearchViewModelTest {
     private val groups = FakeGroupRepository()
     private val clock = FakeWallClock(NOW)
     private val chatLock = FakeChatLockRepository()
+    private val localNames = FakeLocalChatNamesRepository()
 
     @BeforeEach
     fun setUp() {
@@ -84,6 +87,7 @@ class SearchViewModelTest {
                 userRepository = users,
                 groupRepository = groups,
                 chatLock = chatLock,
+                localChatNames = localNames,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -220,6 +224,18 @@ class SearchViewModelTest {
             assertEquals(listOf(2L, 3L), suggestions.recents.map { it.id })
             assertFalse(suggestions.isLoading)
             assertFalse(suggestions.isEmpty)
+        }
+
+    @Test
+    fun `a recent chat shows the name given on this phone`() =
+        runTest {
+            localNames.names.value = persistentMapOf(2L to "Book club")
+            search.recents += listOf(chat(2), chat(3))
+
+            val recents = viewModel().suggestions.recents
+
+            assertEquals(UiText.Plain("Book club"), recents.first { it.id == 2L }.title)
+            assertEquals(UiText.Plain("Chat 3"), recents.first { it.id == 3L }.title)
         }
 
     @Test

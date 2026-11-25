@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
@@ -84,6 +85,7 @@ class SearchViewModel internal constructor(
     userRepository: UserRepository,
     groupRepository: GroupRepository,
     chatLock: ChatLockRepository,
+    localChatNames: LocalChatNamesRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -96,6 +98,7 @@ class SearchViewModel internal constructor(
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatLock: ChatLockRepository,
+        localChatNames: LocalChatNamesRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -105,6 +108,7 @@ class SearchViewModel internal constructor(
         userRepository,
         groupRepository,
         chatLock,
+        localChatNames,
         clock,
         timePatterns,
         dispatcher,
@@ -153,13 +157,12 @@ class SearchViewModel internal constructor(
 
     private val people =
         combine(
-            userRepository.users,
-            groupRepository.supergroups,
-            groupRepository.basicGroups,
+            combine(userRepository.users, groupRepository.supergroups, groupRepository.basicGroups, ::Triple),
             userRepository.myUserId,
             clock.minutes,
-        ) { users, supergroups, basicGroups, myUserId, now ->
-            SearchRowSources(users, supergroups, basicGroups, myUserId, now, timeFormatter())
+            localChatNames.names,
+        ) { (users, supergroups, basicGroups), myUserId, now, localNames ->
+            SearchRowSources(users, supergroups, basicGroups, myUserId, now, timeFormatter(), localNames)
         }
 
     /** What TDLib counted for the query searched last, by chip; see [SearchUiState.counts]. */
