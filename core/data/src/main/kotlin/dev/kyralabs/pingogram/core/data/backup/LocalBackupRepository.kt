@@ -161,7 +161,11 @@ class LocalBackupRepository
             val bookmarks = repositories.bookmarkRepository()
             return AccountBackup(
                 userId = userId,
-                bookmarks = bookmarks.bookmarks.first().filter { kept(it.chatId) }.toImmutableList(),
+                bookmarks =
+                    bookmarks.bookmarks
+                        .first()
+                        .filter { kept(it.chatId) }
+                        .toImmutableList(),
                 tags = bookmarks.tags.first(),
                 reminders =
                     repositories
