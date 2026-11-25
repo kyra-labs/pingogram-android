@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
+import dev.kyralabs.pingogram.feature.chat.ui.OverlayCopies
 import dev.kyralabs.pingogram.feature.chat.ui.showsMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -99,7 +100,10 @@ data class SenderOption(
  * The state with the bubble of the result [highlight] shows marking its words ([ChatItem.Bubble.searchMatch]): only
  * that bubble is copied, so no other recomposes; the state as it is without a highlight.
  */
-internal fun ChatUiState.withSearchMatch(highlight: SearchHighlight?): ChatUiState {
+internal fun ChatUiState.withSearchMatch(
+    highlight: SearchHighlight?,
+    copies: OverlayCopies = OverlayCopies(),
+): ChatUiState {
     val content = content as? ChatContent.Content
     if (highlight == null || content == null) return this
     var changed = false
@@ -107,10 +111,10 @@ internal fun ChatUiState.withSearchMatch(highlight: SearchHighlight?): ChatUiSta
         content.items.map { item ->
             if (item is ChatItem.Bubble && item.showsMessage(highlight.messageId) && item.text.text.isNotEmpty()) {
                 changed = true
-                item.copy(searchMatch = highlight.terms)
+                copies.entry(item.key, item, highlight.terms) { item.copy(searchMatch = highlight.terms) }
             } else {
                 item
             }
         }
-    return if (changed) copy(content = content.copy(items = items.toImmutableList())) else this
+    return if (changed) copy(content = content.copy(items = copies.list(items))) else this
 }

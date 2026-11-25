@@ -31,10 +31,13 @@ internal class SponsoredState(
  * chat's newest message ([ChatContent.Content.reachedEnd]): not while an older window shows. The same instance when
  * nothing changes, so the list and the state flow skip it.
  */
-internal fun ChatUiState.withSponsored(ads: SponsoredState): ChatUiState {
+internal fun ChatUiState.withSponsored(
+    ads: SponsoredState,
+    copies: OverlayCopies = OverlayCopies(),
+): ChatUiState {
     val withSheet = if (sponsoredSheet == ads.sheet) this else copy(sponsoredSheet = ads.sheet)
     val content = content as? ChatContent.Content
-    val items = content?.takeIf { it.reachedEnd }?.items?.withSponsored(ads.placed)
+    val items = content?.takeIf { it.reachedEnd }?.items?.withSponsored(ads.placed, copies)
     return if (content == null || items == null || items === content.items) {
         withSheet
     } else {
@@ -48,7 +51,10 @@ internal fun ChatUiState.withSponsored(ads: SponsoredState): ChatUiState {
  * separator, with that message's date. One whose message is not among the items does not show. The same instance when
  * none shows.
  */
-internal fun ImmutableList<ChatItem>.withSponsored(placed: List<PlacedSponsored>): ImmutableList<ChatItem> {
+internal fun ImmutableList<ChatItem>.withSponsored(
+    placed: List<PlacedSponsored>,
+    copies: OverlayCopies = OverlayCopies(),
+): ImmutableList<ChatItem> {
     val positioned =
         placed.mapNotNull { ad ->
             val index =
@@ -57,13 +63,16 @@ internal fun ImmutableList<ChatItem>.withSponsored(placed: List<PlacedSponsored>
                 } else {
                     indexOfFirst { it.showsMessage(ad.afterMessageId) }
                 }
-            getOrNull(index)?.let { index to ChatItem.Sponsored(ad.card, it.date) }
+            getOrNull(index)?.let {
+                index to
+                    copies.entry(ad.card.id, ad.card, it.date) { ChatItem.Sponsored(ad.card, it.date) }
+            }
         }
     if (positioned.isEmpty()) return this
     val result = toMutableList()
     // From the oldest place to the newest, so the indexes still to come stay right.
     for ((index, item) in positioned.sortedByDescending { it.first }) result.add(index, item)
-    return result.toImmutableList()
+    return copies.list(result)
 }
 
 /**

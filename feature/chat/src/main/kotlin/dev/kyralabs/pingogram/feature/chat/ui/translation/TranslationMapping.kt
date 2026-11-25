@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
+import dev.kyralabs.pingogram.feature.chat.ui.OverlayCopies
 import dev.kyralabs.pingogram.feature.chat.ui.SummaryEvent
 import dev.kyralabs.pingogram.feature.chat.ui.TranslationEffect
 import dev.kyralabs.pingogram.feature.chat.ui.TranslationEvent
@@ -19,9 +20,13 @@ import java.util.Locale
 
 /**
  * The state with each bubble of [translations] showing its translation in place of its text, its meta shown for the
- * label; the items of every other bubble stay as they are, so only the bubbles that change compose again.
+ * label; the items of every other bubble stay as they are, so only the bubbles that change compose again. A bubble
+ * whose item and translation did not change is the copy made for the last state ([copies]), not a new one.
  */
-internal fun ChatUiState.withTranslations(translations: ImmutableMap<Long, BubbleTranslation>): ChatUiState {
+internal fun ChatUiState.withTranslations(
+    translations: ImmutableMap<Long, BubbleTranslation>,
+    copies: OverlayCopies = OverlayCopies(),
+): ChatUiState {
     val content = content as? ChatContent.Content
     if (translations.isEmpty() || content == null) return this
     var changed = false
@@ -32,11 +37,12 @@ internal fun ChatUiState.withTranslations(translations: ImmutableMap<Long, Bubbl
                 item
             } else {
                 changed = true
-                val text = translation.shownText ?: item.text
-                item.copy(text = text, translation = translation, showsTime = true)
+                copies.entry(item.key, item, translation) {
+                    item.copy(text = translation.shownText ?: item.text, translation = translation, showsTime = true)
+                }
             }
         }
-    return if (changed) copy(content = content.copy(items = items.toImmutableList())) else this
+    return if (changed) copy(content = content.copy(items = copies.list(items))) else this
 }
 
 /**

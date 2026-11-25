@@ -34,6 +34,9 @@ internal class ChatMessageFeatures(
     chat: Flow<Chat>,
     describeDate: (unixTime: Long) -> DateTimeSheet,
 ) {
+    /** The copies the overlay stages of the conversation's state keep from one state to the next. */
+    val overlays = OverlayStages()
+
     val translation =
         ChatTranslation(
             chatId = parts.chatId,

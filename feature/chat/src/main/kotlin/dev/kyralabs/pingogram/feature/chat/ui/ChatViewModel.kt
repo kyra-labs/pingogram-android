@@ -1183,7 +1183,7 @@ class ChatViewModel internal constructor(
         combine(chatSources, messageSources, people, clock.minutes, overlays, stateMapper::state)
             .map { state -> state.copy(transfers = transfers) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
-            .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
+            .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads, features.overlays.sponsored) }
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
             .combine(sendAs.button) { state, sendAs -> state.withSendAs(sendAs) }
@@ -1194,13 +1194,13 @@ class ChatViewModel internal constructor(
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
             .combine(translation.bubbles.combine(summaries.bubbles, ::withSummaries)) { state, translations ->
-                state.withTranslations(translations)
+                state.withTranslations(translations, features.overlays.translations)
             }.combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(transcripts?.bubbles ?: flowOf(persistentMapOf())) { state, transcripts ->
                 state.withTranscripts(transcripts, canTranscribe = this.transcripts?.isAvailable == true)
-            }.combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
-            .combine(keywordShown) { state, shown -> state.withKeywordMatch(shown) }
+            }.combine(search.highlight) { state, terms -> state.withSearchMatch(terms, features.overlays.search) }
+            .combine(keywordShown) { state, shown -> state.withKeywordMatch(shown, features.overlays.keyword) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
             .combine(pollOptions.adding) { state, adding -> state.withPollAdding(adding) }
             .combine(checklists.changes) { state, changes -> state.withChecklists(changes) }
