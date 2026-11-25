@@ -163,8 +163,9 @@ internal fun FollowListAnchor(
 ) {
     val anchor = content.anchor
     val items = content.items
-    val entryIndex = content.anchorEntryIndex()
     val pending = state.movedToAnchor != anchor.id
+    // Looked up while the anchor waits for the list only: once it is placed, an update of the items looks up nothing.
+    val entryIndex = if (pending) content.anchorEntryIndex() else NOT_LOOKED_UP
     if (pending && entryIndex < 0) {
         SideEffect {
             listState.requestScrollToItem(0)
@@ -198,6 +199,9 @@ internal fun FollowListAnchor(
         if (shown && target.highlight) state.highlight(target.messageId, motionScheme)
     }
 }
+
+/** The entry index of an anchor already placed, which [FollowListAnchor] no longer looks up. */
+private const val NOT_LOOKED_UP = -1
 
 /** The index of the entry of the content's anchor among its items: -1 for the newest message, or no unread divider. */
 private fun ChatContent.Content.anchorEntryIndex(): Int =
