@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.
 - A video that plays while it downloads takes far less memory, and a video your phone's first decoder can't play
   tries the next one instead of failing.
 - While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone
