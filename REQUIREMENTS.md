@@ -326,12 +326,15 @@ decision 2026-11-23).
 - FR-X19 Should: **Compact chat list** (owner decision 2026-11-23). Settings → Chats → Chat list → "Compact chat
   list", off by default: on, the chat list's rows show a 40 dp avatar on rows at least 56 dp high, so more chats fit;
   they still grow with the font size.
-- FR-X20 Should: **Notes and names on this phone** (owner decision 2026-11-25). On a chat's info page or profile, the
-  user's own name for the chat (up to 64 characters), shown wherever its title shows (chat list, conversation, search,
-  pickers, notifications, the widget), with Telegram's name under it on the info page; and a private note (up to 2,000
-  characters). Both are kept on the phone with the account's data, never sent to Telegram, and go into backups (the
-  same account only, never of secret or locked chats). Settings → Chats → "Notes and names on this phone", on by
-  default: off, Telegram's names show again and what the user wrote is kept.
+- FR-X20 Should: **Notes and names on this phone** (owner decisions 2026-11-25). On the info page of a group, a
+  channel or a bot, or the profile of someone who is not a contact, the user's own name for the chat (up to 64
+  characters), shown wherever its title shows (chat list, conversation, search, pickers, notifications, the widget),
+  with Telegram's name under it on the info page; and a private note (up to 2,000 characters). Contacts keep
+  Telegram's own contact name and contact note (FR-P2), synced and with no local ones: someone who becomes a contact
+  shows their contact name, and their local entry, kept and hidden, shows again if they stop being one. Both are kept
+  on the phone with the account's data, never sent to Telegram, and go into backups (the same account only, never of
+  secret or locked chats). Settings → Chats → "Notes and names on this phone", on by default, says which chats it is
+  for: off, Telegram's names show again and what the user wrote is kept.
 
 ## 6. Non-functional requirements
 
