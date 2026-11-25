@@ -7,10 +7,8 @@ import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorProducer
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
@@ -207,7 +205,6 @@ private class CustomEmojiTextNode(
     private var syncedPlacements: List<CustomEmojiPlacement>? = null
     private var syncedEmoji: Map<Long, CustomEmoji>? = null
 
-    private val cut = Path()
     private var repaintColor = Color.Unspecified
     private var repaint: ColorFilter? = null
 
@@ -287,13 +284,24 @@ private class CustomEmojiTextNode(
         } else {
             val offset = Offset(0f, -(field?.scrollOffset?.invoke() ?: 0).toFloat())
             val inset = if (field != null) CURSOR_ROOM.toPx() else 0f
-            cut.rewind()
+            // One rect clip per glyph, which the GPU clips analytically; a path of the same rects, even, it turns into
+            // a mask on every draw (docs/PERFORMANCE.md §5).
+            val canvas = drawContext.canvas
+            canvas.save()
             for (placement in placements) {
                 if (frames.frame(placement.customEmojiId) == null) continue
-                val glyph = placement.glyph.translate(offset)
-                cut.addRect(Rect(glyph.left + inset, glyph.top, glyph.right - inset, glyph.bottom))
+                val glyph = placement.glyph
+                val top = glyph.top + offset.y
+                canvas.clipRect(
+                    glyph.left + inset,
+                    top,
+                    glyph.right - inset,
+                    glyph.bottom + offset.y,
+                    ClipOp.Difference,
+                )
             }
-            clipPath(cut, ClipOp.Difference) { this@draw.drawContent() }
+            drawContent()
+            canvas.restore()
             clipRect { drawPictures(placements, offset) }
         }
         frames.drawn()
