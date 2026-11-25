@@ -24,7 +24,8 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
+import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
+import dev.kyralabs.pingogram.feature.chat.ui.requestedState
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -57,7 +58,7 @@ internal fun MessagePhoto(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
     maxWidth: Dp = MaterialTheme.sizes.mediaMaxWidth,
-    downloads: MediaDownloads = MediaDownloads(),
+    downloads: BubbleDownloads = BubbleDownloads.Automatic,
     onDownload: (fileId: Int) -> Unit = {},
     onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
@@ -108,7 +109,7 @@ internal fun MessagePhoto(
  *
  * Where [downloads] leave photos for a tap, the size shows only once downloaded, and until then a
  * [MediaDownloadButton] in the middle calls [onDownload] with its file id, or, while that downloads (in
- * [MediaDownloads.requested]), [onCancelDownload].
+ * [BubbleDownloads.isRequested]), [onCancelDownload].
  *
  * Both are tinted by [colorFilter]: dimmed in dark theme by default (`docs/DESIGN_SYSTEM.md` §10); null for a photo
  * that is no media, such as a sponsor's avatar.
@@ -121,7 +122,7 @@ internal fun PhotoImage(
     hidden: Boolean,
     modifier: Modifier = Modifier,
     colorFilter: ColorFilter? = MaterialTheme.pingogramColors.mediaColorFilter,
-    downloads: MediaDownloads = MediaDownloads(),
+    downloads: BubbleDownloads = BubbleDownloads.Automatic,
     onDownload: (fileId: Int) -> Unit = {},
     onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
@@ -152,7 +153,7 @@ internal fun PhotoImage(
             // Until the image shows: once it is loaded, its fade-in's target is 1.
             if (!downloads.photos && alpha.targetValue < 1f) {
                 MediaDownloadButton(
-                    isDownloading = fileId in downloads.requested,
+                    isDownloading = downloads.requestedState(fileId).value,
                     onDownload = { onDownload(fileId) },
                     onCancel = { onCancelDownload(fileId) },
                     modifier = Modifier.align(Alignment.Center),

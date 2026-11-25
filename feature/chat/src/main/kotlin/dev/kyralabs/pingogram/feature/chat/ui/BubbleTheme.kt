@@ -174,7 +174,7 @@ internal class BubbleResources(
     val jump: MessageJumpState,
     val reactions: ReactionToggleState,
     val shortcuts: MessageShortcuts,
-    val mediaDownloads: MediaDownloads,
+    val mediaDownloads: BubbleDownloads,
     val lift: MessageLiftState,
     val swipe: SwipeReplyStyle,
     val share: ShareButtonStyle,
@@ -187,8 +187,9 @@ internal class BubbleResources(
 )
 
 /**
- * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state, the [shortcuts],
- * the [mediaDownloads] and the [lift] stay.
+ * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state, the [shortcuts]
+ * and the [lift] stay. The [mediaDownloads] go into one [BubbleDownloads] for the list's life, so a download asked for
+ * keeps them too, and recomposes only the photos that show a download button.
  */
 @Composable
 internal fun rememberBubbleResources(
@@ -210,6 +211,8 @@ internal fun rememberBubbleResources(
     val reactions = rememberReactionToggleState()
     val swipe = rememberSwipeReplyStyle()
     val share = rememberShareButtonStyle()
+    // Taken in composition, as rememberUpdatedState does: the bubbles that read it are composed after it.
+    val downloads = remember { BubbleDownloads(mediaDownloads) }.apply { update(mediaDownloads) }
     return remember(
         theme,
         texts,
@@ -218,7 +221,7 @@ internal fun rememberBubbleResources(
         jump,
         reactions,
         shortcuts,
-        mediaDownloads,
+        downloads,
         lift,
         swipe,
         share,
@@ -234,7 +237,7 @@ internal fun rememberBubbleResources(
             jump,
             reactions,
             shortcuts,
-            mediaDownloads,
+            downloads,
             lift,
             swipe,
             share,

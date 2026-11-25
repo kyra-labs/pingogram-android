@@ -6,11 +6,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.RichMessage
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.BubbleResources
 import dev.kyralabs.pingogram.feature.chat.ui.BubbleStyle
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
-import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
 
 /**
  * What a rich message's blocks share as they draw: the message's [texts], the bubble's [style], how the user changed
@@ -22,7 +22,7 @@ internal class RichScope(
     val texts: RichTexts,
     val style: BubbleStyle,
     val ui: RichMessageUi?,
-    val downloads: MediaDownloads,
+    val downloads: BubbleDownloads,
     val onEvent: (ChatEvent) -> Unit,
 ) {
     val colors: BubbleColors get() = style.colors

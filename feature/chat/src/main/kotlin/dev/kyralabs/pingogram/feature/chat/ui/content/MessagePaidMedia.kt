@@ -45,7 +45,7 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
+import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayNumber
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.toPluralCount
 import kotlinx.collections.immutable.toImmutableList
@@ -73,7 +73,7 @@ internal fun MessagePaidMedia(
     onOpen: (mediaId: Long) -> Unit,
     modifier: Modifier = Modifier,
     shape: CornerBasedShape = MaterialTheme.shapes.large,
-    downloads: MediaDownloads = MediaDownloads(),
+    downloads: BubbleDownloads = BubbleDownloads.Automatic,
     onDownload: (fileId: Int) -> Unit = {},
     onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
@@ -94,7 +94,7 @@ private fun UnlockedPaidMedia(
     messageId: Long,
     onOpen: (mediaId: Long) -> Unit,
     shape: CornerBasedShape,
-    downloads: MediaDownloads,
+    downloads: BubbleDownloads,
     onDownload: (fileId: Int) -> Unit,
     onCancelDownload: (fileId: Int) -> Unit,
 ) {

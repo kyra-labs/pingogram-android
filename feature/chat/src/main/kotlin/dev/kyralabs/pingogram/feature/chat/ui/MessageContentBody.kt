@@ -98,7 +98,7 @@ internal fun MessageContentBody(
     modifier: Modifier = Modifier,
     mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
-    mediaDownloads: MediaDownloads = MediaDownloads(),
+    mediaDownloads: BubbleDownloads = BubbleDownloads.Automatic,
     showsUpdateLink: Boolean = false,
     canTranscribe: Boolean = false,
 ) {
@@ -161,7 +161,7 @@ private fun BareOrEdgeToEdge(
     modifier: Modifier,
     mediaShape: CornerBasedShape,
     uploads: ImmutableMap<Long, MessageUpload>,
-    mediaDownloads: MediaDownloads,
+    mediaDownloads: BubbleDownloads,
     canTranscribe: Boolean,
 ) {
     val content = bubble.content
@@ -200,7 +200,7 @@ private fun MediaContent(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
     mediaShape: CornerBasedShape,
-    mediaDownloads: MediaDownloads,
+    mediaDownloads: BubbleDownloads,
 ) {
     val onOpen = { onEvent(ChatEvent.OpenMedia(messageId)) }
     // Only what the viewer shows (no self-destructing media) shares its bounds with it.
