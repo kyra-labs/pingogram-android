@@ -16,6 +16,8 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
+import dev.kyralabs.pingogram.core.ui.transition.LocalAnimationsPaused
+import dev.kyralabs.pingogram.core.ui.transition.focusedUnless
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -58,7 +60,7 @@ private data class AnimatedStickerElement(
  * plays it with a [StickerPlayer], which renders frame after frame into one of two bitmaps while the other shows,
  * holding a slot while it plays. A frame that is not drawn in time means the sticker left the screen (a lazy list keeps
  * items composed but not placed): it gives the slot back and waits until it is drawn again. Losing the window's focus
- * pauses it too.
+ * pauses it too, as [LocalAnimationsPaused] does.
  */
 private class AnimatedStickerNode(
     private var stickers: AnimatedStickers,
@@ -129,7 +131,10 @@ private class AnimatedStickerNode(
         onFirstFrame()
         if (!stickers.plays(animation)) return
         StickerPlayer(stickers, animation, width, height, draws, ::show)
-            .playOnScreen(currentValueOf(LocalWindowInfo), ::invalidateDraw)
+            .playOnScreen(
+                currentValueOf(LocalWindowInfo).focusedUnless(currentValueOf(LocalAnimationsPaused)),
+                ::invalidateDraw,
+            )
     }
 
     private fun show(bitmap: ImageBitmap) {

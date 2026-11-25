@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
+import dev.kyralabs.pingogram.core.ui.transition.LocalAnimationsPaused
+import dev.kyralabs.pingogram.core.ui.transition.focusedUnless
 
 /**
  * Custom emoji [customEmojiId] on its own (a reaction's), drawn by [renderer] as texts draw theirs (`customEmoji`):
@@ -122,7 +124,7 @@ private class CustomEmojiImageNode(
         syncedSide = side
         syncedEmoji = emoji
         val known = if (emoji == null) emptyMap() else mapOf(customEmojiId to emoji)
-        val windowInfo = currentValueOf(LocalWindowInfo)
+        val windowInfo = currentValueOf(LocalWindowInfo).focusedUnless(currentValueOf(LocalAnimationsPaused))
         return frames.sync(renderer, mapOf(customEmojiId to side), known, coroutineScope, windowInfo)
     }
 

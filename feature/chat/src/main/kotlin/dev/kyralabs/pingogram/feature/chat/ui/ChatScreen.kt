@@ -233,48 +233,50 @@ internal fun ChatScreen(
     val bubbleResources = rememberChatBubbleResources(state, jumpState, lift, onEvent)
     val lifted = liftedBubble(state, lift)
     Box(modifier.conversationKeys(state, searching = search != null, onEvent)) {
-        ChatScaffold(
-            state = state,
-            onEvent = onEvent,
-            onBack = onBack,
-            listState = listState,
-            snackbarHostState = snackbarHostState,
-            bubbleResources = bubbleResources,
-            onOpenProfile = onOpenProfile,
-            onOpenChatInfo = onOpenChatInfo,
-            search = search,
-            searchQuery = searchQuery,
-            topicAction = topicAction,
-            connection = connection,
-            // A read channel's next unread one, outside selection mode and search.
-            nextChannel = nextChannel.takeIf { selection == null && search == null },
-            bottomBar = {
-                ChatScreenBottomBar(
-                    state = state,
-                    search = search,
-                    recording = recording,
-                    recordMode = recordMode,
-                    composerText = composerText,
-                    composerFocus = composerFocus,
-                    selectionBack = { selectionBack.value },
-                    onEvent = onEvent,
-                    onSent = scrollToSent,
-                    emojiPanel = emojiPanel,
-                    onEmojiPanelEvent = onEmojiPanelEvent,
-                    commandSuggestions = commandSuggestions,
-                    inlineResults = inlineResults,
-                    botReply = botReply,
-                    hasCamera = attach.hasCamera,
-                ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
-            },
-            onOpenScheduledMessages = onOpenScheduledMessages,
-            welcome = welcome,
-            onWelcomeEvent = onWelcomeEvent,
-            jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
-            modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
-            // Over the messages, above the composer, while a video message records.
-            overlay = { RoundVideoPreview(recording, videoNotePreview) },
-        )
+        PausedUnderMenu(lift) {
+            ChatScaffold(
+                state = state,
+                onEvent = onEvent,
+                onBack = onBack,
+                listState = listState,
+                snackbarHostState = snackbarHostState,
+                bubbleResources = bubbleResources,
+                onOpenProfile = onOpenProfile,
+                onOpenChatInfo = onOpenChatInfo,
+                search = search,
+                searchQuery = searchQuery,
+                topicAction = topicAction,
+                connection = connection,
+                // A read channel's next unread one, outside selection mode and search.
+                nextChannel = nextChannel.takeIf { selection == null && search == null },
+                bottomBar = {
+                    ChatScreenBottomBar(
+                        state = state,
+                        search = search,
+                        recording = recording,
+                        recordMode = recordMode,
+                        composerText = composerText,
+                        composerFocus = composerFocus,
+                        selectionBack = { selectionBack.value },
+                        onEvent = onEvent,
+                        onSent = scrollToSent,
+                        emojiPanel = emojiPanel,
+                        onEmojiPanelEvent = onEmojiPanelEvent,
+                        commandSuggestions = commandSuggestions,
+                        inlineResults = inlineResults,
+                        botReply = botReply,
+                        hasCamera = attach.hasCamera,
+                    ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
+                },
+                onOpenScheduledMessages = onOpenScheduledMessages,
+                welcome = welcome,
+                onWelcomeEvent = onWelcomeEvent,
+                jumpButton = { JumpButtonSlot(content, showJump, state, scrollToNewest, onEvent) },
+                modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
+                // Over the messages, above the composer, while a video message records.
+                overlay = { RoundVideoPreview(recording, videoNotePreview) },
+            )
+        }
         if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
     }
     ChatSheets(state, onEvent, reportComment, actionsInSheet = lifted == null)

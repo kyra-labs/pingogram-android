@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone
+  no longer redraws the blur for every frame they move.
+
 ## [2.5.0] - 2026-11-25
 
 ### Added
