@@ -9,6 +9,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- Lists with group and channel photos, and messages with custom emoji, take less work to draw while they scroll.
+
 ## [2.5.0] - 2026-11-25
 
 ### Added
