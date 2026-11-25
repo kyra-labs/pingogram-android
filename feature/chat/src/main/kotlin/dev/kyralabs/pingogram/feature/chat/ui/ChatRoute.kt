@@ -211,8 +211,16 @@ internal fun ConversationRoute(
         hiltViewModel<ChatWallpaperViewModel, ChatWallpaperViewModel.Factory>(key = "wallpaper-$chatId") {
             it.create(chatId)
         },
+    localNameViewModel: ChatLocalNameViewModel =
+        hiltViewModel<ChatLocalNameViewModel, ChatLocalNameViewModel.Factory>(key = "local-name-$chatId") {
+            it.create(chatId)
+        },
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val conversation by viewModel.uiState.collectAsStateWithLifecycle()
+    // The chat's name on this phone (REQUIREMENTS.md FR-X20) titles its own conversation; a topic or thread keeps its
+    // header.
+    val localName by localNameViewModel.name.collectAsStateWithLifecycle()
+    val state = remember(conversation, localName, topic) { conversation.withLocalName(localName, topic != null) }
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
     // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
     val sharedMedia = LocalSharedMediaShapes.current
