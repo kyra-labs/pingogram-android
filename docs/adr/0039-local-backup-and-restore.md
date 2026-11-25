@@ -39,7 +39,7 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
     the locked chats' state, the account registry, one-time hints and prompts (viewer hints, notification prompt,
     welcome pack, declined birthdays) and anything a setting stores about a device (power saving's measurements).
   - `account`: for each logged-in account, its Telegram user id and its bookmarks (with tags and notes), reminders,
-    birthday reminders (`REQUIREMENTS.md` FR-X18) and keyword hits.
+    birthday reminders (`REQUIREMENTS.md` FR-X18), keyword hits and its notes and names for chats (FR-X20).
 - Nothing from TDLib's database, no messages, no media, no session or key: signing in brings those back from Telegram.
 
 ### Backing up
@@ -62,7 +62,9 @@ already writes through the Storage Access Framework (`ChatExportRoute`, `ExportW
   - `settings` replace the current ones, except the passcode, which stays as it is on this phone;
   - `account` sections are restored only into the logged-in account with the same Telegram user id; bookmarks and
     reminders merge with any already on the phone (the same message keeps the newer entry); reminders in the past are
-    restored as done; a birthday reminder comes back for a contact who has none on the phone, and is scheduled again; a backup of another account says so and restores only the settings.
+    restored as done; a birthday reminder comes back for a contact who has none on the phone, and is scheduled again;
+    a chat's note and name come back for a chat that has none on the phone; a backup of another account says so and
+    restores only the settings.
 - A restore never sends anything to Telegram and never deletes a chat, message or file.
 
 ### Protecting the file

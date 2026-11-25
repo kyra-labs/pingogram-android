@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
+import dev.kyralabs.pingogram.core.domain.model.ChatNote
 import dev.kyralabs.pingogram.core.domain.model.KeywordHit
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.model.Snippet
@@ -53,6 +54,7 @@ class BackupJsonTest {
                 keywordHits = listOf(KeywordHit(-100, 3_145_728, "café", 1_763_000_100)),
                 snippets = listOf(Snippet(4, "addr", "1 Main St\nSpringfield")),
                 birthdayReminders = listOf(BirthdayReminder(userId = 42, day = 29, month = 2)),
+                chatNotes = listOf(ChatNote(-100, name = "Launch team", note = "Ask about\nthe \"date\"")),
             )
 
         assertEquals(account, JSONObject(account.toJson().toString()).toAccountBackup())

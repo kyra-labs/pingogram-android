@@ -178,6 +178,13 @@ class LocalBackupRepository
                         .reminders
                         .first()
                         .filter { it.userId !in locked },
+                chatNotes =
+                    repositories
+                        .chatNoteRepository()
+                        .notes
+                        .first()
+                        .values
+                        .filter { kept(it.chatId) },
             )
         }
 
