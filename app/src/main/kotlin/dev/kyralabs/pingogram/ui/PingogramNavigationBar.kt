@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -271,6 +272,8 @@ private fun NavigationTab(
     Row(
         modifier =
             modifier
+                // "nav_chats", "nav_contacts"…: the benchmark's journeys switch tabs by it (docs/PERFORMANCE.md §2).
+                .testTag("nav_${destination.name.lowercase()}")
                 .selectable(
                     selected = selected,
                     onClick = onClick,

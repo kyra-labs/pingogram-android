@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -86,7 +87,7 @@ internal fun StoryViewerScreen(
         ImmersiveSystemBars(hidden = false)
         val scrim = MaterialTheme.colorScheme.scrim
         val title = LocalResources.current.getString(R.string.story_viewer_title)
-        BoxWithConstraints(modifier.fillMaxSize().semantics { paneTitle = title }) {
+        BoxWithConstraints(modifier.fillMaxSize().testTag(STORY_VIEWER_TEST_TAG).semantics { paneTitle = title }) {
             val height = constraints.maxHeight.toFloat()
             Box(Modifier.matchParentSize().drawBehind { drawRect(scrim, alpha = 1f - dismiss.fraction(height)) })
             Scaffold(
@@ -230,3 +231,6 @@ private fun StoryViewerScreenPreview(
         PreviewImages { StoryViewerScreen(state = state, onEvent = {}, onClose = {}, replyText = TextFieldState()) }
     }
 }
+
+/** The viewer, which the benchmark's journeys wait for. */
+internal const val STORY_VIEWER_TEST_TAG = "story_viewer"

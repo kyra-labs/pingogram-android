@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -82,7 +83,7 @@ internal fun StoryRingsRow(
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     LazyRow(
-        modifier = modifier,
+        modifier = modifier.testTag(STORY_RINGS_TEST_TAG),
         state = listState,
         // The first avatar on the window margin, in line with the chat rows' (its ring, spacing.extraSmall wider,
         // just outside it), and spacing.medium below the folder bar (docs/DESIGN_SYSTEM.md §7).
@@ -101,11 +102,12 @@ internal fun StoryRingsRow(
                 },
                 onAddStory = onAddStory.takeIf { ring.isMine },
                 modifier =
-                    Modifier.animateItem(
-                        fadeInSpec = motionScheme.defaultEffectsSpec(),
-                        placementSpec = motionScheme.defaultSpatialSpec(),
-                        fadeOutSpec = motionScheme.fastEffectsSpec(),
-                    ),
+                    Modifier
+                        .animateItem(
+                            fadeInSpec = motionScheme.defaultEffectsSpec(),
+                            placementSpec = motionScheme.defaultSpatialSpec(),
+                            fadeOutSpec = motionScheme.fastEffectsSpec(),
+                        ).then(if (ring.opensOwnStories()) Modifier.testTag(OWN_STORIES_RING_TEST_TAG) else Modifier),
             )
         }
     }
@@ -313,3 +315,10 @@ private fun StoryRingsRowPreview(
 ) {
     PingogramPreview { StoryRingsRow(rings = rings, onOpen = {}, onNearEnd = {}) }
 }
+
+/** Whether a tap on this ring plays the user's own stories, not another chat's nor the posting of one. */
+private fun StoryRing.opensOwnStories(): Boolean = isMine && storyCount > 0 && upload == null
+
+/** The row of rings, and the user's own ring while it has stories: the benchmark's journeys scroll and open them. */
+internal const val STORY_RINGS_TEST_TAG = "story_rings"
+internal const val OWN_STORIES_RING_TEST_TAG = "story_ring_own"

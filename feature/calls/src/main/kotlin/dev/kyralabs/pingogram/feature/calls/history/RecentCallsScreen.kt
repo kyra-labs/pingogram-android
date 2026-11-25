@@ -45,6 +45,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -241,7 +242,11 @@ private fun CallList(
         }
     }
     val motion = rememberItemMotion()
-    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
+    LazyColumn(
+        Modifier.fillMaxSize().testTag(RECENT_CALLS_LIST_TEST_TAG),
+        state = listState,
+        contentPadding = contentPadding,
+    ) {
         items(content.items, key = { it.key }, contentType = { it::class }) { item ->
             when (item) {
                 is RecentCallsItem.Day -> {
@@ -338,3 +343,6 @@ private fun DayHeader(day: RecentCallsItem.Day) {
 /** How many rows from the end the next page starts loading. */
 internal const val LOAD_MORE_DISTANCE = 5
 private const val FOOTER = "footer"
+
+/** The list of calls, which the benchmark's journeys scroll (never a row: a tap calls back). */
+internal const val RECENT_CALLS_LIST_TEST_TAG = "recent_calls_list"
