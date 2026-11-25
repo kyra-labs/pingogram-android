@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.CommunityRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShownChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -124,6 +125,7 @@ class ChatListViewModel internal constructor(
     catchUpChats: CatchUpChats,
     private val keywordChats: KeywordAlertChats,
     private val shownLists: ShownChatListRepository,
+    localChatNames: LocalChatNamesRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -147,6 +149,7 @@ class ChatListViewModel internal constructor(
         catchUpChats: CatchUpChats,
         keywordChats: KeywordAlertChats,
         shownLists: ShownChatListRepository,
+        localChatNames: LocalChatNamesRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -167,6 +170,7 @@ class ChatListViewModel internal constructor(
         catchUpChats,
         keywordChats,
         shownLists,
+        localChatNames,
         clock,
         timePatterns,
         dispatcher,
@@ -294,8 +298,9 @@ class ChatListViewModel internal constructor(
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
             clock.minutes,
-        ) { (users, supergroups, secretChats), actions, myUserId, now ->
-            RowSnapshot(users, supergroups, secretChats, actions, myUserId, now)
+            localChatNames.names,
+        ) { (users, supergroups, secretChats), actions, myUserId, now, localNames ->
+            RowSnapshot(users, supergroups, secretChats, actions, myUserId, now, localNames)
         }.sharedIn(viewModelScope, dispatcher)
 
     /** Locked chats (docs/adr/0029-locked-chats.md) never show here, open or not: they have a list of their own. */

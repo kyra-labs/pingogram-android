@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -29,12 +30,14 @@ import dev.kyralabs.pingogram.core.ui.text.stateText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import java.time.Instant
 
 /**
  * What rows show besides their chats, as of one emission: the users, supergroups, secret chats and actions of every
- * chat, the current user, and the minute (for times and online dots that expire).
+ * chat, the current user, the minute (for times and online dots that expire), and the user's own names for chats
+ * ([localNames], `REQUIREMENTS.md` FR-X20).
  */
 internal class RowSnapshot(
     val users: ImmutableMap<Long, User>,
@@ -43,7 +46,12 @@ internal class RowSnapshot(
     val actionsByChat: ImmutableMap<Long, ImmutableList<SenderAction>>,
     val myUserId: Long?,
     val now: Instant,
-)
+    val localNames: ImmutableMap<Long, String> = persistentMapOf(),
+) {
+    /** The user's own name for [chat], unless it is a contact's private chat, whose contact name shows (FR-X20). */
+    fun localNameOf(chat: Chat): String? =
+        localNames.shownName(chat.id, isContact = chat.userId?.let(users::get)?.isContact == true)
+}
 
 /**
  * What the rows of one emission are made from: the [snapshot], the list shown (for pins), how to format times, and the
@@ -111,6 +119,7 @@ private data class RowInputs(
     val myUserId: Long?,
     val now: Instant,
     val timeFormatter: ChatListTimeFormatter,
+    val localName: String?,
 ) {
     /** Whether these are the inputs [chat] has in [sources] ([inputsOf]), found without building those. */
     fun matches(
@@ -123,7 +132,7 @@ private data class RowInputs(
                 myUserId == snapshot.myUserId &&
                 now == snapshot.now &&
                 timeFormatter == sources.timeFormatter
-        return sameList && this.chat == chat && sameAround(chat, sources)
+        return sameList && this.chat == chat && localName == snapshot.localNameOf(chat) && sameAround(chat, sources)
     }
 
     /** Whether what [chat]'s row shows besides the chat itself is the same in [sources]. */
@@ -164,6 +173,7 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         myUserId = snapshot.myUserId,
         now = snapshot.now,
         timeFormatter = timeFormatter,
+        localName = snapshot.localNameOf(chat),
     )
 }
 
@@ -192,7 +202,7 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     val isPinned = chat.positionIn(list)?.isPinned == true
     return ChatListItemModel(
         id = chat.id,
-        title = chatTitle(chat, isSavedMessages, isDeletedAccount),
+        title = chatTitle(chat, isSavedMessages, isDeletedAccount, localName),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
         avatarShape =
@@ -233,15 +243,20 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     )
 }
 
-/** "Saved Messages" and "Deleted Account" from resources, otherwise the chat's title; also for search results. */
+/**
+ * "Saved Messages" and "Deleted Account" from resources, otherwise the user's own name for the chat ([localName],
+ * `REQUIREMENTS.md` FR-X20) or its title; also for search results.
+ */
 internal fun chatTitle(
     chat: Chat,
     isSavedMessages: Boolean,
     isDeletedAccount: Boolean,
+    localName: String? = null,
 ): UiText =
     when {
         isSavedMessages -> UiText.resource(R.string.chat_saved_messages)
         isDeletedAccount -> UiText.resource(R.string.user_deleted_account)
+        localName != null -> UiText.Plain(localName)
         else -> UiText.Plain(chat.title)
     }
 
