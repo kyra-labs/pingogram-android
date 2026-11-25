@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -26,6 +27,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -75,6 +77,7 @@ class RecentChatsWidgetUpdaterTest {
     private val client = FakeTdlibClient()
     private val other = FakeTdlibClient()
     private val accounts = MutableStateFlow<Map<Int, WidgetAccount>>(emptyMap())
+    private val localNames = FakeLocalChatNamesRepository()
     private val activeSlot = MutableStateFlow(0)
 
     private fun TestScope.account(
@@ -106,6 +109,7 @@ class RecentChatsWidgetUpdaterTest {
                     backgroundScope,
                     SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
                 ),
+            localNames = localNames,
         )
     }
 
@@ -280,6 +284,26 @@ class RecentChatsWidgetUpdaterTest {
             settle()
 
             assertEquals(RecentChatsContent.SignedOut, updater.currentContent(0))
+        }
+
+    @Test
+    fun `a chat shows its name on this phone, a contact keeps their contact name`() =
+        runTest {
+            localNames.names.value = persistentMapOf(ALICE to "Ally", GROUP to "Book club")
+            val updater = updater(FakeWidgets(0))
+            chats()
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(listOf("Ally", "Book club", "Saved Messages", "Alice"), content.chats.map { it.title })
+
+            client.emit(updateUser(user(id = ALICE, firstName = "Alice", isContact = true)))
+            runCurrent()
+            settle()
+
+            val contact = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(listOf("Alice", "Book club", "Saved Messages", "Alice"), contact.chats.map { it.title })
         }
 
     @Test
