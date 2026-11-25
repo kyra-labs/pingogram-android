@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.WallpaperColorsTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.trace.MediaViewerTrace
+import dev.kyralabs.pingogram.core.ui.transition.LocalSharedMediaShapes
 import dev.kyralabs.pingogram.core.ui.wallpaper.PhotoSeedEffect
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.ChatActionBarHost
@@ -214,9 +215,10 @@ internal fun ConversationRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
     // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
+    val sharedMedia = LocalSharedMediaShapes.current
     val onEvent: (ChatEvent) -> Unit =
-        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel) {
-            { event ->
+        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel, sharedMedia) {
+            sharedMedia.readyingOpenedMedia { event ->
                 when (event) {
                     is SuggestedPostEvent -> {
                         suggestedPostsViewModel.onEvent(event)

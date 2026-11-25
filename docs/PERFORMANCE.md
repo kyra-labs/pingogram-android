@@ -333,6 +333,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   on every draw. A group's, channel's, Saved Messages' or community's avatar photo is cut to its polygon once, off the
   main thread, and kept in Coil's memory cache (`AvatarMask`), then drawn unclipped; circles and forums' rounded
   squares keep their clip. Custom emoji are cut out of their text with one rect clip per glyph.
+- Shared elements only where something moves: a media bubble sets up its side of the container transform to the media
+  viewer (`sharedMediaBounds`) only once its media is asked to open (`SharedMediaShapes.opening`, before the viewer
+  composes) and while a viewer's page shows it; the others only publish their corners. A still sticker's emoji leaves
+  the composition once its picture has faded in over it.
 
 ### Overdraw
 
