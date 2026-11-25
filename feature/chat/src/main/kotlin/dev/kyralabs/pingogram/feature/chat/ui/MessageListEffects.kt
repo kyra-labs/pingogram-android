@@ -131,6 +131,7 @@ private val ChatItem.messageIds: List<Long>
  * top bar and the composer ([SponsoredEvent.Viewed]): TDLib counts a sponsored message as viewed only once its whole
  * text is on screen. A card taller than the viewport (a large font in landscape) counts once it fills it. Read from
  * the layout, outside the items (`docs/PERFORMANCE.md` §4); while no card is among the items, a frame only checks that.
+ * The cards are gathered by key when the items change, so a frame of a scroll only looks up the entries it shows.
  */
 @Composable
 internal fun ReportSponsoredViews(
@@ -141,23 +142,33 @@ internal fun ReportSponsoredViews(
     val currentItems by rememberUpdatedState(items)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState) {
+        // The ids of the cards by key, for the items they were gathered from; read in the flow's block only.
+        var gatheredFrom: List<ChatItem>? = null
+        var cards = emptyMap<Any, Long>()
         snapshotFlow {
-            val cards = currentItems.filterIsInstance<ChatItem.Sponsored>()
+            val items = currentItems
+            if (items !== gatheredFrom) {
+                gatheredFrom = items
+                cards = items.sponsoredCardIds()
+            }
             if (cards.isEmpty()) return@snapshotFlow emptySet()
             val layout = listState.layoutInfo
             val viewport = layout.viewport
-            val byKey = cards.associateBy { it.key }
             layout.visibleItemsInfo.mapNotNullTo(HashSet()) { info ->
-                val card = byKey[info.key] ?: return@mapNotNullTo null
+                val id = cards[info.key] ?: return@mapNotNullTo null
                 val end = info.offset + info.size
                 val whole = info.offset >= 0 && end <= viewport
                 val fills = info.size > viewport && info.offset <= 0 && end >= viewport
-                card.card.id.takeIf { whole || fills }
+                id.takeIf { whole || fills }
             }
         }.distinctUntilChanged()
             .collect { ids -> ids.forEach { currentOnEvent(SponsoredEvent.Viewed(it)) } }
     }
 }
+
+/** The ids of the sponsored cards among these entries, by their entries' keys. */
+private fun List<ChatItem>.sponsoredCardIds(): Map<Any, Long> =
+    buildMap { this@sponsoredCardIds.forEach { if (it is ChatItem.Sponsored) put(it.key, it.card.id) } }
 
 /**
  * Brings a new newest entry into view when the list showed the newest one: a lazy list keeps its first visible
