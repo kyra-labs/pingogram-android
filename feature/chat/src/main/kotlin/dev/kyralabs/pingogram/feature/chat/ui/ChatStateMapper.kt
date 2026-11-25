@@ -3,33 +3,20 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AppInfo
-import dev.kyralabs.pingogram.core.domain.model.Chat
-import dev.kyralabs.pingogram.core.domain.model.ChatHistory
-import dev.kyralabs.pingogram.core.domain.model.Message
-import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
-import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
-import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewDraft
 import dev.kyralabs.pingogram.feature.chat.ui.attach.attachOptions
-import dev.kyralabs.pingogram.feature.chat.ui.attach.isChannel
-import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
-import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
-import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
-import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 
 /**
  * Maps what the conversation is made from (the chat, its messages, its people, the time and what shows over the
@@ -126,126 +113,6 @@ internal class ChatStateMapper(
             ?: ChatTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
     }
 }
-
-/** The messages of [messages] as items mapped by this mapper, or why there are none. */
-@Suppress("LongParameterList") // What the items are made from, passed on to the mapper.
-private fun ChatItemMapper.content(
-    chat: Chat,
-    messages: MessageSources,
-    people: ChatPeople,
-    unreadAfterId: Long,
-    now: Instant,
-    formatter: ChatTimeFormatter,
-): ChatContent {
-    val history = messages.state.history
-    val load = messages.pageLoad
-    val error = load.error
-    val shown = load.shown
-    return when {
-        shown == null -> {
-            load.openError?.let(ChatContent::Error) ?: ChatContent.Loading
-        }
-
-        history.messages.isNotEmpty() -> {
-            val items =
-                map(
-                    ItemSources(
-                        chat = chat,
-                        messages = messages.state,
-                        people = people,
-                        unreadAfterId = unreadAfterId,
-                        today = now.atZone(formatter.zone).toLocalDate(),
-                        timeFormatter = formatter,
-                        now = now,
-                    ),
-                )
-            ChatContent.Content(
-                items = items,
-                reachedStart = history.reachedStart,
-                isLoadingOlder = load.isLoading || load.isFindingMessage,
-                olderError = error,
-                reachedEnd = history.reachedEnd,
-                isLoadingNewer = load.isLoadingNewer || load.isFindingNewest,
-                newerError = load.newerError,
-                anchor = shown.anchor,
-            )
-        }
-
-        error != null -> {
-            ChatContent.Error(error)
-        }
-
-        history.reachedStart -> {
-            ChatContent.Empty
-        }
-
-        else -> {
-            ChatContent.Loading
-        }
-    }
-}
-
-internal class MessageSources(
-    val state: MessageState,
-    val pageLoad: WindowState,
-)
-
-/**
- * The composer's mode with the bar messages fetched for it, the actions sheet, the delete confirmation, the attach
- * preview and whether the poll form is open.
- */
-internal class Overlays(
-    val composerTargets: ComposerTargetState,
-    val sheet: MessageActionsSheet?,
-    val deleteDialog: DeleteMessagesDialog?,
-    val preview: PreviewDraft?,
-    val pollOpen: Boolean,
-    val checklistOpen: Boolean,
-) {
-    val mode: ComposerMode get() = composerTargets.mode
-
-    /** The poll form while it is open, where the user may write and the chat takes polls. */
-    fun pollSheet(
-        chat: Chat,
-        canWrite: Boolean,
-        canSchedule: Boolean,
-        options: ImmutableList<AttachOption>,
-    ): PollSheet? =
-        PollSheet(chat.isChannel, canSchedule).takeIf { canWrite && pollOpen && AttachOption.Poll in options }
-
-    /** The checklist form while it is open, where the user may write and the chat takes checklists. */
-    fun checklistSheet(
-        canWrite: Boolean,
-        canSchedule: Boolean,
-        options: ImmutableList<AttachOption>,
-    ): ChecklistSheet? =
-        ChecklistSheet(canSchedule).takeIf {
-            canWrite && checklistOpen &&
-                AttachOption.Checklist in options
-        }
-
-    fun bar(
-        chat: Chat,
-        history: ChatHistory,
-        people: ChatPeople,
-    ): ComposerBar? = composerBar(mode, chat, history, composerTargets.targets, people, composerTargets.elsewhere)
-}
-
-/** The composer's mode with the messages fetched for its bar: of this chat by id, and of another chat. */
-internal class ComposerTargetState(
-    val mode: ComposerMode,
-    val targets: Map<Long, Message?>,
-    val elsewhere: Message?,
-)
-
-internal class ChatSources(
-    val chat: ChatLookup,
-    val group: ChatGroup,
-    val actions: List<SenderAction>,
-    /** Null until the chat was first shown. */
-    val unreadAfterId: Long?,
-    val thread: ThreadState,
-)
 
 /** The composer with [bar], and the [attachOptions] of the chat unless it edits: an edit sends no attachments. */
 private fun ComposerUiState.Available.withBar(
