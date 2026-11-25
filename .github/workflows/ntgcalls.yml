@@ -30,7 +30,7 @@ env:
   NTGCALLS_COMMIT: "e8ab467185017827625f664d024824947b5c5d5f"
   # The patches of tools/ntgcalls/ as one name, bumped whenever they change. Keep in sync with
   # gradle/libs.versions.toml → ntgcalls ("<commit>-<patches>").
-  NTGCALLS_PATCHES: "pingogram1"
+  NTGCALLS_PATCHES: "pingogram2"
   ABIS: "arm64-v8a armeabi-v7a x86_64"
 
 jobs:
@@ -155,6 +155,14 @@ jobs:
             esac
           done
           exit $FAIL
+
+      - name: Verify exports and packed relocations
+        # tools/ntgcalls/0002: each libntgcalls.so exports its JNI entry points only (a Java_* symbol per native method
+        # of the AAR's jars, and JNI_OnLoad) and packs its relocations; a missing entry point fails here, not in a call.
+        run: |
+          set -euo pipefail
+          READELF=$(find ntgcalls/deps -path '*bin/llvm-readelf' | head -n 1)
+          python3 pingogram/tools/ntgcalls/check-jni-exports.py check "$READELF"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
