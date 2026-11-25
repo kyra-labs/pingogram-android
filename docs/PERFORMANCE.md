@@ -33,9 +33,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 
 - `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber` and the
   Appearance settings are read from DataStore (a few ms), **or** 300 ms, whichever is first; then
-  render cached chats immediately. The splash screen reads TDLib's current step (`AuthRepository.currentStep`), which
-  the client sets as TDLib reports it, rather than waiting for the login steps' flow, which comes through the update
-  router (§3) and `Default`, both busy at a cold start. Each state it waits for has an async trace section from the
+  render cached chats immediately. Those settings, with Privacy and security's that the whole app follows on screen,
+  are read once per process and kept (`FirstFrameSettings`, started by `PingogramApplication`): an activity created
+  again, as in a warm start, finds them in memory and composes in its first frame. The splash screen reads TDLib's
+  current step (`AuthRepository.currentStep`), which the client sets as TDLib reports it, rather than waiting for the
+  login steps' flow, which comes through the update router (§3) and `Default`, both busy at a cold start. Each state it waits for has an async trace section from the
   main view model's creation until it is known (`PG:loginKnown`, `PG:appearanceKnown`, `PG:lockKnown`), which
   `StartupBenchmark` reports. The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over the app's first
   frame and holds nothing back; the splash theme for the next start is handed to the system off the main thread.

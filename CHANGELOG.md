@@ -27,6 +27,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Conversations with many photos, videos and stickers do less work for each of them while they scroll.
 - Rotating the phone, folding or unfolding it, resizing the app's window and switching dark mode no longer reload the
   app: what is on screen stays where it was, and the colors change smoothly.
+- Returning to the app after Android closed its screen opens it sooner: the theme and privacy settings stay in memory
+  instead of being read again.
 
 ## [2.5.0] - 2026-11-25
 

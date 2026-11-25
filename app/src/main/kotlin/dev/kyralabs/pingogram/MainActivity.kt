@@ -39,10 +39,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
-import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
-import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
-import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
@@ -69,6 +66,7 @@ import dev.kyralabs.pingogram.link.linkOf
 import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
 import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
+import dev.kyralabs.pingogram.startup.FirstFrameSettings
 import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.startup.doOnFirstDraw
 import dev.kyralabs.pingogram.tile.FocusTile
@@ -82,7 +80,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -164,22 +161,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var focusSwitcherRequests: FocusSwitcherRequests
 
-    /** Whether phone numbers are hidden on screen ([LocalPhoneNumbersHidden], Privacy and security). */
+    /**
+     * Privacy and security's settings the whole app follows on screen: whether phone numbers are hidden
+     * ([LocalPhoneNumbersHidden]), whether text fields ask the keyboard not to learn ([IncognitoKeyboard]) and whether
+     * links open without their tracking parameters ([rememberLinkUriHandler]). Read once per process and kept.
+     */
     @Inject
-    lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
-
-    /** Whether text fields ask the keyboard not to learn ([IncognitoKeyboard], Privacy and security). */
-    @Inject
-    lateinit var incognitoKeyboard: IncognitoKeyboardRepository
-
-    /** Whether links open without their tracking parameters ([rememberLinkUriHandler], Privacy and security). */
-    @Inject
-    lateinit var cleanLinks: CleanLinksRepository
-
-    /** Privacy and security's settings the whole app follows on screen, read once the activity composes. */
-    private val screenPrivacy by lazy {
-        combine(phoneNumberVisibility.hidden, incognitoKeyboard.enabled, cleanLinks.enabled, ::ScreenPrivacy)
-    }
+    lateinit var firstFrameSettings: FirstFrameSettings
 
     /**
      * The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). Lazy: they are
@@ -252,7 +240,7 @@ class MainActivity : ComponentActivity() {
                 // Read with the Appearance settings, from the same file: waiting for it costs nothing, a value that
                 // changed after the first frame would compose the whole app again (a static composition local), and no
                 // field starts taking input before the keyboard is told whether to learn.
-                val screenPrivacySetting by screenPrivacy.collectAsStateWithLifecycle(initialValue = null)
+                val screenPrivacySetting by firstFrameSettings.screenPrivacy.collectAsStateWithLifecycle()
                 val settings = appearance
                 val privacy = screenPrivacySetting
                 val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
@@ -421,16 +409,6 @@ class MainActivity : ComponentActivity() {
     private suspend fun persistSplashScreenTheme(
         @StyleRes theme: Int,
     ) = withContext(io) { splashScreen.setSplashScreenTheme(theme) }
-
-    /**
-     * Whether phone numbers are hidden on screen, whether text fields ask the keyboard not to learn, and whether links
-     * open without their tracking parameters.
-     */
-    private data class ScreenPrivacy(
-        val phoneNumbersHidden: Boolean,
-        val incognitoKeyboard: Boolean,
-        val cleanLinks: Boolean,
-    )
 
     private companion object {
         // enableEdgeToEdge()'s own scrims behind three-button navigation where the system draws none (before Android

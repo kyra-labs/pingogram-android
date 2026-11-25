@@ -5,13 +5,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
-import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
+import dev.kyralabs.pingogram.startup.FirstFrameSettings
 import dev.kyralabs.pingogram.startup.SplashStateTrace
 import dev.kyralabs.pingogram.startup.StartupTrace.APPEARANCE_KNOWN
 import dev.kyralabs.pingogram.startup.StartupTrace.LOCK_KNOWN
@@ -42,7 +42,7 @@ import kotlin.time.TimeSource
 @HiltViewModel
 class MainActivityViewModel internal constructor(
     private val authRepository: AuthRepository,
-    appearanceRepository: AppearanceRepository,
+    appearance: StateFlow<AppearanceSettings?>,
     private val appLockRepository: AppLockRepository,
     passcodeRepository: PasscodeRepository,
     timeSource: TimeSource,
@@ -55,13 +55,13 @@ class MainActivityViewModel internal constructor(
     @Inject
     constructor(
         authRepository: AuthRepository,
-        appearanceRepository: AppearanceRepository,
+        firstFrameSettings: FirstFrameSettings,
         appLockRepository: AppLockRepository,
         passcodeRepository: PasscodeRepository,
         chatLock: dagger.Lazy<ChatLockRepository>,
     ) : this(
         authRepository,
-        appearanceRepository,
+        firstFrameSettings.appearance,
         appLockRepository,
         passcodeRepository,
         TimeSource.Monotonic,
@@ -77,12 +77,11 @@ class MainActivityViewModel internal constructor(
     val uiState: StateFlow<MainActivityUiState> = mutableUiState.asStateFlow()
 
     /**
-     * The Appearance settings, then every change; null until they are read, which takes a few milliseconds on the IO
-     * dispatcher, started when this view model is created. Not part of [uiState]: the theme around the whole app
+     * The Appearance settings, then every change; null until they are read, once per process ([FirstFrameSettings]),
+     * so a view model made after the first already has them. Not part of [uiState]: the theme around the whole app
      * follows it, not one screen.
      */
-    val appearance: StateFlow<AppearanceSettings?> =
-        appearanceRepository.appearance.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
+    val appearance: StateFlow<AppearanceSettings?> = appearance
 
     /**
      * Whether the passcode lock holds the app: [LockState.Unknown] until its settings are read (with the Appearance

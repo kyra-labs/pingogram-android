@@ -18,10 +18,14 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.navigation.ChatToOpen
 import dev.kyralabs.pingogram.share.IncomingShare
+import dev.kyralabs.pingogram.startup.FirstFrameSettings
 import dev.kyralabs.pingogram.startup.SplashStateTrace
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
@@ -71,13 +75,17 @@ class MainActivityViewModelTest {
     ): MainActivityViewModel =
         MainActivityViewModel(
             authRepository,
-            appearanceRepository,
+            kept(appearanceRepository),
             appLock,
             passcodes,
             timeSource,
             lazyOf(chatLock),
             trace,
         ).also { runCurrent() }
+
+    /** [appearanceRepository]'s settings as the app keeps them, read once per process ([FirstFrameSettings]). */
+    private fun TestScope.kept(appearanceRepository: FakeAppearanceRepository): StateFlow<AppearanceSettings?> =
+        appearanceRepository.appearance.stateIn(backgroundScope, SharingStarted.Eagerly, initialValue = null)
 
     /** The sections still open, and those ended, in order. */
     private class RecordingSplashStateTrace : SplashStateTrace {
@@ -278,6 +286,31 @@ class MainActivityViewModelTest {
         }
 
     @Test
+    fun `a view model made after the settings were read has them at once`() =
+        runTest {
+            val read = kept(appearance)
+            runCurrent()
+
+            val viewModel =
+                MainActivityViewModel(
+                    TdlibAuthRepository(
+                        client,
+                        backgroundScope,
+                        StandardTestDispatcher(testScheduler),
+                        TimeSource.Monotonic,
+                    ),
+                    read,
+                    appLock,
+                    passcodes,
+                    timeSource,
+                    lazyOf(chatLock),
+                )
+
+            // Nothing ran since: the activity's first composition finds them (main.awaitSettings).
+            assertEquals(AppearanceSettings(), viewModel.appearance.value)
+        }
+
+    @Test
     fun `keeps the splash screen until the settings are read, for at most 300 ms`() =
         runTest {
             client.authState.value = AuthState.Ready
@@ -409,7 +442,7 @@ class MainActivityViewModelTest {
                         StandardTestDispatcher(testScheduler),
                         TimeSource.Monotonic,
                     ),
-                    appearance,
+                    kept(appearance),
                     appLock,
                     passcodes,
                     timeSource,
@@ -454,7 +487,7 @@ class MainActivityViewModelTest {
                         StandardTestDispatcher(testScheduler),
                         TimeSource.Monotonic,
                     ),
-                    appearance,
+                    kept(appearance),
                     appLock,
                     withoutPasscode,
                     timeSource,
