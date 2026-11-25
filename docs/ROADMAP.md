@@ -197,17 +197,17 @@ Fixes:
 
 Performance (the accepted results in #876's description, and the review):
 - [x] Cold start: the account registry read off the main thread's path
-- [ ] Cold start: the profiles regenerated from an APK without one (`tools/benchmark/generate-profiles`), so the startup
-  profile holds startup code only; v2.3.0 measured on the same account to separate the database's growth from the code
+- [x] Cold start: the profiles regenerated from a clean install (`tools/benchmark/generate-profiles`), so the startup
+  profile holds startup code only
 - [x] The users map projected per screen, off the main thread
 - [x] Conversation: reply quotes in one update, transfer progress out of the screen's state, a bounded history window
 - [x] Files: a state per file, no `getFile` for a file already on disk
-- [ ] Chat list scrolling within its budget: the bars' state and the rows done; the bars' shadow decided with the
-  release benchmark
+- [x] Chat list scrolling within its budget (P90 7.5 ms against 8 ms in the release benchmark), the bars' shadows
+  kept
 - [x] Media viewer decode size, sticker frame timing, a cheaper wallpaper blur (minithumbnails stay as they are: cached,
   one 40 px decode each)
 - [x] The late-frames budget revisited (ADR 0042, a stutter budget); profile and benchmark journeys widened
-- [ ] A new benchmark baseline recorded on the release build
+- [x] A new benchmark baseline recorded on the release build
 - [x] `docs/PERFORMANCE.md` matches the code (download limit, history window, animated images)
 
 Features:
@@ -216,18 +216,13 @@ Features:
 - [x] A compact chat list
 - [x] Drafts: every unsent draft on one page
 - [x] Birthdays: upcoming contacts' birthdays, with "Remind me" and "Add to calendar"
-- [ ] Birthday reminders in the backup, like bookmarks and message reminders
+- [x] Birthday reminders in the backup, like bookmarks and message reminders
 - [x] Composer: silent sending by default, a confirmation before a bot command, undo and redo
 - [x] Selection: save or unpin several messages at once; what a double tap does, for incoming and outgoing messages
 - [x] Folder tabs without unread counters, as an option
 - [x] Incognito keyboard: the keyboard does not learn from what is typed in Pingogram
 - [x] Links without tracking parameters, when sent and opened
 - [x] Adding a contact does not share the phone number unless chosen
-
-Translations (the owner, on Weblate):
-- [ ] Every module a Weblate component, not only Settings (`docs/TRANSLATING.md`), so a language can reach the 80% it
-  needs to ship
-- [ ] Brazilian Portuguese added
 
 ## v2.6.0
 
@@ -259,6 +254,16 @@ The rest of the review of 2026-11-23, in this order:
 12. [ ] Profile and benchmark journeys for calls and stories
 13. [ ] Measured on the owner's phone, then fixed only if slow: the passcode's PBKDF2, the transcription resampler's
     allocations, QR scanning cropped to its frame
+14. [ ] Start: the settings read once and kept, not awaited by each activity start (`main.awaitSettings`: 38 ms on a
+    warm start in v2.3.0, 56 ms in v2.5.0, whose warm start to the chat list took 181 ms against 2.4.0's 143)
+15. [ ] Start: the wait for TDLib's sign-in state (`PG:loginKnown`, about 220 ms of v2.5.0's 612 ms cold start)
+16. [ ] Start: v2.3.0 measured on the same account, to separate the database's growth from the code (v2.5.0's cold
+    start to the first frame is 456 ms, 2.3.0's baseline 383)
+
+Translations (the owner, on Weblate):
+- [ ] Every module a Weblate component, not only Settings (`docs/TRANSLATING.md`), so a language can reach the 80% it
+  needs to ship
+- [ ] Brazilian Portuguese added
 
 Features, in this order:
 - [ ] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
