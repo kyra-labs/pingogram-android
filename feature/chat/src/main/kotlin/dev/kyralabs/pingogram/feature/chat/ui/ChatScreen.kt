@@ -223,9 +223,8 @@ internal fun ChatScreen(
     videoNotePreview: SurfaceRequest? = null,
 ) {
     val content = state.content
-    val selection = state.selection
-    val selectionBack = rememberSelectionBack(enabled = selection != null, onBack = { onEvent(SelectionEvent.Clear) })
-    LeaveComposerWhileSelecting(selecting = selection != null)
+    val selectionBack = rememberSelectionBack(enabled = state.selection != null) { onEvent(SelectionEvent.Clear) }
+    LeaveComposerWhileSelecting(selecting = state.selection != null)
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
@@ -248,7 +247,7 @@ internal fun ChatScreen(
                 topicAction = topicAction,
                 connection = connection,
                 // A read channel's next unread one, outside selection mode and search.
-                nextChannel = nextChannel.takeIf { selection == null && search == null },
+                nextChannel = nextChannel.takeIf { state.selection == null && search == null },
                 bottomBar = {
                     ChatScreenBottomBar(
                         state = state,
