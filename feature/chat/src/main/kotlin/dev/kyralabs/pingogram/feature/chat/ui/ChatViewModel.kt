@@ -32,7 +32,6 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.TextFindings
-import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.isRichMediaId
 import dev.kyralabs.pingogram.core.domain.model.isViewableImage
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -65,7 +64,6 @@ import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
-import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ChatAttachments
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ChecklistEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
@@ -163,7 +161,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -198,7 +195,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.concurrent.TimeUnit.SECONDS
@@ -358,7 +354,7 @@ class ChatViewModel internal constructor(
     private val searchRepository: SearchRepository,
     sharedStorageRepository: SharedStorageRepository,
     private val clock: WallClock,
-    private val timePatterns: TimePatterns,
+    timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
     audioPlayer: AudioPlayer,
@@ -391,7 +387,7 @@ class ChatViewModel internal constructor(
     sendsTypingStatus: Flow<Boolean> = flowOf(false),
     targetPreferences: TargetPreferences = TargetPreferences(),
     private val cleanupScope: CoroutineScope? = null,
-    private val appInfo: AppInfo = AppInfo(versionName = ""),
+    appInfo: AppInfo = AppInfo(versionName = ""),
     transcriptionRepositories: TranscriptionRepositories? = null,
     places: ChatPlaces = ChatPlaces(),
     private val textFinder: DeviceTextFinder? = null,
@@ -544,8 +540,7 @@ class ChatViewModel internal constructor(
 
     private val sendFailures = SendFailures()
 
-    private val mapper = ChatItemMapper()
-    private var timeFormatter: ChatTimeFormatter? = null
+    private val stateMapper = ChatStateMapper(clock, timePatterns, locale, appInfo, inThread = topic != null)
 
     private val effectChannel = Channel<ChatEffect>(Channel.BUFFERED)
 
@@ -1060,7 +1055,7 @@ class ChatViewModel internal constructor(
             describe = { unixTime ->
                 DateTimeSheet(
                     unixTime = unixTime,
-                    text = timeFormatter().dates.full(unixTime),
+                    text = stateMapper.timeFormatter().dates.full(unixTime),
                     zoneName = clock.zone().getDisplayName(TextStyle.FULL, locale()),
                 )
             },
@@ -1215,7 +1210,7 @@ class ChatViewModel internal constructor(
             enabled = topic == null,
             // "When online" without the name: the bar has room for little.
             next = { schedule ->
-                val formatter = timeFormatter()
+                val formatter = stateMapper.timeFormatter()
                 formatter.nextText(schedule, clock.now().atZone(formatter.zone).toLocalDate(), user = null)
             },
         )
@@ -1311,7 +1306,7 @@ class ChatViewModel internal constructor(
         ) { action -> chatActionRepository.send(chatId, topic, action) }
 
     val uiState: StateFlow<ChatUiState> =
-        combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
+        combine(chatSources, messageSources, people, clock.minutes, overlays, stateMapper::state)
             .map { state -> state.copy(transfers = transfers) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
@@ -1635,84 +1630,6 @@ class ChatViewModel internal constructor(
         }
     }
 
-    /** Runs on [dispatcher]: maps the header, the items, the composer and what shows over them. */
-    private fun state(
-        chatSources: ChatSources,
-        messages: MessageSources,
-        people: ChatPeople,
-        now: Instant,
-        overlays: Overlays,
-    ): ChatUiState {
-        val lookup = chatSources.chat
-        val chat = (lookup as? ChatLookup.Found)?.chat
-        val unreadAfterId = chatSources.unreadAfterId
-        if (chat == null || unreadAfterId == null) {
-            return ChatUiState(content = (lookup as? ChatLookup.Failed)?.error.toContent())
-        }
-        val formatter = timeFormatter()
-        val group = chatSources.group
-        val header =
-            HeaderSources(
-                chat = chat,
-                memberCount = group.memberCount,
-                secretChat = group.secretChat,
-                actions = chatSources.actions,
-                people = people,
-                now = now,
-                timeFormatter = formatter,
-                isForum = group.supergroup?.isForum == true,
-                recentSenders = if (chat.isGroup) recentSenders(messages.state.history.messages) else emptyList(),
-            ).toHeader()
-                .let { chatSources.thread.header(it, chat) }
-        val history = messages.state.history
-        val user = chat.userId?.let(people.users::get)
-        val composer =
-            composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
-                .let { chatSources.thread.composer(it, group.supergroup) }
-        val canWrite = composer is ComposerUiState.Available
-        val premium = people.myUserId?.let(people.users::get)?.isPremium == true
-        val options = attachOptions(chat, user, people.myUserId, isPremium = premium)
-        val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
-        val bar = overlays.bar(chat, history, people)
-        return ChatUiState(
-            header = header,
-            content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
-            unreadCount = chat.unreadCount,
-            unreadMentionCount = chat.unreadMentionCount,
-            showsUpdateLink = !appInfo.isFromAppStore,
-            groupMemberCount = group.memberCount.takeIf { chat.isGroup },
-            typing = if (chat.isGroup) typingBubble(chatSources.actions, people, header) else null,
-            composer = if (canWrite) composer.withBar(bar, options, premium) else composer,
-            // A message deleted meanwhile takes its sheet with it.
-            messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
-            deleteDialog = overlays.deleteDialog,
-            shortcuts = chat.shortcuts(canWrite, inThread = topic != null),
-            // What was picked or written stays while the user may not write; it shows again when they may.
-            attachPreview =
-                overlays.preview?.takeIf { canWrite }?.let { preview ->
-                    AttachPreview(
-                        preview.kind,
-                        preview.items,
-                        canSchedule,
-                        preview.offersOriginal,
-                        preview.original,
-                        isReplacement = preview.replacing != null,
-                    )
-                },
-            poll = overlays.pollSheet(chat, canWrite, canSchedule, options),
-            checklistForm = overlays.checklistSheet(canWrite, canSchedule, options),
-        )
-    }
-
-    /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */
-    private fun timeFormatter(): ChatTimeFormatter {
-        val zone: ZoneId = clock.zone()
-        val locale = locale()
-        val is24HourClock = timePatterns.is24HourClock()
-        return timeFormatter?.takeIf { it.isFor(zone, locale, is24HourClock) }
-            ?: ChatTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
-    }
-
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
@@ -1725,7 +1642,7 @@ class ChatViewModel internal constructor(
 }
 
 /** The chat, or why it is not there (yet). */
-private sealed interface ChatLookup {
+internal sealed interface ChatLookup {
     data object Pending : ChatLookup
 
     data class Found(
@@ -1739,7 +1656,7 @@ private sealed interface ChatLookup {
 
 /** The messages of [messages] as items mapped by this mapper, or why there are none. */
 @Suppress("LongParameterList") // What the items are made from, passed on to the mapper.
-private fun ChatItemMapper.content(
+internal fun ChatItemMapper.content(
     chat: Chat,
     messages: MessageSources,
     people: ChatPeople,
@@ -1795,7 +1712,7 @@ private fun ChatItemMapper.content(
     }
 }
 
-private class MessageSources(
+internal class MessageSources(
     val state: MessageState,
     val pageLoad: WindowState,
 )
@@ -1804,7 +1721,7 @@ private class MessageSources(
  * The composer's mode with the bar messages fetched for it, the actions sheet, the delete confirmation, the attach
  * preview and whether the poll form is open.
  */
-private class Overlays(
+internal class Overlays(
     val composerTargets: ComposerTargetState,
     val sheet: MessageActionsSheet?,
     val deleteDialog: DeleteMessagesDialog?,
@@ -1842,13 +1759,13 @@ private class Overlays(
 }
 
 /** The composer's mode with the messages fetched for its bar: of this chat by id, and of another chat. */
-private class ComposerTargetState(
+internal class ComposerTargetState(
     val mode: ComposerMode,
     val targets: Map<Long, Message?>,
     val elsewhere: Message?,
 )
 
-private class ChatSources(
+internal class ChatSources(
     val chat: ChatLookup,
     val group: ChatGroup,
     val actions: List<SenderAction>,
@@ -1876,7 +1793,7 @@ private fun inThread(
  * The basic group or supergroup of a group or channel chat, the secret chat of a secret chat; none for other chats,
  * nor while unknown.
  */
-private data class ChatGroup(
+internal data class ChatGroup(
     val basicGroup: BasicGroup? = null,
     val supergroup: Supergroup? = null,
     val secretChat: SecretChat? = null,
@@ -1884,19 +1801,6 @@ private data class ChatGroup(
     /** Null while unknown, and for other chats. */
     val memberCount: Int? get() = basicGroup?.memberCount ?: supergroup?.memberCount
 }
-
-/** The composer with [bar], and the [attachOptions] of the chat unless it edits: an edit sends no attachments. */
-private fun ComposerUiState.Available.withBar(
-    bar: ComposerBar?,
-    attachOptions: ImmutableList<AttachOption>,
-    canRepeat: Boolean,
-): ComposerUiState.Available =
-    copy(
-        bar = bar,
-        attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions,
-        // A Telegram Premium subscriber may repeat what they schedule; an edit schedules nothing.
-        canRepeat = canRepeat && canSchedule && bar !is ComposerBar.Edit,
-    )
 
 /** The state with [sendAs] on the composer, where the user can write and is not editing: an edit keeps its sender. */
 private fun ChatUiState.withSendAs(sendAs: SendAsChoice?): ChatUiState {
@@ -1980,14 +1884,6 @@ internal fun ChatRepository.chatRef(id: Long): Flow<ChatRef?> =
     chat(id)
         .map { chat -> chat?.let { ChatRef(it.id, it.title, it.photo) } }
         .distinctUntilChanged()
-
-/** Not found for a chat TDLib does not know, an error with a retry for other failures; loading without a failure. */
-private fun DomainError?.toContent(): ChatContent =
-    when (this) {
-        null -> ChatContent.Loading
-        DomainError.NotFound -> ChatContent.NotFound
-        else -> ChatContent.Error(this)
-    }
 
 /** This set without [id] if it holds it, else with it. */
 private fun PersistentSet<Long>.toggling(id: Long): PersistentSet<Long> = if (id in this) removing(id) else adding(id)
