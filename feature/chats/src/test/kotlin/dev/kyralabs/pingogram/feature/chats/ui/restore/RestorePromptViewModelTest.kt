@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupFolder
 import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeDemoRepository
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -98,7 +99,7 @@ class RestorePromptViewModelTest {
     @Test
     fun `a kept folder offers its newest backup, until that one is hidden`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "Backups", listOf(NEWER, OLDER))
+            folders.folder.value = BackupFolder(TREE, "Backups", persistentListOf(NEWER, OLDER))
             val viewModel = viewModel()
             assertEquals(RestorePromptUiState.FromFolder(NEWER.document, NEWER.modifiedAt), viewModel.uiState.value)
 
@@ -106,7 +107,7 @@ class RestorePromptViewModelTest {
             assertEquals(RestorePromptUiState.Hidden, viewModel.uiState.value)
 
             val newest = NEWER.copy(document = "$TREE/3")
-            folders.folder.value = BackupFolder(TREE, "Backups", listOf(newest, NEWER))
+            folders.folder.value = BackupFolder(TREE, "Backups", persistentListOf(newest, NEWER))
             runCurrent()
             assertEquals(RestorePromptUiState.FromFolder(newest.document, newest.modifiedAt), viewModel.uiState.value)
         }
@@ -114,7 +115,7 @@ class RestorePromptViewModelTest {
     @Test
     fun `restoring opens Backup & restore with the backup, which then shows no more`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "Backups", listOf(NEWER))
+            folders.folder.value = BackupFolder(TREE, "Backups", persistentListOf(NEWER))
             val viewModel = viewModel()
             val effects = effects(viewModel)
 
@@ -127,7 +128,7 @@ class RestorePromptViewModelTest {
     @Test
     fun `a kept folder without backups, and the demo, show nothing`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "Backups", emptyList())
+            folders.folder.value = BackupFolder(TREE, "Backups", persistentListOf())
             val viewModel = viewModel()
             assertEquals(RestorePromptUiState.Hidden, viewModel.uiState.value)
 

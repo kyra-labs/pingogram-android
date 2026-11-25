@@ -35,6 +35,9 @@ import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Dispatchers
@@ -122,7 +125,7 @@ class LocalBackupRepositoryTest {
             val opened = repository.open(repository.backup().inputStream(), PASSWORD)
 
             val backup = (opened as BackupOpening.Opened).backup
-            assertEquals(BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH), backup.header)
+            assertEquals(BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH.toImmutableSet()), backup.header)
             assertEquals(mapOf("appearance.theme_mode" to "Dark"), backup.settings)
             assertEquals(
                 listOf(
@@ -130,15 +133,23 @@ class LocalBackupRepositoryTest {
                         userId = USER,
                         bookmarks =
                             account.bookmarks.saved.value
-                                .take(1),
-                        tags = account.bookmarks.savedTags.value,
-                        reminders = account.reminders.saved.value,
+                                .take(1)
+                                .toImmutableList(),
+                        tags =
+                            account.bookmarks.savedTags.value
+                                .toImmutableList(),
+                        reminders =
+                            account.reminders.saved.value
+                                .toImmutableList(),
                         keywordHits =
                             account.hits.hits.value
-                                .take(1),
-                        snippets = account.snippets.saved.value,
-                        birthdayReminders = listOf(BirthdayReminder(CHAT, 25, 11)),
-                        chatNotes = listOf(ChatNote(CHAT, name = "Launch")),
+                                .take(1)
+                                .toImmutableList(),
+                        snippets =
+                            account.snippets.saved.value
+                                .toImmutableList(),
+                        birthdayReminders = persistentListOf(BirthdayReminder(CHAT, 25, 11)),
+                        chatNotes = persistentListOf(ChatNote(CHAT, name = "Launch")),
                     ),
                 ),
                 backup.accounts,
@@ -185,7 +196,7 @@ class LocalBackupRepositoryTest {
     @Test
     fun `a backup of a newer format asks for an update`() =
         runTest {
-            val newer = BackupHeader(2, "9.0.0", Instant.ofEpochSecond(NOW), setOf(BackupSection.Settings))
+            val newer = BackupHeader(2, "9.0.0", Instant.ofEpochSecond(NOW), persistentSetOf(BackupSection.Settings))
             val salt = BackupCipher.newSalt()
             val file =
                 ByteArrayOutputStream().also {
@@ -212,7 +223,10 @@ class LocalBackupRepositoryTest {
 
             val restored = repository(phone).restore(backup)
 
-            assertEquals(Outcome.Success(BackupRestored(true, listOf(USER), otherAccounts = emptyList())), restored)
+            assertEquals(
+                Outcome.Success(BackupRestored(true, persistentListOf(USER), otherAccounts = persistentListOf())),
+                restored,
+            )
             assertEquals(
                 listOf(Bookmark(CHAT, 10, savedAt = 100, tagIds = persistentListOf(5), note = "read later")),
                 phone.bookmarks.saved.value,
@@ -242,9 +256,12 @@ class LocalBackupRepositoryTest {
         runTest {
             val backup =
                 Backup(
-                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH.toImmutableSet()),
                     settings = null,
-                    accounts = listOf(AccountBackup(USER, birthdayReminders = listOf(BirthdayReminder(CHAT, 25, 11)))),
+                    accounts =
+                        persistentListOf(
+                            AccountBackup(USER, birthdayReminders = persistentListOf(BirthdayReminder(CHAT, 25, 11))),
+                        ),
                 )
             val phone = Account(USER)
             phone.birthdays.all.value = persistentListOf(BirthdayReminder(CHAT, 26, 11))
@@ -259,9 +276,12 @@ class LocalBackupRepositoryTest {
         runTest {
             val backup =
                 Backup(
-                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH.toImmutableSet()),
                     settings = null,
-                    accounts = listOf(AccountBackup(USER, chatNotes = listOf(ChatNote(CHAT, name = "Old name")))),
+                    accounts =
+                        persistentListOf(
+                            AccountBackup(USER, chatNotes = persistentListOf(ChatNote(CHAT, name = "Old name"))),
+                        ),
                 )
             val phone = Account(USER)
             phone.notes.all.value = persistentMapOf(CHAT to ChatNote(CHAT, name = "New name"))
@@ -276,15 +296,21 @@ class LocalBackupRepositoryTest {
         runTest {
             val backup =
                 Backup(
-                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
-                    settings = mapOf("stickers.loop" to false),
-                    accounts = listOf(AccountBackup(USER, snippets = listOf(Snippet(1, "addr", "1 Main St")))),
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH.toImmutableSet()),
+                    settings = persistentMapOf("stickers.loop" to false),
+                    accounts =
+                        persistentListOf(
+                            AccountBackup(USER, snippets = persistentListOf(Snippet(1, "addr", "1 Main St"))),
+                        ),
                 )
             val other = Account(OTHER_USER)
 
             val restored = repository(other).restore(backup)
 
-            assertEquals(Outcome.Success(BackupRestored(true, emptyList(), otherAccounts = listOf(USER))), restored)
+            assertEquals(
+                Outcome.Success(BackupRestored(true, persistentListOf(), otherAccounts = persistentListOf(USER))),
+                restored,
+            )
             assertEquals(emptyList<Snippet>(), other.snippets.saved.value)
             assertEquals(mapOf("stickers.loop" to false), settings.restored)
         }

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
 import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupSettingsRepository
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -112,6 +113,6 @@ class KeystoreAutomaticBackupRepositoryTest {
     private companion object {
         const val TREE = "content://tree/backups"
         val KEY = BackupKey(SecretKeySpec(ByteArray(32), "AES"), ByteArray(16), 1)
-        val HEADER = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(1), setOf(BackupSection.Settings))
+        val HEADER = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(1), persistentSetOf(BackupSection.Settings))
     }
 }

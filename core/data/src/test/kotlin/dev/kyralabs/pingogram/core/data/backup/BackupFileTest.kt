@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.backup
 
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +23,7 @@ class BackupFileTest {
             formatVersion = BackupFile.FORMAT_VERSION,
             appVersion = "2.4.0",
             createdAt = Instant.ofEpochSecond(1_763_000_000),
-            sections = setOf(BackupSection.Settings, BackupSection.Account),
+            sections = persistentSetOf(BackupSection.Settings, BackupSection.Account),
         )
 
     private fun backup(

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
 import java.time.Instant
 
 /**
@@ -9,7 +10,7 @@ import java.time.Instant
 data class BackupFolder(
     val treeUri: String,
     val name: String,
-    val backups: List<BackupFileInfo>,
+    val backups: ImmutableList<BackupFileInfo>,
 )
 
 /**

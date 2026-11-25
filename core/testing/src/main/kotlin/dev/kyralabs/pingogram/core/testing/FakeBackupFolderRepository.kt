@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.model.BackupFolder
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
 import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.Instant
 
@@ -25,7 +27,7 @@ class FakeBackupFolderRepository : BackupFolderRepository {
 
     override suspend fun keep(treeUri: String): Outcome<BackupFolder> {
         failure?.let { return Outcome.Failure(it) }
-        val kept = BackupFolder(treeUri, name = treeUri.substringAfterLast('/'), backups = emptyList())
+        val kept = BackupFolder(treeUri, name = treeUri.substringAfterLast('/'), backups = persistentListOf())
         folder.value = kept
         return Outcome.Success(kept)
     }
@@ -37,7 +39,7 @@ class FakeBackupFolderRepository : BackupFolderRepository {
         passwords += password
         val file = BackupFileInfo("${current.treeUri}/${current.backups.size}", BACKUP_NAME, BACKED_UP_AT, SIZE)
         files[file.document] = file
-        folder.value = current.copy(backups = listOf(file) + current.backups)
+        folder.value = current.copy(backups = (listOf(file) + current.backups).toImmutableList())
         return Outcome.Success(file)
     }
 

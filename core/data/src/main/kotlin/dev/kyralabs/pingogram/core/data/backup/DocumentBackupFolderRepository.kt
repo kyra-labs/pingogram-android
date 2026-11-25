@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupOpening
 import dev.kyralabs.pingogram.core.domain.repository.BackupFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.BackupSettingsRepository
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -120,7 +121,11 @@ class DocumentBackupFolderRepository
             guardedOrNull {
                 documents.folderName(treeUri)?.let { name ->
                     val files = documents.files(treeUri).filter { it.name.endsWith(EXTENSION) }
-                    BackupFolder(treeUri, name, files.map { it.info() }.sortedByDescending { it.modifiedAt })
+                    BackupFolder(
+                        treeUri,
+                        name,
+                        files.map { it.info() }.sortedByDescending { it.modifiedAt }.toImmutableList(),
+                    )
                 }
             }
 

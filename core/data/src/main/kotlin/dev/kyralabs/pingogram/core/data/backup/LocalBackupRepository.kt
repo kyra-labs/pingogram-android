@@ -19,6 +19,9 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SettingsBackupRepository
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -73,7 +76,7 @@ class LocalBackupRepository
                             setOfNotNull(
                                 BackupSection.Settings,
                                 BackupSection.Account.takeIf { sections.any() },
-                            ),
+                            ).toImmutableSet(),
                     )
                 val body =
                     JSONObject()
@@ -132,8 +135,10 @@ class LocalBackupRepository
                 }.map {
                     BackupRestored(
                         settings = backup.settings != null,
-                        accounts = onPhone.map { it.userId },
-                        otherAccounts = backup.accounts.map { it.userId } - onPhone.map { it.userId }.toSet(),
+                        accounts = onPhone.map { it.userId }.toImmutableList(),
+                        otherAccounts =
+                            (backup.accounts.map { it.userId } - onPhone.map { it.userId }.toSet())
+                                .toImmutableList(),
                     )
                 }
         }
@@ -156,20 +161,22 @@ class LocalBackupRepository
             val bookmarks = repositories.bookmarkRepository()
             return AccountBackup(
                 userId = userId,
-                bookmarks = bookmarks.bookmarks.first().filter { kept(it.chatId) },
+                bookmarks = bookmarks.bookmarks.first().filter { kept(it.chatId) }.toImmutableList(),
                 tags = bookmarks.tags.first(),
                 reminders =
                     repositories
                         .reminderRepository()
                         .reminders
                         .first()
-                        .filter { kept(it.chatId) },
+                        .filter { kept(it.chatId) }
+                        .toImmutableList(),
                 keywordHits =
                     repositories
                         .keywordHitRepository()
                         .recent
                         .first()
-                        .filter { kept(it.chatId) },
+                        .filter { kept(it.chatId) }
+                        .toImmutableList(),
                 snippets = repositories.snippetRepository().snippets.first(),
                 // A private chat's id is its user's: a locked chat's contact keeps their reminder off the file.
                 birthdayReminders =
@@ -177,14 +184,16 @@ class LocalBackupRepository
                         .birthdayReminderRepository()
                         .reminders
                         .first()
-                        .filter { it.userId !in locked },
+                        .filter { it.userId !in locked }
+                        .toImmutableList(),
                 chatNotes =
                     repositories
                         .chatNoteRepository()
                         .notes
                         .first()
                         .values
-                        .filter { kept(it.chatId) },
+                        .filter { kept(it.chatId) }
+                        .toImmutableList(),
             )
         }
 
@@ -193,8 +202,11 @@ class LocalBackupRepository
             val sections = body.optJSONArray(ACCOUNTS) ?: JSONArray()
             return Backup(
                 header = read.header,
-                settings = body.optJSONObject(SETTINGS)?.toSettings(),
-                accounts = (0 until sections.length()).map { sections.getJSONObject(it).toAccountBackup() },
+                settings = body.optJSONObject(SETTINGS)?.toSettings()?.toImmutableMap(),
+                accounts =
+                    (0 until sections.length())
+                        .map { sections.getJSONObject(it).toAccountBackup() }
+                        .toImmutableList(),
             )
         }
 

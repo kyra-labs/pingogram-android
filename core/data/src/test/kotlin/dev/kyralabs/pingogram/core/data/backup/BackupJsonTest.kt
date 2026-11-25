@@ -36,7 +36,7 @@ class BackupJsonTest {
             AccountBackup(
                 userId = 7,
                 bookmarks =
-                    listOf(
+                    persistentListOf(
                         Bookmark(
                             chatId = -100,
                             messageId = 2_097_152,
@@ -46,15 +46,15 @@ class BackupJsonTest {
                             preview = BookmarkPreview(sender = "Ada", text = "Launch at 9"),
                         ),
                     ),
-                tags = listOf(BookmarkTag(1, "Work", 2), BookmarkTag(2, "Ideas", 5)),
+                tags = persistentListOf(BookmarkTag(1, "Work", 2), BookmarkTag(2, "Ideas", 5)),
                 reminders =
-                    listOf(
+                    persistentListOf(
                         MessageReminder(-100, 2_097_152, Instant.ofEpochSecond(1_763_100_000), "call", true),
                     ),
-                keywordHits = listOf(KeywordHit(-100, 3_145_728, "café", 1_763_000_100)),
-                snippets = listOf(Snippet(4, "addr", "1 Main St\nSpringfield")),
-                birthdayReminders = listOf(BirthdayReminder(userId = 42, day = 29, month = 2)),
-                chatNotes = listOf(ChatNote(-100, name = "Launch team", note = "Ask about\nthe \"date\"")),
+                keywordHits = persistentListOf(KeywordHit(-100, 3_145_728, "café", 1_763_000_100)),
+                snippets = persistentListOf(Snippet(4, "addr", "1 Main St\nSpringfield")),
+                birthdayReminders = persistentListOf(BirthdayReminder(userId = 42, day = 29, month = 2)),
+                chatNotes = persistentListOf(ChatNote(-100, name = "Launch team", note = "Ask about\nthe \"date\"")),
             )
 
         assertEquals(account, JSONObject(account.toJson().toString()).toAccountBackup())
