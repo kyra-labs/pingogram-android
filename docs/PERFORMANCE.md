@@ -456,7 +456,7 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
   `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`, `OpenMediaBenchmark`,
-  `CatchUpBenchmark`, `BookmarksScrollBenchmark`; generates Baseline Profiles.
+  `CatchUpBenchmark`, `BookmarksScrollBenchmark`, `CallsAndStoriesBenchmark`; generates Baseline Profiles.
   It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
   `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
   generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
@@ -492,6 +492,16 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   messages, some with notes and tags. `CatchUpBenchmark` measures the frames of three cards skipped one after
   another, `BookmarksScrollBenchmark` those of the page's cards flung down and back up; no budget yet: the first run
   on the owner's phone sets one.
+- Recent calls and the story rings (`benchmark/.../CallStoryJourneys.kt`, 2026-11-25) place no call and post no
+  story. Recent calls opens from the Contacts tab's top bar and is only scrolled, as a tap on a row calls back. The
+  story rings above the chat list are scrolled sideways, and the only stories opened are the user's own (from their
+  ring, while they have one): no one is told they were seen, and the viewer is closed as soon as it is idle, before
+  the first story ends and well before it goes on to another chat's stories. The Baseline Profile's `callsAndStories`
+  takes each where it shows and skips it otherwise; on a window with the navigation rail, the journeys find no
+  Contacts tab and skip Recent calls. `CallsAndStoriesBenchmark` measures the frames of Recent calls flung down and
+  back up and of the rings flung to their end and back. It needs calls on the account, and stories from its
+  contacts or channels; each test fails saying so where they are missing. No budget yet: the first run on the
+  owner's phone sets one.
 - Each run skips the other kind of test (Macrobenchmark's rules check `androidx.benchmark.enabledRules`), and the
   connected test task counts those skips as failures. So run only the kind each command is for:
   `./gradlew :app:generateBaselineProfile -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true

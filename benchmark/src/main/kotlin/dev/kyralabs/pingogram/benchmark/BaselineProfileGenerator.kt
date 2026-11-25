@@ -17,7 +17,8 @@ import org.junit.runner.RunWith
  * `OpenChatBenchmark` does; Saved Messages' newest photo in the media viewer (where it has one), a message sent and
  * deleted there, and its profile (where its title opens one); search and the Settings tab; then Catch-up's cards and
  * the Bookmarks page, where the account has them (at least five unread chats that are not muted, and a bookmarked
- * message), reading no chat on the way.
+ * message), reading no chat on the way; then Recent calls and the story rings, and the user's own stories in the
+ * viewer, where the account has them, placing no call and opening no one else's story.
  */
 @RunWith(AndroidJUnit4::class)
 class BaselineProfileGenerator {
@@ -91,6 +92,22 @@ class BaselineProfileGenerator {
             }
             if (openBookmarks() != null) scrollBookmarks()
             returnToChatList()
+        }
+    }
+
+    @Test
+    fun callsAndStories() {
+        rule.collect(packageName = TARGET_PACKAGE) {
+            pressHome()
+            startActivityAndWait()
+            if (openRecentCalls() != null) {
+                scrollRecentCalls()
+                closeRecentCalls()
+            }
+            if (storyRings() != null) {
+                scrollStoryRings()
+                openOwnStories()
+            }
         }
     }
 

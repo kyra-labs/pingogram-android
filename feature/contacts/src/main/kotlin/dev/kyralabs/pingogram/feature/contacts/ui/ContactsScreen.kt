@@ -195,7 +195,12 @@ private fun ContactsTopBar(
                     }
                 }
                 onOpenRecentCalls?.let {
-                    TopBarAction(UiR.drawable.ic_call_log, stringResource(R.string.contacts_recent_calls), it)
+                    TopBarAction(
+                        UiR.drawable.ic_call_log,
+                        stringResource(R.string.contacts_recent_calls),
+                        Modifier.testTag(RECENT_CALLS_BUTTON_TEST_TAG),
+                        it,
+                    )
                 }
             },
         )
@@ -212,6 +217,7 @@ private fun ContactsTopBar(
 private fun TopBarAction(
     @DrawableRes icon: Int,
     label: String,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     TooltipBox(
@@ -222,7 +228,7 @@ private fun TopBarAction(
         val size = tabHeaderActionSize()
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = Modifier.size(size),
+            modifier = modifier.size(size),
             shapes = IconButtonDefaults.shapes(),
         ) {
             Icon(painterResource(icon), contentDescription = label)
@@ -370,6 +376,9 @@ internal class ContactsCallbacks(
 
 /** The test tag of the contacts list, for UI and recomposition tests. */
 internal const val CONTACTS_LIST_TEST_TAG = "contacts:list"
+
+/** The top bar's Recent calls button, which the benchmark's journeys open Recent calls with. */
+internal const val RECENT_CALLS_BUTTON_TEST_TAG = "contacts_recent_calls"
 
 @PingogramPreviews
 @Composable
