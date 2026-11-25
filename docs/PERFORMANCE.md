@@ -327,6 +327,9 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below. A blur is drawn again
   whenever what it covers changes: endless animations under one hold still while it shows (`LocalAnimationsPaused`,
   `core:ui`; the conversation behind the floating message menu), stickers and custom emoji on their frame.
+- Shared elements only where something moves: a media bubble sets up its side of the container transform to the media
+  viewer (`sharedMediaBounds`) only while a viewer's page shows its media; the others only publish their corners. A
+  still sticker's emoji leaves the composition once its picture has faded in over it.
 
 ### Overdraw
 

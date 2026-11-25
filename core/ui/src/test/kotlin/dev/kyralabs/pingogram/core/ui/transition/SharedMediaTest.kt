@@ -118,7 +118,7 @@ class SharedMediaTest {
     }
 
     @Test
-    fun `in both scopes the bounds are shared`() {
+    fun `in both scopes a bubble's media is ready to share, its corners published`() {
         val base = Modifier.size(48.dp)
 
         assertNotSame(base, base.sharedIn { content -> InScopes(content) })
@@ -230,6 +230,44 @@ class SharedMediaTest {
         composeRule.onNodeWithTag("viewer").assertDoesNotExist()
         composeRule.onNodeWithTag("bubble").assertIsDisplayed()
     }
+
+    @Test
+    fun `a bubble sets up its side of the transform only while a viewer's page shows its media`() {
+        var showViewer by mutableStateOf(false)
+        lateinit var bubble: Modifier
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        Box {
+                            bubble = Modifier.size(48.dp).sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                            Box(bubble)
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        // Its size and its published corners: nothing of the transform.
+        val idle = bubble.elementCount()
+
+        showViewer = true
+        composeRule.waitForIdle()
+        val inViewer = bubble.elementCount()
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertEquals(2, idle)
+        assertTrue("$inViewer elements while shared", inViewer > idle)
+        assertEquals(idle, bubble.elementCount())
+    }
+
+    private fun Modifier.elementCount() = foldIn(0) { count, _ -> count + 1 }
 
     @Test
     fun `a viewer page that comes while its overlay is on its way in shares its media only once it is in`() {

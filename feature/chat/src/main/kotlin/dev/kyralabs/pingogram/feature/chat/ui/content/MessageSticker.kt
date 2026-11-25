@@ -101,7 +101,7 @@ internal fun MessageDice(
 
 /**
  * [sticker] fitted into [displaySize]: its picture (the sticker itself if it is a still, else its thumbnail if that
- * is a picture) over its emoji, which fades out as the picture fades in. An animated (TGS) sticker plays through the
+ * is a picture) over its emoji, which fades out as the picture fades in and is gone once it has. An animated (TGS) sticker plays through the
  * app's [AnimatedStickers] ([LocalAnimatedStickers]; none in previews) once its file is downloaded: its first frame
  * replaces the picture and the emoji at once, as they show the same artwork (unless [animate] is false, as for a set's
  * picture in the sticker panel). Video (WebM) stickers keep their thumbnail.
@@ -138,7 +138,9 @@ internal fun StickerImage(
                 StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation)
             } else {
                 val alpha = rememberImageAlpha(pictureId)
-                StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation.fadingOutAs(alpha))
+                // The emoji goes once the picture has faded in over it, not kept laid out at alpha 0 under it.
+                val pictureShown by remember(alpha) { derivedStateOf { alpha.value >= 1f } }
+                if (!pictureShown) StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation.fadingOutAs(alpha))
                 val density = LocalDensity.current
                 TdlibImage(
                     fileId = pictureId,

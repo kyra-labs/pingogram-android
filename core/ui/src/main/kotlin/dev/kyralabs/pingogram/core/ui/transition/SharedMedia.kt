@@ -163,6 +163,12 @@ class SharedMediaShapes {
  * outside the `NavHost`), when not [enabled] (media the viewer does not show), with reduced motion
  * ([isReducedMotion]), and whenever the other side shows no content of [messageId] (the viewer paged to media the
  * conversation does not show, or that is not loaded yet).
+ *
+ * Only the bubble whose media a viewer's page shows ([SharedMediaShapes.isInViewer]) sets up its side of the
+ * transform; every other one only publishes its corners. A page registers as it first composes, and its overlay
+ * starts coming in a frame later at the earliest (`OverlayNavigator`), by which time the bubble has set its side up:
+ * the transform runs as before, and the media of a conversation scrolling past costs no transition, animation and
+ * shared state each.
  */
 @Composable
 fun Modifier.sharedMediaBounds(
@@ -171,6 +177,9 @@ fun Modifier.sharedMediaBounds(
     enabled: Boolean = true,
 ): Modifier {
     val shapes = LocalSharedMediaShapes.current ?: return this
+    if (!enabled || LocalSharedTransitionScope.current == null || isReducedMotion()) return this
+    val inViewer by remember(shapes, messageId) { derivedStateOf { shapes.isInViewer(messageId) } }
+    if (!inViewer) return then(PublishedMediaShapeElement(shapes, messageId, shape))
     // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the media
     // goes with the viewer, not with the conversation's own destination.
     val viewer = rememberViewerVisibility(shapes, messageId)
