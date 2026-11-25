@@ -158,7 +158,7 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
 Branch from the tag (`git checkout -b hotfix/X.Y.Z+1 vX.Y.Z`), fix, PR to `main`, cherry-pick
 if `main` has diverged, tag from the hotfix branch.
 
-## F-Droid and IzzyOnDroid
+## F-Droid
 
 Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` (F-Droid's
 [descriptions and graphics](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)):
@@ -174,8 +174,6 @@ Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` 
 - **Images**: `tools/fastlane/images.sh` renders the icon and the feature graphic from `art/` with headless Chromium
   (`CHROMIUM=…` if it is not on the PATH) and copies the light screenshots of `docs/screenshots/`, which
   `tools/readme/screenshots.sh` makes from the goldens; run both after re-recording the goldens they use.
-- **IzzyOnDroid** ships the APKs of the GitHub releases as they are, signed by the owner, and reads this metadata: it
-  needs nothing else from the repository.
 - **F-Droid's main repository** builds from source with its own key. `docs/fdroid/dev.kyralabs.pingogram.yml` drafts
   its recipe for review, in fdroiddata's format; it is not submitted. The build side is ready:
   - `-Ppingogram.unsignedRelease=true` packages release APKs without a signing config (`*-release-unsigned.apk`);
@@ -193,7 +191,7 @@ Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` 
 ## Reproducible builds
 
 A build is reproducible when the same commit, built again, gives the same APK apart from its signature, which lets a
-store (F-Droid's "reproducible builds", IzzyOnDroid's checks) verify that a signed release came from this source.
+store (F-Droid's "reproducible builds") verify that a signed release came from this source.
 
 - **Pinned inputs**: the Gradle wrapper with its checksum (`distributionSha256Sum`), every dependency at an exact
   version (`gradle/libs.versions.toml`), JDK 17 (Temurin in CI), the TDLib AAR by commit and SHA-256 (`docs/TDLIB.md`),

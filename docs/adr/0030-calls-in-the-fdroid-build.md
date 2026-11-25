@@ -14,7 +14,7 @@ builds against prebuilt libraries its `version.properties` pins (`.github/workfl
 - Chromium's clang and libc++;
 - FFmpeg, OpenH264 and Boost.
 
-IzzyOnDroid and the GitHub releases are not affected: they ship the APKs the release workflow builds, with calls.
+The GitHub releases are not affected: they ship the APKs the release workflow builds, with calls.
 
 ### What the Telegram clients on F-Droid do
 
@@ -54,8 +54,8 @@ Neither ships a build without calls.
 
   Whichever builds with the NDK alone, within F-Droid's limits, and keeps 1:1 video, voice chats, live streams,
   screen sharing and conference calls, becomes the engine for every build.
-- **Until then** the F-Droid submission waits, and the recipe's TODO on NTgCalls says why. IzzyOnDroid (the GitHub APKs,
-  with calls) stays the F-Droid-compatible way to install Pingogram.
+- **Until then** the F-Droid submission waits, and the recipe's TODO on NTgCalls says why. Outside the app stores,
+  Pingogram installs from the GitHub releases, with calls; IzzyOnDroid is not pursued (owner, 2026-11-25).
 
 ## What the engines need (research, 2026-10-25)
 

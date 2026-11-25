@@ -1,4 +1,4 @@
-# DRAFT for review (docs/RELEASE.md, "F-Droid and IzzyOnDroid"): the recipe F-Droid's main repository would need, in
+# DRAFT for review (docs/RELEASE.md, "F-Droid"): the recipe F-Droid's main repository would need, in
 # fdroiddata's format (https://f-droid.org/docs/Build_Metadata_Reference/). Not submitted. It does not build as it
 # stands: the open points are marked TODO and listed in docs/RELEASE.md.
 Categories:

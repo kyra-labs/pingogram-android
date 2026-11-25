@@ -290,11 +290,17 @@ Features, in this order:
 - [ ] A native sticker renderer only if a trace shows Lottie's software rendering missing frames after v2.5.0's
   scheduling fixes; no Rust toolchain (the review of 2026-11-23: the slow paths are mapping and flows, and the APK
   budget is tight)
+- [ ] F-Droid's build: the call engine and WebRTC built from source (`docs/adr/0030-calls-in-the-fdroid-build.md`). A
+  spike picks the engine (NTgCalls on a WebRTC tree compiled with the NDK alone, or tgcalls as Telegram X builds it,
+  keeping 1:1 video, voice chats, live streams, screen sharing and conference calls) and ends in an ADR; then every
+  APK, GitHub's included, is built from those sources, and the F-Droid submission follows (owner, 2026-11-25)
 
 Not planned, as they break Telegram's terms or `CLAUDE.md`'s rules (owner, 2026-11-23): appearing offline while online,
 reading without read receipts, keeping deleted or edited messages, hiding or filtering sponsored messages, poll results
 before voting, copying protected content, more accounts than Telegram's apps allow, and translation or speech
 recognition through other companies' services.
+
+Not pursued: IzzyOnDroid (owner, 2026-11-25).
 
 ## Backlog (unscheduled)
 
