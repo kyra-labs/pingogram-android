@@ -33,7 +33,6 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
-import java.util.Locale
 
 // The top people of search's suggestions (SearchResults.kt), above the recent chats.
 
@@ -134,18 +133,3 @@ internal fun HeaderPeople(
 private class LastPeople(
     var people: ImmutableList<SearchChatItem>,
 )
-
-/**
- * Whether this name has a word starting with each word of [query], ignoring case; true for a blank query. How the
- * header narrows the top people as the user types (§13.4).
- */
-internal fun String.matchesWords(
-    query: String,
-    locale: Locale,
-): Boolean {
-    val typed = query.lowercase(locale).split(WHITESPACE).filter { it.isNotEmpty() }
-    val words = lowercase(locale).split(WHITESPACE)
-    return typed.all { word -> words.any { it.startsWith(word) } }
-}
-
-private val WHITESPACE = Regex("\\s+")
