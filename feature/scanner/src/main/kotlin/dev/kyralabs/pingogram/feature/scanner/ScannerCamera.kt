@@ -57,10 +57,7 @@ internal fun ScannerCamera(
     val currentOnTorchAvailable by rememberUpdatedState(onTorchAvailable)
     val currentOnUnavailable by rememberUpdatedState(onUnavailable)
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
-    val configuration = LocalConfiguration.current
-    val view = LocalView.current
-    val rotation = remember(configuration, view) { view.display?.rotation ?: Surface.ROTATION_0 }
-    val currentRotation by rememberUpdatedState(rotation)
+    val currentRotation by rememberUpdatedState(displayRotation())
     val analyzer =
         remember(mainExecutor) {
             QrAnalyzer(onFound = { text ->
@@ -76,19 +73,13 @@ internal fun ScannerCamera(
             currentOnUnavailable()
             return@LaunchedEffect
         }
-        val preview =
-            Preview
-                .Builder()
-                .setTargetRotation(currentRotation)
-                .build()
-                .also { it.setSurfaceProvider { request -> surfaceRequest = request } }
+        val preview = Preview.Builder().build().also { it.setSurfaceProvider { request -> surfaceRequest = request } }
         val executor = Executors.newSingleThreadExecutor()
         val analysis =
             ImageAnalysis
                 .Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setResolutionSelector(ANALYSIS_RESOLUTION)
-                .setTargetRotation(currentRotation)
                 .build()
                 .also { it.setAnalyzer(executor, analyzer) }
         try {
@@ -101,11 +92,7 @@ internal fun ScannerCamera(
             val bound = provider.bindToLifecycle(lifecycleOwner, selector, preview, analysis)
             camera = bound
             currentOnTorchAvailable(bound.cameraInfo.hasFlashUnit())
-            // Until cancelled.
-            snapshotFlow { currentRotation }.collect { rotation ->
-                preview.targetRotation = rotation
-                analysis.targetRotation = rotation
-            }
+            followRotation({ currentRotation }, preview, analysis)
         } catch (_: IllegalArgumentException) {
             // No camera matches, or the use cases do not fit it.
             currentOnUnavailable()
@@ -122,6 +109,26 @@ internal fun ScannerCamera(
     }
     LaunchedEffect(camera, torchOn) { camera?.cameraControl?.enableTorch(torchOn) }
     surfaceRequest?.let { request -> CameraXViewfinder(surfaceRequest = request, modifier = modifier.fillMaxSize()) }
+}
+
+/** The display's rotation, read again with each configuration. */
+@Composable
+private fun displayRotation(): Int {
+    val configuration = LocalConfiguration.current
+    val view = LocalView.current
+    return remember(configuration, view) { view.display?.rotation ?: Surface.ROTATION_0 }
+}
+
+/** Turns [preview] and [analysis] to [rotation], at once and as it changes, until cancelled. */
+private suspend fun followRotation(
+    rotation: () -> Int,
+    preview: Preview,
+    analysis: ImageAnalysis,
+) {
+    snapshotFlow(rotation).collect {
+        preview.targetRotation = it
+        analysis.targetRotation = it
+    }
 }
 
 /**
