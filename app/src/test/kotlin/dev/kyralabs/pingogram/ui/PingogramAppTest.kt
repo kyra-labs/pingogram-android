@@ -95,6 +95,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -280,6 +281,26 @@ class PingogramAppTest {
         composeRule.waitForIdle()
         assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
         awaitNode(hasContentDescription(FOUND_TITLE))
+    }
+
+    @Test
+    fun `search counts as open below a chat it opened, and no longer once both are left`() {
+        searchFinds(chatId = FOUND_CHAT)
+        tdlib.on(TdApi.AddRecentlyFoundChat::class, TdResult.Success(TdApi.Ok()))
+        setApp()
+        assertFalse(navController.currentBackStack.value.holdsSearch())
+        search("ada")
+        awaitNode(hasContentDescription(FOUND_TITLE))
+
+        composeRule.onNode(hasContentDescription(FOUND_TITLE)).performClick()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentBackStack.value.holdsSearch())
+        pressBack()
+        composeRule.waitForIdle()
+        pressBack()
+        composeRule.waitForIdle()
+
+        assertFalse(navController.currentBackStack.value.holdsSearch())
     }
 
     @Test

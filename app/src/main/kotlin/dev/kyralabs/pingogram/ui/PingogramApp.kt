@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -317,15 +319,15 @@ private fun rememberSearchOpen(
     navController: NavController,
     search: GlobalSearchState,
 ): State<Boolean> {
-    val currentEntry = navController.currentBackStackEntryAsState()
-    return remember(navController, currentEntry, search) {
-        derivedStateOf {
-            // Read for every change of the destination, which is when the back stack changes.
-            currentEntry.value
-            search.isDocked || runCatching { navController.getBackStackEntry<SearchRoute>() }.isSuccess
-        }
-    }
+    val backStack = navController.currentBackStack.collectAsState()
+    return remember(backStack, search) { derivedStateOf { search.isDocked || backStack.value.holdsSearch() } }
 }
+
+/**
+ * Whether search is on this back stack, at the top or below a conversation it opened. Looked up in the list: asking
+ * the controller for search's entry throws where there is none, which was most navigations.
+ */
+internal fun List<NavBackStackEntry>.holdsSearch(): Boolean = any { it.destination.hasRoute<SearchRoute>() }
 
 /**
  * Opens global search (`docs/DESIGN_SYSTEM.md` §6 "Global search"): [docked] in the Chats tab's list pane, which the
