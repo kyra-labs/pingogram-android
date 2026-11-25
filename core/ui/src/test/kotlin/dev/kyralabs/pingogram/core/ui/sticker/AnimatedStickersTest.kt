@@ -2,11 +2,16 @@ package dev.kyralabs.pingogram.core.ui.sticker
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.platform.WindowInfo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.transition.focusedUnless
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -170,6 +175,38 @@ class AnimatedStickersTest {
         }
 
     @Test
+    fun `paused under the message menu, a sticker holds its frame, and plays on from it after`() =
+        runTest {
+            val timed = AnimatedStickers(files, decoder, Dispatchers.Unconfined, timeSource = testTimeSource)
+            files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
+            val draws = MutableStateFlow(0L)
+            var shown = 0
+            val player =
+                StickerPlayer(timed, checkNotNull(timed.animation(FILE_ID)), 64, 64, draws) {
+                    shown++
+                    draws.value++
+                }
+            var paused by mutableStateOf(false)
+            val window = FocusedWindow.focusedUnless { paused }
+            val playing = launch { player.playOnScreen(window) { draws.value++ } }
+            advanceTimeBy(HALF_PLAY_MILLIS)
+
+            paused = true
+            Snapshot.sendApplyNotifications()
+            advanceTimeBy(FRAME_MILLIS)
+            val (heldShown, heldFrame) = shown to player.frame
+            advanceTimeBy(PLAY_MILLIS)
+            assertEquals(heldShown to heldFrame, shown to player.frame)
+
+            paused = false
+            Snapshot.sendApplyNotifications()
+            advanceTimeBy(HALF_PLAY_MILLIS)
+            assertTrue(shown > heldShown)
+            assertTrue("frame ${player.frame}, held $heldFrame", player.frame > heldFrame)
+            playing.cancel()
+        }
+
+    @Test
     fun `frames follow the clock, so a sticker drawn late keeps its pace`() =
         runTest {
             val timed = AnimatedStickers(files, decoder, Dispatchers.Unconfined, timeSource = testTimeSource)
@@ -234,6 +271,8 @@ class AnimatedStickersTest {
         const val FILE_ID = 42
         const val LATE_DRAW_MILLIS = 100L
         const val PLAY_MILLIS = 550L
+        const val HALF_PLAY_MILLIS = 200L
+        const val FRAME_MILLIS = 50L
         const val MILLIS_PER_SECOND = 1_000f
 
         /** The frames since the last draw came: 50 ms at 60 frames per second, shown in steps of 2. */

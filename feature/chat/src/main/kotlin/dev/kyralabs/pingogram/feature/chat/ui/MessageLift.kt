@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import android.view.accessibility.AccessibilityManager
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.transition.LocalAnimationsPaused
 
 /** Where the row of long-pressed message [messageId] was in the window ([bounds]) when its actions were asked for. */
 @Immutable
@@ -131,3 +133,16 @@ internal fun Modifier.blurBehindMenu(
             clip = false
         }
     }
+
+/**
+ * [content] with its endless animations held still while the floating menu shows over it ([LocalAnimationsPaused]):
+ * the blur ([blurBehindMenu]) is then drawn once, not again for every frame of a sticker or the typing dots.
+ */
+@Composable
+internal fun PausedUnderMenu(
+    lift: MessageLiftState,
+    content: @Composable () -> Unit,
+) {
+    val paused = remember(lift) { { lift.visibility > 0f } }
+    CompositionLocalProvider(LocalAnimationsPaused provides paused, content = content)
+}

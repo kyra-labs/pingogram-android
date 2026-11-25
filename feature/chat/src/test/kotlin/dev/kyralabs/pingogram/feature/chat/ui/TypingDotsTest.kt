@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -21,8 +22,9 @@ import org.robolectric.annotation.Config
 
 /**
  * [TypingDots] pulse in turn on the motion scheme's spring and draw the pulse without composing again
- * (`docs/PERFORMANCE.md` §4). Compose UI tests cancel infinite animations, so the test runs the pulse itself, frame by
- * frame on the test clock, while [RecompositionCounter] watches.
+ * (`docs/PERFORMANCE.md` §4), and hold their brightness while paused (under the message menu). Compose UI tests cancel
+ * infinite animations, so the test runs the pulse itself, frame by frame on the test clock, while
+ * [RecompositionCounter] watches.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -68,6 +70,37 @@ class TypingDotsTest {
         assertEquals(emptyList<String>(), counter.recomposedOwn)
     }
 
+    @Test
+    fun `paused, the dots hold their brightness, and pulse on once it ends`() {
+        val state = TypingDotsState()
+        var paused by mutableStateOf(false)
+        lateinit var scope: CoroutineScope
+        lateinit var spec: FiniteAnimationSpec<Float>
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                scope = rememberCoroutineScope()
+                spec = MaterialTheme.motionScheme.fastEffectsSpec()
+                TypingDots(MaterialTheme.colorScheme.primary, MaterialTheme.typography.bodySmall, state = state)
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        scope.launch { state.pulseUnless({ paused }) { state.pulse(spec) } }
+        repeat(HALF_PULSE_FRAMES) { frame() }
+
+        paused = true
+        frame()
+        val held = levels(state)
+        repeat(PULSE_FRAMES) { frame() }
+        assertEquals(held, levels(state))
+
+        paused = false
+        repeat(HALF_PULSE_FRAMES) { frame() }
+        assertNotEquals(held, levels(state))
+    }
+
+    private fun levels(state: TypingDotsState) = List(DOTS) { state.level(it) }
+
     private fun frame() {
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.waitForIdle()
@@ -78,5 +111,6 @@ class TypingDotsTest {
         const val BRIGHT = 0.9f
         const val SETTLE_FRAMES = 10
         const val PULSE_FRAMES = 60
+        const val HALF_PULSE_FRAMES = 8
     }
 }

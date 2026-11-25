@@ -33,6 +33,8 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiFrames
 import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.repaintFilter
+import dev.kyralabs.pingogram.core.ui.transition.LocalAnimationsPaused
+import dev.kyralabs.pingogram.core.ui.transition.focusedUnless
 import kotlin.math.roundToInt
 
 /** The tag of the string annotations over a text's custom emoji; their values are the custom emoji ids. */
@@ -273,7 +275,8 @@ private class CustomEmojiTextNode(
             val side = placement.picture.width.roundToInt()
             sizes[placement.customEmojiId] = maxOf(side, sizes[placement.customEmojiId] ?: 0)
         }
-        return frames.sync(renderer, sizes, emoji, coroutineScope, currentValueOf(LocalWindowInfo))
+        val window = currentValueOf(LocalWindowInfo).focusedUnless(currentValueOf(LocalAnimationsPaused))
+        return frames.sync(renderer, sizes, emoji, coroutineScope, window)
     }
 
     override fun ContentDrawScope.draw() {
