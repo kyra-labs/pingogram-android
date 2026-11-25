@@ -864,4 +864,12 @@
     <string name="welcome_plain_text">Formatting isn\'t kept when you change the text.</string>
     <string name="welcome_cancel">Cancel</string>
     <string name="welcome_save">Save</string>
+    <!-- Notes and names on this phone (FR-X20): the user's own name and private note for a group, channel, bot or someone who is not a contact, kept only on the phone. -->
+    <string name="chat_note_section">On this phone</string>
+    <string name="chat_note_name">Name on this phone</string>
+    <string name="chat_note_name_add">Add a name</string>
+    <string name="chat_note_note">Note</string>
+    <string name="chat_note_note_add">Add a note</string>
+    <!-- What screen readers hear a tap on the name or note row does. -->
+    <string name="chat_note_edit">Edit name and note</string>
 </resources>
