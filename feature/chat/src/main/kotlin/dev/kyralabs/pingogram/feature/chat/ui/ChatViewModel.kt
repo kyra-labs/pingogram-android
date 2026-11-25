@@ -890,6 +890,16 @@ class ChatViewModel internal constructor(
             messageRepository.history(chatId).first()
         }
 
+    /** The events of the message actions, the reactions, the forward sheet and the attach menu. */
+    private val messageEvents =
+        ChatMessageEvents(
+            messageActions = messageActions,
+            nextChannels = nextChannels,
+            playback = playback,
+            forwarding = forwarding,
+            attachEvents = ChatAttachEvents(attachments, composer) { uiState.value.poll?.isChannel == true },
+        )
+
     /** The forward sheet; null while none is open. */
     val forwardSheet: StateFlow<ForwardSheet?> get() = forwarding.sheet
 
@@ -1421,103 +1431,13 @@ class ChatViewModel internal constructor(
             is SummaryEvent -> summaries.onEvent(event)
             is TranscriptionEvent -> transcripts?.onEvent(event)
             is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
-            is PollEvent -> onPollEvent(event)
+            is PollEvent -> event.dispatch(chatId, messageActions, polls) { effectChannel.trySend(it) }
             is GiveawayEvent -> giveaways.onEvent(event)
             is DateTimeEvent -> dateTimes.onEvent(event)
             is ChecklistEvent -> checklists.onEvent(event)
             is PollOptionEvent -> pollOptions.onEvent(event)
             is RichMessageEvent -> richMessages.onEvent(event)
-            else -> onMessageEvent(event)
-        }
-    }
-
-    /** The events of polls: taking a vote back and stopping a poll go through the message actions' checks. */
-    private fun onPollEvent(event: PollEvent) {
-        when (event) {
-            is PollEvent.RetractVote -> messageActions.retractVote(event.messageId)
-            is PollEvent.StopPoll -> messageActions.stopPoll(event.messageId)
-            is PollEvent.OpenStatistics -> effectChannel.trySend(ChatEffect.OpenPollStatistics(chatId, event.messageId))
-            else -> polls.onEvent(event)
-        }
-    }
-
-    /** The events of the message actions, the reactions and the forward sheet, which [onEvent] hands on. */
-    private fun onMessageEvent(event: ChatEvent) {
-        when (event) {
-            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId, link = event.link)
-            is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
-            is ChatEvent.ShowInteractions -> messageActions.showInteractions(event.messageId, event.reactions)
-            ChatEvent.ExpandReactions -> messageActions.showPicker(true)
-            ChatEvent.CollapseReactions -> messageActions.showPicker(false)
-            ChatEvent.DismissMessageActions -> messageActions.dismiss()
-            is ChatEvent.Reply -> messageActions.reply(event.messageId)
-            is ChatEvent.Copy -> messageActions.copy(event.messageId)
-            is ChatEvent.Edit -> messageActions.edit(event.messageId)
-            is ChatEvent.Pin -> messageActions.pin(event.messageId, event.onlyForSelf)
-            is ChatEvent.Unpin -> messageActions.unpin(event.messageId)
-            is ChatEvent.Delete -> messageActions.delete(event.messageId)
-            is ChatEvent.ConfirmDelete -> messageActions.confirmDelete(event.forEveryone)
-            ChatEvent.DismissDelete -> messageActions.dismissDelete()
-            is ChatEvent.Resend -> messageActions.resend(event.messageId)
-            is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
-            is ChatEvent.Forward -> messageActions.forward(event.messageId)
-            is ChatEvent.OpenNextChannel -> nextChannels.open(event.next)
-            ChatEvent.ChangePlaybackSpeed -> playback.changeSpeed()
-            is ForwardEvent -> forwarding.onEvent(event)
-            else -> onAttachEvent(event)
-        }
-    }
-
-    /** The events of the attach menu, its previews and the poll form, which [onMessageEvent] hands on. */
-    private fun onAttachEvent(event: ChatEvent) {
-        when (event) {
-            is ChatEvent.AttachMedia -> attachments.pickMedia(event.uris)
-
-            is ChatEvent.AttachFiles -> attachments.pickFiles(event.uris)
-
-            ChatEvent.TakePhoto -> attachments.takePhoto()
-
-            is ChatEvent.PhotoTaken -> attachments.photoTaken(event.taken)
-
-            is ChatEvent.AttachContact -> attachments.sendContact(event.uri)
-
-            is ChatEvent.SendLocation -> attachments.sendLocation(event.location, event.options)
-
-            is ChatEvent.SendSticker -> attachments.sendSticker(event.sticker)
-
-            is ChatEvent.Wave -> attachments.wave(event.messageId)
-
-            is ChatEvent.SendAnimation -> attachments.sendAnimation(event, composer)
-
-            is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
-
-            is ChatEvent.SetOriginalQuality -> attachments.setOriginal(event.original)
-
-            ChatEvent.DismissAttachments -> attachments.dismissPreview()
-
-            is ChatEvent.SendAttachments -> attachments.sendPreview(event.options)
-
-            ChatEvent.OpenPoll -> attachments.openPoll()
-
-            ChatEvent.DismissPoll -> attachments.dismissPoll()
-
-            is ChatEvent.PickPollPhoto -> attachments.pickPollPhoto(event.uri)
-
-            ChatEvent.RemovePollPhoto -> attachments.removePollPhoto()
-
-            // A poll goes out anonymous in a channel.
-            is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
-
-            ChatEvent.OpenChecklist -> attachments.openChecklist()
-
-            ChatEvent.DismissChecklist -> attachments.dismissChecklist()
-
-            is ChatEvent.SendChecklist -> attachments.sendChecklist(event.options)
-
-            is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
-
-            // The other events are handled by onEvent and onMessageEvent.
-            else -> Unit
+            else -> messageEvents.onEvent(event)
         }
     }
 
