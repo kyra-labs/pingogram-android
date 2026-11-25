@@ -130,10 +130,17 @@ third-party action sees them. Telethon and cryptg are pinned with their hashes i
    python3 tools/benchmark/compare.py benchmark/build/outputs/connected_android_test_additional_output/
    ```
 
-   A budget miss or a time more than 10% above the baseline stops the release until it is fixed, or until the owner
-   accepts it in the release PR (a budget change is an ADR, `docs/PERFORMANCE.md` §9). After the release, record the
-   run as the new baseline: `compare.py … --write-baseline benchmark/baselines/<device>.json --commit vX.Y.Z`, committed
-   with the next change.
+   Then open Pingogram on the chat list, leave it idle for ten seconds and read its memory (the PSS budgets of
+   `docs/PERFORMANCE.md` §1, which no benchmark metric measures):
+
+   ```bash
+   adb shell dumpsys meminfo dev.kyralabs.pingogram | grep "TOTAL PSS"
+   ```
+
+   A budget miss, or a time or memory figure more than 10% above the baseline, stops the release until it is fixed,
+   or until the owner accepts it in the release PR (a budget change is an ADR, `docs/PERFORMANCE.md` §9). After the
+   release, record the run as the new baseline: `compare.py … --write-baseline benchmark/baselines/<device>.json
+   --commit vX.Y.Z`, committed with the next change.
 3. Open a PR `chore(release): vX.Y.Z` that:
    - moves `Unreleased` items under `## [X.Y.Z] - YYYY-MM-DD`,
    - updates the comparison links at the bottom of `CHANGELOG.md`.

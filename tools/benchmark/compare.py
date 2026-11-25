@@ -5,9 +5,10 @@
 
 RESULTS are the *-benchmarkData.json files of a run, or directories holding them (searched recursively), e.g.
 benchmark/build/outputs/connected_android_test_additional_output/. It fails (exit code 1) when a benchmark misses a
-budget of benchmark/budgets.json, or when a time is more than 10% above the baseline of the same benchmark (default:
-the baseline in benchmark/baselines/ named after the device of the run, or the only one there). --write-baseline writes the
-run as a new baseline instead of checking regressions; budgets are checked either way.
+budget of benchmark/budgets.json, or when a time or a memory figure (MemoryUsageMetric's kB) is more than 10% above the
+baseline of the same benchmark (default: the baseline in benchmark/baselines/ named after the device of the run, or the
+only one there). --write-baseline writes the run as a new baseline instead of checking regressions; budgets are checked
+either way.
 
 Only the Python standard library; nothing is sent anywhere.
 """
@@ -101,6 +102,11 @@ def is_time(key):
     return key.split(".")[0].endswith("Ms")
 
 
+def is_memory(key):
+    """Whether [key] is a memory figure compared for regressions: MemoryUsageMetric's counters, in kB."""
+    return key.split(".")[0].endswith("Kb")
+
+
 def frame_lines(benchmarks):
     """Each scrolling benchmark's late and stutter shares, as lines to print: late frames are reported, not budgeted."""
     lines = []
@@ -139,7 +145,7 @@ def check_regressions(benchmarks, baseline):
             continue
         for key, value in sorted(values.items()):
             before = recorded.get(key)
-            if before is None or not is_time(key) or before <= 0:
+            if before is None or not (is_time(key) or is_memory(key)) or before <= 0:
                 continue
             change = value / before - 1
             line = "%s: %s %.1f -> %.1f (%+.0f%%)" % (name, key, before, value, 100 * change)
