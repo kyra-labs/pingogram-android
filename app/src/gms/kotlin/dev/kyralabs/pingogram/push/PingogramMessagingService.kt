@@ -33,8 +33,10 @@ class PingogramMessagingService : FirebaseMessagingService() {
         pushRepository.onNewToken(token)
     }
 
+    // Blocks on purpose: Firebase calls this on its worker thread, never the main thread, and Android may end the
+    // process once it returns, so the push is processed before it does; the wait is bounded by processPush.
+    @Suppress("PingogramRunBlocking")
     override fun onMessageReceived(message: RemoteMessage) {
-        // Firebase's worker thread, never the main thread; the wait is bounded by processPush.
         runBlocking { pushRepository.processPush(message.data, message.sentTime, message.notification?.sound) }
     }
 

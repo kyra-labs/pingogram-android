@@ -16,6 +16,9 @@ internal class TdlibConferenceEncryption(
     /** TDLib's id of the call, set once its join answered. */
     @Volatile var groupCallId = 0
 
+    // Blocks on purpose: the call engine's thread needs each frame's result before it goes on, and TDLib cannot run
+    // encryptGroupCallData synchronously (td_api.tl does not say "Can be called synchronously").
+    @Suppress("PingogramRunBlocking")
     override fun encrypt(
         channel: ConferenceChannel,
         data: ByteArray,
@@ -25,6 +28,8 @@ internal class TdlibConferenceEncryption(
         return runBlocking { conferences.encrypt(id, channel, data, unencryptedPrefix) }
     }
 
+    // Blocks on purpose, as encrypt does: decryptGroupCallData cannot run synchronously either.
+    @Suppress("PingogramRunBlocking")
     override fun decrypt(
         userId: Long,
         data: ByteArray,

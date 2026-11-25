@@ -2,6 +2,14 @@ pingogram:
   active: true
   PingogramHardcodedToken:
     active: true
+  PingogramGlobalScope:
+    active: true
+  PingogramRunBlocking:
+    active: true
+  PingogramComposedModifier:
+    active: true
+  PingogramSubcomposeAsyncImage:
+    active: true
   PingogramMotionDefault:
     active: true
     checks:

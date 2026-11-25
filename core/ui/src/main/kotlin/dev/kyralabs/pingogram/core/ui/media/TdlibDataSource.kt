@@ -91,6 +91,9 @@ class TdlibDataSource(
 
     override fun getUri(): Uri? = uri
 
+    // Blocks on purpose: Media3 calls close on the player's loading thread and opens the next source after it returns,
+    // so the download it stops is stopped before another read of the file can start one.
+    @Suppress("PingogramRunBlocking")
     override fun close() {
         val opened = uri != null
         uri = null
@@ -103,7 +106,11 @@ class TdlibDataSource(
         }
     }
 
-    /** Waits for at least [minimum] bytes from [position] (fewer at the end) and notes where they are. */
+    /**
+     * Waits for at least [minimum] bytes from [position] (fewer at the end) and notes where they are. Blocks on
+     * purpose: a Media3 data source's open and read return their bytes on the player's loading thread.
+     */
+    @Suppress("PingogramRunBlocking")
     private fun awaitRange(minimum: Long): FileRange {
         val outcome =
             try {

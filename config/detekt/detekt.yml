@@ -85,6 +85,19 @@ pingogram:
     # Literal colors, text sizes, sizes, shapes and animation specs in :feature:* production code
     # (CLAUDE.md hard rule 4, docs/DESIGN_SYSTEM.md §1).
     active: true
+  PingogramGlobalScope:
+    # GlobalScope in production code (CLAUDE.md hard rule 6).
+    active: true
+  PingogramRunBlocking:
+    # runBlocking in production code (.claude/rules/kotlin.md); a call whose caller needs the result before it
+    # returns is suppressed with the reason.
+    active: true
+  PingogramComposedModifier:
+    # Modifier.composed {} in production code (docs/PERFORMANCE.md §4).
+    active: true
+  PingogramSubcomposeAsyncImage:
+    # Coil's SubcomposeAsyncImage in production code (docs/PERFORMANCE.md §4, "Images").
+    active: true
   PingogramMotionDefault:
     # Animations in :feature:* and :app production code that leave their spec to Compose's defaults, and literal
     # tweens, durations and easings in :app and core:ui (docs/DESIGN_SYSTEM.md §5 and §5.1 Q-26,
