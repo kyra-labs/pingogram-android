@@ -20,7 +20,9 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import kotlinx.collections.immutable.ImmutableList
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -87,8 +90,8 @@ internal class GlanceWidgetChatChooser
     }
 
 /**
- * What the picker reads of the shown account: its main chat list, users, who it is, its locked chats, and which
- * supergroups are forums (their avatars are rounded squares).
+ * What the picker reads of the shown account: its main chat list, users, who it is, its locked chats, which
+ * supergroups are forums (their avatars are rounded squares), and the chats' names on this phone (FR-X20).
  */
 internal class WidgetPickerSources(
     val chats: Flow<List<Chat>>,
@@ -96,6 +99,7 @@ internal class WidgetPickerSources(
     val myUserId: Flow<Long?>,
     val lockedChatIds: Flow<Set<Long>>,
     val forums: Flow<Set<Long>>,
+    val localNames: Flow<Map<Long, String>> = flowOf(emptyMap()),
 ) {
     @Inject
     constructor(
@@ -103,6 +107,7 @@ internal class WidgetPickerSources(
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatLock: ChatLockRepository,
+        localChatNames: LocalChatNamesRepository,
     ) : this(
         chatRepository.chatList(ChatListType.Main),
         userRepository.users,
@@ -114,15 +119,17 @@ internal class WidgetPickerSources(
                 .map { it.id }
                 .toSet()
         },
+        localChatNames.names,
     )
 }
 
 /**
  * The Conversation widget's chat picker (board 33): the shown account's main chat list as TDLib has loaded it, without
  * secret chats (whose messages stay off the home screen) and locked chats (`docs/adr/0029-locked-chats.md`), filtered
- * on the device by every word of the query at the start of a word of the title, in any letter case and with or without
- * accents. Picking a chat keeps it in the widget ([WidgetChatChooser]) and closes the picker ([closed]). The list is
- * mapped and filtered on [dispatcher], off the main thread: it runs again for every typed letter and chat update.
+ * on the device by every word of the query at the start of a word of the title (the name on this phone if it has
+ * one), in any letter case and with or without accents. Picking a chat keeps it in the widget ([WidgetChatChooser])
+ * and closes the picker ([closed]). The list is mapped and filtered on [dispatcher], off the main thread: it runs again
+ * for every typed letter and chat update.
  */
 @HiltViewModel
 class WidgetChatPickerViewModel
@@ -154,16 +161,16 @@ class WidgetChatPickerViewModel
         val state: StateFlow<WidgetChatPickerState> =
             combine(
                 combine(sources.chats, sources.lockedChatIds, sources.forums, ::Triple),
-                sources.users,
+                combine(sources.users, sources.localNames, ::Pair),
                 sources.myUserId,
                 query,
-            ) { (list, locked, forumIds), userMap, me, typed ->
+            ) { (list, locked, forumIds), (userMap, localNames), me, typed ->
                 val words = wordsOf(typed)
                 WidgetChatPickerState(
                     chats =
                         list
                             .filter { it.type !is ChatType.Secret && it.id !in locked }
-                            .map { it.toPickerChat(userMap, me, forumIds) }
+                            .map { it.toPickerChat(userMap, me, forumIds, it.shownTitle(userMap, localNames)) }
                             .filter { chat -> words.isEmpty() || words.all { word -> chat.matches(word) } }
                             .toImmutableList(),
                     query = typed,
@@ -192,6 +199,7 @@ private fun Chat.toPickerChat(
     users: Map<Long, User>,
     myUserId: Long?,
     forums: Set<Long>,
+    shownTitle: String,
 ): WidgetPickerChat {
     val type = type
     val userId = (type as? ChatType.Private)?.userId
@@ -200,7 +208,7 @@ private fun Chat.toPickerChat(
     val supergroup = type as? ChatType.Supergroup
     return WidgetPickerChat(
         id = id,
-        title = title,
+        title = shownTitle,
         photo = if (isSavedMessages) null else photo,
         shape =
             AvatarShape.ofChat(
@@ -222,6 +230,15 @@ private fun Chat.toPickerChat(
                 else -> null
             },
     )
+}
+
+/** The chat's name on this phone, unless it is a contact's (`REQUIREMENTS.md` FR-X20); else its title. */
+private fun Chat.shownTitle(
+    users: Map<Long, User>,
+    localNames: Map<Long, String>,
+): String {
+    val userId = (type as? ChatType.Private)?.userId
+    return localNames.shownName(id, isContact = userId != null && users[userId]?.isContact == true) ?: title
 }
 
 /** The words of [text] as [matches] compares them: lower case, accents removed. */
