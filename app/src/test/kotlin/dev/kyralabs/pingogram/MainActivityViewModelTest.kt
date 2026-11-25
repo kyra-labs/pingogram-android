@@ -351,6 +351,33 @@ class MainActivityViewModelTest {
         }
 
     @Test
+    fun `knows a step TDLib already reported as it is made, before the splash screen asks`() =
+        runTest {
+            client.authState.value = AuthState.Ready
+            val trace = RecordingSplashStateTrace()
+
+            val viewModel =
+                MainActivityViewModel(
+                    TdlibAuthRepository(
+                        client,
+                        backgroundScope,
+                        StandardTestDispatcher(testScheduler),
+                        TimeSource.Monotonic,
+                    ),
+                    kept(appearance),
+                    appLock,
+                    passcodes,
+                    timeSource,
+                    lazyOf(chatLock),
+                    trace,
+                )
+
+            // Nothing ran since: a warm start's first composition shows the app, not progress.
+            assertEquals(MainActivityUiState.SignedIn, viewModel.state)
+            assertTrue("PG:loginKnown" in trace.ended)
+        }
+
+    @Test
     fun `a chat to open waits until it is opened, and a newer one replaces it`() =
         runTest {
             val viewModel = viewModel()

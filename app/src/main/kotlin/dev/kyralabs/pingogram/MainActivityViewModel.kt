@@ -91,6 +91,9 @@ class MainActivityViewModel internal constructor(
 
     init {
         listOf(LOGIN_KNOWN, APPEARANCE_KNOWN, LOCK_KNOWN).forEach(splashTrace::begin)
+        // Before the activity's first composition, which comes before the splash screen first asks: where TDLib already
+        // knows the step, as in a warm start, the first frame shows the app instead of progress.
+        mutableUiState.takeCurrentStep(authRepository)
         viewModelScope.launch {
             authRepository.authStep.mapNotNull { it.toMainActivityUiState() }.collect { mutableUiState.value = it }
         }
@@ -213,11 +216,7 @@ class MainActivityViewModel internal constructor(
      * `Initializing`, which changes nothing, comes before TDLib's first step, so the steps that follow agree with it.
      */
     fun keepSplashScreen(): Boolean {
-        if (uiState.value == MainActivityUiState.Loading) {
-            authRepository.currentStep().toMainActivityUiState()?.let {
-                mutableUiState.compareAndSet(MainActivityUiState.Loading, it)
-            }
-        }
+        mutableUiState.takeCurrentStep(authRepository)
         val unknown =
             uiState.value == MainActivityUiState.Loading || appearance.value == null || lock.value == LockState.Unknown
         return unknown && createdAt.elapsedNow() < SPLASH_SCREEN_TIMEOUT
@@ -226,6 +225,15 @@ class MainActivityViewModel internal constructor(
     internal companion object {
         val SPLASH_SCREEN_TIMEOUT = 300.milliseconds
     }
+}
+
+/**
+ * While the login state is unknown, takes [authRepository]'s current step, as [MainActivityViewModel.keepSplashScreen]
+ * explains.
+ */
+private fun MutableStateFlow<MainActivityUiState>.takeCurrentStep(authRepository: AuthRepository) {
+    if (value != MainActivityUiState.Loading) return
+    authRepository.currentStep().toMainActivityUiState()?.let { compareAndSet(MainActivityUiState.Loading, it) }
 }
 
 /** A page something outside the app asks to open ([MainActivityViewModel.pageToOpen]). */
