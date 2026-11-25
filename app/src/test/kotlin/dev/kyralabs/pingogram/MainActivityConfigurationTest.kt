@@ -37,9 +37,9 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 
 /**
- * [MainActivity] through a rotation, a fold (its smallest width changing) and a dark mode switch, which its manifest's
- * `configChanges` hand to it as configuration changes: the same activity stays, with the tab it showed, and the app takes
- * the dark theme without being created again.
+ * [MainActivity] through a rotation, a fold (its smallest width changing) and a dark mode switch, which its
+ * manifest's `configChanges` hand to it as configuration changes: the same activity stays, with the tab it showed,
+ * and the app takes the dark theme without being created again.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class)
