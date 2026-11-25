@@ -327,6 +327,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below. A blur is drawn again
   whenever what it covers changes: endless animations under one hold still while it shows (`LocalAnimationsPaused`,
   `core:ui`; the conversation behind the floating message menu), stickers and custom emoji on their frame.
+- No path clips on scrolling content: the GPU clips rects and round rects analytically but turns a path into a mask
+  on every draw. A group's, channel's, Saved Messages' or community's avatar photo is cut to its polygon once, off the
+  main thread, and kept in Coil's memory cache (`AvatarMask`), then drawn unclipped; circles and forums' rounded
+  squares keep their clip. Custom emoji are cut out of their text with one rect clip per glyph.
 
 ### Overdraw
 
