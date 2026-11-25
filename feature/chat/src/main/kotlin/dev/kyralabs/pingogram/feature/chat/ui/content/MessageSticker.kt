@@ -100,11 +100,11 @@ internal fun MessageDice(
 }
 
 /**
- * [sticker] fitted into [displaySize]: its picture (the sticker itself if it is a still, else its thumbnail if that
- * is a picture) over its emoji, which fades out as the picture fades in and is gone once it has. An animated (TGS) sticker plays through the
- * app's [AnimatedStickers] ([LocalAnimatedStickers]; none in previews) once its file is downloaded: its first frame
- * replaces the picture and the emoji at once, as they show the same artwork (unless [animate] is false, as for a set's
- * picture in the sticker panel). Video (WebM) stickers keep their thumbnail.
+ * [sticker] fitted into [displaySize]: its picture (the sticker itself if it is a still, else its thumbnail if that is
+ * a picture) over its emoji, which fades out as the picture fades in and is gone once it has. An animated (TGS) sticker
+ * plays through the app's [AnimatedStickers] ([LocalAnimatedStickers]; none in previews) once its file is downloaded:
+ * its first frame replaces the picture and the emoji at once, as they show the same artwork (unless [animate] is false,
+ * as for a set's picture in the sticker panel). Video (WebM) stickers keep their thumbnail.
  */
 @Composable
 internal fun StickerImage(

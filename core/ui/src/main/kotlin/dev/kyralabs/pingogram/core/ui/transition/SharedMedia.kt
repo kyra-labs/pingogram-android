@@ -176,29 +176,19 @@ fun Modifier.sharedMediaBounds(
     shape: CornerBasedShape,
     enabled: Boolean = true,
 ): Modifier {
-    val shapes = LocalSharedMediaShapes.current
-    if (shapes == null || !enabled || LocalSharedTransitionScope.current == null || isReducedMotion()) return this
+    val shapes =
+        LocalSharedMediaShapes.current?.takeIf {
+            enabled && LocalSharedTransitionScope.current != null && !isReducedMotion()
+        } ?: return this
     val inViewer by remember(shapes, messageId) { derivedStateOf { shapes.isInViewer(messageId) } }
-    // Not in the viewer: no transform to set up, only the corners for a page to read once it shows this media.
-    val published = PublishedMediaShapeElement(shapes, messageId, shape)
-    return if (inViewer) sharedWithViewer(shapes, messageId, shape) else then(published)
-}
-
-/** The bubble's side of [sharedMediaBounds] while a viewer's page shows the media of message [messageId]. */
-@Composable
-private fun Modifier.sharedWithViewer(
-    shapes: SharedMediaShapes,
-    messageId: Long,
-    shape: CornerBasedShape,
-): Modifier {
-    // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the media
-    // goes with the viewer, not with the conversation's own destination.
-    val viewer = rememberViewerVisibility(shapes, messageId)
-    // The bubble's side is scaled to the moving bounds, cropped as the bubble crops it, rather than measured anew in
-    // every frame, and crossfades on the fast effects spring, so it leaves the compositing early on the way in and is
-    // back early on the way out; the viewer's side, measured to the bounds, is what uncrops the photo
-    // (docs/audit/performance-review-2026-11.md, M1).
-    val shared =
+    return if (inViewer) {
+        // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the
+        // media goes with the viewer, not with the conversation's own destination.
+        val viewer = rememberViewerVisibility(shapes, messageId)
+        // The bubble's side is scaled to the moving bounds, cropped as the bubble crops it, rather than measured anew
+        // in every frame, and crossfades on the fast effects spring, so it leaves the compositing early on the way in
+        // and is back early on the way out; the viewer's side, measured to the bounds, is what uncrops the photo
+        // (docs/audit/performance-review-2026-11.md, M1).
         containerTransformOf(
             SharedMediaKey(messageId),
             shape,
@@ -209,11 +199,10 @@ private fun Modifier.sharedWithViewer(
             fastFade = true,
             // At the bubble while this side shows.
             viewport = ViewportClipping(shapes.viewports, atBubbleWhenShown = true),
-        )
-    return if (shared !== this) {
-        shared.then(PublishedMediaShapeElement(shapes, messageId, shape))
+        ).then(PublishedMediaShapeElement(shapes, messageId, shape))
     } else {
-        shared
+        // No transform to set up: only the corners, for a viewer's page to read once it shows this media.
+        then(PublishedMediaShapeElement(shapes, messageId, shape))
     }
 }
 
