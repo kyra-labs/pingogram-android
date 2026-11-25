@@ -36,6 +36,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
 import kotlinx.collections.immutable.persistentSetOf
 import java.io.File
@@ -250,7 +251,7 @@ internal val ContentSamples: List<ContentSample> =
     )
 
 /** Photos that the rules of the current network leave for a tap. */
-private val TapToDownload = MediaDownloads(photos = false)
+private val TapToDownload = BubbleDownloads(MediaDownloads(photos = false))
 
 private fun albumSample(count: Int) =
     ContentSample("album$count", SampleBubbles.Outgoing, edgeToEdge = true) { _, _ ->

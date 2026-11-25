@@ -34,7 +34,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
+import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -73,7 +73,7 @@ internal fun MediaAlbum(
     messageIds: ImmutableList<Long> = persistentListOf(),
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     onCancelUpload: (messageId: Long) -> Unit = {},
-    downloads: MediaDownloads = MediaDownloads(),
+    downloads: BubbleDownloads = BubbleDownloads.Automatic,
     onDownload: (fileId: Int) -> Unit = {},
     onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
@@ -209,7 +209,7 @@ private fun albumAspectRatio(item: MessageContent): Float {
 
 /** How an album's photos download: [MediaAlbum]'s parameters of the same names. */
 private class AlbumDownloads(
-    val downloads: MediaDownloads,
+    val downloads: BubbleDownloads,
     val onDownload: (fileId: Int) -> Unit,
     val onCancelDownload: (fileId: Int) -> Unit,
 )
