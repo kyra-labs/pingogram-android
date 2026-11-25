@@ -137,12 +137,14 @@ internal fun VoiceMessagesGroup(
 
 /**
  * "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first, then
- * "Drafts button" and "Compact chat list" ([compact], `REQUIREMENTS.md` FR-X19).
+ * "Drafts button", "Compact chat list" ([compact], `REQUIREMENTS.md` FR-X19) and "Notes and names on this phone"
+ * ([notesAndNames], FR-X20).
  */
 @Composable
 internal fun ChatListBehaviorGroup(
     chatList: ChatListSettings,
     compact: Boolean,
+    notesAndNames: Boolean,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
@@ -175,6 +177,15 @@ internal fun ChatListBehaviorGroup(
                 checked = compact,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetCompactChatList(it)) },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_notes_and_names),
+                summary = stringResource(R.string.settings_notes_and_names_summary),
+                checked = notesAndNames,
+                shapes = shapes,
+                onCheckedChange = { onEvent(ChatsPageEvent.SetNotesAndNames(it)) },
             )
         }
     }

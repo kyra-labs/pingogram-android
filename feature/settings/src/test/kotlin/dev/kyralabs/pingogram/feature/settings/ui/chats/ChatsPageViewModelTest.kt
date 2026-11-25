@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
@@ -34,6 +35,7 @@ class ChatsPageViewModelTest {
     private val playbackSettings = FakePlaybackSettingsRepository()
     private val chatListSettings = FakeChatListSettingsRepository()
     private val compactChatList = FakeCompactChatListRepository()
+    private val notesAndNames = FakeNotesAndNamesRepository()
     private val transcriptionSettings = FakeTranscriptionSettingsRepository()
     private val transcriber = FakeVoiceTranscriber()
 
@@ -51,8 +53,7 @@ class ChatsPageViewModelTest {
         ChatsPageViewModel(
             composerSettings,
             playbackSettings,
-            chatListSettings,
-            compactChatList,
+            ChatListOptions(chatListSettings, compactChatList, notesAndNames),
             transcriptionSettings,
             transcriber,
         ).also { runCurrent() }
@@ -209,6 +210,20 @@ class ChatsPageViewModelTest {
 
             send(viewModel, ChatsPageEvent.SetCompactChatList(false))
             assertFalse(viewModel.content.compactChatList)
+        }
+
+    @Test
+    fun `notes and names show at first, and turning them off saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.notesAndNames)
+
+            send(viewModel, ChatsPageEvent.SetNotesAndNames(false))
+            assertFalse(viewModel.content.notesAndNames)
+            assertFalse(notesAndNames.enabled.value)
+
+            send(viewModel, ChatsPageEvent.SetNotesAndNames(true))
+            assertTrue(viewModel.content.notesAndNames)
         }
 
     @Test

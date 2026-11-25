@@ -231,6 +231,16 @@ class SettingsHomeTest {
     }
 
     @Test
+    fun `search finds the notes and names switch by its name`() {
+        show()
+        search("notes")
+
+        composeRule.onNode(hasText(string(R.string.settings_notes_and_names)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(SettingsPage.Chats), opened)
+    }
+
+    @Test
     fun `every page above a page has its own entry and route`() {
         val entries = SubPageEntries.map { (it.destination as HomeDestination.SubPage).subPage }
         assertEquals(SettingsSubPage.entries.toList(), entries)
