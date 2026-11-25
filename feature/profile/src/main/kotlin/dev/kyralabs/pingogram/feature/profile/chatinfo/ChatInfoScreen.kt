@@ -54,6 +54,8 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteGroup
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileSectionHeader
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileTopBar
@@ -99,11 +101,12 @@ internal fun ChatInfoScreen(
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
     stories: ProfileStoriesSlot? = null,
+    notes: ChatNoteSlot? = null,
 ) {
     // Of groups and channels, channels keep stories on their profile.
     val channel = (state as? ChatInfoUiState.Content)?.takeIf { it.kind == GroupKind.Channel }
     val storiesTab = rememberStoriesTab(media.chatId.takeIf { channel != null }, stories)
-    val page = ChatInfoPageParts(state, media, onEvent, onMediaEvent, mediaActions, storiesTab)
+    val page = ChatInfoPageParts(state, media, onEvent, onMediaEvent, mediaActions, storiesTab, notes)
     if (twoPanes) {
         SupportingPanes(
             main = {
@@ -141,6 +144,7 @@ internal class ChatInfoPageParts(
     val onMediaEvent: (SharedMediaEvent) -> Unit,
     val mediaActions: SharedMediaActions,
     val stories: StoriesTab? = null,
+    val notes: ChatNoteSlot? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the page: expanded and wider. */
@@ -234,7 +238,7 @@ private fun ChatInfoGrid(
             contentPadding =
                 remember(innerPadding, spacing) { innerPadding.withTop(0.dp).plusBottom(spacing.extraLarge) },
         ) {
-            chatInfoItems(state, page.onEvent, inset, motion)
+            chatInfoItems(state, page.onEvent, inset, motion, page.notes)
             if (withMedia && page.media.chatId != null) {
                 fullWidth(key = MEDIA_HEADER, inset = inset, motion = motion, gapAbove = true) {
                     ProfileSectionHeader(stringResource(R.string.profile_section_media))
@@ -260,6 +264,7 @@ private fun LazyGridScope.chatInfoItems(
     onEvent: (ChatInfoEvent) -> Unit,
     inset: Dp,
     motion: ItemMotion,
+    notes: ChatNoteSlot?,
 ) {
     fullWidth(key = ACTIONS, inset = inset, motion = motion) {
         ChatInfoActionsRow(
@@ -272,6 +277,11 @@ private fun LazyGridScope.chatInfoItems(
     if (state.description != null || state.link != null || state.id != null) {
         fullWidth(key = INFO, inset = inset, motion = motion, gapAbove = true) {
             ChatInfoGroup(state.description, state.link, onEvent, id = state.id, community = state.community)
+        }
+    }
+    if (notes != null && notes.state.shown) {
+        fullWidth(key = NOTES, inset = inset, motion = motion, gapAbove = true) {
+            ChatNoteGroup(notes.state, notes.onEvent)
         }
     }
     state.members?.let { members ->
@@ -344,6 +354,7 @@ internal const val CHAT_INFO_GRID_TEST_TAG = "chat_info_grid"
 
 private const val ACTIONS = "actions"
 private const val INFO = "info"
+private const val NOTES = "notes"
 private const val MEMBERS = "members"
 private const val ADMINISTRATION = "administration"
 private const val MORE = "more"

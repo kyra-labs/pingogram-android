@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteGroupStates
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
 import dev.kyralabs.pingogram.feature.profile.ui.COMPACT
 import dev.kyralabs.pingogram.feature.profile.ui.EXPANDED
 import dev.kyralabs.pingogram.feature.profile.ui.ScreenshotTheme
@@ -28,6 +30,12 @@ import org.robolectric.annotation.Config
 class ChatInfoScreenshotTest {
     @Test
     fun groupLight() = info(ScreenshotVariant.Light)
+
+    /** The group's name and note on this phone (`REQUIREMENTS.md` FR-X20), after its info. */
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun notesLight() =
+        info(ScreenshotVariant.Light, notes = ChatNoteSlot(ChatNoteGroupStates().values.first(), onEvent = {}))
 
     @Test
     fun groupDark() = info(ScreenshotVariant.Dark)
@@ -122,6 +130,7 @@ class ChatInfoScreenshotTest {
         variant: ScreenshotVariant,
         state: ChatInfoUiState = ChatInfoPreviewData.group,
         media: SharedMediaUiState = ProfilePreviewData.media,
+        notes: ChatNoteSlot? = null,
     ) = captureRoboImage {
         ScreenshotTheme(variant) {
             ChatInfoScreen(
@@ -131,6 +140,7 @@ class ChatInfoScreenshotTest {
                 onMediaEvent = {},
                 onBack = {},
                 mediaActions = SharedMediaActions({ _, _ -> }, { _, _ -> }, {}),
+                notes = notes,
             )
         }
     }

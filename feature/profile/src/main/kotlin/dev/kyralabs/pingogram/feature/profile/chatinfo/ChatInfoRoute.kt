@@ -18,6 +18,9 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteDialog
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteViewModel
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileStoriesSlot
 import dev.kyralabs.pingogram.feature.profile.ui.SharedMediaActions
 import dev.kyralabs.pingogram.feature.profile.ui.copyPlainText
@@ -31,7 +34,8 @@ import kotlinx.coroutines.launch
  * through [navigation]. Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar
  * before Android 13, which confirms copies itself), a link to the system's share sheet. The dialogs and the QR code's
  * sheet show over the page while the view model has one, and so does the owner's sheet before leaving. A channel's
- * Stories tab is [stories], where `:app` gives it.
+ * Stories tab is [stories], where `:app` gives it. The chat's name and note on this phone ([notesViewModel]) show as
+ * "On this phone", edited in their dialog.
  */
 @Composable
 internal fun ChatInfoRoute(
@@ -39,9 +43,12 @@ internal fun ChatInfoRoute(
     modifier: Modifier = Modifier,
     stories: ProfileStoriesSlot? = null,
     viewModel: ChatInfoViewModel = hiltViewModel(),
+    notesViewModel: ChatNoteViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val media by viewModel.media.collectAsStateWithLifecycle()
+    val notes by notesViewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(media.chatId) { media.chatId?.let(notesViewModel::open) }
     val snackbarHostState = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
     val currentNavigation by rememberUpdatedState(navigation)
@@ -64,7 +71,9 @@ internal fun ChatInfoRoute(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         stories = stories,
+        notes = ChatNoteSlot(notes, notesViewModel::onEvent),
     )
+    notes.editor?.let { ChatNoteDialog(it, notesViewModel::onEvent) }
     val ownerLeave by viewModel.ownerLeaveSheet.collectAsStateWithLifecycle()
     (state as? ChatInfoUiState.Content)?.let { content ->
         val title = content.header.name.resolve()

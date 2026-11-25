@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Notes and names on this phone: on the info page of a group, channel or bot, or the profile of someone who isn't
+  your contact, give the chat your own name and a private note. Only your phone and your backups keep them; Settings
+  → Chats can turn them off.
+
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.
 - The Feed tab shows the channel posts already on your phone at once, then the newest ones as they arrive.

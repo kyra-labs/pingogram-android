@@ -7,6 +7,8 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteGroupStates
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -248,11 +250,12 @@ class ProfileScreenScreenshotTest {
         media: SharedMediaUiState = ProfilePreviewData.media,
         scrolledTo: Int = 0,
         numbersHidden: Boolean = false,
+        notes: ChatNoteSlot? = null,
     ) = captureRoboImage {
         ScreenshotTheme(variant) {
             CompositionLocalProvider(
                 LocalPhoneNumbersHidden provides numbersHidden,
-            ) { Screen(state, media, scrolledTo) }
+            ) { Screen(state, media, scrolledTo, notes) }
         }
     }
 
@@ -261,6 +264,7 @@ class ProfileScreenScreenshotTest {
         state: ProfileUiState,
         media: SharedMediaUiState,
         scrolledTo: Int,
+        notes: ChatNoteSlot?,
     ) {
         ProfileScreen(
             gridState = rememberLazyGridState(initialFirstVisibleItemIndex = scrolledTo),
@@ -271,8 +275,20 @@ class ProfileScreenScreenshotTest {
             onBack = {},
             mediaActions = SharedMediaActions({ _, _ -> }, { _, _ -> }, {}),
             onEditContact = {},
+            notes = notes,
         )
     }
+
+    /** A bot's profile with its name and note on this phone (`REQUIREMENTS.md` FR-X20), above "More". */
+    @Test
+    @Config(qualifiers = TALL)
+    fun botNotesLight() =
+        capture(
+            ScreenshotVariant.Light,
+            ProfilePreviewData.bot,
+            ProfilePreviewData.emptyMedia,
+            notes = ChatNoteSlot(ChatNoteGroupStates().values.first(), onEvent = {}),
+        )
 
     private companion object {
         /** A phone as tall as the profile down to its "More" group. */

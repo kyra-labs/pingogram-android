@@ -28,6 +28,9 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteDialog
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -61,9 +64,13 @@ internal fun ProfileRoute(
     profileMusic: ProfileMusicSlot? = null,
     onChatDeleted: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
+    notesViewModel: ChatNoteViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val media by viewModel.media.collectAsStateWithLifecycle()
+    val notes by notesViewModel.state.collectAsStateWithLifecycle()
+    // A person's private chat is the one the name and note belong to, once the profile knows it.
+    LaunchedEffect(media.chatId) { media.chatId?.let(notesViewModel::open) }
     val reportSheet by viewModel.reportSheet.collectAsStateWithLifecycle()
     val noteEditor by viewModel.noteEditor.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -106,11 +113,13 @@ internal fun ProfileRoute(
             snackbarHostState = snackbarHostState,
             stories = stories,
             profileMusic = profileMusic,
+            notes = ChatNoteSlot(notes, notesViewModel::onEvent).takeIf { hasLocalNotes(state) },
         )
     }
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)
     reportSheet?.let { ReportProfileSheet(it, viewModel.reportComment, viewModel::onEvent) }
     noteEditor?.let { ContactNoteDialog(it, viewModel::onEvent) }
+    notes.editor?.let { ChatNoteDialog(it, notesViewModel::onEvent) }
 }
 
 /**
@@ -249,4 +258,14 @@ internal fun Context.shareText(text: String) {
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, text)
     startActivity(Intent.createChooser(send, getString(R.string.profile_share_title)))
+}
+
+/**
+ * Whether the profile gets "On this phone" (`REQUIREMENTS.md` FR-X20): a bot's, or someone's who is not a contact;
+ * contacts keep Telegram's own name and note, and one's own profile and a deleted account have neither (owner
+ * decision 2026-11-25).
+ */
+internal fun hasLocalNotes(state: ProfileUiState): Boolean {
+    val actions = (state as? ProfileUiState.Content)?.actions ?: return false
+    return actions.isBot || actions.contact == ContactAction.Add
 }

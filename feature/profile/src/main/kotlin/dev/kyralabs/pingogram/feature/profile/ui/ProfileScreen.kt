@@ -73,6 +73,8 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteGroup
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -116,6 +118,7 @@ internal fun ProfileScreen(
     gridState: LazyGridState = rememberLazyGridState(),
     stories: ProfileStoriesSlot? = null,
     profileMusic: ProfileMusicSlot? = null,
+    notes: ChatNoteSlot? = null,
 ) {
     val person = (state as? ProfileUiState.Content)?.takeUnless { it.actions.isBot || it.isDeletedAccount }
     // Bots and deleted accounts keep no stories.
@@ -132,6 +135,7 @@ internal fun ProfileScreen(
             onChatWallpaper,
             storiesTab,
             profileMusic,
+            notes,
         )
     if (twoPanes) {
         ProfilePanes(page, onBack, snackbarHostState, modifier, gridState)
@@ -152,6 +156,8 @@ internal class ProfilePageParts(
     val onChatWallpaper: (() -> Unit)? = null,
     val stories: StoriesTab? = null,
     val profileMusic: ProfileMusicSlot? = null,
+    /** "On this phone" (`REQUIREMENTS.md` FR-X20); the route gives it to bots and people who are not contacts. */
+    val notes: ChatNoteSlot? = null,
 )
 
 /**
@@ -335,6 +341,13 @@ private fun LazyGridScope.profileItems(
         }
     }
     val actions = state.actions
+    page.notes?.let { notes ->
+        if (notes.state.shown) {
+            fullWidth(key = NOTES, inset = inset, motion = motion) {
+                ChatNoteGroup(notes.state, notes.onEvent, Modifier.padding(top = MaterialTheme.spacing.extraLarge))
+            }
+        }
+    }
     val hasMore =
         (actions.contact != null && page.onEditContact != null) ||
             page.onExportChat != null ||
@@ -428,6 +441,7 @@ private const val ACTIONS = "actions"
 private const val DELETED = "deleted"
 private const val STRANGER = "stranger"
 private const val PHOTOS = "photos"
+private const val NOTES = "notes"
 private const val INFO = "info"
 private const val MORE = "more"
 private const val MEDIA_HEADER = "media-header"
