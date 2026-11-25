@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.ui.ChatsScript.ADA_TITLE
 import dev.kyralabs.pingogram.ui.ChatsScript.GRACE_TITLE
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -230,6 +231,23 @@ class DockedSearchTest {
 
         assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
         awaitText(ChatsR.string.search_hint_title)
+    }
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun `once search is left its entry is destroyed, so the back stack is no longer asked for it`() {
+        setApp()
+        awaitRow(ADA_TITLE)
+        searchButton().performClick()
+        composeRule.waitForIdle()
+        val last = LastSearchEntry().apply { saw(navController.currentBackStackEntry) }
+        assertTrue(last.mayBeOnStack())
+
+        pressBack()
+        composeRule.waitForIdle()
+
+        assertFalse(last.mayBeOnStack())
+        searchButton().assertExists()
     }
 
     private fun setApp() =
