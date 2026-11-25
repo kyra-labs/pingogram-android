@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.ChatNote
+import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.testing.FakeChatNoteRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository

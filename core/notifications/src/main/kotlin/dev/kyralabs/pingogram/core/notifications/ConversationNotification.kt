@@ -19,7 +19,9 @@ import dev.kyralabs.pingogram.core.domain.model.messageIds
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -88,6 +90,7 @@ internal class ConversationNotificationFactory(
     private val groupRepository: GroupRepository,
     private val avatars: AvatarIcons,
     private val slot: Int = 0,
+    private val localNames: LocalChatNamesRepository? = null,
 ) {
     private val resources get() = context.resources
 
@@ -96,9 +99,13 @@ internal class ConversationNotificationFactory(
         val chat = chatRepository.getChat(group.chatId).getOrNull()
         val users = userRepository.users.first()
         val senders = Senders(chat, users, userRepository.myUserId.value)
-        val title = chat?.title?.takeIf { it.isNotBlank() } ?: context.getString(R.string.notification_unknown_chat)
-        val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
         val partner = chat?.partnerId?.let(users::get)
+        // The name given on this phone (FR-X20), unless the chat is a contact's, whose contact name shows.
+        val localName = localNames?.names?.first()?.shownName(group.chatId, isContact = partner?.isContact == true)
+        val title =
+            localName ?: chat?.title?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.notification_unknown_chat)
+        val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
         val messages = group.notifications.map { notification -> message(notification, chat, senders) }
         val isGroupConversation = chat?.isGroup == true
         return ConversationNotification(

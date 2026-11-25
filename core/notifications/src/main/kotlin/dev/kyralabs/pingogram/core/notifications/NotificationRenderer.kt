@@ -26,9 +26,13 @@ import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsReposit
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -203,6 +207,8 @@ internal class NotificationAccount(
     val users: UserRepository,
     val groups: GroupRepository,
     val files: FileRepository,
+    /** The account's notes and names for chats (`REQUIREMENTS.md` FR-X20), whose names title the notifications. */
+    val chatNotes: ChatNoteRepository? = null,
 ) {
     override fun toString() = "NotificationAccount(slot=$slot)"
 }
@@ -218,6 +224,7 @@ private fun AccountGraph.toNotificationAccount(): NotificationAccount =
             users = userRepository(),
             groups = groupRepository(),
             files = fileRepository(),
+            chatNotes = chatNoteRepository(),
         )
     }
 
@@ -235,6 +242,8 @@ internal class AccountNotificationParts
         val focus: FocusGate,
         /** Re-posting what TDLib restored waits for the first frame: it pushes conversation shortcuts. */
         val firstFrame: FirstFrameGate,
+        /** Whether the notifications take the names given on this phone (`REQUIREMENTS.md` FR-X20). */
+        val notesAndNames: NotesAndNamesRepository? = null,
     )
 
 /**
@@ -283,6 +292,7 @@ internal class AccountNotificationRenderer(
             groupRepository = account.groups,
             avatars = AvatarIcons(context, account.files, parts.appearance, parts.ioDispatcher),
             slot = account.slot,
+            localNames = localNamesOf(account, parts),
         )
     private val manager = NotificationManagerCompat.from(context)
     private val mutex = Mutex()
@@ -627,3 +637,12 @@ internal class EarlierGroups(
 
 /** A step without a logged-in account: its notifications and shortcuts must go. */
 private fun AuthStep.isSignedOut(): Boolean = this != AuthStep.Initializing && this != AuthStep.Ready
+
+/** The names [account]'s notifications take in place of their chats' titles; none without its notes or the setting. */
+private fun localNamesOf(
+    account: NotificationAccount,
+    parts: AccountNotificationParts,
+): LocalChatNamesRepository? {
+    val notes = account.chatNotes ?: return null
+    return parts.notesAndNames?.let { NotesLocalChatNamesRepository(notes, it) }
+}
