@@ -218,14 +218,8 @@ internal fun ConversationRoute(
     val sharedMedia = LocalSharedMediaShapes.current
     val onEvent: (ChatEvent) -> Unit =
         remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel, sharedMedia) {
-            { event ->
+            sharedMedia.readyingOpenedMedia { event ->
                 when (event) {
-                    is ChatEvent.OpenMedia -> {
-                        // Its bubble readies the transform into the viewer before the viewer composes.
-                        sharedMedia?.opening(event.messageId)
-                        viewModel.onEvent(event)
-                    }
-
                     is SuggestedPostEvent -> {
                         suggestedPostsViewModel.onEvent(event)
                     }
