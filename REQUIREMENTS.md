@@ -335,6 +335,15 @@ decision 2026-11-23).
   on the phone with the account's data, never sent to Telegram, and go into backups (the same account only, never of
   secret or locked chats). Settings → Chats → "Notes and names on this phone", on by default, says which chats it is
   for: off, Telegram's names show again and what the user wrote is kept.
+- FR-X21 Should: **Muted words** (owner decisions 2026-11-25). Settings → Chats → "Muted words": a switch, off by
+  default, above the user's words and phrases (up to 100, each up to 64 characters), which can be added while it is
+  off. While on, a message in a basic group, a supergroup or a forum topic whose text or caption has one (whole words,
+  any letter case, with or without accents; within the text in scripts written without spaces, such as Chinese,
+  Japanese and Thai) shows as a line, "Message from Ada · muted word · Tap to show", which shows it until the user
+  leaves the chat. Never channels or private chats, never the user's own messages, never a message that mentions or
+  replies to the user, never service or sponsored messages (Telegram's terms). The chat list's preview and
+  notifications say "Message with a muted word" instead of its text. Nothing is deleted or marked read; the words stay
+  on the phone, are never sent to Telegram, and go into backups.
 
 ## 6. Non-functional requirements
 

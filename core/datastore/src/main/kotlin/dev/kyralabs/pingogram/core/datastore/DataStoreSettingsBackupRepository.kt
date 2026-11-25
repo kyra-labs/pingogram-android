@@ -140,6 +140,8 @@ internal val BackedUpSettings: Set<String> =
         "keyword_alerts.alert_when_muted",
         "keyword_alerts.show_in_chat_list",
         "language.app_language",
+        "muted_words.enabled",
+        "muted_words.words",
         "notifications.from_all_accounts",
         "notifications.keep_connected",
         "playback.raise_to_listen",

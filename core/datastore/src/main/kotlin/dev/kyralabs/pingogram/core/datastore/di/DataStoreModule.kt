@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeywordAlertsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreMutedWordsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
@@ -39,6 +40,7 @@ import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordAlertsRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
@@ -91,6 +93,9 @@ interface DataStoreModule {
 
     @Binds
     fun keywordAlertsRepository(repository: DataStoreKeywordAlertsRepository): KeywordAlertsRepository
+
+    @Binds
+    fun mutedWordsRepository(repository: DataStoreMutedWordsRepository): MutedWordsRepository
 
     @Binds
     fun transcriptionSettingsRepository(

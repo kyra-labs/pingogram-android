@@ -49,6 +49,22 @@ class KeywordMatcherTest {
     }
 
     @Test
+    fun `within unspaced scripts a word matches inside the text, elsewhere still whole`() {
+        val matcher = KeywordMatcher(listOf("剧透", "ネタバレ", "สปอยล์", "spoiler"), withinUnspacedScripts = true)
+
+        assertEquals(listOf("剧透"), matcher.matches("这一集有剧透了").map { it.word })
+        assertEquals(listOf("ネタバレ"), matcher.matches("これはネタバレです").map { it.word })
+        assertEquals(listOf("สปอยล์"), matcher.matches("ระวังสปอยล์นะ").map { it.word })
+        assertTrue(matcher.matches("spoilers ahead").isEmpty())
+        assertEquals(listOf("spoiler"), matcher.matches("spoiler ahead").map { it.word })
+    }
+
+    @Test
+    fun `keyword alerts keep whole words in unspaced scripts`() {
+        assertTrue(KeywordMatcher(listOf("剧透")).matches("这一集有剧透了").isEmpty())
+    }
+
+    @Test
     fun `blank words look for nothing`() {
         val matcher = KeywordMatcher(listOf("  ", ""))
 

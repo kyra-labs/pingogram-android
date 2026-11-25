@@ -13,11 +13,14 @@ data class KeywordMatch(
 /**
  * Finds the user's keyword alert [words] in texts (board 30, owner decision 2026-11-15): whole words or phrases, any
  * letter case, with or without accents ("cafe" finds "Café"), no patterns. A match must not have a letter or digit just
- * before or after it, so "launch" does not match "relaunched" and "0.9.4" does not match "0.9.45". Runs on this phone
- * only. Made once per list of words; [matches] is safe from any thread.
+ * before or after it, so "launch" does not match "relaunched" and "0.9.4" does not match "0.9.45". With
+ * [withinUnspacedScripts] (muted words, owner decision 2026-11-25), a word that starts or ends in a script written
+ * without spaces (Chinese, Japanese, Thai and the like) matches within the text at that end. Runs on this phone only.
+ * Made once per list of words; [matches] is safe from any thread.
  */
 class KeywordMatcher(
     words: List<String>,
+    private val withinUnspacedScripts: Boolean = false,
 ) {
     private val needles: List<Pair<String, String>> =
         words
@@ -37,7 +40,7 @@ class KeywordMatcher(
             needles.flatMap { (word, needle) ->
                 generateSequence(folded.text.indexOf(needle)) { from -> folded.text.indexOf(needle, from + 1) }
                     .takeWhile { it >= 0 }
-                    .filter { start -> folded.isWholeWord(start, start + needle.length) }
+                    .filter { start -> folded.isWholeWord(start, start + needle.length, edgesOf(needle)) }
                     .map { start ->
                         KeywordMatch(word, folded.original(start), folded.originalEnd(start + needle.length))
                     }.toList()
@@ -48,6 +51,27 @@ class KeywordMatcher(
                 if (kept.lastOrNull()?.let { match.start < it.end } != true) kept += match
                 kept
             }
+    }
+
+    /** Which ends of [needle] need a word boundary: both, unless [withinUnspacedScripts] frees an unspaced end. */
+    private fun edgesOf(needle: String): Edges =
+        if (!withinUnspacedScripts) {
+            Edges.Both
+        } else {
+            Edges(
+                start = !needle.codePointAt(0).isUnspaced(),
+                end = !needle.codePointBefore(needle.length).isUnspaced(),
+            )
+        }
+
+    /** Whether a match must have no letter or digit just before it ([start]) and just after it ([end]). */
+    private data class Edges(
+        val start: Boolean,
+        val end: Boolean,
+    ) {
+        companion object {
+            val Both = Edges(start = true, end = true)
+        }
     }
 
     /** The first match in [text], if any. */
@@ -66,14 +90,30 @@ class KeywordMatcher(
         fun isWholeWord(
             start: Int,
             end: Int,
+            edges: Edges,
         ): Boolean {
             val before = text.getOrNull(start - 1)
             val after = text.getOrNull(end)
-            return (before == null || !before.isLetterOrDigit()) && (after == null || !after.isLetterOrDigit())
+            return (!edges.start || before == null || !before.isLetterOrDigit()) &&
+                (!edges.end || after == null || !after.isLetterOrDigit())
         }
     }
 
     companion object {
+        /** The scripts written without spaces between words. */
+        private val UNSPACED_SCRIPTS =
+            setOf(
+                Character.UnicodeScript.HAN,
+                Character.UnicodeScript.HIRAGANA,
+                Character.UnicodeScript.KATAKANA,
+                Character.UnicodeScript.THAI,
+                Character.UnicodeScript.LAO,
+                Character.UnicodeScript.KHMER,
+                Character.UnicodeScript.MYANMAR,
+            )
+
+        private fun Int.isUnspaced(): Boolean = Character.UnicodeScript.of(this) in UNSPACED_SCRIPTS
+
         /** What two words are compared by: [word] trimmed, in lower case, without its accents. */
         fun keyOf(word: String): String = fold(word.trim()).text
 
