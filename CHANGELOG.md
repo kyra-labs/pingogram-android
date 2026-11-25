@@ -12,6 +12,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone
   no longer redraws the blur for every frame they move.
+- Rotating the phone, folding or unfolding it, resizing the app's window and switching dark mode no longer reload the
+  app: what is on screen stays where it was, and the colors change smoothly.
 
 ## [2.5.0] - 2026-11-25
 
