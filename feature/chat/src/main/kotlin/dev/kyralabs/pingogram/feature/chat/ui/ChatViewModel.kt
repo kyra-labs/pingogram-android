@@ -313,15 +313,17 @@ import java.util.concurrent.TimeUnit.SECONDS
  *
  * It takes one repository per kind of data the screen combines or changes, plus the player, clock, dispatcher,
  * language, time patterns and log that tests replace, hence `LongParameterList` is suppressed. Each part of the
- * conversation is a class of its own (the list above); what is left here wires them into one state and one event
- * handler, which grows by a few lines with each part, hence `LargeClass` is suppressed. The conversation destination
- * and the detail pane of the Chats tab create it with their [chatId] (and the destination with its route's
- * [initialMessageId]) through [Factory].
+ * conversation is a class of its own (the list above), mapped into one state by [ChatStateMapper]; what is left here
+ * makes the parts and wires them into that state and one event handler, hence `LargeClass` is suppressed. The
+ * conversation destination and the detail pane of the Chats tab create it with their [chatId] (and the destination
+ * with its route's [initialMessageId]) through [Factory].
  */
 @Suppress(
     "LongParameterList",
-    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands, ChatBotButtons,
-    // ChatInlineBots…); what is left here wires them into one state and one event handler.
+    // One part per feature of the conversation, each its own class; the state mapping, the event routing, the replied
+    // messages, the lookups and the message features are held elsewhere. The bots', the composer's, the message
+    // actions' and the selection's parts are made here until a feature next touches them, which moves them into
+    // holders over ChatPartContext. The two constructors' parameter lists stay: tests use one, Hilt the other.
     "LargeClass",
 )
 @OptIn(ExperimentalCoroutinesApi::class)
