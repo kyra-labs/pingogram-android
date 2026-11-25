@@ -216,6 +216,8 @@ interface AccountRepositories {
 
     fun birthdayReminderRepository(): BirthdayReminderRepository
 
+    fun chatNoteRepository(): ChatNoteRepository
+
     fun bookmarkRepository(): BookmarkRepository
 
     fun snippetRepository(): SnippetRepository

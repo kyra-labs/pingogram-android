@@ -106,6 +106,12 @@ fun AvatarShape.rememberPolygon(size: Dp): RoundedPolygon {
     }
 }
 
+/**
+ * The photo mask of this kind of chat's polygon ([AvatarMask]); null for a circle or a forum's rounded square, which
+ * the GPU clips without one.
+ */
+internal fun AvatarShape.photoMask(): AvatarMask? = kindPolygon()?.let { AvatarMask(this, it) }
+
 /** The shape of this kind of chat (`docs/DESIGN_SYSTEM.md` §13.2), null where it keeps a circle. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun AvatarShape.kindPolygon(): RoundedPolygon? =

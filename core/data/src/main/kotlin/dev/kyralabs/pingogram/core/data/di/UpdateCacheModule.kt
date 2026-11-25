@@ -7,6 +7,7 @@ import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.FileBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
+import dev.kyralabs.pingogram.core.data.repository.FileChatNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
@@ -114,6 +115,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun birthdayReminderCache(repository: FileBirthdayReminderRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it deletes the account's chat notes and names when it logs out. */
+    @Binds
+    @IntoSet
+    fun chatNoteCache(repository: FileChatNoteRepository): TdlibUpdateCache
 
     /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
     @Binds

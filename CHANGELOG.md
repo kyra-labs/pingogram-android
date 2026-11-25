@@ -12,6 +12,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone
   no longer redraws the blur for every frame they move.
+- Lists with group and channel photos, and messages with custom emoji, take less work to draw while they scroll.
 - Conversations with many photos, videos and stickers do less work for each of them while they scroll.
 
 ## [2.5.0] - 2026-11-25
