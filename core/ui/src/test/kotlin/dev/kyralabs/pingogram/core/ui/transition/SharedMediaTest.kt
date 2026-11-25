@@ -118,7 +118,7 @@ class SharedMediaTest {
     }
 
     @Test
-    fun `in both scopes the bounds are shared`() {
+    fun `in both scopes a bubble's media is ready to share, its corners published`() {
         val base = Modifier.size(48.dp)
 
         assertNotSame(base, base.sharedIn { content -> InScopes(content) })
@@ -229,6 +229,83 @@ class SharedMediaTest {
         assertFalse(shapes.isInViewer(MESSAGE))
         composeRule.onNodeWithTag("viewer").assertDoesNotExist()
         composeRule.onNodeWithTag("bubble").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a bubble sets up its side of the transform only while a viewer's page shows its media`() {
+        var showViewer by mutableStateOf(false)
+        lateinit var bubble: Modifier
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        Box {
+                            bubble = Modifier.size(48.dp).sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                            Box(bubble)
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        // Its size and its published corners: nothing of the transform.
+        val idle = bubble.elementCount()
+
+        showViewer = true
+        composeRule.waitForIdle()
+        val inViewer = bubble.elementCount()
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertEquals(2, idle)
+        assertTrue("$inViewer elements while shared", inViewer > idle)
+        assertEquals(idle, bubble.elementCount())
+    }
+
+    private fun Modifier.elementCount() = foldIn(0) { count, _ -> count + 1 }
+
+    @Test
+    fun `a bubble whose media is opening sets up its side before the viewer's page composes`() {
+        var showViewer by mutableStateOf(false)
+        lateinit var shapes: SharedMediaShapes
+        lateinit var bubble: Modifier
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                SharedTransitionLayout {
+                    ProvideSharedTransitionScope(this) {
+                        shapes = LocalSharedMediaShapes.current!!
+                        Box {
+                            bubble = Modifier.size(48.dp).sharedMediaBounds(MESSAGE, MaterialTheme.shapes.large)
+                            Box(bubble)
+                            AnimatedVisibility(visible = showViewer, label = "overlay") {
+                                ProvideNavAnimatedVisibilityScope(this) {
+                                    Box(Modifier.size(200.dp).sharedMediaViewerBounds(MESSAGE))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val idle = bubble.elementCount()
+
+        composeRule.runOnUiThread { shapes.opening(MESSAGE) }
+        composeRule.waitForIdle()
+        val opening = bubble.elementCount()
+        showViewer = true
+        composeRule.waitForIdle()
+        showViewer = false
+        composeRule.waitForIdle()
+
+        assertTrue("$opening elements while opening", opening > idle)
+        // The page took it over as it came, and once it left, nothing is opening any more.
+        assertEquals(idle, bubble.elementCount())
     }
 
     @Test
