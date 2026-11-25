@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.backup
 
 import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
+import kotlinx.collections.immutable.toImmutableSet
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -155,7 +156,7 @@ internal object BackupFile {
                             (0 until sections.length())
                                 .mapNotNull { index ->
                                     BackupSection.entries.firstOrNull { it.key == sections.getString(index) }
-                                }.toSet(),
+                                }.toImmutableSet(),
                     ),
                 salt = Base64.getDecoder().decode(header.getString(SALT)),
                 rounds =

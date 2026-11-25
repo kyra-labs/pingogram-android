@@ -12,6 +12,8 @@ import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.model.BackupSection
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupSettingsRepository
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,7 +46,7 @@ class DocumentBackupFolderRepositoryTest {
 
             val kept = repository.keep(TREE)
 
-            assertEquals(Outcome.Success(BackupFolder(TREE, "Backups", emptyList())), kept)
+            assertEquals(Outcome.Success(BackupFolder(TREE, "Backups", persistentListOf())), kept)
             assertEquals(TREE, settings.folderUri.value)
             assertEquals(setOf(TREE), documents.grants)
         }
@@ -77,7 +79,7 @@ class DocumentBackupFolderRepositoryTest {
                 BackupFolder(
                     TREE,
                     "Backups",
-                    listOf(
+                    persistentListOf(
                         file,
                         BackupFileInfo(older, "Pingogram backup 2026-11-01.pgbackup", Instant.ofEpochMilli(1), 0),
                     ),
@@ -206,7 +208,9 @@ class DocumentBackupFolderRepositoryTest {
             }
 
         override suspend fun restore(backup: Backup): Outcome<BackupRestored> =
-            Outcome.Success(BackupRestored(settings = true, accounts = emptyList(), otherAccounts = emptyList()))
+            Outcome.Success(
+                BackupRestored(settings = true, accounts = persistentListOf(), otherAccounts = persistentListOf()),
+            )
     }
 
     object FixedClock : WallClock {
@@ -221,7 +225,7 @@ class DocumentBackupFolderRepositoryTest {
         const val TREE = "content://tree/backups"
         const val OTHER_TREE = "content://tree/old"
         val NOW_MILLIS = Instant.parse("2026-11-18T10:00:00Z").toEpochMilli()
-        val HEADER = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(1), setOf(BackupSection.Settings))
-        val BACKUP = Backup(HEADER, settings = null, accounts = emptyList())
+        val HEADER = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(1), persistentSetOf(BackupSection.Settings))
+        val BACKUP = Backup(HEADER, settings = null, accounts = persistentListOf())
     }
 }

@@ -33,17 +33,25 @@ internal fun AccountBackup.toJson(): JSONObject =
 internal fun JSONObject.toAccountBackup(): AccountBackup =
     AccountBackup(
         userId = getLong(USER_ID),
-        bookmarks = objects(BOOKMARKS) { it.toBookmark() },
-        tags = objects(TAGS) { BookmarkTag(it.getLong(ID), it.getString(NAME), it.getInt(COLOR)) },
-        reminders = objects(REMINDERS) { it.toReminder() },
+        bookmarks = objects(BOOKMARKS) { it.toBookmark() }.toImmutableList(),
+        tags = objects(TAGS) { BookmarkTag(it.getLong(ID), it.getString(NAME), it.getInt(COLOR)) }.toImmutableList(),
+        reminders = objects(REMINDERS) { it.toReminder() }.toImmutableList(),
         keywordHits =
             objects(KEYWORD_HITS) {
                 KeywordHit(it.getLong(CHAT_ID), it.getLong(MESSAGE_ID), it.getString(WORD), it.getLong(DATE))
-            },
-        snippets = objects(SNIPPETS) { Snippet(it.getLong(ID), it.getString(NAME), it.getString(TEXT)) },
+            }.toImmutableList(),
+        snippets =
+            objects(SNIPPETS) {
+                Snippet(it.getLong(ID), it.getString(NAME), it.getString(TEXT))
+            }.toImmutableList(),
         birthdayReminders =
-            objects(BIRTHDAY_REMINDERS) { BirthdayReminder(it.getLong(USER_ID), it.getInt(DAY), it.getInt(MONTH)) },
-        chatNotes = objects(CHAT_NOTES) { ChatNote(it.getLong(CHAT_ID), it.optString(NAME), it.optString(NOTE)) },
+            objects(BIRTHDAY_REMINDERS) {
+                BirthdayReminder(it.getLong(USER_ID), it.getInt(DAY), it.getInt(MONTH))
+            }.toImmutableList(),
+        chatNotes =
+            objects(CHAT_NOTES) {
+                ChatNote(it.getLong(CHAT_ID), it.optString(NAME), it.optString(NOTE))
+            }.toImmutableList(),
     )
 
 private fun Bookmark.toJson(): JSONObject =

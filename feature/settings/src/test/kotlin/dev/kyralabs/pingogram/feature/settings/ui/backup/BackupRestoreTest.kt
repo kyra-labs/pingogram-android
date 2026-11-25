@@ -19,6 +19,8 @@ import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -145,7 +147,12 @@ class BackupRestoreTest {
     @Test
     fun `restoring restores the opened backup and says another account's data stayed in it`() =
         runTest {
-            backups.restoring = BackupRestored(settings = true, accounts = listOf(ADA), otherAccounts = listOf(OTHER))
+            backups.restoring =
+                BackupRestored(
+                    settings = true,
+                    accounts = persistentListOf(ADA),
+                    otherAccounts = persistentListOf(OTHER),
+                )
             val viewModel = viewModel()
             val effects = effects(viewModel)
 
@@ -210,17 +217,23 @@ class BackupRestoreTest {
         val CREATED: Instant = Instant.parse("2026-11-12T09:00:00Z")
         val BACKUP =
             Backup(
-                header = BackupHeader(1, "2.4.0", CREATED, setOf(BackupSection.Settings, BackupSection.Account)),
-                settings = mapOf("stickers.loop" to false),
+                header =
+                    BackupHeader(
+                        1,
+                        "2.4.0",
+                        CREATED,
+                        persistentSetOf(BackupSection.Settings, BackupSection.Account),
+                    ),
+                settings = persistentMapOf("stickers.loop" to false),
                 accounts =
-                    listOf(
+                    persistentListOf(
                         AccountBackup(
                             ADA,
-                            bookmarks = listOf(Bookmark(1, 2, savedAt = 3)),
-                            snippets = listOf(Snippet(1, "a", "b")),
-                            birthdayReminders = listOf(BirthdayReminder(OTHER, 25, 11)),
+                            bookmarks = persistentListOf(Bookmark(1, 2, savedAt = 3)),
+                            snippets = persistentListOf(Snippet(1, "a", "b")),
+                            birthdayReminders = persistentListOf(BirthdayReminder(OTHER, 25, 11)),
                         ),
-                        AccountBackup(OTHER, snippets = listOf(Snippet(1, "c", "d"))),
+                        AccountBackup(OTHER, snippets = persistentListOf(Snippet(1, "c", "d"))),
                     ),
             )
     }

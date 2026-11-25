@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.BackupHeader
 import dev.kyralabs.pingogram.core.domain.model.BackupOpening
 import dev.kyralabs.pingogram.core.domain.model.BackupRestored
 import dev.kyralabs.pingogram.core.domain.repository.BackupRepository
+import kotlinx.collections.immutable.persistentListOf
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -16,7 +17,7 @@ import java.io.OutputStream
  */
 class FakeBackupRepository : BackupRepository {
     val restored = mutableListOf<Backup>()
-    var restoring = BackupRestored(settings = true, accounts = emptyList(), otherAccounts = emptyList())
+    var restoring = BackupRestored(settings = true, accounts = persistentListOf(), otherAccounts = persistentListOf())
     var failure: DomainError? = null
 
     override suspend fun write(

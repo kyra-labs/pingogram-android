@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 
 /**
@@ -11,7 +15,7 @@ data class BackupHeader(
     val formatVersion: Int,
     val appVersion: String,
     val createdAt: Instant,
-    val sections: Set<BackupSection>,
+    val sections: ImmutableSet<BackupSection>,
 )
 
 /**
@@ -29,8 +33,8 @@ enum class BackupSection {
  */
 class Backup(
     val header: BackupHeader,
-    val settings: Map<String, Any>?,
-    val accounts: List<AccountBackup>,
+    val settings: ImmutableMap<String, Any>?,
+    val accounts: ImmutableList<AccountBackup>,
 ) {
     override fun toString() = "Backup(header=$header, settings=${settings?.size}, accounts=$accounts)"
 }
@@ -42,13 +46,13 @@ class Backup(
  */
 data class AccountBackup(
     val userId: Long,
-    val bookmarks: List<Bookmark> = emptyList(),
-    val tags: List<BookmarkTag> = emptyList(),
-    val reminders: List<MessageReminder> = emptyList(),
-    val keywordHits: List<KeywordHit> = emptyList(),
-    val snippets: List<Snippet> = emptyList(),
-    val birthdayReminders: List<BirthdayReminder> = emptyList(),
-    val chatNotes: List<ChatNote> = emptyList(),
+    val bookmarks: ImmutableList<Bookmark> = persistentListOf(),
+    val tags: ImmutableList<BookmarkTag> = persistentListOf(),
+    val reminders: ImmutableList<MessageReminder> = persistentListOf(),
+    val keywordHits: ImmutableList<KeywordHit> = persistentListOf(),
+    val snippets: ImmutableList<Snippet> = persistentListOf(),
+    val birthdayReminders: ImmutableList<BirthdayReminder> = persistentListOf(),
+    val chatNotes: ImmutableList<ChatNote> = persistentListOf(),
 ) {
     override fun toString() =
         "AccountBackup(bookmarks=${bookmarks.size}, tags=${tags.size}, reminders=${reminders.size}, " +
@@ -81,6 +85,6 @@ sealed interface BackupOpening {
  */
 data class BackupRestored(
     val settings: Boolean,
-    val accounts: List<Long>,
-    val otherAccounts: List<Long>,
+    val accounts: ImmutableList<Long>,
+    val otherAccounts: ImmutableList<Long>,
 )

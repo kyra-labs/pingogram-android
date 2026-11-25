@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAutomaticBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupFolderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBackupRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -76,7 +77,7 @@ class BackupViewModelTest {
 
             viewModel.onEvent(BackupEvent.FolderPicked(TREE))
             runCurrent()
-            folders.folder.value = BackupFolder(TREE, "backups", listOf(NEWER, OLDER))
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf(NEWER, OLDER))
             runCurrent()
 
             assertEquals(BackupUiState.Content(folderName = "backups", lastBackup = NEWER), viewModel.content())
@@ -98,7 +99,7 @@ class BackupViewModelTest {
     @Test
     fun `the folder's first backup sets the password, later ones ask for it`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "backups", emptyList())
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf())
             val viewModel = viewModel()
 
             viewModel.onEvent(BackupEvent.BackUp)
@@ -106,7 +107,7 @@ class BackupViewModelTest {
             assertEquals(PasswordDialog.New, viewModel.content().password)
 
             viewModel.onEvent(BackupEvent.DismissPassword)
-            folders.folder.value = BackupFolder(TREE, "backups", listOf(OLDER))
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf(OLDER))
             runCurrent()
             viewModel.onEvent(BackupEvent.BackUp)
             runCurrent()
@@ -116,7 +117,7 @@ class BackupViewModelTest {
     @Test
     fun `backing up writes with the password typed, then says where`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "backups", emptyList())
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf())
             val viewModel = viewModel()
             val effects = effects(viewModel)
 
@@ -133,7 +134,7 @@ class BackupViewModelTest {
     @Test
     fun `a password shorter than six characters writes nothing`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "backups", emptyList())
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf())
             val viewModel = viewModel()
 
             viewModel.onEvent(BackupEvent.BackUp)
@@ -147,7 +148,7 @@ class BackupViewModelTest {
     @Test
     fun `a backup that fails says why and can be tried again`() =
         runTest {
-            folders.folder.value = BackupFolder(TREE, "backups", emptyList())
+            folders.folder.value = BackupFolder(TREE, "backups", persistentListOf())
             val viewModel = viewModel()
             val effects = effects(viewModel)
             folders.failure = DomainError.FileUnavailable
