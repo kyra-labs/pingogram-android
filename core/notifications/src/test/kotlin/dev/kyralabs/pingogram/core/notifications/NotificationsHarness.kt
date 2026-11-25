@@ -21,8 +21,10 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatNoteRepository
 import dev.kyralabs.pingogram.core.testing.FakeDirectShareRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -67,7 +69,9 @@ internal class NotificationsHarness(
 
     /** What Focus lets alert: everything at first. */
     val focus = FakeFocusGate()
-    val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files)
+    val chatNotes = FakeChatNoteRepository()
+    val notesAndNames = FakeNotesAndNamesRepository()
+    val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files, chatNotes)
 
     /** The device's accounts the renderer follows: this one; tests add others ([NotificationsHarness.account]). */
     val accounts = MutableStateFlow(listOf(account))
@@ -79,6 +83,7 @@ internal class NotificationsHarness(
             ioDispatcher = dispatcher,
             focus = focus,
             firstFrame = firstFrame,
+            notesAndNames = notesAndNames,
         )
 
     /** Whether each slot shows its notifications ("Notifications from all accounts"); every slot does at first. */

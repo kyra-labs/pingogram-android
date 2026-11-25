@@ -1,8 +1,5 @@
-package dev.kyralabs.pingogram.core.data.repository
+package dev.kyralabs.pingogram.core.domain.repository
 
-import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
-import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
-import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -11,8 +8,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * [LocalChatNamesRepository] from the account's [notes]: their names that are set, while [notesAndNames] is on. The
- * notes are read once and kept by their repository, so this adds no reading of its own.
+ * [LocalChatNamesRepository] from an account's [notes]: their names that are set, while [notesAndNames] is on. The
+ * notes are read once and kept by their repository, so this adds no reading of its own. Plain flows, so the app's
+ * graph builds it for the active account and the notifications for each account.
  */
 class NotesLocalChatNamesRepository(
     notes: ChatNoteRepository,

@@ -8,6 +8,7 @@ import android.text.Spanned
 import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import dev.kyralabs.pingogram.core.common.FirstFrameGate
+import dev.kyralabs.pingogram.core.domain.model.ChatNote
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.messageNotification
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.notificationGroup
@@ -198,6 +199,46 @@ class NotificationRendererTest {
                 },
             )
         }
+
+    @Test
+    fun `a group's notification takes the name given on this phone, and its title with the setting off`() =
+        runTest {
+            val harness = started()
+            harness.client.emit(updateBasicGroup(basicGroup(id = 5)))
+            harness.client.emit(updateNewChat(chat(id = 200, type = TdApi.ChatTypeBasicGroup(5), title = "Team")))
+            harness.chatNotes.set(ChatNote(200, name = "Launch crew"))
+            runCurrent()
+
+            harness.client.emit(groupWith(id = 9, chatId = 200, notificationId = 1))
+            runCurrent()
+            assertEquals("Launch crew", conversationTitleOf(checkNotNull(harness.posted(9))))
+
+            harness.notesAndNames.enabled.value = false
+            harness.client.emit(groupWith(id = 10, chatId = 200, notificationId = 2))
+            runCurrent()
+            assertEquals("Team", conversationTitleOf(checkNotNull(harness.posted(10))))
+        }
+
+    private fun groupWith(
+        id: Int,
+        chatId: Long,
+        notificationId: Int,
+    ) = updateNotificationGroup(
+        groupId = id,
+        chatId = chatId,
+        added =
+            listOf(
+                messageNotification(
+                    id = notificationId,
+                    message = message(id = 10L + notificationId, chatId = chatId, content = messageText("Hi")),
+                ),
+            ),
+    )
+
+    private fun conversationTitleOf(notification: Notification): String =
+        checkNotNull(NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification))
+            .conversationTitle
+            .toString()
 
     @Test
     fun `a private chat's messages each keep their lines, not one paragraph`() =
