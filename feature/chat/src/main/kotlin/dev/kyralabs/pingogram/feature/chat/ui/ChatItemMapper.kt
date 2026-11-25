@@ -167,7 +167,7 @@ internal class ItemUnit(
     val newest: Message get() = messages.first()
     val oldest: Message get() = messages.last()
     val isAlbum: Boolean get() = newest.isAlbumItem
-    val key: Any get() = if (isAlbum) albumKey(newest.mediaAlbumId) else newest.id
+    val key: Any = if (isAlbum) albumKey(newest.mediaAlbumId) else newest.id
 
     fun contains(messageId: Long): Boolean = messages.any { it.id == messageId }
 }

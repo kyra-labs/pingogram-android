@@ -272,7 +272,10 @@ sealed interface AnchorTarget {
  */
 @Immutable
 sealed interface ChatItem {
-    /** The list's key: the message id, or a string for the other entries. Saveable in a `Bundle`. */
+    /**
+     * The list's key: the message id, or a string for the other entries. Saveable in a `Bundle`. Made once, with the
+     * item: the list reads it for every entry each time the items change.
+     */
     val key: Any
 
     /** The day the item belongs to ("Today", "March 17"), for the date pill that floats over the list. */
@@ -408,7 +411,7 @@ sealed interface ChatItem {
         /** Where a forwarded message comes from, which tapping "Forwarded from …" opens; null if not forwarded. */
         val forwardSource: ForwardSource? = null,
     ) : ChatItem {
-        override val key: Any get() = album?.let { albumKey(it.id) } ?: id
+        override val key: Any = album?.let { albumKey(it.id) } ?: id
 
         /** The message whose reactions the bubble shows, and which its reaction chips change: an album's newest. */
         val reactionsMessageId: Long get() = album?.messageIds?.lastOrNull() ?: id
@@ -441,7 +444,7 @@ sealed interface ChatItem {
          */
         val birthday: ServiceBirthday? = null,
     ) : ChatItem {
-        override val key: Any get() = id
+        override val key: Any = id
 
         override fun toString() = "Service(id=$id, …)"
     }
@@ -464,7 +467,7 @@ sealed interface ChatItem {
         val epochDay: Long,
         override val date: UiText,
     ) : ChatItem {
-        override val key: Any get() = "date:$epochDay"
+        override val key: Any = "date:$epochDay"
     }
 
     /**
@@ -487,7 +490,7 @@ sealed interface ChatItem {
         val card: SponsoredCard,
         override val date: UiText,
     ) : ChatItem {
-        override val key: Any get() = sponsoredKey(card.id)
+        override val key: Any = sponsoredKey(card.id)
     }
 
     companion object {
