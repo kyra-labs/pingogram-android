@@ -10,6 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- The Feed tab shows the channel posts already on your phone at once, then the newest ones as they arrive.
 - A video that plays while it downloads takes far less memory, and a video your phone's first decoder can't play
   tries the next one instead of failing.
 - While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone

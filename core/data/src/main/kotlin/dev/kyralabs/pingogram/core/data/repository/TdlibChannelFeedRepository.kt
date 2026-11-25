@@ -45,7 +45,8 @@ import javax.inject.Inject
  * - **Refreshing** ([refresh]): `getMessages` a channel; a post it no longer returns leaves the feed.
  *
  * - **Reading**: [PAGE] posts a channel (TDLib may answer a first call with fewer, so it asks once more from the
- *   oldest), at most [PARALLEL_READS] channels at once.
+ *   oldest), at most [PARALLEL_READS] channels at once. A channel not read yet first shows what TDLib keeps of it on
+ *   the phone (`only_local`), which needs no request to the server; the server's answer then replaces it.
  * - **Seeing**: `viewMessages` with `messageSourceOther` and `force_read`, which marks posts read in a closed channel.
  */
 @AccountScoped
@@ -85,6 +86,16 @@ class TdlibChannelFeedRepository
             val channels = channels.first()
             if (channels.isEmpty()) return Outcome.Success(Unit)
             val gate = Semaphore(PARALLEL_READS)
+            // What TDLib keeps on the phone shows first, before any request to the server (docs/PERFORMANCE.md §3);
+            // only for channels the feed has read nothing of yet, which the server's answers then replace.
+            val unread = channels.filter { it.id !in held.read.value }
+            val local =
+                coroutineScope {
+                    unread
+                        .map { channel -> async { gate.withPermit { channel.id to onPhone(channel.id) } } }
+                        .awaitAll()
+                }.filter { (_, posts) -> posts.isNotEmpty() }
+            if (local.isNotEmpty()) held.updateRead { read -> read + local.filter { (id, _) -> id !in read } }
             val results =
                 coroutineScope {
                     channels
@@ -156,11 +167,16 @@ class TdlibChannelFeedRepository
             return (first + more).distinctBy(Message::id).take(PAGE)
         }
 
+        /** The channel's newest posts TDLib has on the phone, newest first; none where it has none or cannot read. */
+        private suspend fun onPhone(chatId: Long): List<Message> =
+            (history(chatId, fromMessageId = 0, onlyLocal = true) as? Outcome.Success)?.value.orEmpty()
+
         private suspend fun history(
             chatId: Long,
             fromMessageId: Long,
+            onlyLocal: Boolean = false,
         ): Outcome<List<Message>> =
-            client.request(TdApi.GetChatHistory(chatId, fromMessageId, 0, PAGE, false)).map { history ->
+            client.request(TdApi.GetChatHistory(chatId, fromMessageId, 0, PAGE, onlyLocal)).map { history ->
                 history.messages.filterNotNull().map { it.toMessage() }
             }
 
