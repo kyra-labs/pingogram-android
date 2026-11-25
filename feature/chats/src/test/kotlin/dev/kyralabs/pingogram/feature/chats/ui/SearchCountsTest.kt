@@ -121,6 +121,7 @@ class SearchCountsTest {
                 groupRepository = FakeGroupRepository(),
                 chatLock = chatLock,
                 localChatNames = FakeLocalChatNamesRepository(),
+                chatRepository = FakeChatRepository(),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
