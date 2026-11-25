@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -121,7 +122,8 @@ internal data class MessagePages(
  * the scope of the query's flow, which a new query cancels, and with it every request still waiting (TDLib's late
  * answers are dropped). Its [state] changes as answers arrive.
  *
- * - **Chats** follow [SearchRepository.searchChats]: the chats on the device, then those the server adds.
+ * - **Chats** follow [SearchRepository.searchChats]: the chats on the device, then those the server adds; the chats
+ *   whose name on this phone matches ([localChats], `REQUIREMENTS.md` FR-X20) come first.
  * - **Messages** load a page at a time: the first at once, the next on [loadMore] while there is one, never two at a
  *   time, and never after a page failed until [retry].
  * - **Retry** searches the failed sections again, and loads the failed page of messages again.
@@ -132,6 +134,7 @@ internal class QuerySearch(
     private val repository: SearchRepository,
     private val scope: CoroutineScope,
     private val now: () -> Instant = Instant::now,
+    private val localChats: suspend () -> List<Chat> = { emptyList() },
 ) {
     private val mutableState = MutableStateFlow(SearchState.Results(query, filter))
     val state: StateFlow<SearchState.Results> = mutableState
@@ -183,8 +186,9 @@ internal class QuerySearch(
     private fun searchChats() {
         mutableState.update { it.copy(chats = SearchSection.Loading) }
         scope.launch {
+            val local = localChats()
             repository.searchChats(query).collect { found ->
-                mutableState.update { it.copy(chats = found.toSection()) }
+                mutableState.update { it.copy(chats = found.after(local).toSection()) }
             }
         }
     }
@@ -278,6 +282,10 @@ private fun PublicPostSearchLimits.read(now: Instant): PostLimits =
 
 /** These pages, with no page after them. */
 private fun MessagePages.ended() = copy(nextOffset = null, isLoading = false)
+
+/** [local] chats, then these; a failure stays one, as retry searches TDLib's chats again. */
+private fun Outcome<ImmutableList<Chat>>.after(local: List<Chat>): Outcome<ImmutableList<Chat>> =
+    if (local.isEmpty() || this !is Outcome.Success) this else Outcome.Success((local + value).toImmutableList())
 
 private fun Outcome<ImmutableList<Chat>>.toSection(): SearchSection<Chat> =
     when (this) {

@@ -69,6 +69,7 @@ class SearchPostsTest {
                 groupRepository = FakeGroupRepository(),
                 chatLock = FakeChatLockRepository(),
                 localChatNames = FakeLocalChatNamesRepository(),
+                chatRepository = FakeChatRepository(),
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

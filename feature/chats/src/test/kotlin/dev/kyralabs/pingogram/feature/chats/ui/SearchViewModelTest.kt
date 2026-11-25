@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
@@ -67,6 +68,7 @@ class SearchViewModelTest {
     private val clock = FakeWallClock(NOW)
     private val chatLock = FakeChatLockRepository()
     private val localNames = FakeLocalChatNamesRepository()
+    private val chats = FakeChatRepository()
 
     @BeforeEach
     fun setUp() {
@@ -88,6 +90,7 @@ class SearchViewModelTest {
                 groupRepository = groups,
                 chatLock = chatLock,
                 localChatNames = localNames,
+                chatRepository = chats,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -350,6 +353,17 @@ class SearchViewModelTest {
             assertEquals(listOf(2L to 10L, 3L to 20L), results.messages.ids())
             assertEquals(6, results.resultCount)
             assertFalse(results.isEmpty)
+        }
+
+    @Test
+    fun `a chat named on this phone is found by that name, first, unless it is a contact's`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(7, title = "Climbing"), chat(8, title = "Ada"), chat(9))
+            users.setUsers(user(8).copy(isContact = true))
+            localNames.names.value = persistentMapOf(7L to "Book club", 8L to "Book seller", 9L to "Cooking")
+            search.onSearchChats = { flowOf(found(chat(2), chat(7))) }
+
+            assertEquals(listOf(7L, 2L), searching("book").results.chats.ids())
         }
 
     @Test

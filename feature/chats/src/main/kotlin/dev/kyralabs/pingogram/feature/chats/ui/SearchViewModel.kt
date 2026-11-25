@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -86,6 +87,7 @@ class SearchViewModel internal constructor(
     groupRepository: GroupRepository,
     chatLock: ChatLockRepository,
     localChatNames: LocalChatNamesRepository,
+    chatRepository: ChatRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -99,6 +101,7 @@ class SearchViewModel internal constructor(
         groupRepository: GroupRepository,
         chatLock: ChatLockRepository,
         localChatNames: LocalChatNamesRepository,
+        chatRepository: ChatRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -109,6 +112,7 @@ class SearchViewModel internal constructor(
         groupRepository,
         chatLock,
         localChatNames,
+        chatRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -118,6 +122,8 @@ class SearchViewModel internal constructor(
     /**
      * The people the user writes to most, read once while the screen collects, for the header ([topPeople]).
      */
+    private val localNameChats = LocalNameChats(localChatNames, userRepository, chatRepository)
+
     private val topChats: Flow<List<Chat>> =
         flow { emit(searchRepository.topPeople().getOrNull().orEmpty()) }
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
@@ -242,7 +248,10 @@ class SearchViewModel internal constructor(
         filter: SearchFilter,
     ): Flow<SearchState> =
         channelFlow {
-            val search = QuerySearch(query, filter, searchRepository, this, clock::now)
+            val search =
+                QuerySearch(query, filter, searchRepository, this, clock::now) {
+                    localNameChats.matching(query, locale())
+                }
             search.start()
             launch {
                 commands.collect { command ->
