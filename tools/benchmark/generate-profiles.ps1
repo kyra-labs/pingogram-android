@@ -3,9 +3,15 @@
 #
 #   powershell -ExecutionPolicy Bypass -File tools\benchmark\generate-profiles.ps1 [extra Gradle arguments]
 #
-# The profiles must be collected from an APK that embeds none: during collection the repeated speed-profile compiles
-# fold the APK's embedded profile into what `pm dump-profiles` returns, so every regeneration would inherit the last
-# committed profile, and the Startup Profile would hold everything the Baseline Profile does. This deletes the committed
+# Quote each -P argument, or Windows PowerShell splits it at its dots. The full command (one line):
+#   powershell -ExecutionPolicy Bypass -File tools\benchmark\generate-profiles.ps1
+#     "-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true"
+#     "-Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator"
+#
+# Start from a clean install (docs/PERFORMANCE.md §2, §9): uninstall Pingogram, install nonMinifiedRelease and sign in
+# again. During collection Android seeds the profile from the one it keeps next to the installed app, from earlier
+# installs and runs, and only an uninstall removes it; without that, every regeneration carries the last profile
+# forward and the Startup Profile holds everything the Baseline Profile does. This deletes the committed
 # profiles and the plugin's per-test files, runs `.\gradlew.bat :app:generateBaselineProfile` with the arguments given
 # (for instance -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true, §9), and restores the committed
 # profiles with git if the run fails. Run it with the phone connected and Pingogram signed in.
