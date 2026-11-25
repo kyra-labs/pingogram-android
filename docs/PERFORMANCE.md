@@ -617,6 +617,24 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     which M5 caps. The RenderThread still spends about 5 ms on each frame of the way out ("Drawing", "flush
     commands", "dequeueBuffer"). `media-viewer.sql` counted no RenderThread draws on this phone, which names them
     with their vsync id ("DrawFrames 162342341"); it matches those now.
+- Measure first (the review of 2026-11-23, v2.6.0): three costs the review suspected but no one has measured are
+  traced, to be fixed only where the owner's numbers show them slow. Sync trace sections, on the thread that does the
+  work: `passcodeHash` (one PBKDF2-HMAC-SHA512 hash of the passcode lock at 210,000 rounds, `PasscodeTrace`, when a
+  passcode is set, changed or entered), `speechPcm` (one decoded chunk of a voice or video message mixed to one
+  channel and resampled to 16 kHz for the speech recognizer, `TranscriptionTrace`) and `qrDecode` (one camera frame,
+  or a picked image, searched for a QR code as it is and inverted, `ScannerTrace`). Each costs a check of a flag
+  while no trace records the app, and records only on Android 10 and later.
+  - **To measure on the phone**: install `fossBenchmarkRelease` (profileable) and sign in, open Pingogram, then run
+    `tools/perfetto/measure-first.sh` (`powershell -ExecutionPolicy Bypass -File tools\perfetto\measure-first.ps1`).
+    It records one Perfetto trace for 120 s (`measure-first.pbtxt`; `-Seconds` or a third argument changes it) and
+    prints what to do meanwhile: with Auto-lock "Immediately", leave the app and enter the passcode 3 times;
+    transcribe a voice message of 30 s or more; scan a QR code from Contacts' Scan with the camera for 10 s, then one
+    from an image. Send back `device.txt` and `summary.txt` (`measure-first.sql`: each section's count, median, 90th
+    percentile, longest and total, the threads it ran on, and how long it waited for a core).
+  - **What would be slow**: a `passcodeHash` over about 500 ms (the lock screen waits for it; the hash runs on a
+    background dispatcher, so it stalls no frame), a voice message whose `speechPcm` total is more than a tenth of its
+    length (the recognizer waits for it), and a `qrDecode` median over 200 ms (the scanner reads at most five frames
+    a second, and skips frames while one decodes). Any of them on the main thread is a bug whatever its time.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
   budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
   baseline of the device (`benchmark/baselines/`, one file per device, such as `galaxy-s24-ultra.json`; its `commit`

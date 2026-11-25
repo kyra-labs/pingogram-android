@@ -28,7 +28,10 @@ internal class SpeechPcm(
     private var previous: Int? = null
 
     /** The bytes to hand the recognizer for [samples], interleaved input samples (a partial frame is dropped). */
-    fun convert(samples: ShortArray): ByteArray {
+    fun convert(samples: ShortArray): ByteArray =
+        TranscriptionTrace.section(TranscriptionTrace.RESAMPLE) { resample(samples) }
+
+    private fun resample(samples: ShortArray): ByteArray {
         val frames = samples.size / channels
         if (frames == 0) return ByteArray(0)
         val mono =

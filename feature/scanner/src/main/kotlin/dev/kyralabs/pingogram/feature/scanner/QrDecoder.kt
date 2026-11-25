@@ -34,7 +34,7 @@ internal class QrDecoder {
         height: Int,
     ): String? {
         val source = PlanarYUVLuminanceSource(luminance, rowStride, height, 0, 0, width, height, false)
-        return decode(source) ?: decode(source.invert())
+        return ScannerTrace.section(ScannerTrace.DECODE) { decode(source) ?: decode(source.invert()) }
     }
 
     /** The text of the QR code in [pixels], [width] × [height] ARGB colors (a picked image), or null. */
@@ -44,7 +44,7 @@ internal class QrDecoder {
         height: Int,
     ): String? {
         val source = RGBLuminanceSource(width, height, pixels)
-        return decode(source) ?: decode(source.invert())
+        return ScannerTrace.section(ScannerTrace.DECODE) { decode(source) ?: decode(source.invert()) }
     }
 
     private fun decode(source: LuminanceSource): String? =
