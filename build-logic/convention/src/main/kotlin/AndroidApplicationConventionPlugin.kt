@@ -136,7 +136,7 @@ private fun Project.configureSigning(android: ApplicationExtension) {
 
         is ReleaseSigning.Resolution.Missing -> {
             // F-Droid builds release APKs without the owner's key and signs them itself, and a reproducibility check
-            // compares an unsigned build with a signed release (docs/RELEASE.md, "F-Droid and IzzyOnDroid").
+            // compares an unsigned build with a signed release (docs/RELEASE.md, "F-Droid").
             if (providers.gradleProperty(UNSIGNED_RELEASE_PROPERTY).orNull != "true") {
                 failReleasePackaging(resolution.message)
             }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Writes the store images of fastlane/metadata/android/en-US/images/ (F-Droid, IzzyOnDroid; docs/RELEASE.md):
+# Writes the store images of fastlane/metadata/android/en-US/images/ (F-Droid; docs/RELEASE.md):
 # the 512 px icon and the 1024 × 500 feature graphic, rendered from the owner's artwork in art/ with headless
 # Chromium, and the phone and tablet screenshots, copied from docs/screenshots/ (the README's, made from the
 # Roborazzi goldens by tools/readme/screenshots.sh, so run that first after re-recording goldens).
