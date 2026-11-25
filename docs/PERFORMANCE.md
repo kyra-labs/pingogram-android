@@ -833,7 +833,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   trace sections and counters (`feature:calls`' `CallTrace`): `callFrames` (a batch handed over from NTgCalls' thread
   to the sinks), `callFrameCopy` (one frame copied and queued for its `EglRenderer`), and the frame rates `Remote.fps`
   and `Self.fps`, set once a second; the renderers draw on their own threads (`RemoteEglRenderer`,
-  `SelfEglRenderer`). `tools/perfetto/video-call.pbtxt` records them for 5 minutes with every thread's CPU time,
+  `SelfEglRenderer`) and are set up, given their surface and taken down on `CallVideoSetup` (`RendererSetup`): making
+  the EGL context and waiting for a renderer's thread never block the main thread, where the call screen composes. `tools/perfetto/video-call.pbtxt` records them for 5 minutes with every thread's CPU time,
   Pingogram's memory (RSS, anonymous, swap) once a second and the battery's current; `tools/perfetto/video-call.sh`
   runs it and adds `dumpsys meminfo` (PSS) once a minute; `tools/perfetto/video-call.sql` summarizes the trace with
   Perfetto's trace processor or in https://ui.perfetto.dev, which reads the file in the browser. The trace holds
