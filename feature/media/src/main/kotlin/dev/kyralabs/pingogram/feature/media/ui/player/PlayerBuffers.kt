@@ -11,7 +11,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
  * is (`file://`), which Media3 already sizes as local playback, or one TDLib is still downloading, read through
  * `tdlib-file://`, a scheme Media3 takes for a stream from a server, buffering 50 s and up to 131 MB of video ahead.
  * Those are sized as local playback too: time first, at least a second ahead
- * ([DefaultLoadControl.DEFAULT_MIN_BUFFER_FOR_LOCAL_PLAYBACK_MS]), then no more than [TARGET_BUFFER_BYTES].
+ * ([DefaultLoadControl.DEFAULT_MIN_BUFFER_FOR_LOCAL_PLAYBACK_MS]), then no more than about 19 MB.
  */
 @OptIn(UnstableApi::class)
 internal fun localFileLoadControl(): DefaultLoadControl =
@@ -23,7 +23,8 @@ internal fun localFileLoadControl(): DefaultLoadControl =
             DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_FOR_LOCAL_PLAYBACK_MS,
             DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_FOR_LOCAL_PLAYBACK_MS,
         ).setPrioritizeTimeOverSizeThresholdsForStreaming(true)
-        .setTargetBufferBytes(TARGET_BUFFER_BYTES)
+        // What Media3 allows local playback for video, about 19 MB.
+        .setTargetBufferBytes(DefaultLoadControl.DEFAULT_VIDEO_BUFFER_SIZE_FOR_LOCAL_PLAYBACK)
         .build()
 
 /**
@@ -33,7 +34,3 @@ internal fun localFileLoadControl(): DefaultLoadControl =
 @OptIn(UnstableApi::class)
 internal fun videoRenderers(context: Context): DefaultRenderersFactory =
     DefaultRenderersFactory(context).setEnableDecoderFallback(true)
-
-/** The most a video's buffer holds: what Media3 allows local playback, about 19 MB. */
-@OptIn(UnstableApi::class)
-internal const val TARGET_BUFFER_BYTES = DefaultLoadControl.DEFAULT_VIDEO_BUFFER_SIZE_FOR_LOCAL_PLAYBACK
