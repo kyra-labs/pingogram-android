@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkPreview
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
+import dev.kyralabs.pingogram.core.domain.model.ChatNote
 import dev.kyralabs.pingogram.core.domain.model.KeywordHit
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.model.Snippet
@@ -23,6 +24,10 @@ internal fun AccountBackup.toJson(): JSONObject =
         .put(KEYWORD_HITS, keywordHits.toJsonArray { it.toJson() })
         .put(SNIPPETS, snippets.toJsonArray { JSONObject().put(ID, it.id).put(NAME, it.name).put(TEXT, it.text) })
         .put(BIRTHDAY_REMINDERS, birthdayReminders.toJsonArray { it.toJson() })
+        .put(
+            CHAT_NOTES,
+            chatNotes.toJsonArray { JSONObject().put(CHAT_ID, it.chatId).put(NAME, it.name).put(NOTE, it.note) },
+        )
 
 /** The account section [toJson] wrote; throws `JSONException` for one that does not read. */
 internal fun JSONObject.toAccountBackup(): AccountBackup =
@@ -38,6 +43,7 @@ internal fun JSONObject.toAccountBackup(): AccountBackup =
         snippets = objects(SNIPPETS) { Snippet(it.getLong(ID), it.getString(NAME), it.getString(TEXT)) },
         birthdayReminders =
             objects(BIRTHDAY_REMINDERS) { BirthdayReminder(it.getLong(USER_ID), it.getInt(DAY), it.getInt(MONTH)) },
+        chatNotes = objects(CHAT_NOTES) { ChatNote(it.getLong(CHAT_ID), it.optString(NAME), it.optString(NOTE)) },
     )
 
 private fun Bookmark.toJson(): JSONObject =
@@ -105,6 +111,7 @@ private const val REMINDERS = "reminders"
 private const val KEYWORD_HITS = "keyword_hits"
 private const val SNIPPETS = "snippets"
 private const val BIRTHDAY_REMINDERS = "birthday_reminders"
+private const val CHAT_NOTES = "chat_notes"
 private const val ID = "id"
 private const val NAME = "name"
 private const val COLOR = "color"

@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.BirthdayReminder
 import dev.kyralabs.pingogram.core.domain.model.Bookmark
 import dev.kyralabs.pingogram.core.domain.model.BookmarkTag
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatNote
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.KeywordHit
@@ -28,11 +29,14 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.testing.FakeAccountGraphs
 import dev.kyralabs.pingogram.core.testing.FakeBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeBookmarkRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatNoteRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordHitRepository
 import dev.kyralabs.pingogram.core.testing.FakeReminderRepository
 import dev.kyralabs.pingogram.core.testing.FakeSnippetRepository
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +70,7 @@ class LocalBackupRepositoryTest {
         val hits = FakeKeywordHitRepository()
         val snippets = FakeSnippetRepository()
         val birthdays = FakeBirthdayReminderRepository()
+        val notes = FakeChatNoteRepository()
     }
 
     private val settings = FakeSettings(mapOf("appearance.theme_mode" to "Dark"))
@@ -102,6 +107,10 @@ class LocalBackupRepositoryTest {
             hits.hits.value = listOf(KeywordHit(CHAT, 13, "launch", date = 900), KeywordHit(SECRET_CHAT, 14, "x", 900))
             snippets.saved.value = listOf(Snippet(1, "addr", "1 Main St"))
             birthdays.all.value = persistentListOf(BirthdayReminder(CHAT, 25, 11), BirthdayReminder(LOCKED_CHAT, 1, 1))
+            notes.all.value =
+                listOf(ChatNote(CHAT, name = "Launch"), ChatNote(SECRET_CHAT, note = "x"), ChatNote(LOCKED_CHAT, "y"))
+                    .associateBy { it.chatId }
+                    .toPersistentMap()
         }
 
     @Test
@@ -129,6 +138,7 @@ class LocalBackupRepositoryTest {
                                 .take(1),
                         snippets = account.snippets.saved.value,
                         birthdayReminders = listOf(BirthdayReminder(CHAT, 25, 11)),
+                        chatNotes = listOf(ChatNote(CHAT, name = "Launch")),
                     ),
                 ),
                 backup.accounts,
@@ -197,6 +207,7 @@ class LocalBackupRepositoryTest {
             phone.bookmarks.saved.value = listOf(Bookmark(CHAT, 10, savedAt = 50, note = "older"))
             phone.snippets.saved.value = listOf(Snippet(3, "ADDR", "the phone's"))
             phone.birthdays.all.value = persistentListOf(BirthdayReminder(OTHER_USER, 3, 3))
+            phone.notes.all.value = persistentMapOf(OTHER_USER to ChatNote(OTHER_USER, note = "the phone's"))
             settings.values = mapOf("appearance.theme_mode" to "Light", "passcode.hash" to "kept")
 
             val restored = repository(phone).restore(backup)
@@ -216,6 +227,13 @@ class LocalBackupRepositoryTest {
                 listOf(BirthdayReminder(OTHER_USER, 3, 3), BirthdayReminder(CHAT, 25, 11)),
                 phone.birthdays.all.value,
             )
+            assertEquals(
+                mapOf(
+                    OTHER_USER to ChatNote(OTHER_USER, note = "the phone's"),
+                    CHAT to ChatNote(CHAT, name = "Launch"),
+                ),
+                phone.notes.all.value,
+            )
             assertEquals(mapOf("appearance.theme_mode" to "Dark"), settings.restored)
         }
 
@@ -234,6 +252,23 @@ class LocalBackupRepositoryTest {
             repository(phone).restore(backup)
 
             assertEquals(listOf(BirthdayReminder(CHAT, 26, 11)), phone.birthdays.all.value)
+        }
+
+    @Test
+    fun `a chat's note on the phone stays as it is`() =
+        runTest {
+            val backup =
+                Backup(
+                    header = BackupHeader(1, "2.4.0", Instant.ofEpochSecond(NOW), BOTH),
+                    settings = null,
+                    accounts = listOf(AccountBackup(USER, chatNotes = listOf(ChatNote(CHAT, name = "Old name")))),
+                )
+            val phone = Account(USER)
+            phone.notes.all.value = persistentMapOf(CHAT to ChatNote(CHAT, name = "New name"))
+
+            repository(phone).restore(backup)
+
+            assertEquals(mapOf(CHAT to ChatNote(CHAT, name = "New name")), phone.notes.all.value)
         }
 
     @Test
@@ -289,6 +324,10 @@ class LocalBackupRepositoryTest {
 
                 "birthdayReminderRepository" -> {
                     birthdays
+                }
+
+                "chatNoteRepository" -> {
+                    notes
                 }
 
                 else -> {
