@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
@@ -63,6 +64,7 @@ import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeywordHitRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MentionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -70,6 +72,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepositor
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkUsageRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
@@ -461,6 +464,13 @@ object ActiveAccountModule {
 
     @Provides
     fun chatNoteRepository(accounts: Accounts): ChatNoteRepository = accounts.active.chatNoteRepository()
+
+    /** The active account's own names for chats, while the setting shows them (`REQUIREMENTS.md` FR-X20). */
+    @Provides
+    fun localChatNamesRepository(
+        accounts: Accounts,
+        notesAndNames: NotesAndNamesRepository,
+    ): LocalChatNamesRepository = NotesLocalChatNamesRepository(accounts.active.chatNoteRepository(), notesAndNames)
 
     @Provides
     fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()
