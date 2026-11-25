@@ -217,12 +217,17 @@ internal class ExoVideoPlayer
             }
         }
 
-        /** Files on the device as they are; TDLib's (`tdlib-file://`, not a scheme of the device's) as they stream. */
+        /**
+         * Files on the device as they are; TDLib's (`tdlib-file://`, not a scheme of the device's) as they stream; both
+         * buffered as local files are ([localFileLoadControl]), a decoder that fails giving way to the next one.
+         */
         @androidx.annotation.OptIn(UnstableApi::class)
         private fun newPlayer(): ExoPlayer =
             ExoPlayer
                 .Builder(context)
                 .setLooper(Looper.getMainLooper())
+                .setRenderersFactory(videoRenderers(context))
+                .setLoadControl(localFileLoadControl())
                 .setMediaSourceFactory(
                     DefaultMediaSourceFactory(DefaultDataSource.Factory(context, TdlibDataSource.Factory(streams))),
                 ).setHandleAudioBecomingNoisy(true)
