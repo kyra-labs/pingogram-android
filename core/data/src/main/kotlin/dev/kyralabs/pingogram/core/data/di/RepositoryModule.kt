@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.FileBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
+import dev.kyralabs.pingogram.core.data.repository.FileChatNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
@@ -155,6 +156,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
@@ -569,6 +571,9 @@ interface RepositoryModule {
 
     @Binds
     fun birthdayReminderRepository(repository: FileBirthdayReminderRepository): BirthdayReminderRepository
+
+    @Binds
+    fun chatNoteRepository(repository: FileChatNoteRepository): ChatNoteRepository
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository

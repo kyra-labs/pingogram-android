@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
@@ -457,6 +458,9 @@ object ActiveAccountModule {
     @Provides
     fun birthdayReminderRepository(accounts: Accounts): BirthdayReminderRepository =
         accounts.active.birthdayReminderRepository()
+
+    @Provides
+    fun chatNoteRepository(accounts: Accounts): ChatNoteRepository = accounts.active.chatNoteRepository()
 
     @Provides
     fun bookmarkRepository(accounts: Accounts): BookmarkRepository = accounts.active.bookmarkRepository()

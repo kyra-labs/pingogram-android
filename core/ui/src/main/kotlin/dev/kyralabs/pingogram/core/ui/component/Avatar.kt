@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -44,6 +46,7 @@ import coil3.compose.LocalAsyncImagePreviewHandler
 import coil3.compose.LocalPlatformContext
 import coil3.decode.DataSource
 import coil3.request.ImageRequest
+import coil3.request.transformations
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.R
@@ -162,7 +165,7 @@ fun Avatar(
             AvatarPhoto(
                 fileId = fileId,
                 size = size,
-                shape = clipShape,
+                photoShape = rememberAvatarClip(clipShape, shape),
                 alpha = photoAlpha,
                 modifier = Modifier.matchParentSize(),
             )
@@ -186,18 +189,20 @@ private fun Modifier.fadingOutAs(photoAlpha: Animatable<Float, AnimationVector1D
 private fun AvatarPhoto(
     fileId: Int,
     size: Dp,
-    shape: Shape,
+    photoShape: AvatarClip,
     alpha: Animatable<Float, AnimationVector1D>,
     modifier: Modifier,
 ) {
     val context = LocalPlatformContext.current
     val sizePx = with(LocalDensity.current) { size.roundToPx().coerceAtLeast(1) }
+    val mask = photoShape.mask
     val request =
-        remember(context, fileId, sizePx) {
+        remember(context, fileId, sizePx, mask) {
             ImageRequest
                 .Builder(context)
                 .data(TdlibFileImage(fileId))
                 .size(sizePx)
+                .apply { if (mask != null) transformations(mask) }
                 .build()
         }
     val scope = rememberCoroutineScope()
@@ -208,8 +213,10 @@ private fun AvatarPhoto(
         modifier =
             modifier.graphicsLayer {
                 this.alpha = alpha.value
-                this.shape = shape
-                clip = true
+                if (mask == null) {
+                    shape = photoShape.shape
+                    clip = true
+                }
             },
         contentScale = ContentScale.Crop,
         onSuccess = { state ->

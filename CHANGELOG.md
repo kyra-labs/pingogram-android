@@ -10,8 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- A video that plays while it downloads takes far less memory, and a video your phone's first decoder can't play
+  tries the next one instead of failing.
 - While a message's menu is open, the stickers, custom emoji and typing dots behind its blur hold still, so the phone
   no longer redraws the blur for every frame they move.
+- Lists with group and channel photos, and messages with custom emoji, take less work to draw while they scroll.
 - Rotating the phone, folding or unfolding it, resizing the app's window and switching dark mode no longer reload the
   app: what is on screen stays where it was, and the colors change smoothly.
 

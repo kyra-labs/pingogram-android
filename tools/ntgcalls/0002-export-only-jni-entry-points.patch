@@ -1,0 +1,50 @@
+diff --git a/cmake/Android.cmake b/cmake/Android.cmake
+index 1b55384..61a9ae2 100644
+--- a/cmake/Android.cmake
++++ b/cmake/Android.cmake
+@@ -3,6 +3,12 @@ if (ANDROID_ABI STREQUAL "arm64-v8a")
+         -fexperimental-relative-c++-abi-vtables
+     )
+ endif ()
++# Pingogram: one section per function and per object, so that --gc-sections (targets/android/app/src/main/jni) drops
++# each function no JNI entry point reaches, not only whole object files.
++target_compile_options(${target_name} PRIVATE
++    -ffunction-sections
++    -fdata-sections
++)
+ target_link_options(${target_name} PRIVATE
+     -Wl,-z,max-page-size=16384
+ )
+diff --git a/targets/android/app/src/main/jni/CMakeLists.txt b/targets/android/app/src/main/jni/CMakeLists.txt
+index 2006f79..4a0f29b 100644
+--- a/targets/android/app/src/main/jni/CMakeLists.txt
++++ b/targets/android/app/src/main/jni/CMakeLists.txt
+@@ -32,5 +32,11 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE NTgCalls::ntgcalls android l
+ target_link_options(${CMAKE_PROJECT_NAME}
+     PRIVATE
+     -Wl,--undefined-glob=Java_*
++    # Pingogram: export only the JNI entry points, drop the sections no entry point reaches, and pack the relocations
++    # (Android's packed format, read by the loader from API 23; Pingogram's minSdk is 26).
++    -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/ntgcalls.map
++    -Wl,--gc-sections
++    -Wl,--pack-dyn-relocs=android
+ )
++set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ntgcalls.map)
+ include(${ANDROID_CMAKE_DIR})
+diff --git a/targets/android/app/src/main/jni/ntgcalls.map b/targets/android/app/src/main/jni/ntgcalls.map
+new file mode 100644
+index 0000000..04ab548
+--- /dev/null
++++ b/targets/android/app/src/main/jni/ntgcalls.map
+@@ -0,0 +1,11 @@
++/* What libntgcalls.so exports: the JNI entry points, nothing else (Pingogram). Java_* are the native methods of
++   classes.jar (io.github.pytgcalls) and libs/webrtc.jar (org.webrtc, J.N), which the runtime finds by name;
++   JNI_OnLoad is called once the library is loaded. Everything else is local, so --gc-sections can drop what no entry
++   point reaches, and the dynamic symbol table holds a few hundred names instead of thousands. */
++{
++  global:
++    Java_*;
++    JNI_OnLoad;
++  local:
++    *;
++};

@@ -177,8 +177,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   files seen downloaded in full show again without a `getFile`.
 - Streaming (`docs/adr/0028-streaming-media.md`): a video that plays as it downloads downloads from where it plays at
   32, as visible media, and only while the player reads it: closing the viewer, turning the page or seeking elsewhere
-  stops it (`cancelDownloadFile`, what came stays). It holds Media3's default buffer (50 s of media at most) and no copy
-  of the file; each read that waits costs a `getFile` and, when it moves, a `downloadFile`.
+  stops it (`cancelDownloadFile`, what came stays). Its buffer is sized as a file on the phone is (`PlayerBuffers.kt`):
+  time first, at least a second ahead, then about 19 MB at most, where Media3 would size `tdlib-file://` as a server's
+  stream, 50 s and up to 131 MB of video; it keeps no copy of the file. Each read that waits costs a `getFile` and,
+  when it moves, a `downloadFile`. A video decoder that fails to start gives way to the device's next one.
 - Auto-download rules per network type (the default network from `ConnectivityManager`'s callback: Wi-Fi, mobile,
   roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
   Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
@@ -327,6 +329,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below. A blur is drawn again
   whenever what it covers changes: endless animations under one hold still while it shows (`LocalAnimationsPaused`,
   `core:ui`; the conversation behind the floating message menu), stickers and custom emoji on their frame.
+- No path clips on scrolling content: the GPU clips rects and round rects analytically but turns a path into a mask
+  on every draw. A group's, channel's, Saved Messages' or community's avatar photo is cut to its polygon once, off the
+  main thread, and kept in Coil's memory cache (`AvatarMask`), then drawn unclipped; circles and forums' rounded
+  squares keep their clip. Custom emoji are cut out of their text with one rect clip per glyph.
 
 ### Overdraw
 
