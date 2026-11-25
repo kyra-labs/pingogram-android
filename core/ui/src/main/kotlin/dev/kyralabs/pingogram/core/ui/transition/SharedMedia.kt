@@ -176,10 +176,21 @@ fun Modifier.sharedMediaBounds(
     shape: CornerBasedShape,
     enabled: Boolean = true,
 ): Modifier {
-    val shapes = LocalSharedMediaShapes.current ?: return this
-    if (!enabled || LocalSharedTransitionScope.current == null || isReducedMotion()) return this
+    val shapes = LocalSharedMediaShapes.current
+    if (shapes == null || !enabled || LocalSharedTransitionScope.current == null || isReducedMotion()) return this
     val inViewer by remember(shapes, messageId) { derivedStateOf { shapes.isInViewer(messageId) } }
-    if (!inViewer) return then(PublishedMediaShapeElement(shapes, messageId, shape))
+    // Not in the viewer: no transform to set up, only the corners for a page to read once it shows this media.
+    val published = PublishedMediaShapeElement(shapes, messageId, shape)
+    return if (inViewer) sharedWithViewer(shapes, messageId, shape) else then(published)
+}
+
+/** The bubble's side of [sharedMediaBounds] while a viewer's page shows the media of message [messageId]. */
+@Composable
+private fun Modifier.sharedWithViewer(
+    shapes: SharedMediaShapes,
+    messageId: Long,
+    shape: CornerBasedShape,
+): Modifier {
     // The viewer is an overlay above the conversation, which stays on screen (core:ui's OverlayNavigator): the media
     // goes with the viewer, not with the conversation's own destination.
     val viewer = rememberViewerVisibility(shapes, messageId)
@@ -192,7 +203,7 @@ fun Modifier.sharedMediaBounds(
             SharedMediaKey(messageId),
             shape,
             FullBleedCounterpart,
-            enabled,
+            enabled = true,
             visibilityScope = viewer,
             resizeMode = BubbleResizeMode,
             fastFade = true,
