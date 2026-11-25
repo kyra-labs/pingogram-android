@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.domain.model
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * What the info page of a group or channel shows about it beyond its [Chat] (`REQUIREMENTS.md` FR-P3), from
@@ -290,7 +291,7 @@ data class MemberPermissions(
 /**
  * The slow mode delays Telegram accepts, in seconds (td_api.tl `setChatSlowModeDelay`): off, then 5 s up to an hour.
  */
-val SlowModeDelays: List<Int> = listOf(0, 5, 10, 30, 60, 300, 900, 3600)
+val SlowModeDelays: ImmutableList<Int> = persistentListOf(0, 5, 10, 30, 60, 300, 900, 3600)
 
 /**
  * An invite link of a group or channel (td_api.tl `chatInviteLink`). Times are Unix timestamps in seconds.

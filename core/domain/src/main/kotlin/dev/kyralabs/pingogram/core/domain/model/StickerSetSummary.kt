@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+
 /**
  * A sticker set without its stickers (`REQUIREMENTS.md` FR-C5: the sticker panel, Settings → Stickers): its [title],
  * its short [name] (`t.me/addstickers/<name>`), how many stickers it has ([size]) and the sticker that stands for it
@@ -25,7 +27,7 @@ data class StickerSetSummary(
 /** A sticker set with its [stickers], in their order, as [StickerSetSummary.cover] and its flags describe it. */
 data class StickerSetDetails(
     val set: StickerSetSummary,
-    val stickers: List<Sticker>,
+    val stickers: ImmutableList<Sticker>,
 )
 
 /**

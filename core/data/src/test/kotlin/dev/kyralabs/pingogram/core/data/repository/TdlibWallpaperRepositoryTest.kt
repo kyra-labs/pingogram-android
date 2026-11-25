@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -78,7 +79,10 @@ class TdlibWallpaperRepositoryTest {
 
             assertEquals(
                 Outcome.Success(
-                    listOf(Wallpaper.Fill(3, listOf(0x112233, 0x445566), 45), Wallpaper.Fill(4, listOf(1, 2, 3))),
+                    listOf(
+                        Wallpaper.Fill(3, persistentListOf(0x112233, 0x445566), 45),
+                        Wallpaper.Fill(4, persistentListOf(1, 2, 3)),
+                    ),
                 ),
                 installed,
             )
@@ -94,7 +98,7 @@ class TdlibWallpaperRepositoryTest {
 
             val set =
                 repository.setDefault(
-                    WallpaperChoice.Existing(pattern, patternFill = listOf(0xAABBCC, 0x445566)),
+                    WallpaperChoice.Existing(pattern, patternFill = persistentListOf(0xAABBCC, 0x445566)),
                     false,
                 )
 

@@ -84,7 +84,7 @@ class WallpaperPickerTest {
             runCurrent()
 
             assertEquals(
-                WallpaperChoice.Existing(PATTERN, patternFill = listOf(0x112233)),
+                WallpaperChoice.Existing(PATTERN, patternFill = persistentListOf(0x112233)),
                 wallpapers.defaultsSet.single().first,
             )
         }
@@ -142,7 +142,7 @@ class WallpaperPickerTest {
     private companion object {
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(20, 0), isVector = true), 50, false)
-        val FILL = Wallpaper.Fill(3, listOf(0xFFFFFF))
+        val FILL = Wallpaper.Fill(3, persistentListOf(0xFFFFFF))
         const val SCREEN_SIDE = 2400
     }
 }

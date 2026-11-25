@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.phone
 
 import dev.kyralabs.pingogram.core.domain.model.Country
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -13,7 +14,7 @@ class PhoneNumbersTest {
         iso: String,
         vararg callingCodes: String,
         isHidden: Boolean = false,
-    ) = Country(iso, iso, iso, "", callingCodes.toList(), isHidden)
+    ) = Country(iso, iso, iso, "", callingCodes.toList().toImmutableList(), isHidden)
 
     private val countries =
         listOf(country("US", "1"), country("AS", "1684"), country("GB", "44"), country("XX", "4", isHidden = true))

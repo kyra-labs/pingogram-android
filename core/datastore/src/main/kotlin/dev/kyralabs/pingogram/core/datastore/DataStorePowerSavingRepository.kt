@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingSettings
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingRepository
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -40,7 +41,7 @@ class DataStorePowerSavingRepository
                     val kept = preferences[KEPT_ON].orEmpty()
                     PowerSavingSettings(
                         mode = PowerSavingMode.entries.find { it.name == preferences[MODE] } ?: defaults.mode,
-                        parts = PowerSavingPart.entries.filterTo(mutableSetOf()) { it.name !in kept },
+                        parts = PowerSavingPart.entries.filter { it.name !in kept }.toImmutableSet(),
                     )
                 }.distinctUntilChanged()
 

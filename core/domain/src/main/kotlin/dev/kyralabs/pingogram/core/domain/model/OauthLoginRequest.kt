@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+
 /**
  * A website's or an app's request to log in with the Telegram account (td_api.tl `oauthLinkInfo`, "Log in with
  * Telegram").
@@ -27,7 +29,7 @@ data class OauthLoginRequest(
     val browser: String,
     val platform: String,
     val location: String,
-    val matchCodes: List<String>,
+    val matchCodes: ImmutableList<String>,
 ) {
     /** The user picks the code the website shows before anything else. */
     val needsMatchCode: Boolean

@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -131,5 +132,5 @@ private const val GROUND = 0xFFE6B87A.toInt()
 private val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(PHOTO_FILE, 0)), isBlurred = false)
 private val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(PATTERN_FILE, 0), isVector = true), 50, false)
 private val INVERTED_PATTERN = PATTERN.copy(id = 3, isInverted = true)
-private val ROTATED_FILL = Wallpaper.Fill(4, listOf(0x8EC5FC, 0xE0C3FC), rotationDegrees = 45)
-private val FREEFORM_FILL = Wallpaper.Fill(5, listOf(0xDBDDBB, 0x6BA587, 0xD5D88D, 0x88B884))
+private val ROTATED_FILL = Wallpaper.Fill(4, persistentListOf(0x8EC5FC, 0xE0C3FC), rotationDegrees = 45)
+private val FREEFORM_FILL = Wallpaper.Fill(5, persistentListOf(0xDBDDBB, 0x6BA587, 0xD5D88D, 0x88B884))

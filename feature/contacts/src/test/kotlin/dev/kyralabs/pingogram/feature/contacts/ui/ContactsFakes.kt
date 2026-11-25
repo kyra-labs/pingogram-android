@@ -191,8 +191,8 @@ class FakeCountryRepository : CountryRepository {
     }
 
     companion object {
-        val UK = Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", listOf("44"), isHidden = false)
-        val US = Country("US", "United States", "United States", "🇺🇸", listOf("1"), isHidden = false)
+        val UK = Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", persistentListOf("44"), isHidden = false)
+        val US = Country("US", "United States", "United States", "🇺🇸", persistentListOf("1"), isHidden = false)
     }
 }
 

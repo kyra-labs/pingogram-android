@@ -4,6 +4,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatWallpaperOverride
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 
 /** The MIME type of a vector pattern (td_api.tl `backgroundTypePattern`: a gzipped subset of SVG). */
@@ -42,9 +44,9 @@ private fun TdApi.Document.toWallpaperImage() =
 
 private fun TdApi.BackgroundFill.toFill(id: Long): Wallpaper.Fill? =
     when (this) {
-        is TdApi.BackgroundFillSolid -> Wallpaper.Fill(id, listOf(color))
-        is TdApi.BackgroundFillGradient -> Wallpaper.Fill(id, listOf(topColor, bottomColor), rotationAngle)
-        is TdApi.BackgroundFillFreeformGradient -> Wallpaper.Fill(id, colors.toList())
+        is TdApi.BackgroundFillSolid -> Wallpaper.Fill(id, persistentListOf(color))
+        is TdApi.BackgroundFillGradient -> Wallpaper.Fill(id, persistentListOf(topColor, bottomColor), rotationAngle)
+        is TdApi.BackgroundFillFreeformGradient -> Wallpaper.Fill(id, colors.asList().toImmutableList())
         else -> null
     }
 

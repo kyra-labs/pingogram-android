@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.PowerSavingSettings
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingRepository
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -29,7 +30,7 @@ class FakePowerSavingRepository(
     override suspend fun setPart(
         part: PowerSavingPart,
         off: Boolean,
-    ): Outcome<Unit> = save { it.copy(parts = if (off) it.parts + part else it.parts - part) }
+    ): Outcome<Unit> = save { it.copy(parts = (if (off) it.parts + part else it.parts - part).toImmutableSet()) }
 
     private fun save(change: (PowerSavingSettings) -> PowerSavingSettings): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }

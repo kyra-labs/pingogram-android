@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.PhoneNumberInfo
 import dev.kyralabs.pingogram.core.domain.model.TermsOfService
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
+import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration.Companion.seconds
@@ -139,7 +140,7 @@ internal fun TdApi.CountryInfo.toCountry() =
         name = name.orEmpty().ifBlank { englishName.orEmpty() },
         englishName = englishName.orEmpty(),
         flagEmoji = flagEmoji.orEmpty().ifBlank { flagEmojiOf(countryCode) },
-        callingCodes = callingCodes.orEmpty().toList(),
+        callingCodes = callingCodes.orEmpty().toImmutableList(),
         isHidden = isHidden,
     )
 

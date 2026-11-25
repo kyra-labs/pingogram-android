@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
@@ -64,7 +65,7 @@ class TdlibOauthLoginRepositoryTest {
                     browser = "Firefox 145",
                     platform = "Linux",
                     location = "Berlin, Germany",
-                    matchCodes = listOf("17", "42", "88"),
+                    matchCodes = persistentListOf("17", "42", "88"),
                 ),
                 request,
             )

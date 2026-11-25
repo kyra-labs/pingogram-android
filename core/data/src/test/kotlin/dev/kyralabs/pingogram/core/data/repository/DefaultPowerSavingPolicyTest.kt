@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
 import dev.kyralabs.pingogram.core.testing.FakeBatterySaverRepository
 import dev.kyralabs.pingogram.core.testing.FakePowerSavingRepository
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -22,7 +23,7 @@ class DefaultPowerSavingPolicyTest {
                 assertEquals(PowerSaving.None, awaitItem())
 
                 batterySaver.isOn.value = true
-                assertEquals(PowerSaving(PowerSavingPart.entries.toSet()), awaitItem())
+                assertEquals(PowerSaving(PowerSavingPart.entries.toSet().toImmutableSet()), awaitItem())
 
                 batterySaver.isOn.value = false
                 assertEquals(PowerSaving.None, awaitItem())

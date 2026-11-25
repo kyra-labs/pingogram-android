@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionLanguages
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionResult
 import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -144,12 +145,14 @@ class AndroidVoiceTranscriber internal constructor(
                     override fun onSupportResult(support: RecognitionSupport) {
                         continuation.resume(
                             TranscriptionLanguages(
-                                ready = support.installedOnDeviceLanguages,
-                                downloading = support.pendingOnDeviceLanguages,
+                                ready = support.installedOnDeviceLanguages.toImmutableList(),
+                                downloading = support.pendingOnDeviceLanguages.toImmutableList(),
                                 notDownloaded =
-                                    support.supportedOnDeviceLanguages -
-                                        support.installedOnDeviceLanguages.toSet() -
-                                        support.pendingOnDeviceLanguages.toSet(),
+                                    (
+                                        support.supportedOnDeviceLanguages -
+                                            support.installedOnDeviceLanguages.toSet() -
+                                            support.pendingOnDeviceLanguages.toSet()
+                                    ).toImmutableList(),
                             ),
                         )
                     }

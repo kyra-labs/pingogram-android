@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,19 +26,19 @@ import coil3.size.Size as CoilSize
 class WallpaperDrawingTest {
     @Test
     fun `a two-color fill runs from top to bottom, turned clockwise by its rotation`() {
-        val down = draw(Wallpaper.Fill(1, listOf(RED, BLUE)))
+        val down = draw(Wallpaper.Fill(1, persistentListOf(RED, BLUE)))
         assertEquals(Color.Red, down.at(SIDE / 2, 0))
         assertEquals(Color.Blue, down.at(SIDE / 2, SIDE - 1))
 
         // A quarter turn clockwise moves the top color to the right.
-        val turned = draw(Wallpaper.Fill(1, listOf(RED, BLUE), rotationDegrees = 90))
+        val turned = draw(Wallpaper.Fill(1, persistentListOf(RED, BLUE), rotationDegrees = 90))
         assertEquals(Color.Red, turned.at(SIDE - 1, SIDE / 2))
         assertEquals(Color.Blue, turned.at(0, SIDE / 2))
     }
 
     @Test
     fun `one color is solid`() {
-        assertEquals(Color.Blue, draw(Wallpaper.Fill(1, listOf(BLUE))).at(SIDE / 3, SIDE / 2))
+        assertEquals(Color.Blue, draw(Wallpaper.Fill(1, persistentListOf(BLUE))).at(SIDE / 3, SIDE / 2))
     }
 
     @Test

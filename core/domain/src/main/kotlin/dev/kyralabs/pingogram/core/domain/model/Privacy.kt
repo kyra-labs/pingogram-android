@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+
 /**
  * A privacy setting of the account (`REQUIREMENTS.md` FR-S1, Privacy and security): who can see or do something. The
  * ones Pingogram shows, in its order. TDLib has more (finding by phone number, peer-to-peer calls,
@@ -115,10 +119,10 @@ enum class PrivacyExceptionSide { Always, Never }
  * supergroups.
  */
 data class PrivacyExceptionLists(
-    val alwaysUserIds: List<Long> = emptyList(),
-    val alwaysChatIds: List<Long> = emptyList(),
-    val neverUserIds: List<Long> = emptyList(),
-    val neverChatIds: List<Long> = emptyList(),
+    val alwaysUserIds: ImmutableList<Long> = persistentListOf(),
+    val alwaysChatIds: ImmutableList<Long> = persistentListOf(),
+    val neverUserIds: ImmutableList<Long> = persistentListOf(),
+    val neverChatIds: ImmutableList<Long> = persistentListOf(),
 ) {
     fun userIds(side: PrivacyExceptionSide): List<Long> =
         if (side == PrivacyExceptionSide.Always) alwaysUserIds else neverUserIds
@@ -138,19 +142,19 @@ data class PrivacyExceptionLists(
         when (side) {
             PrivacyExceptionSide.Always -> {
                 PrivacyExceptionLists(
-                    alwaysUserIds = userIds,
-                    alwaysChatIds = chatIds,
-                    neverUserIds = neverUserIds - userIds.toSet(),
-                    neverChatIds = neverChatIds - chatIds.toSet(),
+                    alwaysUserIds = userIds.toImmutableList(),
+                    alwaysChatIds = chatIds.toImmutableList(),
+                    neverUserIds = (neverUserIds - userIds.toSet()).toImmutableList(),
+                    neverChatIds = (neverChatIds - chatIds.toSet()).toImmutableList(),
                 )
             }
 
             PrivacyExceptionSide.Never -> {
                 PrivacyExceptionLists(
-                    alwaysUserIds = alwaysUserIds - userIds.toSet(),
-                    alwaysChatIds = alwaysChatIds - chatIds.toSet(),
-                    neverUserIds = userIds,
-                    neverChatIds = chatIds,
+                    alwaysUserIds = (alwaysUserIds - userIds.toSet()).toImmutableList(),
+                    alwaysChatIds = (alwaysChatIds - chatIds.toSet()).toImmutableList(),
+                    neverUserIds = userIds.toImmutableList(),
+                    neverChatIds = chatIds.toImmutableList(),
                 )
             }
         }

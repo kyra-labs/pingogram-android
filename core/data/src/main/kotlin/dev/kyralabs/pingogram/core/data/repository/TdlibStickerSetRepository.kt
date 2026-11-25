@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
@@ -158,6 +159,6 @@ private fun TdApi.StickerSet.toDetails(): StickerSetDetails {
                 isViewed = isViewed,
                 kind = stickerType.toStickerSetKind(),
             ),
-        stickers = stickers,
+        stickers = stickers.toImmutableList(),
     )
 }

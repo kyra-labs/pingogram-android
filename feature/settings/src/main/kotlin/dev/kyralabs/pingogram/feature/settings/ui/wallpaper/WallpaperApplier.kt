@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.domain.model.WallpaperChoice
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.WallpaperRepository
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * Sets what the wallpaper page previews ([WallpaperPageViewModel]), for the account ([chatId] null) or chat [chatId]:
@@ -65,7 +66,12 @@ internal class WallpaperApplier(
             }
 
             else -> {
-                val choice = WallpaperChoice.Existing(own, (own as? Wallpaper.Photo)?.isBlurred == true, patternFill)
+                val choice =
+                    WallpaperChoice.Existing(
+                        own,
+                        (own as? Wallpaper.Photo)?.isBlurred == true,
+                        patternFill.toImmutableList(),
+                    )
                 wallpapers.setChatWallpaper(chatId, choice, state.dimming, onlyForSelf)
             }
         }

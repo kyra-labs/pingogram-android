@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.WallpaperImage
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeWallpaperRepository
 import dev.kyralabs.pingogram.core.testing.FakeWallpaperSeedRepository
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -129,8 +130,8 @@ class ChatWallpaperViewModelTest {
     private companion object {
         const val CHAT = 7L
         const val SEED = 0xFFB4744B.toInt()
-        val LIGHT = Wallpaper.Fill(1, listOf(0xFFFFFF))
-        val DARK = Wallpaper.Fill(2, listOf(0x000000))
+        val LIGHT = Wallpaper.Fill(1, persistentListOf(0xFFFFFF))
+        val DARK = Wallpaper.Fill(2, persistentListOf(0x000000))
         val OWN = Wallpaper.Photo(3, WallpaperImage(FileRef(30, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(4, WallpaperImage(FileRef(40, 0), isVector = true), 50, false)
     }

@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.ConversationWallpaper
 import dev.kyralabs.pingogram.feature.chat.ui.wallpaper.LocalConversationWallpaper
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
 import org.junit.Test
@@ -74,7 +75,7 @@ class ChatWallpaperColorsScreenshotTest {
     }
 
     private companion object {
-        val WARM_FILL = Wallpaper.Fill(1, listOf(0xB4744B, 0xE8C9A0), rotationDegrees = 45)
+        val WARM_FILL = Wallpaper.Fill(1, persistentListOf(0xB4744B, 0xE8C9A0), rotationDegrees = 45)
         const val SETTLED_MILLIS = 2_000L
     }
 }
