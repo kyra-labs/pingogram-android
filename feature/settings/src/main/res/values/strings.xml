@@ -1469,6 +1469,9 @@
     <!-- Settings → Chats → Chat list (FR-X19): smaller avatars on lower rows. -->
     <string name="settings_compact_chat_list">Compact chat list</string>
     <string name="settings_compact_chat_list_summary">Smaller pictures and lower rows, so more chats fit</string>
+    <!-- Settings → Chats → Chat list (FR-X20): the user's own names and private notes, kept on the phone, for the chats Telegram gives no contact name or note. -->
+    <string name="settings_notes_and_names">Notes and names on this phone</string>
+    <string name="settings_notes_and_names_summary">Your own names and private notes for groups, channels, bots and people who aren\'t your contacts. Telegram never sees them</string>
     <string name="settings_show_stories">Show stories</string>
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
     <string name="settings_edit_folders_button">Edit folders button</string>

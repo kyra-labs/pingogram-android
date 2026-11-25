@@ -10,8 +10,6 @@ import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
-import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.CompactChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
@@ -38,8 +36,8 @@ sealed interface ChatsPageUiState {
      * FR-X12), whether the message box's menu offers Undo and Redo ([showsUndoRedo], FR-X13), how voice messages
      * play at the ear ([raiseToListen]), whether they skip their silences ([skipSilence]), the chat list's swipes,
      * which the Swipe actions row sums up ([chatList]), whether voice messages are transcribed as they show
-     * ([transcribeAutomatically]; null where the phone cannot transcribe), and whether the chat list is compact
-     * ([compactChatList], FR-X19).
+     * ([transcribeAutomatically]; null where the phone cannot transcribe), whether the chat list is compact
+     * ([compactChatList], FR-X19), and whether the user's notes and names for chats show ([notesAndNames], FR-X20).
      */
     data class Content(
         val sendKeys: SendKeys = SendKeys(),
@@ -51,6 +49,7 @@ sealed interface ChatsPageUiState {
         val confirmsBotCommands: Boolean = false,
         val showsUndoRedo: Boolean = true,
         val compactChatList: Boolean = false,
+        val notesAndNames: Boolean = true,
     ) : ChatsPageUiState
 }
 
@@ -83,6 +82,11 @@ sealed interface ChatsPageEvent {
 
     /** "Compact chat list" turned on or off. */
     data class SetCompactChatList(
+        val enabled: Boolean,
+    ) : ChatsPageEvent
+
+    /** "Notes and names on this phone" turned on or off. */
+    data class SetNotesAndNames(
         val enabled: Boolean,
     ) : ChatsPageEvent
 
@@ -122,8 +126,7 @@ class ChatsPageViewModel
     constructor(
         private val composerSettingsRepository: ComposerSettingsRepository,
         private val playbackSettingsRepository: PlaybackSettingsRepository,
-        private val chatListSettingsRepository: ChatListSettingsRepository,
-        private val compactChatListRepository: CompactChatListRepository,
+        private val chatListOptions: ChatListOptions,
         private val transcriptionSettingsRepository: TranscriptionSettingsRepository,
         private val transcriber: VoiceTranscriber,
     ) : ViewModel() {
@@ -145,7 +148,7 @@ class ChatsPageViewModel
                 ),
                 playbackSettingsRepository.raiseToListen,
                 playbackSettingsRepository.skipSilence,
-                combine(chatListSettingsRepository.settings, compactChatListRepository.enabled, ::ChatListChoices),
+                chatListOptions.choices,
                 transcriptionSettingsRepository.settings,
             ) { composer, raise, skipSilence, chatList, transcription ->
                 val automatic = transcription.automatic.takeIf { transcriber.isAvailable }
@@ -159,6 +162,7 @@ class ChatsPageViewModel
                     composer.confirmsBotCommands,
                     composer.showsUndoRedo,
                     chatList.compact,
+                    chatList.notesAndNames,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
@@ -190,11 +194,15 @@ class ChatsPageViewModel
                 }
 
                 is ChatsPageEvent.SetShowDraftsButton -> {
-                    chatListSettingsRepository.setShowDraftsButton(event.show)
+                    chatListOptions.settings.setShowDraftsButton(event.show)
                 }
 
                 is ChatsPageEvent.SetCompactChatList -> {
-                    compactChatListRepository.setEnabled(event.enabled)
+                    chatListOptions.compact.setEnabled(event.enabled)
+                }
+
+                is ChatsPageEvent.SetNotesAndNames -> {
+                    chatListOptions.notesAndNames.setEnabled(event.enabled)
                 }
 
                 is ChatsPageEvent.SetRaiseToListen -> {
@@ -217,10 +225,4 @@ private data class ComposerChoices(
     val sendsSilently: Boolean,
     val confirmsBotCommands: Boolean,
     val showsUndoRedo: Boolean,
-)
-
-/** The chat list's settings the Chats page shows, and whether it is compact, read together. */
-private data class ChatListChoices(
-    val settings: ChatListSettings,
-    val compact: Boolean,
 )
