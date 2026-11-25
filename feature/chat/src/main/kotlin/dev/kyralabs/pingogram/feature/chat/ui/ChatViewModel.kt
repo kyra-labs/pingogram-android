@@ -15,19 +15,16 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
-import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
-import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
@@ -159,7 +156,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -190,9 +186,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.format.TextStyle
@@ -520,8 +514,8 @@ class ChatViewModel internal constructor(
     /** The history and the texts sent: the topic's, in a topic's conversation. */
     private val messageRepository: MessageRepository = thread.messages(messages)
 
-    /** The replied messages fetched for messages whose replied message is not loaded, by replying message id. */
-    private val replies = MutableStateFlow<PersistentMap<Long, ReplyState>>(persistentMapOf())
+    /** The replied messages fetched for messages whose replied message is not loaded ([RepliedMessages]). */
+    private val replies = RepliedMessages(chatId, messageRepository, viewModelScope)
 
     private val revealedSpoilers = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
 
@@ -605,12 +599,7 @@ class ChatViewModel internal constructor(
             savedState = savedStateHandle,
             scope = viewModelScope,
             drafts = thread.drafts(chatRepository.chat(chatId)),
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id) ?: composerTargets[id]
-            },
+            messageOf = { id -> loadedMessage(id) ?: composerTargets[id] },
             onEffect = { effectChannel.trySend(it) },
             log = log,
         )
@@ -663,11 +652,7 @@ class ChatViewModel internal constructor(
             onScreen = onScreen.asStateFlow(),
             composer = composer,
             previewOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-                    ?.let { messagePreviewText(it, userRepository.myUserId.value) { null } }
+                loadedMessage(id)?.let { messagePreviewText(it, userRepository.myUserId.value) { null } }
             },
             scope = viewModelScope,
             dispatcher = dispatcher,
@@ -764,12 +749,7 @@ class ChatViewModel internal constructor(
             groups = groupRepository,
             composer = composer,
             shareInbox = shareInbox,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
+            messageOf = ::loadedMessage,
             canWrite = { uiState.value.composer is ComposerUiState.Available },
             scope = viewModelScope,
             dispatcher = dispatcher,
@@ -921,29 +901,16 @@ class ChatViewModel internal constructor(
     /** What the form of a new checklist holds, for its fields; kept like [composerText]. */
     val checklistEditor: ChecklistEditor get() = attachments.checklist
 
+    /** The chat, or why it is not there (yet), as the conversation shows it ([lookup]). */
     private val chat: Flow<ChatLookup> =
-        chatAttempts
-            .flatMapLatest {
-                chatRepository.chat(chatId).transformLatest { chat ->
-                    if (chat != null) {
-                        emit(ChatLookup.Found(chat))
-                    } else {
-                        emit(ChatLookup.Pending)
-                        // Found, TDLib announces it too, and chat() follows.
-                        when (val found = chatRepository.getChat(chatId)) {
-                            is Outcome.Success -> emit(ChatLookup.Found(found.value))
-                            is Outcome.Failure -> emit(ChatLookup.Failed(found.error))
-                        }
-                    }
-                }
-            }.combine(thread.state, ::inThread)
-            .distinctUntilChanged()
+        chatRepository
+            .lookup(chatId, chatAttempts, thread.state)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
     private val history: SharedFlow<ChatHistory> =
         messageRepository
             .history(chatId)
-            .onEach(::fetchMissingReplies)
+            .onEach(replies::fetchMissing)
             // A `Reject` haptic when a message being sent fails while the screen is shown (SendFailures).
             .onEach { if (sendFailures.failedSince(it) && isOpen) effectChannel.trySend(ChatEffect.SendFailed) }
             .flowOn(dispatcher)
@@ -955,12 +922,7 @@ class ChatViewModel internal constructor(
             repositories = translationRepositories,
             chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
             history = history,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
+            messageOf = ::loadedMessage,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -996,12 +958,7 @@ class ChatViewModel internal constructor(
             users = userRepository,
             chats = chatRepository,
             history = history,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
+            messageOf = ::loadedMessage,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -1011,12 +968,7 @@ class ChatViewModel internal constructor(
         PollOptionAdding(
             chatId = chatId,
             repository = pollRepository,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
+            messageOf = ::loadedMessage,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -1026,12 +978,7 @@ class ChatViewModel internal constructor(
         ChatChecklists(
             chatId = chatId,
             repository = checklistRepository,
-            messageOf = { id ->
-                history.replayCache
-                    .firstOrNull()
-                    ?.messages
-                    ?.findById(id)
-            },
+            messageOf = ::loadedMessage,
             savedState = savedStateHandle,
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
@@ -1134,36 +1081,14 @@ class ChatViewModel internal constructor(
      * The basic group or supergroup of a group or channel: its member count, and the user's membership; the secret
      * chat of a secret chat: its state.
      */
-    private val group: Flow<ChatGroup> =
-        chat
-            .map { (it as? ChatLookup.Found)?.chat?.type }
-            .distinctUntilChanged()
-            .flatMapLatest { type ->
-                when (type) {
-                    is ChatType.BasicGroup -> {
-                        groupRepository.basicGroup(type.basicGroupId).map { ChatGroup(basicGroup = it) }
-                    }
-
-                    is ChatType.Supergroup -> {
-                        groupRepository.supergroup(type.supergroupId).map { ChatGroup(supergroup = it) }
-                    }
-
-                    is ChatType.Secret -> {
-                        secret.secretChat.map { ChatGroup(secretChat = it) }
-                    }
-
-                    else -> {
-                        flowOf(ChatGroup())
-                    }
-                }
-            }.distinctUntilChanged()
+    private val group: Flow<ChatGroup> = groupRepository.groupOf(chat, secret.secretChat)
 
     /** "Message channel" of a channel whose subscribers write to its administrators; null for other chats. */
     private val messageChannel = messageChannelButton(group.map { it.supergroup }, chatJoinRepository, groupRepository)
 
     /** The chats the messages name, by id: their titles and photos, which change far less often than the chats. */
     private val referencedChats: Flow<ImmutableMap<Long, ChatRef>> =
-        combine(history, replies, composer.mode) { history, replies, mode ->
+        combine(history, replies.state, composer.mode) { history, replies, mode ->
             referencedChatIds(chatId, history, replies) + setOfNotNull(mode.replyTo?.chatId)
         }.distinctUntilChanged()
             .flatMapLatest { ids ->
@@ -1191,7 +1116,7 @@ class ChatViewModel internal constructor(
     private val tapped: Flow<Pair<Set<Long>, Set<Long>>> = combine(revealedSpoilers, shownTimes, ::Pair)
 
     private val messageSources: Flow<MessageSources> =
-        combine(history, replies, tapped, window.state) { history, replies, (spoilers, times), load ->
+        combine(history, replies.state, tapped, window.state) { history, replies, (spoilers, times), load ->
             MessageSources(MessageState(load.historyFor(history), replies, spoilers, times), load)
         }
 
@@ -1499,56 +1424,12 @@ class ChatViewModel internal constructor(
         if (!window.retry() && uiState.value.content is ChatContent.Error) chatAttempts.update { it + 1 }
     }
 
-    /**
-     * Asks once for each replied message that is not in [history], for messages of this chat: the quote shows it
-     * once it is there. A failure is kept, and shown; it is not asked for again. The messages of one history are
-     * marked pending in one change, as every change maps the conversation again (`docs/PERFORMANCE.md`). Each answer
-     * then shows as soon as it comes, with whatever others came meanwhile in the same change: none waits for another,
-     * as one TDLib must ask the server for waits for the connection while the others answer from its database.
-     */
-    private fun fetchMissingReplies(history: ChatHistory) {
-        val known = replies.value
-        val missing =
-            history.messages.filter { message ->
-                val replyTo = message.replyTo as? ReplyTo.Message
-                val loaded = replyTo?.chatId == chatId && history.messages.findById(replyTo.messageId) != null
-                replyTo != null && replyTo.messageId != 0L && !loaded && message.id !in known
-            }
-        if (missing.isEmpty()) return
-        var added: List<Long> = emptyList()
-        replies.update { replies ->
-            added = missing.map { it.id }.filter { it !in replies }
-            if (added.isEmpty()) replies else replies.puttingAll(added.associateWith { ReplyState.Pending })
-        }
-        if (added.isEmpty()) return
-        val asked = added
-        viewModelScope.launch {
-            val answers = Channel<Pair<Long, ReplyState>>(Channel.UNLIMITED)
-            launch {
-                asked
-                    .map { id ->
-                        launch {
-                            val state =
-                                when (val replied = messageRepository.repliedMessage(chatId, id)) {
-                                    is Outcome.Success -> ReplyState.Loaded(replied.value)
-                                    is Outcome.Failure -> ReplyState.Failed(replied.error)
-                                }
-                            answers.send(id to state)
-                        }
-                    }.joinAll()
-                answers.close()
-            }
-            for (first in answers) {
-                val came = mutableMapOf(first)
-                var next = answers.tryReceive().getOrNull()
-                while (next != null) {
-                    came += next
-                    next = answers.tryReceive().getOrNull()
-                }
-                replies.update { it.puttingAll(came) }
-            }
-        }
-    }
+    /** Message [id] as the history last came; null while it is not loaded. */
+    private fun loadedMessage(id: Long): Message? =
+        history.replayCache
+            .firstOrNull()
+            ?.messages
+            ?.findById(id)
 
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
@@ -1693,21 +1574,6 @@ internal class ChatSources(
     val unreadAfterId: Long?,
     val thread: ThreadState,
 )
-
-/**
- * The chat as the conversation of [thread] shows it ([ThreadState.inThread]): pending while a forum topic is on its
- * way, not found when the topic cannot be found.
- */
-private fun inThread(
-    lookup: ChatLookup,
-    thread: ThreadState,
-): ChatLookup =
-    when {
-        lookup !is ChatLookup.Found -> lookup
-        thread == ThreadState.Missing -> ChatLookup.Failed(DomainError.NotFound)
-        thread is ThreadState.Failed -> ChatLookup.Failed(thread.error)
-        else -> ChatLookup.Found(thread.inThread(lookup.chat))
-    }
 
 /**
  * The basic group or supergroup of a group or channel chat, the secret chat of a secret chat; none for other chats,
