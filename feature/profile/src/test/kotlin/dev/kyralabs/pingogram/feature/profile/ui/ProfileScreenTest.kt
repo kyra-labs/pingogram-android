@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
@@ -26,8 +27,11 @@ import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteSlot
+import dev.kyralabs.pingogram.feature.profile.notes.ChatNoteUiState
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +63,7 @@ class ProfileScreenTest {
         stories: ProfileStoriesSlot? = null,
         profileMusic: ProfileMusicSlot? = null,
         withChatWallpaper: Boolean = false,
+        notes: ChatNoteSlot? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -79,10 +84,28 @@ class ProfileScreenTest {
                         stories = stories,
                         profileMusic = profileMusic,
                         onChatWallpaper = if (withChatWallpaper) ({ wallpapersOpened++ }) else null,
+                        notes = notes,
                     )
                 }
             }
         }
+    }
+
+    @Test
+    fun `the rows on this phone show the name and note the route gives the page`() {
+        val notes = ChatNoteSlot(ChatNoteUiState(shown = true, name = "Dev from the meetup"), onEvent = {})
+        setScreen(ProfilePreviewData.stranger, ProfilePreviewData.emptyMedia, notes = notes)
+
+        composeRule.onNodeWithText("Dev from the meetup").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `bots and people who are not contacts get the rows on this phone, contacts and oneself do not`() {
+        assertTrue(hasLocalNotes(ProfilePreviewData.stranger))
+        assertTrue(hasLocalNotes(ProfilePreviewData.bot))
+        assertFalse(hasLocalNotes(ProfilePreviewData.withNote))
+        assertFalse(hasLocalNotes(ProfilePreviewData.content.copy(actions = ProfileActions(isSelf = true))))
+        assertFalse(hasLocalNotes(ProfilePreviewData.deleted))
     }
 
     private fun string(
