@@ -2,8 +2,11 @@
 
 Goal: Pingogram should feel faster and lighter than the official Telegram app on the same
 device, while using less battery and data. "Optimized" is measured, not claimed: every budget
-below has a Macrobenchmark, JankStats or Perfetto check, and CI/nightly fails when a budget
-regresses by more than 10%.
+below has a Macrobenchmark, `dumpsys` or Perfetto check (§9). There is no device in CI, so the
+owner runs the benchmarks on their phone before each release (`docs/RELEASE.md`), and
+`tools/benchmark/compare.py` fails the run when a budget is missed or a figure regresses by more
+than 10% against that phone's baseline. Only the APK size budget is checked in CI, on every pull
+request (§8).
 
 ## 1. Budgets (release build, `foss`, Pixel-class 2022 mid-range reference device)
 
@@ -11,12 +14,12 @@ regresses by more than 10%.
 |---|---|---|
 | Cold start → chat list drawn | ≤ 1.2 s (`timeToFullDisplay`) | Macrobenchmark `StartupBenchmark`, `reportFullyDrawn()` after first chat list frame |
 | Warm start | ≤ 400 ms | same |
-| Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms, stutter ≤ 0.5% (frames > 16 ms late; `docs/adr/0042-stutter-instead-of-late-frames.md`) | `ScrollBenchmark` + JankStats |
+| Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms, stutter ≤ 0.5% (frames > 16 ms late; `docs/adr/0042-stutter-instead-of-late-frames.md`) | `ChatListScrollBenchmark` (frame timing) |
 | Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, stutter ≤ 0.5% (frames > 16 ms late; ADR 0042) | same |
 | Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `OpenChatBenchmark`: `TraceSectionMetric("openChat")`, an async section from the tap in the chat list (`:app`) to the frame after the first messages (`feature:chat`) |
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | `SendMessageBenchmark`: `TraceSectionMetric("sendMessage")`, an async section from the composer's send (`feature:chat`'s `ChatComposer`) to the frame after the bubble on its way shows (`SendMessageTraceEffect`), sending to Saved Messages and deleting each message after |
-| Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
-| Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
+| Memory, chat list idle | ≤ 120 MB PSS | `dumpsys meminfo` on the owner's phone before each release; `ChatListIdleMemoryBenchmark` follows its RSS and heap against the baseline (§9) |
+| Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | `dumpsys meminfo` on the owner's phone before each release |
 | APK size (arm64-v8a) | ≤ 53 MB; universal ≤ 128 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`; raised by 1 and 2 MB for TDLib 1.8.70 by the owner, 2026-11-11, `docs/adr/0038-apk-budget-for-tdlib-1-8-70.md`; raised by 2 and 3 MB for the features after v2.3.0 by the owner, 2026-11-20, `docs/adr/0040-apk-budget-after-v2-3-0.md`) | CI on every pull request and release (§8) |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
@@ -456,7 +459,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
   `ConversationScrollBenchmark`, `OpenChatBenchmark`, `SendMessageBenchmark`, `OpenMediaBenchmark`,
-  `CatchUpBenchmark`, `BookmarksScrollBenchmark`, `CallsAndStoriesBenchmark`; generates Baseline Profiles.
+  `CatchUpBenchmark`, `BookmarksScrollBenchmark`, `CallsAndStoriesBenchmark`, `ChatListIdleMemoryBenchmark`;
+  generates Baseline Profiles.
   It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
   `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
   generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
@@ -647,10 +651,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     length (the recognizer waits for it), and a `qrDecode` median over 200 ms (the scanner reads at most five frames
     a second, and skips frames while one decodes). Any of them on the main thread is a bug whatever its time.
 - Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
-  budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
-  baseline of the device (`benchmark/baselines/`, one file per device, such as `galaxy-s24-ultra.json`; its `commit`
+  budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time or a memory figure more than 10%
+  above the last baseline of the device (`benchmark/baselines/`, one file per device, such as `galaxy-s24-ultra.json`; its `commit`
   names the release it was recorded on). Times are the start times' medians, the frame time percentiles and the trace
-  sections' medians; a time the baseline holds as 0 (a section the run did not record) is not compared; the share of
+  sections' medians; memory figures are `ChatListIdleMemoryBenchmark`'s medians in kB (`memoryRssAnonLastKb`,
+  `memoryRssFileLastKb`, `memoryHeapSizeLastKb`: `MemoryUsageMetric` reads RSS, not PSS, so the PSS budget is read
+  with `adb shell dumpsys meminfo dev.kyralabs.pingogram` on the idle chat list); a time the baseline holds as 0 (a section the run did not record) is not compared; the share of
   frames more than 16 ms late (`frameOverrunMs.stutterPercent`) is checked against its budget only, and the share of
   late frames (`latePercent`, any overrun at all) is printed for each scroll benchmark but has no budget (ADR 0042). `--write-baseline` records a run as the new baseline. `docs/RELEASE.md` runs it before each release, on the owner's phone, as there is no device in CI.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
@@ -855,7 +861,6 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     (code not compiled yet, first text layouts, shaders), so the window stays as it is until a trace says which rows
     it composed. `chat-list-scroll.sql` now lists every `keepAroundItems` over 2 ms with when it ran and what ran
     inside it.
-- JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
 - Video calls (`docs/adr/0019-video-and-group-calls-scope.md`): every remote frame crosses JNI as a new `byte[]`, about

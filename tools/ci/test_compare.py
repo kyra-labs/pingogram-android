@@ -12,6 +12,11 @@ def scroll(overruns):
     return {"sampledMetrics": {"frameOverrunMs": {"P90": 0.0, "runs": [overruns]}}}
 
 
+def idle(rss_anon_kb):
+    """The idle chat list's memory benchmark, its anonymous RSS [rss_anon_kb] kB at the end of each run."""
+    return {"metrics": {"memoryRssAnonLastKb": {"median": rss_anon_kb}, "memoryHeapSizeLastKb": {"median": 20000.0}}}
+
+
 class CompareTest(unittest.TestCase):
     def test_stutter_counts_the_frames_more_than_16_ms_late(self):
         values = compare.flatten(scroll([-3.0, 0.5, 8.0, 16.0, 16.5, 40.0, -1.0, 2.0]))
@@ -43,6 +48,26 @@ class CompareTest(unittest.TestCase):
             compare.frame_lines(benchmarks),
         )
         self.assertFalse(compare.is_time("frameOverrunMs.stutterPercent"))
+
+    def test_memory_more_than_10_percent_above_the_baseline_is_a_regression(self):
+        baseline = {"benchmarks": {"ChatListIdleMemoryBenchmark.idle": compare.flatten(idle(100000.0))}}
+        run = {"ChatListIdleMemoryBenchmark.idle": compare.flatten(idle(112000.0))}
+
+        regressions, compared = compare.check_regressions(run, baseline)
+
+        self.assertEqual(
+            ["ChatListIdleMemoryBenchmark.idle: memoryRssAnonLastKb.median 100000.0 -> 112000.0 (+12%)"],
+            regressions,
+        )
+        self.assertEqual(2, len(compared))
+
+    def test_memory_within_10_percent_of_the_baseline_is_no_regression(self):
+        baseline = {"benchmarks": {"ChatListIdleMemoryBenchmark.idle": compare.flatten(idle(100000.0))}}
+        run = {"ChatListIdleMemoryBenchmark.idle": compare.flatten(idle(108000.0))}
+
+        self.assertEqual([], compare.check_regressions(run, baseline)[0])
+        self.assertTrue(compare.is_memory("memoryRssAnonLastKb.median"))
+        self.assertFalse(compare.is_memory("timeToInitialDisplayMs.median"))
 
     def test_the_repository_budgets_hold_stutter_not_late_frames(self):
         import json
