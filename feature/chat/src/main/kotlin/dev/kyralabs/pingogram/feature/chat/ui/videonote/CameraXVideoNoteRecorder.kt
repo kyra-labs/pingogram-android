@@ -64,7 +64,9 @@ import kotlin.math.roundToInt
  * binds the other camera without ending it. Once it ends, the file's first frame is written as a JPEG at most
  * [THUMBNAIL_SIDE] pixels on a side, on [io].
  *
- * Called on the main thread, where CameraX wants its bindings; its events come there too.
+ * Called on the main thread, where CameraX wants its bindings; its events come there too. While it records, the
+ * preview and the capture follow the display's rotation ([DisplayRotation]): the conversation's activity is not created
+ * again when the phone turns.
  */
 @Suppress("TooManyFunctions") // One override per VideoNoteRecorder call, and the binding's and the file's helpers.
 internal class CameraXVideoNoteRecorder
@@ -74,6 +76,7 @@ internal class CameraXVideoNoteRecorder
         @param:Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : VideoNoteRecorder {
         private val lifecycle = RecordingLifecycle()
+        private val displayRotation = DisplayRotation(context)
         private val surfaceRequest = MutableStateFlow<SurfaceRequest?>(null)
         private var provider: ProcessCameraProvider? = null
 
@@ -118,6 +121,7 @@ internal class CameraXVideoNoteRecorder
                     .addUseCase(capture)
                     .build()
             val take = Take(path, provider, preview, capture, group, isFront = selector == FRONT)
+            take.rotation = displayRotation.follow(take::turn)
             lifecycle.resume()
             val started =
                 try {
@@ -237,8 +241,12 @@ internal class CameraXVideoNoteRecorder
             return false
         }
 
-        /** Frees the camera and the microphone of [take]: its use cases unbound, the lifecycle stopped, no preview. */
+        /**
+         * Frees the camera and the microphone of [take]: no rotation followed, its use cases unbound, the lifecycle
+         * stopped, no preview.
+         */
         private fun unbind(take: Take) {
+            take.rotation?.close()
             take.provider.unbind(take.preview, take.capture)
             take.preview.setSurfaceProvider(null)
             surfaceRequest.value = null
@@ -307,6 +315,15 @@ internal class CameraXVideoNoteRecorder
         ) {
             var recording: Recording? = null
             val finalized = CompletableDeferred<VideoRecordEvent.Finalize>()
+
+            /** The display's rotation followed ([turn]) until the take's use cases are unbound. */
+            var rotation: AutoCloseable? = null
+
+            /** Turns the preview and the capture to the display's [rotation] (a `Surface.ROTATION_*`). */
+            fun turn(rotation: Int) {
+                preview.targetRotation = rotation
+                capture.targetRotation = rotation
+            }
 
             /** The microphone's level from the last status event, 0 to 1. */
             var level = 0f
