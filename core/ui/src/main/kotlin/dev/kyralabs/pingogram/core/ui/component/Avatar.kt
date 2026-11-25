@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -164,7 +165,7 @@ fun Avatar(
             AvatarPhoto(
                 fileId = fileId,
                 size = size,
-                photoShape = remember(clipShape, shape) { AvatarClip(clipShape, shape.photoMask()) },
+                photoShape = rememberAvatarClip(clipShape, shape),
                 alpha = photoAlpha,
                 modifier = Modifier.matchParentSize(),
             )
@@ -183,6 +184,19 @@ private class SelectionSeen {
  */
 private fun Modifier.fadingOutAs(photoAlpha: Animatable<Float, AnimationVector1D>?): Modifier =
     if (photoAlpha == null) this else graphicsLayer { alpha = 1f - photoAlpha.value }
+
+/**
+ * How the photo of an avatar of [kind] takes its [shape]: cut by [AvatarMask] where the kind has one, except in
+ * previews and screenshots, whose images (Coil's preview handler) skip a request's transformations, so the clip stays.
+ */
+@Composable
+private fun rememberAvatarClip(
+    shape: Shape,
+    kind: AvatarShape,
+): AvatarClip {
+    val preview = LocalInspectionMode.current
+    return remember(shape, kind, preview) { AvatarClip(shape, if (preview) null else kind.photoMask()) }
+}
 
 /**
  * How an avatar's photo takes its shape: clipped to [shape] where the GPU clips it without a mask (a circle, a rounded
