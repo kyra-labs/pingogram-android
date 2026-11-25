@@ -41,7 +41,7 @@ camerax = "1.6.2"
 # Coil 3 image loading, without any coil-network-* artifact: images come only from TDLib's local files
 # (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
 coil = "3.6.3"
-composeBom = "2026.09.00"
+composeBom = "2026.11.01"
 # LeakCanary in debug builds only (docs/PERFORMANCE.md §9; approved by the owner 2026-10-27: about 1 MB, no network):
 # it watches destroyed activities, fragments, view models and services, dumps the heap and shows the leaks it finds on
 # the device. :app's debugImplementation; check<Variant>NoDebugTools keeps it out of every other build type.
@@ -79,7 +79,7 @@ ktlintGradlePlugin = "14.2.0"
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
 # material3-adaptive-navigation-suite uses this version too: it is released in lockstep with material3,
 # and the BOM's 1.4.0 suite would mix two material3 lines in one NavigationSuiteScaffold.
-material3 = "1.5.0-rc01"
+material3 = "1.6.0-alpha01"
 # Voice messages and music in conversations (feature:chat), approved by the owner on 2026-10-18, and videos and GIFs
 # in the media viewer (feature:media). media3-exoplayer plays files TDLib has already downloaded, so no
 # media3-datasource-* network module; media3-ui-compose draws the videos (PlayerSurface), and never media3-ui
