@@ -5,6 +5,8 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -14,6 +16,8 @@ import dev.kyralabs.pingogram.feature.chats.ui.FakeGroupRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeTimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeWallClock
+import dev.kyralabs.pingogram.feature.chats.ui.SearchRowInputs
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,6 +46,7 @@ class DraftsViewModelTest {
     private val chats = FakeChatRepository()
     private val users = FakeUserRepository().apply { myUserId.value = ME }
     private val chatLock = FakeChatLockRepository(locked = setOf(9L))
+    private val localNames = FakeLocalChatNamesRepository()
 
     @BeforeEach
     fun setUp() {
@@ -58,8 +63,7 @@ class DraftsViewModelTest {
         val viewModel =
             DraftsViewModel(
                 draftChats = DraftChats(chats, chatLock),
-                userRepository = users,
-                groupRepository = FakeGroupRepository(),
+                rowInputs = SearchRowInputs(users, FakeGroupRepository(), localNames),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -166,6 +170,20 @@ class DraftsViewModelTest {
             chats.setChats(ChatListType.Archive, chat)
 
             assertEquals(listOf(2L), viewModel().chatIds)
+        }
+
+    @Test
+    fun `a chat shows the name given on this phone`() =
+        runTest {
+            localNames.names.value = persistentMapOf(2L to "Book club")
+            chats.setChats(ChatListType.Main, chat(2, draft = draft("hello")))
+
+            val viewModel = viewModel()
+
+            assertEquals(
+                UiText.Plain("Book club"),
+                (viewModel.uiState.value as DraftsUiState.Content).drafts.single().chatTitle,
+            )
         }
 
     @Test

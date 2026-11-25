@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.DEBOUNCE_MILLIS
@@ -119,6 +120,7 @@ class SearchCountsTest {
                 userRepository = FakeUserRepository().apply { myUserId.value = ME },
                 groupRepository = FakeGroupRepository(),
                 chatLock = chatLock,
+                localChatNames = FakeLocalChatNamesRepository(),
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.PREVIEW_MAX_LENGTH
@@ -20,6 +21,7 @@ import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.text.shortName
 import dev.kyralabs.pingogram.feature.chats.R
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 import java.text.NumberFormat
 import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -29,7 +31,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * What rows show besides their chats and messages, as of one emission: the users and groups they name, the current
- * user, the minute (for online dots and dates), and how to format counts and dates.
+ * user, the minute (for online dots and dates), how to format counts and dates, and the user's own names for chats
+ * ([localNames], `REQUIREMENTS.md` FR-X20).
  */
 internal class SearchRowSources(
     val users: ImmutableMap<Long, User>,
@@ -38,9 +41,14 @@ internal class SearchRowSources(
     val myUserId: Long?,
     val now: Instant,
     val timeFormatter: ChatListTimeFormatter,
+    val localNames: ImmutableMap<Long, String> = persistentMapOf(),
 ) {
     /** Counts in the language of [timeFormatter]. */
     val numbers: NumberFormat = NumberFormat.getIntegerInstance(timeFormatter.locale)
+
+    /** The user's own name for [chat], unless it is a contact's private chat, whose contact name shows (FR-X20). */
+    fun localNameOf(chat: Chat): String? =
+        localNames.shownName(chat.id, isContact = chat.userId?.let(users::get)?.isContact == true)
 }
 
 /** The row of this chat in search: as in the chat list, with the username or the member count below the name. */
@@ -51,7 +59,7 @@ internal fun Chat.toSearchItem(sources: SearchRowSources): SearchChatItem {
     val isDeletedAccount = user?.isDeleted == true
     return SearchChatItem(
         id = id,
-        title = chatTitle(this, isSavedMessages, isDeletedAccount),
+        title = chatTitle(this, isSavedMessages, isDeletedAccount, sources.localNameOf(this)),
         photo = if (isSavedMessages) null else photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
         isOnline = !isSavedMessages && user?.showsOnlineAt(sources.now) == true,
@@ -101,7 +109,7 @@ internal fun FoundMessage.toSearchItem(
     return SearchMessageItem(
         chatId = chat.id,
         messageId = message.id,
-        chatTitle = chatTitle(chat, isSavedMessages, isDeletedAccount),
+        chatTitle = chatTitle(chat, isSavedMessages, isDeletedAccount, sources.localNameOf(chat)),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
         badge = titleBadge(user, supergroup),

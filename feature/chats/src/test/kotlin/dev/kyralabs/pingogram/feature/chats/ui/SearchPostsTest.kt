@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.FoundPublicPosts
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.PublicPostSearchLimits
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
@@ -67,6 +68,7 @@ class SearchPostsTest {
                 userRepository = users,
                 groupRepository = FakeGroupRepository(),
                 chatLock = FakeChatLockRepository(),
+                localChatNames = FakeLocalChatNamesRepository(),
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

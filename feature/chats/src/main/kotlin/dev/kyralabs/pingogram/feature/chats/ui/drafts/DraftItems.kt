@@ -29,7 +29,7 @@ internal fun Chat.toDraftItem(sources: SearchRowSources): SearchMessageItem? {
     return SearchMessageItem(
         chatId = id,
         messageId = NO_MESSAGE,
-        chatTitle = chatTitle(this, isSavedMessages, isDeletedAccount),
+        chatTitle = chatTitle(this, isSavedMessages, isDeletedAccount, sources.localNameOf(this)),
         photo = if (isSavedMessages) null else photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
         badge = titleBadge(user, supergroup),
