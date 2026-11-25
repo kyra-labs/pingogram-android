@@ -324,7 +324,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 ## 5. Rendering
 
 - 120 Hz: no work on the main thread > 4 ms per frame; emoji and avatar initial rendering use
-  cached `ImageBitmap`s.
+  cached `ImageBitmap`s. The emoji panel's cells draw each emoji from one kept layout of it (the tab's
+  `rememberTextMeasurer`, 512 kept), composing no text of their own, so a cell that scrolls in again lays out nothing.
 - `WindowInsets` handled by `Scaffold` once; no per-item inset reads.
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below. A blur is drawn again
   whenever what it covers changes: endless animations under one hold still while it shows (`LocalAnimationsPaused`,
