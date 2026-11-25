@@ -8,10 +8,14 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -22,11 +26,13 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.concurrent.Executors
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The Conversation widget's chat picker ([WidgetChatPickerViewModel], board 33). */
@@ -47,7 +53,11 @@ class WidgetChatPickerViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.viewModel(locked: Set<Long> = emptySet()): WidgetChatPickerViewModel =
+    private fun TestScope.viewModel(
+        locked: Set<Long> = emptySet(),
+        chats: Flow<List<Chat>> = this@WidgetChatPickerViewModelTest.chats,
+        dispatcher: CoroutineDispatcher = StandardTestDispatcher(testScheduler),
+    ): WidgetChatPickerViewModel =
         WidgetChatPickerViewModel(
             savedStateHandle = SavedStateHandle(mapOf("appWidgetId" to WIDGET)),
             sources =
@@ -63,6 +73,7 @@ class WidgetChatPickerViewModelTest {
                 chosen += Triple(widget, slot, chatId)
                 true
             },
+            dispatcher = dispatcher,
         ).also { viewModel ->
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
             runCurrent()
@@ -102,6 +113,25 @@ class WidgetChatPickerViewModelTest {
                 viewModel.state.value.chats
                     ?.map { it.id },
             )
+        }
+
+    @Test
+    fun `maps and filters the list off the main thread`() =
+        runTest {
+            var filterThread: Thread? = null
+            val filtering = Executors.newSingleThreadExecutor { task -> Thread(task).also { filterThread = it } }
+            val threads = mutableListOf<Thread>()
+            val viewModel =
+                viewModel(
+                    chats = chats.onEach { threads += Thread.currentThread() },
+                    dispatcher = filtering.asCoroutineDispatcher(),
+                )
+
+            viewModel.state.first { it.chats != null }
+            filtering.shutdown()
+
+            assertEquals(listOf(filterThread), threads)
+            assertNotEquals(filterThread, Thread.currentThread())
         }
 
     @Test

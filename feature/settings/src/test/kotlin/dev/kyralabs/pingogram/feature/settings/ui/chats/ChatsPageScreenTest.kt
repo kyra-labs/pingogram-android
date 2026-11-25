@@ -269,4 +269,17 @@ class ChatsPageScreenTest {
 
         assertEquals(listOf(ChatsPageEvent.SetCompactChatList(true)), events)
     }
+
+    @Test
+    fun `the notes and names row is a switch, on at first, whose tap turns it off`() {
+        setScreen()
+
+        switchRow(R.string.settings_notes_and_names)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_notes_and_names_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetNotesAndNames(false)), events)
+    }
 }

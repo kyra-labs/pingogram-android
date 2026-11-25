@@ -324,7 +324,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 ## 5. Rendering
 
 - 120 Hz: no work on the main thread > 4 ms per frame; emoji and avatar initial rendering use
-  cached `ImageBitmap`s.
+  cached `ImageBitmap`s. The emoji panel's cells draw each emoji from one kept layout of it (the tab's
+  `rememberTextMeasurer`, 512 kept), composing no text of their own, so a cell that scrolls in again lays out nothing.
 - `WindowInsets` handled by `Scaffold` once; no per-item inset reads.
 - Blur (reactions sheet, media viewer) via `RenderEffect` on API 31+, tonal scrim below. A blur is drawn again
   whenever what it covers changes: endless animations under one hold still while it shows (`LocalAnimationsPaused`,
@@ -333,6 +334,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   on every draw. A group's, channel's, Saved Messages' or community's avatar photo is cut to its polygon once, off the
   main thread, and kept in Coil's memory cache (`AvatarMask`), then drawn unclipped; circles and forums' rounded
   squares keep their clip. Custom emoji are cut out of their text with one rect clip per glyph.
+- Shared elements only where something moves: a media bubble sets up its side of the container transform to the media
+  viewer (`sharedMediaBounds`) only once its media is asked to open (`SharedMediaShapes.opening`, before the viewer
+  composes) and while a viewer's page shows it; the others only publish their corners. A still sticker's emoji leaves
+  the composition once its picture has faded in over it.
 
 ### Overdraw
 
@@ -829,7 +834,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   trace sections and counters (`feature:calls`' `CallTrace`): `callFrames` (a batch handed over from NTgCalls' thread
   to the sinks), `callFrameCopy` (one frame copied and queued for its `EglRenderer`), and the frame rates `Remote.fps`
   and `Self.fps`, set once a second; the renderers draw on their own threads (`RemoteEglRenderer`,
-  `SelfEglRenderer`). `tools/perfetto/video-call.pbtxt` records them for 5 minutes with every thread's CPU time,
+  `SelfEglRenderer`) and are set up, given their surface and taken down on `CallVideoSetup` (`RendererSetup`): making
+  the EGL context and waiting for a renderer's thread never block the main thread, where the call screen composes. `tools/perfetto/video-call.pbtxt` records them for 5 minutes with every thread's CPU time,
   Pingogram's memory (RSS, anonymous, swap) once a second and the battery's current; `tools/perfetto/video-call.sh`
   runs it and adds `dumpsys meminfo` (PSS) once a minute; `tools/perfetto/video-call.sql` summarizes the trace with
   Perfetto's trace processor or in https://ui.perfetto.dev, which reads the file in the browser. The trace holds

@@ -15,8 +15,8 @@ data class BackupHeader(
 )
 
 /**
- * A part of a backup: the app's settings, or each account's bookmarks, reminders, birthday reminders, keyword hits and
- * snippets.
+ * A part of a backup: the app's settings, or each account's bookmarks, reminders, birthday reminders, keyword hits,
+ * snippets and notes on chats.
  */
 enum class BackupSection {
     Settings,
@@ -37,8 +37,8 @@ class Backup(
 
 /**
  * What a backup keeps of the account of Telegram user [userId]: its [bookmarks] with their [tags], its [reminders],
- * [keywordHits], [snippets] and [birthdayReminders], none of a secret chat or a locked chat. `toString()` counts them
- * only.
+ * [keywordHits], [snippets], [birthdayReminders] and [chatNotes], none of a secret chat or a locked chat. `toString()`
+ * counts them only.
  */
 data class AccountBackup(
     val userId: Long,
@@ -48,10 +48,12 @@ data class AccountBackup(
     val keywordHits: List<KeywordHit> = emptyList(),
     val snippets: List<Snippet> = emptyList(),
     val birthdayReminders: List<BirthdayReminder> = emptyList(),
+    val chatNotes: List<ChatNote> = emptyList(),
 ) {
     override fun toString() =
         "AccountBackup(bookmarks=${bookmarks.size}, tags=${tags.size}, reminders=${reminders.size}, " +
-            "keywordHits=${keywordHits.size}, snippets=${snippets.size}, birthdayReminders=${birthdayReminders.size})"
+            "keywordHits=${keywordHits.size}, snippets=${snippets.size}, " +
+            "birthdayReminders=${birthdayReminders.size}, chatNotes=${chatNotes.size})"
 }
 
 /** What opening a backup file with a password found. */

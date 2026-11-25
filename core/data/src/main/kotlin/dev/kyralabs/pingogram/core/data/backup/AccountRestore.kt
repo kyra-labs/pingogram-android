@@ -22,6 +22,7 @@ import java.time.Instant
  * - **Snippets** by name, letter case aside: the backup's when the phone has none by that name and has room for it.
  * - **Birthday reminders** by contact: the backup's when the phone has none for that contact; the alarms follow the
  *   repository, so each restored one is scheduled again.
+ * - **Notes and names on chats** by chat: the backup's when the phone has none for that chat.
  *
  * Nothing on the phone is deleted. The first write that fails stops it, with what was written so far kept.
  */
@@ -37,6 +38,7 @@ internal class AccountRestore(
                 repositories.keywordHitRepository().restore(backup.keywordHits)
                 snippets(backup)
             }.then { birthdayReminders(backup) }
+            .then { chatNotes(backup) }
 
     /** The phone's tag id for each tag id of [backup], adding the tags the phone lacks. */
     private suspend fun tags(backup: AccountBackup): Outcome<Map<Long, Long>> {
@@ -89,6 +91,14 @@ internal class AccountRestore(
                 .toSet()
         return backup.birthdayReminders
             .filter { it.userId !in onPhone }
+            .firstFailure { repository.set(it) }
+    }
+
+    private suspend fun chatNotes(backup: AccountBackup): Outcome<Unit> {
+        val repository = repositories.chatNoteRepository()
+        val onPhone = repository.notes.first()
+        return backup.chatNotes
+            .filter { it.chatId !in onPhone }
             .firstFailure { repository.set(it) }
     }
 

@@ -59,6 +59,12 @@ class ChatsPageScreenshotTest {
     @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
     fun compactOnLight() = capture("compactOnLight", ThemeMode.Light, defaults.copy(compactChatList = true))
 
+    /** The whole page, down to the Chat list group, with "Notes and names on this phone" off (FR-X20). */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun notesAndNamesOffLight() =
+        capture("notesAndNamesOffLight", ThemeMode.Light, defaults.copy(notesAndNames = false))
+
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, ChatsPageUiState.Loading)
 

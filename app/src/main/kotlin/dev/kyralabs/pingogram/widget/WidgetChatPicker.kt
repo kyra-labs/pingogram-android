@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -23,12 +25,14 @@ import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -117,7 +121,8 @@ internal class WidgetPickerSources(
  * The Conversation widget's chat picker (board 33): the shown account's main chat list as TDLib has loaded it, without
  * secret chats (whose messages stay off the home screen) and locked chats (`docs/adr/0029-locked-chats.md`), filtered
  * on the device by every word of the query at the start of a word of the title, in any letter case and with or without
- * accents. Picking a chat keeps it in the widget ([WidgetChatChooser]) and closes the picker ([closed]).
+ * accents. Picking a chat keeps it in the widget ([WidgetChatChooser]) and closes the picker ([closed]). The list is
+ * mapped and filtered on [dispatcher], off the main thread: it runs again for every typed letter and chat update.
  */
 @HiltViewModel
 class WidgetChatPickerViewModel
@@ -126,6 +131,7 @@ class WidgetChatPickerViewModel
         sources: WidgetPickerSources,
         private val activeSlot: StateFlow<Int>,
         private val chooser: WidgetChatChooser,
+        dispatcher: CoroutineDispatcher,
     ) : ViewModel() {
         @Inject
         internal constructor(
@@ -133,7 +139,8 @@ class WidgetChatPickerViewModel
             sources: WidgetPickerSources,
             graphs: AccountGraphs,
             chooser: GlanceWidgetChatChooser,
-        ) : this(savedStateHandle, sources, graphs.activeSlot, chooser)
+            @Dispatcher(Default) dispatcher: CoroutineDispatcher,
+        ) : this(savedStateHandle, sources, graphs.activeSlot, chooser, dispatcher)
 
         private val appWidgetId = savedStateHandle.toRoute<WidgetChatPickerRoute>().appWidgetId
 
@@ -161,7 +168,8 @@ class WidgetChatPickerViewModel
                             .toImmutableList(),
                     query = typed,
                 )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), WidgetChatPickerState())
+            }.flowOn(dispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), WidgetChatPickerState())
 
         fun onQueryChange(text: String) {
             query.value = text

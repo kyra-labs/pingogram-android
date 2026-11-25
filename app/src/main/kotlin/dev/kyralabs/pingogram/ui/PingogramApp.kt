@@ -307,27 +307,6 @@ private fun AppContent(
 }
 
 /**
- * Whether search shows: docked in the Chats tab's list pane ([GlobalSearchState.isDocked]), or anywhere on the back
- * stack, also below a conversation it opened. The search button is away meanwhile, so it never opens a second search
- * and only search's own coming and going moves it ([SearchButtonSlot]). Derived, so that only opening or leaving search
- * recomposes the shell.
- */
-@Composable
-private fun rememberSearchOpen(
-    navController: NavController,
-    search: GlobalSearchState,
-): State<Boolean> {
-    val currentEntry = navController.currentBackStackEntryAsState()
-    return remember(navController, currentEntry, search) {
-        derivedStateOf {
-            // Read for every change of the destination, which is when the back stack changes.
-            currentEntry.value
-            search.isDocked || runCatching { navController.getBackStackEntry<SearchRoute>() }.isSuccess
-        }
-    }
-}
-
-/**
  * Opens global search (`docs/DESIGN_SYSTEM.md` §6 "Global search"): [docked] in the Chats tab's list pane, which the
  * Chats tab shows first, or pushed full screen above the tab.
  */
