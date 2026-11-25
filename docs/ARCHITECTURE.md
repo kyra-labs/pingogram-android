@@ -880,9 +880,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   first, then newest first, as `FoundMessage`s, with their chats; a chat that cannot be searched is left out.
 - **Channel feed** (FR-X5): `core:domain`'s `ChannelFeedRepository` (`TdlibChannelFeedRepository`, `core:data`, no
   storage) is the followed channels' newest posts as one timeline. td_api.tl's `openChat` says channels get their
-  updates only while open, so the feed does not wait for `updateNewMessage`: `load` reads each main-list channel's
-  newest 10 posts with `getChatHistory` (asking once more from the oldest where TDLib's first answer is short), at
-  most four channels at once, and the feed follows each channel's last post, which the chat list keeps current
+  updates only while open, so the feed does not wait for `updateNewMessage`: `load` first shows what TDLib keeps on
+  the phone of each channel not read yet (`getChatHistory` with `only_local`, no request to the server,
+  `docs/PERFORMANCE.md` §3), then reads each main-list channel's newest 10 posts with `getChatHistory` (asking once
+  more from the oldest where TDLib's first answer is short), which replace them, at most four channels at once, and the feed follows each channel's last post, which the chat list keeps current
   (`updateChatLastMessage`), reading the posts since whenever it is newer than the newest read. A post is unread while
   newer than its channel's `last_read_inbox_message_id`; `view` marks posts read with `viewMessages`
   (`messageSourceOther`, `force_read`), which also reports a channel's sponsored message seen, as td_api.tl has no

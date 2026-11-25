@@ -163,8 +163,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   to 60 s (`total_timeout_limit`) before answering, and giving up earlier makes a retry worsen the flood.
 - `openChat` on enter / `closeChat` on leave so TDLib can prioritize; `viewMessages` batched
   (max once per 300 ms) with `forceRead=false`.
-- History paging: `getChatHistory(limit=50, onlyLocal=true)` first, then network fill; prefetch
-  the next page when the user is 20 items from the end, in both directions. A chat with unread
+- History paging (the channel feed's first read too): `getChatHistory(limit=50, onlyLocal=true)` first, then network
+  fill; prefetch the next page when the user is 20 items from the end, in both directions. A chat with unread
   messages opens around the first unread one (`from_message_id = last_read_inbox_message_id`,
   `offset = -30`), a jump to a message far back loads the page around it, never every page up to
   it; the conversation shows nothing until that page is there, so it never jumps. A history holds at most 300

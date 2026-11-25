@@ -12,7 +12,9 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chatPosition
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,7 +29,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * [TdlibChannelFeedRepository] on a [FakeTdlibClient] and the real chat repository: the channels' last posts before
- * anything is read, each channel's newest posts merged newest first, TDLib's short first answer, a channel's new post
+ * anything is read, what TDLib has on the phone before the server answers, each channel's newest posts merged newest
+ * first, TDLib's short first answer, a channel's new post
  * read when its last post changes, read states, seeing posts, and failures.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -40,11 +43,19 @@ class TdlibChannelFeedRepositoryTest {
 
     private val failing = mutableSetOf<Long>()
 
+    /** What TDLib keeps of each channel on the phone, by chat id; where absent, what [histories] holds. */
+    private val onPhone = mutableMapOf<Long, List<TdApi.Message>>()
+
+    /** While not null, requests to the server wait for it; reads from the phone do not. */
+    private var server: CompletableDeferred<Unit>? = null
+
     private val client =
         FakeTdlibClient().apply {
             on(TdApi.GetChatHistory::class) { request ->
                 if (request.chatId in failing) return@on TdResult.Failure(TdError(500, "Request aborted"))
-                val history = histories[request.chatId].orEmpty()
+                if (!request.onlyLocal) server?.await()
+                val stored = if (request.onlyLocal) onPhone[request.chatId] else null
+                val history = stored ?: histories[request.chatId].orEmpty()
                 val from =
                     if (request.fromMessageId == 0L) history else history.dropWhile { it.id > request.fromMessageId }
                 val most = if (request.fromMessageId == 0L) minOf(request.limit, firstCall) else request.limit
@@ -193,6 +204,43 @@ class TdlibChannelFeedRepositoryTest {
                 listOf(2L to 25L, 1L to 12L, 1L to 11L, 1L to 10L, 2L to 9L),
                 repository.feed.first().ids(),
             )
+        }
+
+    @Test
+    fun `loading shows what TDLib has on the phone before the server answers, then the server's posts`() =
+        runTest {
+            val repository = repository()
+            channel(1, 12, 11, 10)
+            channel(2, 25, 9)
+            onPhone[1] = listOf(post(1, 11), post(1, 10))
+            onPhone[2] = emptyList()
+            server = CompletableDeferred()
+            val feed = collected(repository)
+            // Before loading, each channel's last post.
+            assertEquals(listOf(2L to 25L, 1L to 12L), feed().ids())
+
+            val loading = async { repository.load() }
+            runCurrent()
+
+            // With the phone's posts of channel 1; nothing has come from the server yet.
+            assertEquals(listOf(2L to 25L, 1L to 12L, 1L to 11L, 1L to 10L), feed().ids())
+            checkNotNull(server).complete(Unit)
+            assertTrue(loading.await() is Outcome.Success)
+            runCurrent()
+            assertEquals(listOf(2L to 25L, 1L to 12L, 1L to 11L, 1L to 10L, 2L to 9L), feed().ids())
+        }
+
+    @Test
+    fun `loading again reads only the server for channels already read`() =
+        runTest {
+            val repository = repository()
+            channel(1, 12, 11)
+            repository.load()
+
+            repository.load()
+
+            val fromPhone = client.sent.filterIsInstance<TdApi.GetChatHistory>().count { it.onlyLocal }
+            assertEquals(1, fromPhone)
         }
 
     @Test

@@ -11,6 +11,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.
+- The Feed tab shows the channel posts already on your phone at once, then the newest ones as they arrive.
 - The emoji panel scrolls with less work: each emoji is laid out once and kept.
 - A video that plays while it downloads takes far less memory, and a video your phone's first decoder can't play
   tries the next one instead of failing.
