@@ -9,7 +9,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-11-25
+
 ### Added
+- Links you send and open lose their tracking parameters, such as utm_source and fbclid: Settings → Privacy and
+  security → Remove tracking from links, on by default.
+- Incognito keyboard: Settings → Privacy and security asks your keyboard not to learn from what you type in
+  Pingogram; secret chats always ask.
 - Add contact has a "Share my phone number" switch, off unless you turn on "Share my phone number with new
   contacts" in Settings → Privacy and security → Contacts; the chat bar's "Add contact" follows that setting.
 - Folder tabs can leave out their unread counts: Settings → Chat folders → "Unread counters".
@@ -45,14 +51,27 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   wakes only what shows that file.
 - The chat list does less work as chats change: a changed row no longer redraws the header or the folder tabs, rows
   that did not change are recognised without being rebuilt, and the story rings follow their chats in one place.
+- In light theme, messages you receive sit on a bubble a step deeper than the background, so they no longer blend into it.
+
+### Fixed
+- A chat with a photo wallpaper opens without decoding the photo again for its top bar's blur: the blurred copy made
+  the first time is kept.
+- A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
+  notification shows at once and fills in its name and photo as they come.
+- A call that ends while it is still connecting no longer leaves the microphone on, and closing a voice chat's screen
+  while it joins no longer leaves it stuck at "Joining".
+- Calls connect more reliably: what the other phone sends to set up the call reaches it in the order it was sent.
+- Adding an account just after another one logged out no longer signs in to the account that is leaving, whose
+  data was then deleted.
+- With more than one account, Pingogram opens without waiting for the other accounts to start: they start in the
+  background.
+- The GIF panel no longer closes the app when a search's next page, or your saved GIFs, repeat a GIF: each shows once.
+- A malformed animated sticker shows nothing instead of closing the app, and the QR scanner says the camera is
+  unavailable instead of closing the app where the camera cannot start.
 
 ## [2.4.0] - 2026-11-23
 
 ### Added
-- Links you send and open lose their tracking parameters, such as utm_source and fbclid: Settings → Privacy and
-  security → Remove tracking from links, on by default.
-- Incognito keyboard: Settings → Privacy and security asks your keyboard not to learn from what you type in
-  Pingogram; secret chats always ask.
 - One wallpaper page for Chat appearance → Wallpaper and a private chat's "Wallpaper for this chat": a large preview
   of the conversation, the whole page in the colors the conversation will take from the wallpaper you pick, your
   theme's colors and Telegram's wallpapers and patterns in one grid, "Choose a photo" (sharp at your screen's size),
@@ -112,7 +131,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message's own link then reads "Copy message link".
 
 ### Changed
-- In light theme, messages you receive sit on a bubble a step deeper than the background, so they no longer blend into it.
 - A chat with a wallpaper opens faster: its colors show at once instead of fading in.
 - Scrolling a chat with a photo wallpaper is smoother.
 - The voice message button shows a sound wave instead of a microphone.
@@ -157,20 +175,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   options, "Name who posted" while no story notifies, and Power saving's options while it is off.
 
 ### Fixed
-- A chat with a photo wallpaper opens without decoding the photo again for its top bar's blur: the blurred copy made
-  the first time is kept.
-- A call that ended just as it started, or whose caller took a while to look up, no longer closes the app: the call's
-  notification shows at once and fills in its name and photo as they come.
-- A call that ends while it is still connecting no longer leaves the microphone on, and closing a voice chat's screen
-  while it joins no longer leaves it stuck at "Joining".
-- Calls connect more reliably: what the other phone sends to set up the call reaches it in the order it was sent.
-- Adding an account just after another one logged out no longer signs in to the account that is leaving, whose
-  data was then deleted.
-- With more than one account, Pingogram opens without waiting for the other accounts to start: they start in the
-  background.
-- The GIF panel no longer closes the app when a search's next page, or your saved GIFs, repeat a GIF: each shows once.
-- A malformed animated sticker shows nothing instead of closing the app, and the QR scanner says the camera is
-  unavailable instead of closing the app where the camera cannot start.
 - Pingogram no longer sometimes closes right as it opens.
 - The splash screen goes as soon as Pingogram knows whether you're signed in, instead of waiting for the app's other
   start-up work, so the app opens faster again.
@@ -1698,7 +1702,8 @@ Pingogram's new look: a bolder Material 3 Expressive design for chats, contacts 
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v2.1.0...v2.2.0
