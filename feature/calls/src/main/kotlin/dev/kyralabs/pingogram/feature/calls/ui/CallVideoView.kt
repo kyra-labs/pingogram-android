@@ -22,8 +22,6 @@ import org.webrtc.JavaI420Buffer
 import org.webrtc.VideoFrame
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 /**
  * A call's video (`docs/adr/0019-video-and-group-calls-scope.md`): WebRTC's [EglRenderer], which the engine's AAR
@@ -57,7 +55,7 @@ internal fun CallVideoView(
     }
     val aspect = if (fit) renderer.frameAspect.floatValue else 0f
     AndroidView(
-        factory = { context -> TextureView(context).apply { surfaceTextureListener = renderer } },
+        factory = { context -> TextureView(context).apply { surfaceTextureListener = renderer.surface } },
         update = { renderer.setMirror(mirror) },
         modifier = if (aspect > 0f) modifier.wrapContentSize().aspectRatio(aspect) else modifier,
     )
@@ -102,13 +100,16 @@ private object CallEgl {
 /**
  * Takes the engine's packed I420 frames on its threads and hands them to [EglRenderer]: each is copied into a direct
  * buffer from a small pool (a buffer returns once the renderer drew or dropped its frame), as WebRTC's frames hold
- * their planes in direct buffers.
+ * their planes in direct buffers. The renderer is set up, given its [surface] and taken down off the main thread
+ * ([RendererSetup]); frames that come before it is set up are dropped, their buffers back in the pool.
  */
 private class TextureRenderer(
     name: String,
-) : VideoFrameSink,
-    TextureView.SurfaceTextureListener {
-    private val renderer = EglRenderer(name).apply { init(CallEgl.context, EglBase.CONFIG_PLAIN, GlRectDrawer()) }
+) : VideoFrameSink {
+    private val renderer = EglRenderer(name)
+
+    /** Its view's surface, and its setting up and taking down. */
+    val surface = RendererSetup(EglSurfaceRenderer(renderer))
     private val pool = ConcurrentLinkedQueue<ByteBuffer>()
     private val frameRate = FrameRateCounter(name)
 
@@ -166,40 +167,26 @@ private class TextureRenderer(
                 limit(offset + size)
             }.slice()
 
-    fun setMirror(mirror: Boolean) = renderer.setMirror(mirror)
+    fun setMirror(mirror: Boolean) = surface.setMirror(mirror)
 
-    fun release() = renderer.release()
+    fun release() = surface.release()
+}
 
-    override fun onSurfaceTextureAvailable(
-        surface: SurfaceTexture,
-        width: Int,
-        height: Int,
-    ) {
-        renderer.createEglSurface(surface)
-        onSurfaceTextureSizeChanged(surface, width, height)
-    }
+/** WebRTC's [EglRenderer] as [RendererSetup] drives it, drawing with the process's one EGL context ([CallEgl]). */
+private class EglSurfaceRenderer(
+    private val renderer: EglRenderer,
+) : SurfaceRenderer {
+    override fun setUp() = renderer.init(CallEgl.context, EglBase.CONFIG_PLAIN, GlRectDrawer())
 
-    override fun onSurfaceTextureSizeChanged(
-        surface: SurfaceTexture,
-        width: Int,
-        height: Int,
-    ) {
-        // Crops the frames to the view's shape: the video fills it.
-        if (width > 0 && height > 0) renderer.setLayoutAspectRatio(width.toFloat() / height)
-    }
+    override fun attach(surface: SurfaceTexture) = renderer.createEglSurface(surface)
 
-    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-        // The renderer must be done with the surface before the view releases it: a frame at most, on its thread.
-        val released = CountDownLatch(1)
-        renderer.releaseEglSurface(released::countDown)
-        released.await(RELEASE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        return true
-    }
+    override fun detach(done: Runnable) = renderer.releaseEglSurface(done)
 
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
+    override fun setAspectRatio(ratio: Float) = renderer.setLayoutAspectRatio(ratio)
+
+    override fun setMirror(mirror: Boolean) = renderer.setMirror(mirror)
+
+    override fun release() = renderer.release()
 }
 
 private const val HALF_TURN = 180
-
-/** How long the main thread waits for the renderer to let go of a destroyed surface. */
-private const val RELEASE_TIMEOUT_MS = 500L
