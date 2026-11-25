@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -92,12 +93,16 @@ internal fun widgetMessages(
     }
 }
 
-/** The widget's title for [chat]: "Saved Messages" for the user's own chat, "Deleted Account" for one. */
+/**
+ * The widget's title for [chat]: "Saved Messages" for the user's own chat, "Deleted Account" for one, and the name
+ * given on this phone ([localNames], `REQUIREMENTS.md` FR-X20) unless the chat is a contact's.
+ */
 internal fun widgetTitle(
     chat: Chat,
     users: Map<Long, User>,
     myUserId: Long?,
     resources: Resources,
+    localNames: Map<Long, String> = emptyMap(),
 ): String {
     val userId = (chat.type as? ChatType.Private)?.userId
     return when {
@@ -110,7 +115,7 @@ internal fun widgetTitle(
         }
 
         else -> {
-            chat.title
+            localNames.shownName(chat.id, isContact = userId != null && users[userId]?.isContact == true) ?: chat.title
         }
     }
 }

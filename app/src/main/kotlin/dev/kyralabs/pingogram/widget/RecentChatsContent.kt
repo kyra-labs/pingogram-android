@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -62,8 +63,9 @@ data class WidgetChat(
 
 /**
  * The rows of the first [limit] [chats] of the main chat list, in its order (pinned first): "Saved Messages" for the
- * user's own chat, "Deleted Account" for one, and in groups "You:" or the sender's name before the message, as the
- * chat list does. A secret chat's messages stay off the home screen ("Secret chat"); a chat without messages shows an
+ * user's own chat, "Deleted Account" for one, the name given on this phone ([localNames], `REQUIREMENTS.md` FR-X20)
+ * unless the chat is a contact's, and in groups "You:" or the sender's name before the message, as the chat list
+ * does. A secret chat's messages stay off the home screen ("Secret chat"); a chat without messages shows an
  * empty line.
  */
 internal fun widgetChats(
@@ -73,6 +75,7 @@ internal fun widgetChats(
     resources: Resources,
     limit: Int,
     slot: Int = 0,
+    localNames: Map<Long, String> = emptyMap(),
 ): List<WidgetChat> =
     chats.take(limit).map { chat ->
         val userId = (chat.type as? ChatType.Private)?.userId
@@ -84,7 +87,7 @@ internal fun widgetChats(
                 when {
                     isSavedMessages -> resources.getString(UiR.string.chat_saved_messages)
                     isDeletedAccount -> resources.getString(UiR.string.user_deleted_account)
-                    else -> chat.title
+                    else -> localNames.shownName(chat.id, isContact = users[userId]?.isContact == true) ?: chat.title
                 },
             preview = chat.previewText(users, myUserId, resources),
             unreadCount = chat.unreadCount,

@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -72,6 +74,7 @@ class ConversationWidgetUpdaterTest {
 
     private val client = FakeTdlibClient()
     private val accounts = MutableStateFlow<Map<Int, WidgetAccount>>(emptyMap())
+    private val localNames = FakeLocalChatNamesRepository()
 
     private fun TestScope.account(lockedChats: Set<Long>): WidgetAccount {
         val context = RuntimeEnvironment.getApplication()
@@ -96,6 +99,7 @@ class ConversationWidgetUpdaterTest {
                     backgroundScope,
                     SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
                 ),
+            localNames = localNames,
         )
     }
 
@@ -177,6 +181,19 @@ class ConversationWidgetUpdaterTest {
             assertTrue(content.canReply)
             assertNotNull(content.avatar)
             assertTrue(widgets.updates > 0)
+        }
+
+    @Test
+    fun `titles the chat with its name on this phone`() =
+        runTest {
+            localNames.names.value = persistentMapOf(ALICE to "Ally")
+            history()
+            val updater = updater(FakeWidgets(KEY))
+            chat()
+            runCurrent()
+            settle()
+
+            assertEquals("Ally", (updater.currentContent(KEY) as ConversationContent.Chat).title)
         }
 
     @Test

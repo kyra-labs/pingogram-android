@@ -214,11 +214,11 @@ class ConversationWidgetUpdater
                 }
                 combine(
                     combine(account.chats.chat(key.chatId), account.messages.history(key.chatId), load, ::Triple),
-                    account.users.users,
+                    combine(account.users.users, account.localNames.names, ::Pair),
                     account.users.myUserId,
                     account.groups.basicGroups,
                     account.groups.supergroups,
-                ) { (chat, history, loaded), users, me, basicGroups, supergroups ->
+                ) { (chat, history, loaded), (users, localNames), me, basicGroups, supergroups ->
                     val failure = (loaded as? Outcome.Failure)?.error
                     when {
                         failure == DomainError.NotFound -> {
@@ -237,7 +237,7 @@ class ConversationWidgetUpdater
                                     (chat.type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] },
                                 )
                             val resources = context.resources
-                            val title = widgetTitle(chat, users, me, resources)
+                            val title = widgetTitle(chat, users, me, resources, localNames)
                             Frame(
                                 ConversationContent.Chat(
                                     chatId = key.chatId,

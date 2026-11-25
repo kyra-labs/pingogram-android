@@ -18,7 +18,10 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
@@ -218,12 +221,12 @@ class RecentChatsWidgetUpdater
                 val unread = chatRepository.unreadMessageCount(ChatListType.Main).map { it.unreadUnmutedCount }
                 combine(
                     combine(chats, unread, ::Pair),
-                    account.users.users,
+                    combine(account.users.users, account.localNames.names, ::Pair),
                     account.users.myUserId,
                     account.groups.supergroups,
                     loaded,
-                ) { (list, unreadMessages), users, me, supergroups, done ->
-                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot)
+                ) { (list, unreadMessages), (users, localNames), me, supergroups, done ->
+                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot, localNames)
                     val shown = list.take(MAX_CHATS)
                     if (rows.isEmpty() && !done) {
                         null
@@ -288,7 +291,8 @@ class RecentChatsWidgetUpdater
 
 /**
  * What the widgets read of one account: its login, chats, users, groups (which supergroups are forums, and where the
- * user may write), locked chats, avatars from its files, and a chat's messages for the Conversation widget.
+ * user may write), locked chats, avatars from its files, a chat's messages for the Conversation widget, and the names
+ * given on this phone (`REQUIREMENTS.md` FR-X20).
  */
 internal data class WidgetAccount(
     val auth: AuthRepository,
@@ -298,6 +302,7 @@ internal data class WidgetAccount(
     val chatLock: ChatLockRepository,
     val avatars: AvatarIcons,
     val messages: MessageRepository,
+    val localNames: LocalChatNamesRepository,
 )
 
 /** Whether this chat is a forum, whose avatar is a rounded square. */
@@ -313,6 +318,7 @@ internal class WidgetAccounts
         graphs: AccountGraphs,
         private val appearance: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
+        private val notesAndNames: NotesAndNamesRepository,
     ) {
         private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
 
@@ -334,6 +340,7 @@ internal class WidgetAccounts
                     chatLock = repositories.chatLockRepository(),
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
                     messages = repositories.messageRepository(),
+                    localNames = NotesLocalChatNamesRepository(repositories.chatNoteRepository(), notesAndNames),
                 )
             }
     }
