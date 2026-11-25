@@ -22,9 +22,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [MutedWordsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]): the switch, and the words
- * one per line in their order (a line break in a word is saved as a space). A file that cannot be read and missing keys
- * read as the defaults ([MutedWordSettings]).
+ * [MutedWordsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]): the switch, and the
+ * words one per line in their order (a line break in a word is saved as a space). A file that cannot be read and
+ * missing keys read as the defaults ([MutedWordSettings]).
  */
 @Singleton
 class DataStoreMutedWordsRepository
