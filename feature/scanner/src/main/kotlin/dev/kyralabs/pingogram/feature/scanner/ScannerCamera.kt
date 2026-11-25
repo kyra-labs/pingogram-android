@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.scanner
 
 import android.util.Size
+import android.view.Surface
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -20,11 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.awaitCancellation
 import java.util.concurrent.Executors
 
 /**
@@ -36,6 +39,8 @@ import java.util.concurrent.Executors
  * (in use by another app, removed, refused by a policy) calls [onUnavailable].
  *
  * Bound to the screen's lifecycle: the camera runs only while the screen is started, and is released when it leaves.
+ * The activity is not created again when the screen rotates (its `configChanges`), so the preview and the analysis
+ * follow the display's rotation themselves, read again with each configuration.
  */
 @Composable
 internal fun ScannerCamera(
@@ -52,6 +57,7 @@ internal fun ScannerCamera(
     val currentOnTorchAvailable by rememberUpdatedState(onTorchAvailable)
     val currentOnUnavailable by rememberUpdatedState(onUnavailable)
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
+    val currentRotation by rememberUpdatedState(displayRotation())
     val analyzer =
         remember(mainExecutor) {
             QrAnalyzer(onFound = { text ->
@@ -86,7 +92,7 @@ internal fun ScannerCamera(
             val bound = provider.bindToLifecycle(lifecycleOwner, selector, preview, analysis)
             camera = bound
             currentOnTorchAvailable(bound.cameraInfo.hasFlashUnit())
-            awaitCancellation()
+            followRotation({ currentRotation }, preview, analysis)
         } catch (_: IllegalArgumentException) {
             // No camera matches, or the use cases do not fit it.
             currentOnUnavailable()
@@ -103,6 +109,26 @@ internal fun ScannerCamera(
     }
     LaunchedEffect(camera, torchOn) { camera?.cameraControl?.enableTorch(torchOn) }
     surfaceRequest?.let { request -> CameraXViewfinder(surfaceRequest = request, modifier = modifier.fillMaxSize()) }
+}
+
+/** The display's rotation, read again with each configuration. */
+@Composable
+private fun displayRotation(): Int {
+    val configuration = LocalConfiguration.current
+    val view = LocalView.current
+    return remember(configuration, view) { view.display?.rotation ?: Surface.ROTATION_0 }
+}
+
+/** Turns [preview] and [analysis] to [rotation], at once and as it changes, until cancelled. */
+private suspend fun followRotation(
+    rotation: () -> Int,
+    preview: Preview,
+    analysis: ImageAnalysis,
+) {
+    snapshotFlow(rotation).collect {
+        preview.targetRotation = it
+        analysis.targetRotation = it
+    }
 }
 
 /**

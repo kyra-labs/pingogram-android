@@ -154,9 +154,13 @@
         tools:targetApi="tiramisu">
 
         <!-- singleTask: a Telegram link from another app opens in Pingogram's own task, through onNewIntent when it runs,
-             not in a second copy of the app inside the other app's task (docs/adr/0013-deep-links.md). -->
+             not in a second copy of the app inside the other app's task (docs/adr/0013-deep-links.md).
+             configChanges: a rotation, a fold or unfold, a resize in multi-window and a dark mode switch reach the
+             activity as a configuration change, which Compose follows, instead of creating the activity and composing
+             the whole app again; as the call and media screens do. A change of language still creates it again. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">

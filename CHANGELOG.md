@@ -24,6 +24,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   no longer redraws the blur for every frame they move.
 - Lists with group and channel photos, and messages with custom emoji, take less work to draw while they scroll.
 - Conversations with many photos, videos and stickers do less work for each of them while they scroll.
+- Rotating the phone, folding or unfolding it, resizing the app's window and switching dark mode no longer reload the
+  app: what is on screen stays where it was, and the colors change smoothly.
 
 ## [2.5.0] - 2026-11-25
 

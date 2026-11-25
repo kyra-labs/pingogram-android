@@ -14,7 +14,9 @@ import dagger.hilt.components.SingletonComponent
 /**
  * [base] in [language]'s locale, the system's languages for a null tag, and the process's default locale set to match,
  * so text the app formats itself (times, numbers) follows it too. Unknown before the language is read: then [base]
- * as it is, in the system's languages.
+ * as it is, in the system's languages. Only the locales are overridden: the rest of the configuration (night mode,
+ * orientation, screen size) still follows the system's, as MainActivity handles those changes without being created
+ * again.
  */
 internal fun contextInLanguage(
     base: Context,
@@ -25,7 +27,7 @@ internal fun contextInLanguage(
         language.languageTag?.let(LocaleList::forLanguageTags)
             ?: Resources.getSystem().configuration.locales
     LocaleList.setDefault(locales)
-    val configuration = Configuration(base.resources.configuration).apply { setLocales(locales) }
+    val configuration = Configuration().apply { setLocales(locales) }
     return base.createConfigurationContext(configuration)
 }
 
