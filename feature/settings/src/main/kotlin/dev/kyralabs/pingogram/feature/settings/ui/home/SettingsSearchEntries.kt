@@ -33,6 +33,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
         setting(SettingsPage.Chats, R.string.settings_undo_redo),
         setting(SettingsPage.Chats, R.string.settings_drafts_button),
         setting(SettingsPage.Chats, R.string.settings_compact_chat_list),
+        setting(SettingsPage.Chats, R.string.settings_notes_and_names),
     )
 }
 

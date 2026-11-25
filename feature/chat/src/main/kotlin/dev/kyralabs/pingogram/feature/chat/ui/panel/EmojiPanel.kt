@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
@@ -48,6 +47,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -58,10 +59,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -78,6 +86,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.PanelPreviewData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -225,6 +234,8 @@ private fun EmojiTabContent(
             val starts = remember(sections) { sectionStarts(sections.map { it.emoji.size }) }
             val haptics = LocalHapticFeedback.current
             val emojiStyle = emojiTextStyle(MaterialTheme.sizes.panelEmoji)
+            // Shared by the cells: an emoji's layout is kept, so a cell that scrolls in again lays out nothing.
+            val emojiLayouts = rememberTextMeasurer(cacheSize = EMOJI_LAYOUT_CACHE)
             Column {
                 SectionRow(
                     count = sections.size,
@@ -249,7 +260,7 @@ private fun EmojiTabContent(
                             contentType = { EMOJI },
                         ) { index ->
                             val emoji = section.emoji[index]
-                            EmojiCell(emoji, emojiStyle) {
+                            EmojiCell(emoji, emojiStyle, emojiLayouts) {
                                 haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
                                 onEmoji(emoji)
                             }
@@ -261,11 +272,16 @@ private fun EmojiTabContent(
     }
 }
 
-/** One emoji, which [onClick] puts into the text; screen readers read the emoji's name, as a button. */
+/**
+ * One emoji, which [onClick] puts into the text; screen readers read the emoji's name, as a button. It is drawn from
+ * [layouts]' kept layout of it, centred as a text in the cell would be, rather than composing and laying out a text of
+ * its own in each cell.
+ */
 @Composable
 private fun EmojiCell(
     emoji: String,
     style: TextStyle,
+    layouts: TextMeasurer,
     onClick: () -> Unit,
 ) {
     Box(
@@ -273,11 +289,22 @@ private fun EmojiCell(
             Modifier
                 .aspectRatio(1f)
                 .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        BasicText(text = emoji, style = style, maxLines = 1, softWrap = false)
-    }
+                .clickable(role = Role.Button, onClick = onClick)
+                .semantics { text = AnnotatedString(emoji) }
+                .drawWithCache {
+                    val cell = IntSize(size.width.roundToInt(), size.height.roundToInt())
+                    val layout =
+                        layouts.measure(
+                            text = emoji,
+                            style = style,
+                            softWrap = false,
+                            maxLines = 1,
+                            constraints = Constraints(maxWidth = cell.width, maxHeight = cell.height),
+                        )
+                    val topLeft = Alignment.Center.align(layout.size, cell, layoutDirection)
+                    onDrawBehind { drawText(layout, topLeft = Offset(topLeft.x.toFloat(), topLeft.y.toFloat())) }
+                },
+    )
 }
 
 /** The title of an emoji section; null is the recent emoji. */
@@ -330,6 +357,9 @@ private fun emojiTextStyle(cell: Dp): TextStyle {
 private const val EMOJI_SIZE_RATIO = 0.58f
 
 private const val RECENT_KEY = "recent"
+
+/** The emoji layouts kept: a few screens of the grid, whichever way it scrolls. */
+private const val EMOJI_LAYOUT_CACHE = 512
 private const val EMOJI = "emoji"
 
 /** Content types of the panel's grids. */
