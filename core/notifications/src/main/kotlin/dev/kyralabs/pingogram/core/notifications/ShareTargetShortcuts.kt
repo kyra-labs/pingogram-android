@@ -19,7 +19,9 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.DirectShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,10 +47,11 @@ import kotlin.time.Duration.Companion.seconds
  * The Direct Share targets (`REQUIREMENTS.md` FR-N2): the [MAX_TARGETS] most recent chats of the main chat list, in
  * its order (pinned chats first), where the user can send messages, published as conversation shortcuts
  * ([ConversationShortcuts.publishShareTargets]), so the system's share sheet offers them, with their avatars
- * ([AvatarIcons]). Saved Messages is left out: it has no avatar of its own there, and the share sheet lists it first.
- * Locked chats are left out too, unlocked or not (`docs/adr/0029-locked-chats.md`). While Privacy and security →
- * "Chats in the share sheet" is off ([DirectShareRepository]), nothing is published, and the share targets already
- * there are withdrawn ([ConversationShortcuts.withdrawShareTargets]) as it turns off and at each start.
+ * ([AvatarIcons]) and the names given on this phone (`REQUIREMENTS.md` FR-X20) unless a contact's. Saved Messages
+ * is left out: it has no avatar of its own there, and the share sheet lists it first. Locked chats are left out too,
+ * unlocked or not (`docs/adr/0029-locked-chats.md`). While Privacy and security → "Chats in the share sheet" is off
+ * ([DirectShareRepository]), nothing is published, and the share targets already there are withdrawn
+ * ([ConversationShortcuts.withdrawShareTargets]) as it turns off and at each start.
  *
  * It follows the chat list while someone is logged in. It works out the targets at once from what it first reads,
  * then again only once the chats, users and groups have stayed as they are for [SETTLE_DELAY] (owner decision
@@ -76,6 +79,7 @@ class ShareTargetShortcuts
         private val avatars: AvatarIcons,
         private val shortcuts: ConversationShortcuts,
         private val scope: CoroutineScope,
+        private val localNames: Flow<Map<Long, String>> = flowOf(emptyMap()),
     ) {
         @Inject
         internal constructor(
@@ -89,6 +93,7 @@ class ShareTargetShortcuts
             shortcuts: ConversationShortcutsFactory,
             graphs: AccountGraphs,
             @ApplicationScope scope: CoroutineScope,
+            localChatNames: LocalChatNamesRepository,
         ) : this(
             authRepository = authRepository,
             chatRepository = chatRepository,
@@ -99,6 +104,7 @@ class ShareTargetShortcuts
             avatars = avatars,
             shortcuts = shortcuts.of(graphs.activeSlot.value),
             scope = scope,
+            localNames = localChatNames.names,
         )
 
         /**
@@ -135,12 +141,13 @@ class ShareTargetShortcuts
                     if (locked.isEmpty()) chats else chats.filterNot { it.id in locked }
                 },
                 // Names and icons: profiles, which no one's going online changes.
-                userRepository.profiles,
+                combine(userRepository.profiles, localNames, ::Pair),
                 userRepository.myUserId,
                 groupRepository.basicGroups,
                 groupRepository.supergroups,
-            ) { chats, users, me, basicGroups, supergroups -> chats to People(users, me, basicGroups, supergroups) }
-                .settled(SETTLE_DELAY)
+            ) { chats, (users, names), me, basicGroups, supergroups ->
+                chats to People(users, me, basicGroups, supergroups, names)
+            }.settled(SETTLE_DELAY)
                 .map { (chats, people) -> targetsOf(chats, people) }
 
         private suspend fun publish(targets: List<Target>) {
@@ -190,6 +197,7 @@ class ShareTargetShortcuts
             val myUserId: Long?,
             val basicGroups: ImmutableMap<Long, BasicGroup>,
             val supergroups: ImmutableMap<Long, Supergroup>,
+            val localNames: Map<Long, String>,
         )
 
         private fun targetsOf(
@@ -205,7 +213,8 @@ class ShareTargetShortcuts
                     val partnerId = (chat.type as? ChatType.Private)?.userId
                     val partner =
                         partnerId?.let { Partner(it, isBot = people.users[it]?.type == UserType.Bot) }
-                    Target(chat.id, chat.title, chat.photo, partner)
+                    val isContact = partnerId != null && people.users[partnerId]?.isContact == true
+                    Target(chat.id, people.localNames.shownName(chat.id, isContact) ?: chat.title, chat.photo, partner)
                 }.toList()
 
         private fun Chat.writeAccessOf(people: People): WriteAccess {

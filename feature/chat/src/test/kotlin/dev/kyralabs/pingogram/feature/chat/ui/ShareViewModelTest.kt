@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.domain.model.SharedStory
 import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.navigation.ShareRoute
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.BASIC_GROUP_ID
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
@@ -62,6 +63,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
         offered: Boolean = true,
         hiddenChats: Set<Long> = emptySet(),
         shownFirst: List<Long> = emptyList(),
+        localNames: Map<Long, String> = emptyMap(),
     ): ShareViewModel {
         users.setUsers(user(ME), user(ADA, firstName = "Ada"))
         val ada = chat(title = "Ada Lovelace")
@@ -82,7 +84,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 applicationScope = backgroundScope,
                 results = results,
-                targetPreferences = TargetPreferences(flowOf(hiddenChats), flowOf(shownFirst)),
+                targetPreferences = TargetPreferences(flowOf(hiddenChats), flowOf(shownFirst), flowOf(localNames)),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sheet.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { results.results.collect { reported += it } }
@@ -134,6 +136,31 @@ class ShareViewModelTest : ChatViewModelHarness() {
                 viewModel.sheet.value!!
                     .targets
                     .map { it.chatId },
+            )
+        }
+
+    @Test
+    fun `a chat shows its name on this phone, a contact keeps their contact name`() =
+        runViewModelTest {
+            val viewModel = shareViewModel(localNames = mapOf(PRIVATE_CHAT to "Ally", GROUP_CHAT to "Book club"))
+
+            assertEquals(
+                listOf(UiText.Plain("Ally"), UiText.Plain("Book club")),
+                viewModel.sheet.value!!
+                    .targets
+                    .drop(1)
+                    .map { it.title },
+            )
+
+            users.setUsers(user(ME), user(ADA, firstName = "Ada").copy(isContact = true))
+            runCurrent()
+
+            assertEquals(
+                UiText.Plain("Ada Lovelace"),
+                viewModel.sheet.value!!
+                    .targets
+                    .first { it.chatId == PRIVATE_CHAT }
+                    .title,
             )
         }
 

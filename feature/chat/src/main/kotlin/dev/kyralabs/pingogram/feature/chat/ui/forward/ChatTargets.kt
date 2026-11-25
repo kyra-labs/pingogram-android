@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -98,7 +99,15 @@ internal class ChatTargets(
                 .distinctUntilChanged()
                 .flatMapLatest { text -> if (text.isEmpty()) mainChats() else searchChats(text) }
         // Who may receive and how they are named: profiles, which no one's going online changes.
-        val people = combine(users.profiles, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
+        val people =
+            combine(
+                users.profiles,
+                users.myUserId,
+                groups.basicGroups,
+                groups.supergroups,
+                preferences.localNames,
+                ::People,
+            )
         // Locked chats not opened with the passcode are never offered (docs/adr/0029-locked-chats.md).
         val shown =
             combine(found, preferences.hidden) { found, hidden ->
@@ -205,6 +214,7 @@ internal class ChatTargets(
         val myUserId: Long?,
         val basicGroups: ImmutableMap<Long, BasicGroup>,
         val supergroups: ImmutableMap<Long, Supergroup>,
+        val localNames: Map<Long, String>,
     ) {
         /** [chats] that [canReceive] lets through, as targets, in their order and each once. */
         fun targetsOf(
@@ -246,14 +256,15 @@ internal class ChatTargets(
 
         private fun targetOf(chat: Chat): ForwardTarget {
             val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
-            val isDeletedAccount = chat.userId?.let(users::get)?.isDeleted == true
+            val user = chat.userId?.let(users::get)
+            val isDeletedAccount = user?.isDeleted == true
             return ForwardTarget(
                 chatId = chat.id,
                 title =
                     when {
                         isSavedMessages -> UiText.resource(R.string.chat_saved_messages)
                         isDeletedAccount -> UiText.resource(R.string.user_deleted_account)
-                        else -> UiText.Plain(chat.title)
+                        else -> UiText.Plain(localNames.shownName(chat.id, user?.isContact == true) ?: chat.title)
                     },
                 photo = if (isSavedMessages) null else chat.photo,
                 placeholderIcon =

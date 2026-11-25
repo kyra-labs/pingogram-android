@@ -57,6 +57,7 @@ class WidgetChatPickerViewModelTest {
         locked: Set<Long> = emptySet(),
         chats: Flow<List<Chat>> = this@WidgetChatPickerViewModelTest.chats,
         dispatcher: CoroutineDispatcher = StandardTestDispatcher(testScheduler),
+        localNames: Map<Long, String> = emptyMap(),
     ): WidgetChatPickerViewModel =
         WidgetChatPickerViewModel(
             savedStateHandle = SavedStateHandle(mapOf("appWidgetId" to WIDGET)),
@@ -67,6 +68,7 @@ class WidgetChatPickerViewModelTest {
                     myUserId = MutableStateFlow(ME),
                     lockedChatIds = MutableStateFlow(locked),
                     forums = MutableStateFlow(emptySet()),
+                    localNames = MutableStateFlow(localNames),
                 ),
             activeSlot = MutableStateFlow(SLOT),
             chooser = { widget, slot, chatId ->
@@ -110,6 +112,27 @@ class WidgetChatPickerViewModelTest {
 
             assertEquals(
                 listOf(CAFE),
+                viewModel.state.value.chats
+                    ?.map { it.id },
+            )
+        }
+
+    @Test
+    fun `a chat shows its name on this phone, and is found by it`() =
+        runTest {
+            val viewModel = viewModel(localNames = mapOf(TRIP to "Hills weekend"))
+            assertEquals(
+                "Hills weekend",
+                viewModel.state.value.chats
+                    ?.first()
+                    ?.title,
+            )
+
+            viewModel.onQueryChange("hills")
+            runCurrent()
+
+            assertEquals(
+                listOf(TRIP),
                 viewModel.state.value.chats
                     ?.map { it.id },
             )

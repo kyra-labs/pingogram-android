@@ -40,6 +40,7 @@ class ShareTargetShortcutsTest {
         authState: AuthState = AuthState.Ready,
         lockedChats: Set<Long> = emptySet(),
         directShare: Boolean = true,
+        localNames: Map<Long, String> = emptyMap(),
     ): NotificationsHarness {
         val harness = NotificationsHarness(this)
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -62,6 +63,7 @@ class ShareTargetShortcutsTest {
             avatars = avatars,
             shortcuts = ConversationShortcuts(harness.context, dispatcher, directShare = harness.directShare.enabled),
             scope = backgroundScope,
+            localNames = flowOf(localNames),
         ).start()
         runCurrent()
         return harness
@@ -110,6 +112,19 @@ class ShareTargetShortcutsTest {
             )
             assertTrue(shortcuts.all { NotificationIntents.SHARE_TARGET_CATEGORY in it.categories.orEmpty() })
             assertEquals("User 1", shortcuts.first().shortLabel)
+        }
+
+    @Test
+    fun `a target shows its name on this phone, a contact keeps their contact name`() =
+        runTest {
+            val harness = started(localNames = mapOf(1L to "Ally", 2L to "Bee"))
+            harness.chats(count = 2)
+            harness.client.emit(updateUser(user(id = 2, firstName = "User 2", isContact = true)))
+            runCurrent()
+            settle()
+
+            val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(harness.context).sortedBy { it.rank }
+            assertEquals(listOf("Ally", "User 2"), shortcuts.map { it.shortLabel.toString() })
         }
 
     @Test
