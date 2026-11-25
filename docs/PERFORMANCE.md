@@ -252,7 +252,8 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Text: `BasicText` with precomputed `AnnotatedString` from entities (cached per message id);
   `TextLayoutResult` cache for bubble sizing; avoid `AnnotatedString` rebuilds on recomposition.
 - Images: Coil 3 `AsyncImage` with explicit `size`, `crossfade` via motion scheme, hardware
-  bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy).
+  bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy). Never
+  `SubcomposeAsyncImage`, which subcomposes each image's states in layout (detekt `PingogramSubcomposeAsyncImage`).
 - The media viewer's first and last frames (`docs/audit/performance-review-2026-11.md`, M2): the video player is built
   off the main thread and freed a second after the viewer closes, its bottom bar (caption, toolbar and tooltips)
   composes once the opening transform settled, and the overlay's entry is destroyed (its view models cleared) a frame
@@ -288,7 +289,7 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 - Composition tracing enabled in benchmark builds; compiler metrics (`-P …reportsDestination`)
   reviewed in PRs that touch `feature:chat`; any unstable class in UI state is a build error
   (custom `compose_compiler_config.conf` stability file).
-- Use `Modifier.Node` for custom modifiers; avoid `composed {}`.
+- Use `Modifier.Node` for custom modifiers, never `composed {}` (detekt `PingogramComposedModifier`).
 - Avoid `Box`-with-many-children layouts for bubbles; one custom `Layout` per bubble type. A text bubble and a media
   bubble are each one multi-content `Layout` (`feature:chat` `BubbleLayouts.kt`: header, content, text, link preview,
   meta; a media bubble's media and overlay meta between its header and caption) with a measure policy remembered once

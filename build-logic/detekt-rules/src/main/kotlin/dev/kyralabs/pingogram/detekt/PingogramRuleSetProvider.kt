@@ -9,5 +9,15 @@ class PingogramRuleSetProvider : RuleSetProvider {
     override val ruleSetId: String = "pingogram"
 
     override fun instance(config: Config): RuleSet =
-        RuleSet(ruleSetId, listOf(PingogramHardcodedToken(config), PingogramMotionDefault(config)))
+        RuleSet(
+            ruleSetId,
+            listOf(
+                PingogramHardcodedToken(config),
+                PingogramMotionDefault(config),
+                PingogramGlobalScope(config),
+                PingogramRunBlocking(config),
+                PingogramComposedModifier(config),
+                PingogramSubcomposeAsyncImage(config),
+            ),
+        )
 }

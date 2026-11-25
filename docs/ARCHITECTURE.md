@@ -2227,7 +2227,7 @@ its folder or its password.
   `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`), `pingogram.ntgcalls` (the
   call engine's AAR for `:feature:calls`). `:app` applies Gradle Play Publisher only for the optional upload to Google
   Play, when the property `pingogram.play.serviceAccount` is given (`docs/PLAY_STORE.md` §7).
-  `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
+  `build-logic/detekt-rules` holds our detekt rules (`docs/TESTING.md` lists them).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /
   `TELEGRAM_API_HASH` (String), parsed and validated in `build-logic` (`TelegramSecrets`, applied

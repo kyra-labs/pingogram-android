@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.ui
 
+import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,7 +23,7 @@ import org.robolectric.annotation.Config
  * was a column as tall as the window's insets down the middle of every page.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp-xxhdpi")
+@Config(application = Application::class, qualifiers = "w411dp-h891dp-xxhdpi")
 class AppSnackbarHostTest {
     @get:Rule(order = 0)
     val activityRegistration = ActivityRegistration(ComponentActivity::class.java)

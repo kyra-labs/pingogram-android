@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.ui
 
+import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Text
@@ -15,12 +16,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The Chats tab's list pane with the Channel feed docked (`docs/DESIGN_SYSTEM.md` §6 "Channel feed", frame 7b): the
  * feed in the list's place while docked, and system back closing it, unless something beside it takes back first.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class DockedFeedOrListTest {
     @get:Rule(order = 0)
     val activityRegistration = ActivityRegistration(ComponentActivity::class.java)

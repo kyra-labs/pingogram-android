@@ -9,7 +9,7 @@
 | Compose UI (JVM) | `createComposeRule` + Robolectric | `feature:*` | Interaction-heavy screens (composer, code entry, swipe) |
 | Instrumented | Espresso/Compose on emulator, test DC | `:app` `androidTest` | Smoke: launch → login on test DC → open a chat (nightly, not per PR) |
 | Macrobenchmark | `benchmark/` | release build | Startup, chat-list scroll, conversation scroll; generates Baseline Profile |
-| Static | ktlint, detekt (+ `PingogramHardcodedToken`, `PingogramMotionDefault`), Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
+| Static | ktlint, detekt (+ `PingogramHardcodedToken`, `PingogramMotionDefault`, the banned names below), Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
 
 ## Rules
 
@@ -64,6 +64,12 @@ saying why.
   `AnimatedPane` without its spec, Coil's `crossfade`, an animated value read in composition rather than in a
   lambda…), and `:app` and `core:ui` code with literal tweens, durations or easings (`docs/DESIGN_SYSTEM.md` §5 and
   §5.1, `docs/plans/motion-expressive-plan.md` §4). Every check is on; `config/detekt/detekt.yml` lists them.
+- Four rules (`build-logic/detekt-rules`) fail production code, in every module, that uses a name the project bans:
+  `PingogramGlobalScope` (`GlobalScope`, CLAUDE.md hard rule 6), `PingogramRunBlocking` (`runBlocking`,
+  `.claude/rules/kotlin.md`), `PingogramComposedModifier` (`Modifier.composed {}`, §4 of `docs/PERFORMANCE.md`) and
+  `PingogramSubcomposeAsyncImage` (Coil's `SubcomposeAsyncImage`, the same §4). Test source sets are not checked. A
+  `runBlocking` whose caller must have the result before it returns is suppressed with the reason: Firebase's push
+  worker, a conference call's frame encryption and Media3's reads of a file TDLib is downloading.
 - detekt's `ForbiddenImport` (`config/detekt/detekt.yml`) keeps `androidx.compose.material3.ModalBottomSheet` out of
   production code: sheets go through `core:ui`'s `PingogramBottomSheet` (`docs/DESIGN_SYSTEM.md` §6 "Bottom sheets").
 - Kotlin compiler warnings fail the build in the modules that apply `pingogram.kotlin.warnings`
