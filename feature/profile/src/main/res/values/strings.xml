@@ -872,4 +872,9 @@
     <string name="chat_note_note_add">Add a note</string>
     <!-- What screen readers hear a tap on the name or note row does. -->
     <string name="chat_note_edit">Edit name and note</string>
+    <string name="chat_note_title">Name and note</string>
+    <string name="chat_note_text">Only this phone keeps them, and your backups. Telegram never sees them.</string>
+    <string name="chat_note_failed">Couldn\'t save. Try again.</string>
+    <!-- A field's counter: %1$d characters typed of %2$d at most. -->
+    <string name="chat_note_counter">%1$d / %2$d</string>
 </resources>
