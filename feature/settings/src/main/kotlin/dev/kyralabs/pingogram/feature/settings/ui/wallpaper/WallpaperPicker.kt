@@ -179,7 +179,8 @@ internal class WallpaperPicker(
         val current = state.value
         val choice = current.pending ?: return
         if (current.isWorking) return
-        val withFill = (choice as? WallpaperChoice.Existing)?.copy(patternFill = patternFill) ?: choice
+        val withFill =
+            (choice as? WallpaperChoice.Existing)?.copy(patternFill = patternFill.toImmutableList()) ?: choice
         mutableState.update { it.copy(isWorking = true) }
         scope.launch {
             when (val applied = set(withFill, current.forDarkTheme == true)) {

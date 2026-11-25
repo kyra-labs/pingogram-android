@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableSet
+
 /** When power saving is on (Settings → Power saving): never, while Android's Battery Saver is on, or always. */
 enum class PowerSavingMode {
     Off,
@@ -25,7 +29,7 @@ enum class PowerSavingPart {
  */
 data class PowerSavingSettings(
     val mode: PowerSavingMode = PowerSavingMode.WithBatterySaver,
-    val parts: Set<PowerSavingPart> = PowerSavingPart.entries.toSet(),
+    val parts: ImmutableSet<PowerSavingPart> = PowerSavingPart.entries.toImmutableSet(),
 ) {
     /** What is turned off now, while Battery Saver is [batterySaver] on or off. */
     fun inEffect(batterySaver: Boolean): PowerSaving {
@@ -41,7 +45,7 @@ data class PowerSavingSettings(
 
 /** What power saving turns off now ([PowerSavingSettings.inEffect]); [None] while it is off. */
 data class PowerSaving(
-    val off: Set<PowerSavingPart> = emptySet(),
+    val off: ImmutableSet<PowerSavingPart> = persistentSetOf(),
 ) {
     val stillStickers: Boolean get() = PowerSavingPart.AnimatedStickers in off
     val noAutoplay: Boolean get() = PowerSavingPart.Autoplay in off

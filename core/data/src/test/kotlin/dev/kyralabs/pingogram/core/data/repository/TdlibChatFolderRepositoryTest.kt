@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -49,11 +50,11 @@ class TdlibChatFolderRepositoryTest {
             title = FormattedText("Work", persistentListOf()),
             iconName = "Work",
             colorId = 2,
-            pinnedChatIds = listOf(1),
-            includedChatIds = listOf(1, 2, 3),
-            excludedChatIds = listOf(4),
-            includedTypes = setOf(ChatFolderIncludedType.Groups, ChatFolderIncludedType.Bots),
-            excludedTypes = setOf(ChatFolderExcludedType.Muted, ChatFolderExcludedType.Archived),
+            pinnedChatIds = persistentListOf(1),
+            includedChatIds = persistentListOf(1, 2, 3),
+            excludedChatIds = persistentListOf(4),
+            includedTypes = persistentSetOf(ChatFolderIncludedType.Groups, ChatFolderIncludedType.Bots),
+            excludedTypes = persistentSetOf(ChatFolderExcludedType.Muted, ChatFolderExcludedType.Archived),
         )
 
     @Test

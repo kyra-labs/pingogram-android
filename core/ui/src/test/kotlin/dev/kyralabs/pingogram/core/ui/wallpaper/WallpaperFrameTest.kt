@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.Wallpaper
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -97,6 +98,6 @@ class WallpaperFrameTest {
         const val LOWER = "lower"
         const val TOLERANCE = 0.06f
         const val HALF = 0.5f
-        val GRADIENT = Wallpaper.Fill(1, listOf(0xFF0000, 0x0000FF))
+        val GRADIENT = Wallpaper.Fill(1, persistentListOf(0xFF0000, 0x0000FF))
     }
 }

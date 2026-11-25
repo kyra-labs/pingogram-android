@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.testing.FakeWallpaperRepository
 import dev.kyralabs.pingogram.core.testing.FakeWallpaperSeedRepository
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.theme.fillSeed
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -348,6 +349,6 @@ class WallpaperPageViewModelTest {
         const val SCREEN_SIDE = 2400
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(11, 0)), intensity = 50, isInverted = false)
-        val FILL = Wallpaper.Fill(3, listOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
+        val FILL = Wallpaper.Fill(3, persistentListOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
     }
 }

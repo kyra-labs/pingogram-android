@@ -6,6 +6,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatFolderInvite
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderInviteLink
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderSettings
 import dev.kyralabs.pingogram.core.domain.model.RecommendedChatFolder
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import org.drinkless.tdlib.TdApi
 
 // td_api.tl's chatFolder and the objects around it, to and from core:domain.
@@ -17,9 +19,9 @@ internal fun TdApi.ChatFolder.toChatFolderSettings(): ChatFolderSettings =
         iconName = icon?.name?.takeIf { it.isNotEmpty() },
         colorId = colorId.takeIf { it >= 0 },
         isShareable = isShareable,
-        pinnedChatIds = pinnedChatIds.toList(),
-        includedChatIds = includedChatIds.toList(),
-        excludedChatIds = excludedChatIds.toList(),
+        pinnedChatIds = pinnedChatIds.asList().toImmutableList(),
+        includedChatIds = includedChatIds.asList().toImmutableList(),
+        excludedChatIds = excludedChatIds.asList().toImmutableList(),
         includedTypes =
             buildSet {
                 if (includeContacts) add(ChatFolderIncludedType.Contacts)
@@ -27,13 +29,13 @@ internal fun TdApi.ChatFolder.toChatFolderSettings(): ChatFolderSettings =
                 if (includeGroups) add(ChatFolderIncludedType.Groups)
                 if (includeChannels) add(ChatFolderIncludedType.Channels)
                 if (includeBots) add(ChatFolderIncludedType.Bots)
-            },
+            }.toImmutableSet(),
         excludedTypes =
             buildSet {
                 if (excludeMuted) add(ChatFolderExcludedType.Muted)
                 if (excludeRead) add(ChatFolderExcludedType.Read)
                 if (excludeArchived) add(ChatFolderExcludedType.Archived)
-            },
+            }.toImmutableSet(),
     )
 
 /**
@@ -63,11 +65,11 @@ internal fun TdApi.RecommendedChatFolder.toRecommendedChatFolder(): RecommendedC
     RecommendedChatFolder(settings = folder.toChatFolderSettings(), description = description)
 
 internal fun TdApi.ChatFolderInviteLink.toChatFolderInviteLink(): ChatFolderInviteLink =
-    ChatFolderInviteLink(link = inviteLink, name = name, chatIds = chatIds.toList())
+    ChatFolderInviteLink(link = inviteLink, name = name, chatIds = chatIds.asList().toImmutableList())
 
 internal fun TdApi.ChatFolderInviteLinkInfo.toChatFolderInvite(): ChatFolderInvite =
     ChatFolderInvite(
         folder = chatFolderInfo.toChatFolder(),
-        missingChatIds = missingChatIds.toList(),
-        addedChatIds = addedChatIds.toList(),
+        missingChatIds = missingChatIds.asList().toImmutableList(),
+        addedChatIds = addedChatIds.asList().toImmutableList(),
     )

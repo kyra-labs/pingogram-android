@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.ui.phone
 
 import dev.kyralabs.pingogram.core.domain.model.Country
 import dev.kyralabs.pingogram.core.domain.model.PhoneNumberInfo
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -9,9 +10,11 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PhoneNumberFormTest {
-    private val britain = Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", listOf("44"), isHidden = false)
-    private val canada = Country("CA", "Canada", "Canada", "🇨🇦", listOf("1"), isHidden = false)
-    private val states = Country("US", "United States", "United States", "🇺🇸", listOf("1"), isHidden = false)
+    private val britain =
+        Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", persistentListOf("44"), isHidden = false)
+    private val canada = Country("CA", "Canada", "Canada", "🇨🇦", persistentListOf("1"), isHidden = false)
+    private val states =
+        Country("US", "United States", "United States", "🇺🇸", persistentListOf("1"), isHidden = false)
     private val form = PhoneNumberForm(countries = listOf(britain, canada, states))
 
     @Test

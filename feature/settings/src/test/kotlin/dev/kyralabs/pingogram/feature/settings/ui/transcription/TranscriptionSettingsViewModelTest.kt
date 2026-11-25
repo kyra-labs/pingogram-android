@@ -30,9 +30,9 @@ class TranscriptionSettingsViewModelTest {
         FakeVoiceTranscriber(
             languages =
                 TranscriptionLanguages(
-                    ready = listOf("en-IN", "hi-IN"),
-                    downloading = listOf("de-DE"),
-                    notDownloaded = listOf("ta-IN", "en-IN"),
+                    ready = persistentListOf("en-IN", "hi-IN"),
+                    downloading = persistentListOf("de-DE"),
+                    notDownloaded = persistentListOf("ta-IN", "en-IN"),
                 ),
         )
 

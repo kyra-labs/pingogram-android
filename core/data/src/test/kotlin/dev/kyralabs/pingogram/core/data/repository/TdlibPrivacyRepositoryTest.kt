@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -440,9 +441,9 @@ class TdlibPrivacyRepositoryTest {
             assertEquals(
                 Outcome.Success(
                     PrivacyExceptionLists(
-                        alwaysUserIds = listOf(7),
-                        alwaysChatIds = listOf(-100),
-                        neverUserIds = listOf(5, 6),
+                        alwaysUserIds = persistentListOf(7),
+                        alwaysChatIds = persistentListOf(-100),
+                        neverUserIds = persistentListOf(5, 6),
                     ),
                 ),
                 repository().exceptions(PrivacySetting.LastSeen),
@@ -462,7 +463,7 @@ class TdlibPrivacyRepositoryTest {
             val result =
                 repository().setExceptions(
                     PrivacySetting.ChatInvites,
-                    PrivacyExceptionLists(alwaysUserIds = listOf(8), neverChatIds = listOf(-100)),
+                    PrivacyExceptionLists(alwaysUserIds = persistentListOf(8), neverChatIds = persistentListOf(-100)),
                 )
 
             val sent =

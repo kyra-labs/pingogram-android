@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.data.updates.updatesOf
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
 import dev.kyralabs.pingogram.core.domain.repository.OauthLoginRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -64,5 +66,5 @@ private fun TdApi.OauthLinkInfo.toRequest() =
         platform = platform,
         location = location,
         // TDLib asks for a code first only where it says so; its codes are irrelevant otherwise.
-        matchCodes = if (matchCodeFirst) matchCodes.orEmpty().toList() else emptyList(),
+        matchCodes = if (matchCodeFirst) matchCodes.orEmpty().toImmutableList() else persistentListOf(),
     )

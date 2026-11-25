@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 
 internal fun PrivacySetting.toTdPrivacySetting(): TdApi.UserPrivacySetting =
@@ -107,17 +108,25 @@ internal fun TdApi.UserPrivacySettingRules.withChoice(choice: PrivacyChoice): Td
 internal fun TdApi.UserPrivacySettingRules.toExceptionLists(): PrivacyExceptionLists =
     PrivacyExceptionLists(
         alwaysUserIds =
-            rules.filterIsInstance<TdApi.UserPrivacySettingRuleAllowUsers>().flatMap {
-                it.userIds.asList()
-            },
+            rules
+                .filterIsInstance<TdApi.UserPrivacySettingRuleAllowUsers>()
+                .flatMap { it.userIds.asList() }
+                .toImmutableList(),
         alwaysChatIds =
-            rules.filterIsInstance<TdApi.UserPrivacySettingRuleAllowChatMembers>().flatMap { it.chatIds.asList() },
+            rules
+                .filterIsInstance<TdApi.UserPrivacySettingRuleAllowChatMembers>()
+                .flatMap { it.chatIds.asList() }
+                .toImmutableList(),
         neverUserIds =
-            rules.filterIsInstance<TdApi.UserPrivacySettingRuleRestrictUsers>().flatMap {
-                it.userIds.asList()
-            },
+            rules
+                .filterIsInstance<TdApi.UserPrivacySettingRuleRestrictUsers>()
+                .flatMap { it.userIds.asList() }
+                .toImmutableList(),
         neverChatIds =
-            rules.filterIsInstance<TdApi.UserPrivacySettingRuleRestrictChatMembers>().flatMap { it.chatIds.asList() },
+            rules
+                .filterIsInstance<TdApi.UserPrivacySettingRuleRestrictChatMembers>()
+                .flatMap { it.chatIds.asList() }
+                .toImmutableList(),
     )
 
 /**

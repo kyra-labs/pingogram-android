@@ -1,5 +1,10 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
+
 /**
  * What a chat folder holds (TDLib's `chatFolder`, `REQUIREMENTS.md` FR-L3): its [title] and icon, the chats and kinds
  * of chats it includes, and those it leaves out. A chat is in the folder if it is one of [includedChatIds] or of the
@@ -17,11 +22,11 @@ data class ChatFolderSettings(
     val colorId: Int? = null,
     /** Whether the folder has invite links, so it is shared and its chats must be groups or channels. */
     val isShareable: Boolean = false,
-    val pinnedChatIds: List<Long> = emptyList(),
-    val includedChatIds: List<Long> = emptyList(),
-    val excludedChatIds: List<Long> = emptyList(),
-    val includedTypes: Set<ChatFolderIncludedType> = emptySet(),
-    val excludedTypes: Set<ChatFolderExcludedType> = emptySet(),
+    val pinnedChatIds: ImmutableList<Long> = persistentListOf(),
+    val includedChatIds: ImmutableList<Long> = persistentListOf(),
+    val excludedChatIds: ImmutableList<Long> = persistentListOf(),
+    val includedTypes: ImmutableSet<ChatFolderIncludedType> = persistentSetOf(),
+    val excludedTypes: ImmutableSet<ChatFolderExcludedType> = persistentSetOf(),
 ) {
     /** Whether the folder holds anything: TDLib refuses a folder that includes no chat and no kind of chat. */
     val includesAnything: Boolean
@@ -55,9 +60,9 @@ data class ChatFolderInvite(
     /** The folder as its owner named it; its id is 0 unless the user already has it. */
     val folder: ChatFolder,
     /** The folder's chats the user is not in yet, which they can choose to join. */
-    val missingChatIds: List<Long>,
+    val missingChatIds: ImmutableList<Long>,
     /** The folder's chats the user is in already. */
-    val addedChatIds: List<Long>,
+    val addedChatIds: ImmutableList<Long>,
 ) {
     /** Whether the user already added this folder: the link then only offers its new chats. */
     val isAdded: Boolean get() = folder.id != 0
@@ -69,5 +74,5 @@ data class ChatFolderInviteLink(
     /** The name the user gave the link; may be empty. */
     val name: String,
     /** The folder's chats the link shares. */
-    val chatIds: List<Long>,
+    val chatIds: ImmutableList<Long>,
 )

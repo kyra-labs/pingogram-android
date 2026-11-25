@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
 import dev.kyralabs.pingogram.core.domain.model.PowerSavingSettings
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -74,7 +75,7 @@ class DataStorePowerSavingRepositoryTest {
             assertEquals(
                 PowerSavingSettings(
                     mode = PowerSavingMode.Off,
-                    parts = setOf(PowerSavingPart.AnimatedStickers, PowerSavingPart.Autoplay),
+                    parts = persistentSetOf(PowerSavingPart.AnimatedStickers, PowerSavingPart.Autoplay),
                 ),
                 DataStorePowerSavingRepository(dataStore()).settings.first(),
             )

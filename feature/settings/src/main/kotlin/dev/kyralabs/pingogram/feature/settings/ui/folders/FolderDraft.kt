@@ -6,6 +6,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatFolderIncludedType
 import dev.kyralabs.pingogram.core.domain.model.ChatFolderSettings
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 
 /**
  * What the folder editor changes of a folder: its [name], icon, and the chats and kinds of chats on each side, the
@@ -55,11 +57,11 @@ internal data class FolderDraft(
         return original.copy(
             title = if (title == original.title.text) original.title else FormattedText(title, persistentListOf()),
             iconName = iconName,
-            pinnedChatIds = original.pinnedChatIds.filter { it in included },
-            includedChatIds = included,
-            excludedChatIds = excluded,
-            includedTypes = includedTypes,
-            excludedTypes = excludedTypes,
+            pinnedChatIds = original.pinnedChatIds.filter { it in included }.toImmutableList(),
+            includedChatIds = included.toImmutableList(),
+            excludedChatIds = excluded.toImmutableList(),
+            includedTypes = includedTypes.toImmutableSet(),
+            excludedTypes = excludedTypes.toImmutableSet(),
         )
     }
 

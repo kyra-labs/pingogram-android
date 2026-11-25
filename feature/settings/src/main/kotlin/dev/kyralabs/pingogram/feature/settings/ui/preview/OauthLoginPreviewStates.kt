@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.OauthLoginRequest
 import dev.kyralabs.pingogram.feature.settings.ui.oauth.OauthLoginStep
 import dev.kyralabs.pingogram.feature.settings.ui.oauth.OauthLoginUiState
+import kotlinx.collections.immutable.persistentListOf
 
 /** Sample states of the "Log in with Telegram" sheet, for previews and goldens. */
 internal object OauthLoginPreviewStates {
@@ -19,7 +20,7 @@ internal object OauthLoginPreviewStates {
             browser = "Firefox 145",
             platform = "Linux",
             location = "Berlin, Germany",
-            matchCodes = listOf("17", "42", "88"),
+            matchCodes = persistentListOf("17", "42", "88"),
         )
 
     val confirm =

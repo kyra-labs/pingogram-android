@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+
 /** A country for phone number entry, from TDLib's country list (`REQUIREMENTS.md` FR-A2). */
 data class Country(
     /** ISO 3166-1 alpha-2 code, e.g. `GB`. */
@@ -9,7 +11,7 @@ data class Country(
     val englishName: String,
     val flagEmoji: String,
     /** Calling codes without `+`, the main one first, e.g. `44`. */
-    val callingCodes: List<String>,
+    val callingCodes: ImmutableList<String>,
     /** Not offered in the country list, but phone numbers can still belong to it. */
     val isHidden: Boolean,
 )

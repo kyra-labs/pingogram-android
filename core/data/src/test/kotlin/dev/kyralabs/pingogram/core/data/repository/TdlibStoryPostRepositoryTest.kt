@@ -105,7 +105,7 @@ class TdlibStoryPostRepositoryTest {
             listOf(
                 StoryPrivacy.Everyone,
                 StoryPrivacy.CloseFriends,
-                StoryPrivacy.Selected(listOf(7, 8)),
+                StoryPrivacy.Selected(persistentListOf(7, 8)),
             ).forEach { repository.post(listOf(photo("p.jpg")), FormattedText.Empty, it) }
 
             val settings = client.sentOf<TdApi.PostStory>().map { it.privacySettings }

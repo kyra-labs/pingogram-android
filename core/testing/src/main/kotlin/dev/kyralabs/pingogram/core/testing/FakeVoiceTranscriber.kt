@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.testing
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionLanguages
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionResult
 import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -12,7 +13,7 @@ import kotlinx.coroutines.CompletableDeferred
 class FakeVoiceTranscriber(
     override var isAvailable: Boolean = true,
     var result: TranscriptionResult = TranscriptionResult.Recognized("Hello from the voice message"),
-    var languages: TranscriptionLanguages? = TranscriptionLanguages(ready = listOf("en-US")),
+    var languages: TranscriptionLanguages? = TranscriptionLanguages(ready = persistentListOf("en-US")),
 ) : VoiceTranscriber {
     val transcribed = mutableListOf<String>()
 

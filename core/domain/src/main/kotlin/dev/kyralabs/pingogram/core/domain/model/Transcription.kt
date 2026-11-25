@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
 /**
  * The text of a voice or round video message, recognized on the device (`docs/DESIGN_SYSTEM.md` §6 "Voice message
  * transcription", the owner's board 28).
@@ -40,9 +43,9 @@ sealed interface TranscriptionResult {
  * Pingogram bundles and downloads none.
  */
 data class TranscriptionLanguages(
-    val ready: List<String> = emptyList(),
-    val downloading: List<String> = emptyList(),
-    val notDownloaded: List<String> = emptyList(),
+    val ready: ImmutableList<String> = persistentListOf(),
+    val downloading: ImmutableList<String> = persistentListOf(),
+    val notDownloaded: ImmutableList<String> = persistentListOf(),
 )
 
 /**

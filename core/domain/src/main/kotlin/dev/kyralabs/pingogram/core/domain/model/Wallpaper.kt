@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
 /**
  * A wallpaper the account keeps on Telegram (td_api.tl `background`; owner decision 2026-11-20): one of Telegram's,
  * a photo the user uploaded, or a fill set by another app. It shows in the user's other apps too. The theme-color
@@ -38,7 +41,7 @@ sealed interface Wallpaper {
      */
     data class Fill(
         override val id: Long,
-        val colors: List<Int>,
+        val colors: ImmutableList<Int>,
         val rotationDegrees: Int = 0,
     ) : Wallpaper
 }
@@ -85,7 +88,7 @@ sealed interface WallpaperChoice {
     data class Existing(
         val wallpaper: Wallpaper,
         val isBlurred: Boolean = false,
-        val patternFill: List<Int> = emptyList(),
+        val patternFill: ImmutableList<Int> = persistentListOf(),
     ) : WallpaperChoice
 
     /** The JPEG at [path] (a copy `PickedPhotoRepository` prepared), uploaded to Telegram, blurred with [isBlurred]. */

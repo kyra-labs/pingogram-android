@@ -100,7 +100,7 @@ class WallpaperPageScreenshotTest {
 
     private companion object {
         val Chat = WallpaperPageChat(5, "Meera Krishnan", null)
-        val FILL = Wallpaper.Fill(3, listOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
+        val FILL = Wallpaper.Fill(3, persistentListOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
         val Installed = InstalledWallpapers.Loaded(persistentListOf(FILL))
         val ChatPicked =
             WallpaperPageUiState(

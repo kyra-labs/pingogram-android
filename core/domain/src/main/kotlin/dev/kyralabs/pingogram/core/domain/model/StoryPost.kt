@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import kotlinx.collections.immutable.ImmutableList
 
 /**
  * Who sees a story the user posts (`docs/adr/0036-posting-stories.md`): everybody, the user's contacts, their close
@@ -14,7 +15,7 @@ sealed interface StoryPrivacy {
     data object CloseFriends : StoryPrivacy
 
     data class Selected(
-        val userIds: List<Long>,
+        val userIds: ImmutableList<Long>,
     ) : StoryPrivacy
 }
 

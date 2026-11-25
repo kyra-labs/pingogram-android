@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.TermsOfService
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import kotlinx.collections.immutable.persistentListOf
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -154,8 +155,8 @@ class AuthMappersTest {
 
         assertEquals(
             listOf(
-                Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", listOf("44"), false),
-                Country("DE", "Deutschland", "Germany", "🇩🇪", listOf("49"), true),
+                Country("GB", "United Kingdom", "United Kingdom", "🇬🇧", persistentListOf("44"), false),
+                Country("DE", "Deutschland", "Germany", "🇩🇪", persistentListOf("49"), true),
             ),
             countries,
         )

@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.settings.ui.captureScreen
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
 import org.junit.Test
@@ -94,7 +95,7 @@ class WallpaperPagePreviewScreenshotTest {
     }
 
     private companion object {
-        val FILL = Wallpaper.Fill(3, listOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
+        val FILL = Wallpaper.Fill(3, persistentListOf(0xF4B183, 0x8FAADC), rotationDegrees = 45)
         val PHOTO = Wallpaper.Photo(1, WallpaperImage(FileRef(10, 0)), isBlurred = false)
         val PATTERN = Wallpaper.Pattern(2, WallpaperImage(FileRef(11, 0)), intensity = 50, isInverted = false)
         val CHAT =

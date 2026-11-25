@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
 /**
  * The networks automatic download keeps rules of its own for (`REQUIREMENTS.md` FR-S1, Data and storage;
  * `docs/PERFORMANCE.md` §7), in the order Settings lists them.
@@ -65,8 +68,8 @@ data class AutoDownloadRules(
  * The size limits the settings offer for videos and files, smallest first, in bytes (decimal megabytes, as Android
  * and the bubbles show sizes). The defaults are among them.
  */
-val AutoDownloadSizeLimits: List<Long> =
-    listOf(
+val AutoDownloadSizeLimits: ImmutableList<Long> =
+    persistentListOf(
         1_000_000L,
         3_000_000L,
         5_000_000L,
