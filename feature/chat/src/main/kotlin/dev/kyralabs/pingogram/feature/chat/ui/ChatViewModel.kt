@@ -82,7 +82,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
-import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChatChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.ChecklistSheet
 import dev.kyralabs.pingogram.feature.chat.ui.checklist.withChecklists
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
@@ -93,7 +92,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
-import dev.kyralabs.pingogram.feature.chat.ui.dates.ChatDateTimes
 import dev.kyralabs.pingogram.feature.chat.ui.dates.DateTimeSheet
 import dev.kyralabs.pingogram.feature.chat.ui.directmessages.messageChannelButton
 import dev.kyralabs.pingogram.feature.chat.ui.directmessages.withMessageChannel
@@ -101,7 +99,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
-import dev.kyralabs.pingogram.feature.chat.ui.giveaway.ChatGiveaways
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.GiveawayInfoSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
@@ -111,7 +108,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.withKeywordMatch
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
-import dev.kyralabs.pingogram.feature.chat.ui.poll.PollOptionAdding
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollAdding
@@ -119,7 +115,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
 import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsSheet
-import dev.kyralabs.pingogram.feature.chat.ui.rich.ChatRichMessages
 import dev.kyralabs.pingogram.feature.chat.ui.rich.richMediaToOpen
 import dev.kyralabs.pingogram.feature.chat.ui.rich.withRichMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ChatScheduledMessages
@@ -141,10 +136,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
-import dev.kyralabs.pingogram.feature.chat.ui.transcription.ChatTranscripts
 import dev.kyralabs.pingogram.feature.chat.ui.transcription.TranscriptionRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.transcription.withTranscripts
-import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatSummaries
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withSummaries
@@ -916,109 +909,53 @@ class ChatViewModel internal constructor(
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
-    private val translation =
-        ChatTranslation(
+    /** What the parts of the conversation share ([ChatPartContext]). */
+    private val parts =
+        ChatPartContext(
             chatId = chatId,
-            repositories = translationRepositories,
-            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
             history = history,
             messageOf = ::loadedMessage,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
         )
 
-    private val summaries =
-        ChatSummaries(
-            chatId = chatId,
-            repositories = translationRepositories,
-            history = history,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    /** Voice message transcription on the device; none where tests leave it out. */
-    private val transcripts =
-        transcriptionRepositories?.let { repositories ->
-            ChatTranscripts(
-                chatId = chatId,
-                repositories = repositories,
-                history = history,
-                savedState = savedStateHandle,
-                scope = viewModelScope,
-                onEffect = { effectChannel.trySend(it) },
-            )
-        }
-
-    private val polls =
-        ChatPolls(
-            chatId = chatId,
-            repository = pollRepository,
+    /** What single messages hold: translations, transcripts, polls, checklists, giveaways and dates. */
+    private val features =
+        ChatMessageFeatures(
+            parts = parts,
+            repositories =
+                MessageFeatureRepositories(
+                    messages = messageRepository,
+                    translation = translationRepositories,
+                    transcription = transcriptionRepositories,
+                    polls = pollRepository,
+                    checklists = checklistRepository,
+                    giveaways = giveawayRepository,
+                ),
             users = userRepository,
             chats = chatRepository,
-            history = history,
-            messageOf = ::loadedMessage,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    private val pollOptions =
-        PollOptionAdding(
-            chatId = chatId,
-            repository = pollRepository,
-            messageOf = ::loadedMessage,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    private val checklists =
-        ChatChecklists(
-            chatId = chatId,
-            repository = checklistRepository,
-            messageOf = ::loadedMessage,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    private val richMessages =
-        ChatRichMessages(
-            chatId = chatId,
-            messages = messageRepository,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    private val giveaways =
-        ChatGiveaways(
-            chatId = chatId,
-            repository = giveawayRepository,
-            chats = chatRepository,
-            history = history,
-            savedState = savedStateHandle,
-            scope = viewModelScope,
-            onEffect = { effectChannel.trySend(it) },
-        )
-
-    /** A giveaway's details ("Learn more"); null while the sheet is closed. Kept out of [uiState]. */
-    val giveawayInfoSheet: StateFlow<GiveawayInfoSheet?> get() = giveaways.sheet
-
-    private val dateTimes =
-        ChatDateTimes(
-            describe = { unixTime ->
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            describeDate = { unixTime ->
                 DateTimeSheet(
                     unixTime = unixTime,
                     text = stateMapper.timeFormatter().dates.full(unixTime),
                     zoneName = clock.zone().getDisplayName(TextStyle.FULL, locale()),
                 )
             },
-            savedState = savedStateHandle,
-            onEffect = { effectChannel.trySend(it) },
         )
+    private val translation = features.translation
+    private val summaries = features.summaries
+    private val transcripts = features.transcripts
+    private val polls = features.polls
+    private val pollOptions = features.pollOptions
+    private val checklists = features.checklists
+    private val richMessages = features.richMessages
+    private val giveaways = features.giveaways
+    private val dateTimes = features.dateTimes
+
+    /** A giveaway's details ("Learn more"); null while the sheet is closed. Kept out of [uiState]. */
+    val giveawayInfoSheet: StateFlow<GiveawayInfoSheet?> get() = giveaways.sheet
 
     /** A tapped date in a message, in the reader's time zone; null while its sheet is closed. Kept out of [uiState]. */
     val dateTimeSheet: StateFlow<DateTimeSheet?> get() = dateTimes.sheet
