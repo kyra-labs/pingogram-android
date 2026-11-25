@@ -36,7 +36,9 @@ internal class PasscodeHasher(
     ): ByteArray {
         val spec = PBEKeySpec(passcode.toCharArray(), salt, iterations, KEY_BITS)
         return try {
-            SecretKeyFactory.getInstance(ALGORITHM).generateSecret(spec).encoded
+            PasscodeTrace.section(PasscodeTrace.HASH) {
+                SecretKeyFactory.getInstance(ALGORITHM).generateSecret(spec).encoded
+            }
         } finally {
             spec.clearPassword()
         }
