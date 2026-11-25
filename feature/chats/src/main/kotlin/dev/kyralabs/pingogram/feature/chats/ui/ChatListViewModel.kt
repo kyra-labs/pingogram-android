@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.KeywordHit
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
@@ -41,6 +42,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -57,6 +59,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -224,12 +227,20 @@ class ChatListViewModel internal constructor(
     private val forumTopics =
         ForumRowTopics(forumTopicRepository.takeIf { kind == ChatListKind.Chats }, groupRepository)
 
+    /** The keyword alert matches ([KeywordAlertChats.matches]), which sort every match: read once, for all below. */
+    private val keywordHits: Flow<List<KeywordHit>> =
+        if (kind == ChatListKind.Chats) {
+            keywordChats.matches.sharedIn(viewModelScope, dispatcher)
+        } else {
+            flowOf(emptyList())
+        }
+
     /** How many chats the "Keyword alerts" tab lists; 0 hides it (always in the archive). */
     private val keywordMatchCount: Flow<Int> =
         if (kind == ChatListKind.Chats) {
             // No tab until the matches are read: the chat list's first content never waits for them (they read the
             // settings file and a file of the account's), and the tab comes last, so it moves no other tab.
-            keywordChats.matches
+            keywordHits
                 .map { it.size }
                 .onStart { emit(0) }
                 .distinctUntilChanged()
@@ -243,7 +254,7 @@ class ChatListViewModel internal constructor(
      */
     private val keywordMessages: StateFlow<Map<Long, Long>> =
         if (kind == ChatListKind.Chats) {
-            keywordChats.matches
+            keywordHits
                 .map { hits -> hits.associate { it.chatId to it.messageId } }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
         } else {
@@ -272,6 +283,7 @@ class ChatListViewModel internal constructor(
                         else -> ChatListType.Main
                     }
                 }.distinctUntilChanged()
+                    .sharedIn(viewModelScope, dispatcher)
             }
         }
 
@@ -284,7 +296,7 @@ class ChatListViewModel internal constructor(
             clock.minutes,
         ) { (users, supergroups, secretChats), actions, myUserId, now ->
             RowSnapshot(users, supergroups, secretChats, actions, myUserId, now)
-        }
+        }.sharedIn(viewModelScope, dispatcher)
 
     /** Locked chats (docs/adr/0029-locked-chats.md) never show here, open or not: they have a list of their own. */
     private val lockedChatIds = chatLock.lockedChatIds.distinctUntilChanged()
@@ -306,7 +318,7 @@ class ChatListViewModel internal constructor(
                     val content =
                         content(list, inputs.chats, inputs.snapshot, inputs.load, inputs.groups, inputs.topics)
                     ListState(list, content)
-                }.combine(keywordWordsOf(list, keywordChats)) { state, words -> state.withKeywords(words) }
+                }.combine(keywordWordsOf(list, keywordHits)) { state, words -> state.withKeywords(words) }
         }
 
     private val folderTabs: Flow<ImmutableList<FolderTab>> =
@@ -329,7 +341,7 @@ class ChatListViewModel internal constructor(
                             folderTabs(folders, counts, mainPosition, keywordCount)
                         }
                     }
-                }
+                }.sharedIn(viewModelScope, dispatcher)
         }
 
     /** The Feed tab, while the main list holds 2 or more channels; never in the archive. */
@@ -351,20 +363,24 @@ class ChatListViewModel internal constructor(
                 chatRepository.unreadChatCount(ChatListType.Archive),
                 chatRepository.chatList(ChatListType.Archive).without(lockedChatIds),
                 archiveRowRepository.style,
-            ) { count, chats, style -> ArchivePlace(archiveEntry(count, chats), style) }.distinctUntilChanged()
+            ) { count, chats, style -> ArchivePlace(archiveEntry(count, chats), style) }
+                .distinctUntilChanged()
+                .sharedIn(viewModelScope, dispatcher)
         }
 
     private val overlays: Flow<Overlays> =
         combine(selection.ids, deleteDialog, lockedChatIds) { ids, dialog, locked ->
             Overlays(ids, dialog, hasLockedChats = kind == ChatListKind.Chats && locked.isNotEmpty())
-        }
+        }.sharedIn(viewModelScope, dispatcher)
 
     /** The lists of the folder tabs beside the selected one, if any; none in the archive. */
     private val neighbourTypes: Flow<NeighbourTypes> =
         if (kind == ChatListKind.Archive) {
             flowOf(NeighbourTypes())
         } else {
-            combine(selectedList, folderTabs) { list, tabs -> NeighbourTypes.of(tabs, list) }.distinctUntilChanged()
+            combine(selectedList, folderTabs) { list, tabs -> NeighbourTypes.of(tabs, list) }
+                .distinctUntilChanged()
+                .sharedIn(viewModelScope, dispatcher)
         }
 
     val uiState: StateFlow<ChatListUiState> =
@@ -922,13 +938,23 @@ private fun chatsOf(
 /** The word each chat of [list] matched, for its chip: only on the "Keyword alerts" tab. */
 private fun keywordWordsOf(
     list: ChatListType,
-    keywordChats: KeywordAlertChats,
+    keywordHits: Flow<List<KeywordHit>>,
 ): Flow<Map<Long, String>> =
     if (list == ChatListViewModel.KEYWORD_ALERTS_LIST) {
-        keywordChats.matches.map { hits -> hits.associate { it.chatId to it.word } }
+        keywordHits.map { hits -> hits.associate { it.chatId to it.word } }
     } else {
         flowOf(emptyMap())
     }
+
+/**
+ * This flow run once, on [dispatcher], for every state of [ChatListViewModel] that reads it (the list, the folders
+ * beside it, the tabs, the view model's own collectors), while any does; forgotten when none does, so a state that
+ * comes back never starts from a stale value.
+ */
+private fun <T> Flow<T>.sharedIn(
+    scope: CoroutineScope,
+    dispatcher: CoroutineDispatcher,
+): Flow<T> = flowOn(dispatcher).shareIn(scope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)
 
 /** These chats without those of [locked]. */
 private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> =
