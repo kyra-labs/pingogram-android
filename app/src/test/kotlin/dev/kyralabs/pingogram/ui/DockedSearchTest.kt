@@ -235,18 +235,18 @@ class DockedSearchTest {
 
     @Test
     @Config(qualifiers = "w700dp-h891dp-xxhdpi")
-    fun `pushed full screen, search counts as open until it is left`() {
+    fun `once search is left its entry is destroyed, so the back stack is no longer asked for it`() {
         setApp()
         awaitRow(ADA_TITLE)
-        assertFalse(navController.currentBackStack.value.holdsSearch())
-
         searchButton().performClick()
         composeRule.waitForIdle()
-        assertTrue(navController.currentBackStack.value.holdsSearch())
+        val last = LastSearchEntry().apply { saw(navController.currentBackStackEntry) }
+        assertTrue(last.mayBeOnStack())
+
         pressBack()
         composeRule.waitForIdle()
 
-        assertFalse(navController.currentBackStack.value.holdsSearch())
+        assertFalse(last.mayBeOnStack())
         searchButton().assertExists()
     }
 
