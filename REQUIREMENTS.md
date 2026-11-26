@@ -351,6 +351,12 @@ decision 2026-11-23).
   chats, nor a chat whose last message is older than 30 days. Each chat has Reply (it opens with the message box
   focused) and Dismiss (it leaves the page until a newer message comes; kept on the phone for the account, not in
   backups). Nothing is ever sent by itself. The settings go into backups.
+- FR-X23 Should: **Daily digest** (owner decisions 2026-11-25). Off by default (Settings → Notifications → "Daily
+  digest", at 8:30 unless another time is chosen). Once a day around that time (Android may deliver it later to save
+  battery), one silent notification on its own "Daily digest" channel sums up every signed-in account: how many chats
+  are unread, how many mention the user and how many reminders are due that day, with up to five chat names. Locked
+  chats never count, and while the passcode's "Hide content" is on it shows the counts alone. A tap opens Catch-up.
+  No new permission; nothing is sent. The settings go into backups.
 
 ## 6. Non-functional requirements
 
