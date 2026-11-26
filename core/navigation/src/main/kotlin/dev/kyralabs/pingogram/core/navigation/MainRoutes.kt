@@ -421,6 +421,13 @@ data object MentionsRoute
 data object DraftsRoute
 
 /**
+ * Unanswered (`REQUIREMENTS.md` FR-X22), `:feature:chats`: the private chats waiting for the user's answer, pushed
+ * above the Chats tab from its header.
+ */
+@Serializable
+data object UnansweredRoute
+
+/**
  * The Channel feed (`REQUIREMENTS.md` FR-X5), `:feature:chats`: the newest posts of the channels the user follows as
  * one list, pushed above the Chats tab from the Feed tab that starts its folder row.
  */
