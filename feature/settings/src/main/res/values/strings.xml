@@ -1476,6 +1476,20 @@
         <item quantity="one">%d month</item>
         <item quantity="other">%d months</item>
     </plurals>
+    <string name="settings_cleanup_suggestion">Suggested</string>
+    <string name="settings_cleanup_last_opened">Last opened %1$s</string>
+    <string name="settings_cleanup_not_opened_since">Not opened since %1$s</string>
+    <plurals name="settings_cleanup_remaining">
+        <item quantity="one">%d more after this one</item>
+        <item quantity="other">%d more after this one</item>
+    </plurals>
+    <string name="settings_cleanup_mute">Mute</string>
+    <string name="settings_cleanup_archive">Archive</string>
+    <string name="settings_cleanup_leave">Leave</string>
+    <string name="settings_cleanup_not_now">Not now</string>
+    <string name="settings_cleanup_leave_title">Leave %1$s?</string>
+    <string name="settings_cleanup_leave_group">You\'ll leave the group, and it leaves your chat list.</string>
+    <string name="settings_cleanup_leave_channel">You\'ll leave the channel, and it leaves your chat list.</string>
     <string name="settings_cleanup_muted">Muted</string>
     <string name="settings_cleanup_archived">Archived</string>
     <string name="settings_cleanup_left">Left</string>
