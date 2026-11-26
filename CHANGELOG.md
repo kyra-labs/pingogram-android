@@ -44,6 +44,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - An account whose logout was cut short, as Android closed the app, no longer leaves what it kept on the phone: it's
   deleted the next time the app starts.
 - Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
+- Messages you selected stay selected while you scroll far away from them, so Delete, Forward and the other actions
+  take every one of them instead of only those still near.
 
 ## [2.5.0] - 2026-11-25
 
