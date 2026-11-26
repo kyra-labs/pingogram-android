@@ -36,6 +36,7 @@ internal fun TdApi.Supergroup.toSupergroup(): Supergroup {
         isDirectMessages = isDirectMessagesGroup,
         isAdministeredDirectMessages = isAdministeredDirectMessagesGroup,
         paidMessageStarCount = paidMessageStarCount,
+        joinedDate = date.toLong(),
     )
 }
 
