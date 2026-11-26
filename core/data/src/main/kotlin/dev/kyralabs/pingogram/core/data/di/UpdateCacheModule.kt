@@ -5,9 +5,11 @@ import dagger.Module
 import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.ChatOpeningRecorder
 import dev.kyralabs.pingogram.core.data.repository.FileBirthdayReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileBookmarkRepository
 import dev.kyralabs.pingogram.core.data.repository.FileChatNoteRepository
+import dev.kyralabs.pingogram.core.data.repository.FileChatOpeningsRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
@@ -126,6 +128,16 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun unansweredDismissalCache(repository: FileUnansweredDismissalRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it forgets when the account's chats were opened when it logs out. */
+    @Binds
+    @IntoSet
+    fun chatOpeningsCache(repository: FileChatOpeningsRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it records chats as their conversation shows, from the account's start. */
+    @Binds
+    @IntoSet
+    fun chatOpeningRecorder(recorder: ChatOpeningRecorder): TdlibUpdateCache
 
     /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
     @Binds

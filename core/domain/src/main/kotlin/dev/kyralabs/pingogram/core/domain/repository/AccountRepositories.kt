@@ -220,6 +220,8 @@ interface AccountRepositories {
 
     fun unansweredDismissalRepository(): UnansweredDismissalRepository
 
+    fun chatOpeningsRepository(): ChatOpeningsRepository
+
     fun bookmarkRepository(): BookmarkRepository
 
     fun snippetRepository(): SnippetRepository
