@@ -72,6 +72,11 @@ data class Supergroup(
      * free messages.
      */
     val paidMessageStarCount: Long = 0,
+    /**
+     * When the user joined, or, for one they are not a member of, when it was created (td_api.tl `supergroup.date`): a
+     * Unix timestamp; 0 if unknown.
+     */
+    val joinedDate: Long = 0,
 ) {
     override fun toString() = "Supergroup(id=$id, status=$status, isChannel=$isChannel, isForum=$isForum, …)"
 }

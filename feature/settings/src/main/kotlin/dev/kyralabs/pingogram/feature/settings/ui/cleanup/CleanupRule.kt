@@ -11,7 +11,8 @@ import java.time.ZoneId
 /**
  * Which chats Cleanup suggestions offer (`REQUIREMENTS.md` FR-X24, owner decisions 2026-11-25): a chat of the main list
  * not opened on this phone since [cutoff] (or not since [openings] began, before it), unless it is pinned, locked, a
- * secret chat, Saved Messages ([me]'s own chat), or Telegram's service notifications or another support account.
+ * secret chat, Saved Messages ([me]'s own chat), Telegram's service notifications or another support account, or a
+ * group or channel joined or created since [cutoff].
  */
 internal class CleanupRule(
     private val me: Long?,
@@ -24,6 +25,9 @@ internal class CleanupRule(
         chat: Chat,
         user: User?,
     ): Boolean = !openings.lastOpenedOf(chat.id).isAfter(cutoff) && !isKept(chat, user)
+
+    /** Whether a chat the user [joined] then is still suggested: not when that is after [cutoff]. */
+    fun suggestsJoined(joined: Instant?): Boolean = joined?.isAfter(cutoff) != true
 
     private fun isKept(
         chat: Chat,
