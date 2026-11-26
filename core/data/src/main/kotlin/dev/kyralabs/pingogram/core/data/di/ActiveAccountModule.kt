@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatOpeningsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
@@ -469,6 +470,9 @@ object ActiveAccountModule {
     @Provides
     fun unansweredDismissalRepository(accounts: Accounts): UnansweredDismissalRepository =
         accounts.active.unansweredDismissalRepository()
+
+    @Provides
+    fun chatOpeningsRepository(accounts: Accounts): ChatOpeningsRepository = accounts.active.chatOpeningsRepository()
 
     /** The active account's own names for chats, while the setting shows them (`REQUIREMENTS.md` FR-X20). */
     @Provides
