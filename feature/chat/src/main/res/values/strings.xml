@@ -727,6 +727,10 @@
     <string name="chat_call">Call</string>
     <!-- What tapping a call's service message does, for screen readers. -->
     <string name="chat_call_back">Call back</string>
+    <!-- A group message collapsed for a muted word (REQUIREMENTS.md FR-X21); %1$s: its sender's name -->
+    <string name="chat_muted_message">Message from %1$s · muted word · Tap to show</string>
+    <!-- What tapping a collapsed message does, read by screen readers -->
+    <string name="chat_muted_show">Show message</string>
     <string name="chat_join_group_call">Join</string>
 
     <!-- Bots' buttons under messages (docs/DESIGN_SYSTEM.md §6 "Bot buttons"). %1$s is the button's text. -->

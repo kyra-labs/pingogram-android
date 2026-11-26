@@ -82,6 +82,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.ConversationCards
+import dev.kyralabs.pingogram.feature.chat.ui.muted.MutedMessageRow
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
@@ -638,6 +639,11 @@ private fun ChatItemRow(
 ) {
     val selectedIds = checks?.selectedIds
     when (item) {
+        // A message with a muted word shows as a line until tapped (REQUIREMENTS.md FR-X21).
+        is ChatItem.Bubble if item.isMuted -> {
+            MutedMessageRow(item, onShow = { onEvent(MutedMessageEvent.Show(item.id)) }, modifier)
+        }
+
         is ChatItem.Bubble -> {
             val fileState = transfers.fileState(item.content.downloadableFileId)
             val bubblePlayback = playback?.takeIf { it.messageId == item.id }?.playback ?: Playback.Stopped
@@ -711,7 +717,7 @@ internal fun ChatItem.topSpacing(
 internal val ChatItem.contentType: Any
     get() =
         when (this) {
-            is ChatItem.Bubble -> BubbleContentType.of(this)
+            is ChatItem.Bubble -> if (isMuted) MUTED else BubbleContentType.of(this)
             is ChatItem.Service -> if (birthday != null) BIRTHDAY else SERVICE
             is ChatItem.DateSeparator -> DATE
             is ChatItem.UnreadDivider -> UNREAD
@@ -745,6 +751,7 @@ private enum class BubbleContentType {
 }
 
 private const val SERVICE = "service"
+private const val MUTED = "muted"
 private const val BIRTHDAY = "birthday"
 private const val DATE = "date"
 private const val UNREAD = "unread"
