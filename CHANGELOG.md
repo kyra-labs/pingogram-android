@@ -38,8 +38,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   instead of being read again.
 
 ### Fixed
-- Ending a call or leaving a voice chat right as it started no longer closes the app; ending a call while you're in a
-  voice chat no longer takes the voice chat's ongoing notification away.
+- Ending a call or leaving a voice chat right as it started no longer closes the app.
 
 ## [2.5.0] - 2026-11-25
 
