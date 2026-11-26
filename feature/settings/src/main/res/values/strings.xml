@@ -1469,6 +1469,7 @@
     <string name="settings_unanswered_button">Unanswered button</string>
     <!-- Settings → Chats → Cleanup suggestions (FR-X24). -->
     <string name="settings_cleanup">Cleanup suggestions</string>
+    <string name="settings_cleanup_summary">Chats you haven\'t opened in a while, one at a time</string>
     <string name="settings_cleanup_switch">Suggest chats to clean up</string>
     <string name="settings_cleanup_switch_summary">Chats you haven\'t opened on this phone for a while, to mute, archive or leave. Nothing happens unless you choose it</string>
     <string name="settings_cleanup_months">Not opened for</string>

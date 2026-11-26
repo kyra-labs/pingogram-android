@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
+import dev.kyralabs.pingogram.core.navigation.CleanupRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
@@ -181,11 +182,12 @@ private fun NavGraphBuilder.stickerPages(
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [PowerSavingRoute], [LanguageRoute],
  * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
  * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute] and [ChatAppearanceRoute] above Appearance,
- * [QuickReactionRoute], [SnippetsRoute], [TranscriptionSettingsRoute], [SwipeActionsRoute], [ChatsShownFirstRoute]
- * and [MutedWordsRoute] above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet
- * of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above
- * Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage, [EditProxyRoute]
- * above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination), [PrivacySettingRoute],
+ * [QuickReactionRoute], [SnippetsRoute], [TranscriptionSettingsRoute], [SwipeActionsRoute], [ChatsShownFirstRoute],
+ * [MutedWordsRoute] and [CleanupRoute] above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute]
+ * and the sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers,
+ * [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above
+ * Data and storage, [EditProxyRoute] above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog
+ * destination), [PrivacySettingRoute],
  * [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute] and [DeleteAccountRoute]
  * above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification, [SetPasscodeRoute] above
  * Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it. [onBack] leaves each of

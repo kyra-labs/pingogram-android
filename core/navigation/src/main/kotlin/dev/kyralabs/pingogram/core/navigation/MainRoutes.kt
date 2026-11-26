@@ -384,6 +384,10 @@ data object ChatsShownFirstRoute
 @Serializable
 data object MutedWordsRoute
 
+/** Cleanup suggestions (`REQUIREMENTS.md` FR-X24), one chat at a time, pushed above [SettingsChatsRoute]. */
+@Serializable
+data object CleanupRoute
+
 /**
  * The texts the composer inserts by "/" and their name (`REQUIREMENTS.md` FR-X2), pushed above
  * [SettingsChatsRoute].

@@ -114,6 +114,7 @@ enum class SettingsSubPage(
     SwipeActions(SettingsPage.Chats),
     ChatsShownFirst(SettingsPage.Chats),
     MutedWords(SettingsPage.Chats),
+    Cleanup(SettingsPage.Chats),
     Snippets(SettingsPage.Chats),
     Transcription(SettingsPage.Chats),
     RaiseToListen(SettingsPage.Chats),
