@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatNoteRepository
 import dev.kyralabs.pingogram.core.testing.FakeDirectShareRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeMutedWordsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +72,7 @@ internal class NotificationsHarness(
     val focus = FakeFocusGate()
     val chatNotes = FakeChatNoteRepository()
     val notesAndNames = FakeNotesAndNamesRepository()
+    val mutedWords = FakeMutedWordsRepository()
     val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files, chatNotes)
 
     /** The device's accounts the renderer follows: this one; tests add others ([NotificationsHarness.account]). */
@@ -84,6 +86,7 @@ internal class NotificationsHarness(
             focus = focus,
             firstFrame = firstFrame,
             notesAndNames = notesAndNames,
+            mutedWords = mutedWords,
         )
 
     /** Whether each slot shows its notifications ("Notifications from all accounts"); every slot does at first. */

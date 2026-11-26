@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
@@ -244,6 +245,8 @@ internal class AccountNotificationParts
         val firstFrame: FirstFrameGate,
         /** Whether the notifications take the names given on this phone (`REQUIREMENTS.md` FR-X20). */
         val notesAndNames: NotesAndNamesRepository? = null,
+        /** The muted words, whose groups' messages say they have one (`REQUIREMENTS.md` FR-X21). */
+        val mutedWords: MutedWordsRepository? = null,
     )
 
 /**
@@ -293,6 +296,7 @@ internal class AccountNotificationRenderer(
             avatars = AvatarIcons(context, account.files, parts.appearance, parts.ioDispatcher),
             slot = account.slot,
             localNames = localNamesOf(account, parts),
+            mutedWords = parts.mutedWords,
         )
     private val manager = NotificationManagerCompat.from(context)
     private val mutex = Mutex()

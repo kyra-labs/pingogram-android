@@ -5,6 +5,7 @@ import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.result.getOrNull
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatNotification
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -20,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * What one notification of a chat shows (`REQUIREMENTS.md` FR-N2): a conversation in Android's terms, built from a
@@ -80,8 +83,9 @@ internal class NotificationMessage(
  * group or channel, the senders and their avatars ([AvatarIcons]). A text or a caption shows as it was written
  * ([notificationText]: its lines and formatting kept, spoilers hidden), other messages as the chat list's previews
  * ([messagePreviewText]: "Photo", "Voice message", what a service message reports), shown only where TDLib allows a
- * preview (`showPreview`, the chat's notification setting); otherwise "New message". One per account, from its own
- * repositories, the account's [slot] in what it builds.
+ * preview (`showPreview`, the chat's notification setting); otherwise "New message". A group's message with a muted
+ * word ([mutedWords], `REQUIREMENTS.md` FR-X21) says "Message with a muted word" instead. One per account, from its
+ * own repositories, the account's [slot] in what it builds.
  */
 internal class ConversationNotificationFactory(
     private val context: Context,
@@ -91,6 +95,7 @@ internal class ConversationNotificationFactory(
     private val avatars: AvatarIcons,
     private val slot: Int = 0,
     private val localNames: LocalChatNamesRepository? = null,
+    private val mutedWords: MutedWordsRepository? = null,
 ) {
     private val resources get() = context.resources
 
@@ -106,7 +111,8 @@ internal class ConversationNotificationFactory(
             localName ?: chat?.title?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.notification_unknown_chat)
         val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
-        val messages = group.notifications.map { notification -> message(notification, chat, senders) }
+        val muted = mutedWords?.settings?.first()?.let(::MutedWords)
+        val messages = group.notifications.map { notification -> message(notification, chat, senders, muted) }
         val isGroupConversation = chat?.isGroup == true
         return ConversationNotification(
             groupId = group.id,
@@ -131,6 +137,7 @@ internal class ConversationNotificationFactory(
         notification: ChatNotification,
         chat: Chat?,
         senders: Senders,
+        muted: MutedWords?,
     ): NotificationMessage {
         val content = notification.content
         val (sender, text) =
@@ -138,14 +145,7 @@ internal class ConversationNotificationFactory(
                 is NotificationContent.NewMessage -> {
                     val message = content.message
                     val sender = if (message.isOutgoing) null else person(message.sender, senders)
-                    val text =
-                        if (content.showPreview) {
-                            notificationText(message.content, resources)
-                                ?: messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
-                        } else {
-                            context.getString(R.string.notification_new_message)
-                        }
-                    sender to text
+                    sender to newMessageText(content, chat, senders, muted)
                 }
 
                 is NotificationContent.NewPushMessage -> {
@@ -168,6 +168,33 @@ internal class ConversationNotificationFactory(
                 }
             }
         return NotificationMessage(text, notification.date.seconds.inWholeMilliseconds, sender)
+    }
+
+    /**
+     * What a new message says: "New message" where TDLib allows no preview, "Message with a muted word" for a group's
+     * message with one ([muted]), else its text, or its preview as the chat list's.
+     */
+    private fun newMessageText(
+        content: NotificationContent.NewMessage,
+        chat: Chat?,
+        senders: Senders,
+        muted: MutedWords?,
+    ): CharSequence {
+        val message = content.message
+        return when {
+            !content.showPreview -> {
+                context.getString(R.string.notification_new_message)
+            }
+
+            chat != null && muted?.mutes(chat, message) == true -> {
+                resources.getString(UiR.string.preview_muted_word)
+            }
+
+            else -> {
+                notificationText(message.content, resources)
+                    ?: messagePreviewText(message, senders.myUserId, senders::shortName).resolve(resources)
+            }
+        }
     }
 
     /** The user of a private or secret chat; for a group or an unknown chat, nobody in particular. */
