@@ -31,8 +31,8 @@ interface StickerAnimation {
 /** Draws the frames of a [StickerAnimation]. Used by one thread at a time. */
 fun interface StickerFrameRenderer {
     /**
-     * Erases [bitmap] and draws frame [frame] (0 until `frameCount`) into it, scaled to fit and centred. False where the
-     * sticker cannot be drawn (a malformed file that parsed): [bitmap] stays blank, and so would the other frames.
+     * Erases [bitmap] and draws frame [frame] (0 until `frameCount`) into it, scaled to fit and centred. False where
+     * the sticker cannot be drawn (a malformed file that parsed): [bitmap] stays blank, and so would the other frames.
      */
     fun render(
         frame: Int,

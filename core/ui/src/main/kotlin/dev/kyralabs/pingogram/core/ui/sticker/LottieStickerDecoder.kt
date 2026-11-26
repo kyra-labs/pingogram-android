@@ -55,10 +55,27 @@ private class LottieFrameRenderer(
         bitmap: Bitmap,
     ): Boolean {
         bitmap.eraseColor(Color.TRANSPARENT)
-        val drawable = drawable ?: return false
+        val drawable = drawable
+        val drawn =
+            when {
+                drawable == null -> false
+
+                // A sticker without a size has nothing to scale: its frames stay blank.
+                composition.bounds.isEmpty -> true
+
+                else -> draw(drawable, frame, bitmap)
+            }
+        if (!drawn) bitmap.eraseColor(Color.TRANSPARENT)
+        return drawn
+    }
+
+    /** Draws frame [frame] with [drawable] into [bitmap], scaled to fit and centred; false where Lottie failed. */
+    private fun draw(
+        drawable: LottieDrawable,
+        frame: Int,
+        bitmap: Bitmap,
+    ): Boolean {
         val bounds = composition.bounds
-        // A sticker without a size has nothing to scale: its frames stay blank.
-        if (bounds.isEmpty) return true
         val scale = min(bitmap.width / bounds.width().toFloat(), bitmap.height / bounds.height().toFloat())
         val width = (bounds.width() * scale).roundToInt()
         val height = (bounds.height() * scale).roundToInt()
@@ -67,9 +84,7 @@ private class LottieFrameRenderer(
         drawable.setBounds(left, top, left + width, top + height)
         drawable.frame = startFrame + frame
         canvas.setBitmap(bitmap)
-        if (lottieOrNull("draw") { drawable.draw(canvas) } != null) return true
-        bitmap.eraseColor(Color.TRANSPARENT)
-        return false
+        return lottieOrNull("draw") { drawable.draw(canvas) } != null
     }
 }
 
