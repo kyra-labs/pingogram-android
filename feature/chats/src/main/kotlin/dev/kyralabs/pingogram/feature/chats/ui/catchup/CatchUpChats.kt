@@ -3,10 +3,11 @@ package dev.kyralabs.pingogram.feature.chats.ui.catchup
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.catchUpOrder
+import dev.kyralabs.pingogram.core.domain.model.isToCatchUp
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
-import dev.kyralabs.pingogram.feature.chats.ui.isChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,24 +59,3 @@ class CatchUpChats
             const val MIN_CHATS = 5
         }
     }
-
-/**
- * [chats] with unread messages, without [locked] ones and, unless [includeMuted], without muted chats and channels;
- * those that mention the user first, then by their last message, the newest first.
- */
-internal fun catchUpOrder(
-    chats: List<Chat>,
-    includeMuted: Boolean,
-    locked: Set<Long>,
-): List<Chat> =
-    chats
-        .filter { it.isToCatchUp(includeMuted, locked) }
-        .sortedWith(
-            compareByDescending<Chat> { it.unreadMentionCount > 0 }.thenByDescending { it.lastMessage?.date ?: 0L },
-        )
-
-/** Whether this chat is one to catch up on: unread, not [locked], and not muted nor a channel unless [includeMuted]. */
-private fun Chat.isToCatchUp(
-    includeMuted: Boolean,
-    locked: Set<Long>,
-): Boolean = unreadCount > 0 && id !in locked && (includeMuted || (!isMuted && !isChannel))
