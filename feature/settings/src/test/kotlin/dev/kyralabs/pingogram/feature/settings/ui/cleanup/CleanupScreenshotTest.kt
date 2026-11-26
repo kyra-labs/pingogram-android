@@ -17,7 +17,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Cleanup suggestions' page (FR-X24), light and dark, in AMOLED black, high contrast, right to left, a 700 dp window
- * and at twice the font size (`docs/DESIGN_SYSTEM.md` §12): nothing to suggest, loading, and off.
+ * and at twice the font size (`docs/DESIGN_SYSTEM.md` §12): nothing to suggest, loading, off, a group to leave, a chat
+ * never opened, and Leave's confirmation.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -39,6 +40,29 @@ class CleanupScreenshotTest {
 
     @Test
     fun offLight() = page("offLight", ThemeMode.Light, CleanupPreviewStates.off)
+
+    @Test
+    fun suggestionLight() = page("suggestionLight", ThemeMode.Light, CleanupPreviewStates.group)
+
+    @Test
+    fun suggestionDark() = page("suggestionDark", ThemeMode.Dark, CleanupPreviewStates.group)
+
+    @Test
+    fun neverOpenedLight() = page("neverOpenedLight", ThemeMode.Light, CleanupPreviewStates.neverOpened)
+
+    @Test
+    fun leaveLight() = page("leaveLight", ThemeMode.Light, CleanupPreviewStates.confirmingLeave)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1800dp-xxhdpi", fontScale = FONT_SCALE_200)
+    fun suggestionFontScale200() = page("suggestionFontScale200", ThemeMode.Light, CleanupPreviewStates.group)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun suggestionMedium() =
+        composeRule.captureScreen(javaClass, "suggestionMedium", ScreenshotVariant.Medium) {
+            CleanupScreen(CleanupPreviewStates.group, onEvent = {}, onBack = {})
+        }
 
     @Test
     fun amoled() = audit(ScreenshotVariant.Amoled)

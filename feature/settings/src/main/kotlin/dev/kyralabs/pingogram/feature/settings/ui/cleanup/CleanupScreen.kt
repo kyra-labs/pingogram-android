@@ -65,7 +65,7 @@ internal fun CleanupScreen(
     ) {
         val settings = state.settings ?: return@SettingsPageScaffold
         CleanupSettingsGroup(settings, onEvent)
-        CleanupSuggestionGroup(state)
+        CleanupSuggestionGroup(state, onEvent)
     }
 }
 
