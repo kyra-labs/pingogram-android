@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.forumTopic
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
+import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.text
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
 import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
 import dev.kyralabs.pingogram.feature.chat.ui.FakeChatRepository
@@ -30,9 +32,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.FakeTimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeWallClock
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -73,7 +77,10 @@ class ForumTopicsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.viewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()): ForumTopicsViewModel {
+    private fun TestScope.viewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        mutedWords: MutedWordSettings = MutedWordSettings(),
+    ): ForumTopicsViewModel {
         val viewModel =
             ForumTopicsViewModel(
                 chatId = FORUM_CHAT,
@@ -86,6 +93,7 @@ class ForumTopicsViewModelTest {
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
+                mutedWordSettings = flowOf(mutedWords),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
@@ -95,6 +103,29 @@ class ForumTopicsViewModelTest {
     private val ForumTopicsViewModel.content get() = uiState.value.content
 
     private val ForumTopicsViewModel.rows get() = (content as TopicsContent.Content).topics
+
+    @Test
+    fun `a topic's last message with a muted word says so in its row`() =
+        runTest {
+            chats.setChats(forumChat)
+            users.setUsers(user(ADA, firstName = "Ada", lastName = "Lovelace"))
+            val last =
+                message(
+                    9,
+                    chatId = FORUM_CHAT,
+                    sender = MessageSender.User(ADA),
+                    content = MessageContent.Text(text("Big spoiler ahead"), linkPreview = null),
+                )
+            topics.onLoadMore = {
+                topics.setTopics(FORUM_CHAT, forumTopic(7, "Help", lastMessage = last))
+                Outcome.Success(Unit)
+            }
+
+            val viewModel =
+                viewModel(mutedWords = MutedWordSettings(enabled = true, words = persistentListOf("spoiler")))
+
+            assertEquals(UiText.resource(UiR.string.preview_muted_word), viewModel.rows.single().preview)
+        }
 
     @Test
     fun `loads the first page after the first frame, and shows the forum's topics`() =
