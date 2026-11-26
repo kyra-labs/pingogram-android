@@ -38,7 +38,8 @@ import java.time.Instant
 /**
  * What rows show besides their chats, as of one emission: the users, supergroups, secret chats and actions of every
  * chat, the current user, the minute (for times and online dots that expire), the user's own names for chats
- * ([localNames], `REQUIREMENTS.md` FR-X20), and their muted words ([mutedWords], FR-X21).
+ * ([localNames], `REQUIREMENTS.md` FR-X20), and whether a message has a muted word ([mutes], FR-X21: one function
+ * per settings, so a row compares it by identity and matches its message once).
  */
 internal class RowSnapshot(
     val users: ImmutableMap<Long, User>,
@@ -48,16 +49,21 @@ internal class RowSnapshot(
     val myUserId: Long?,
     val now: Instant,
     val localNames: ImmutableMap<Long, String> = persistentMapOf(),
-    val mutedWords: MutedWords? = null,
+    val mutes: MessageMutes? = null,
 ) {
+    /** The current user, looked up once for every row. */
+    val me: User? = myUserId?.let(users::get)
+
     /** The user's own name for [chat], unless it is a contact's private chat, whose contact name shows (FR-X20). */
     fun localNameOf(chat: Chat): String? =
         localNames.shownName(chat.id, isContact = chat.userId?.let(users::get)?.isContact == true)
 
     /** Whether [chat]'s last message has a muted word, which its preview then says instead of its text (FR-X21). */
-    fun isLastMessageMuted(chat: Chat): Boolean =
-        chat.lastMessage?.let { mutedWords?.mutes(chat, it, myUserId?.let(users::get)) } == true
+    fun isLastMessageMuted(chat: Chat): Boolean = chat.lastMessage?.let { mutes?.invoke(chat, it, me) } == true
 }
+
+/** Whether a message of a chat, as the current user sees it, has a muted word ([MutedWords.mutes]). */
+internal typealias MessageMutes = (chat: Chat, message: Message, me: User?) -> Boolean
 
 /**
  * What the rows of one emission are made from: the [snapshot], the list shown (for pins), how to format times, and the
@@ -126,6 +132,8 @@ private data class RowInputs(
     val now: Instant,
     val timeFormatter: ChatListTimeFormatter,
     val localName: String?,
+    val mutes: MessageMutes?,
+    val me: User?,
     val isLastMessageMuted: Boolean = false,
 ) {
     /** Whether these are the inputs [chat] has in [sources] ([inputsOf]), found without building those. */
@@ -142,7 +150,9 @@ private data class RowInputs(
         return sameList &&
             this.chat == chat &&
             localName == snapshot.localNameOf(chat) &&
-            isLastMessageMuted == snapshot.isLastMessageMuted(chat) &&
+            // The same message, muted words and user: the same answer, without matching again.
+            mutes === snapshot.mutes &&
+            me == snapshot.me &&
             sameAround(chat, sources)
     }
 
@@ -185,6 +195,8 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         now = snapshot.now,
         timeFormatter = timeFormatter,
         localName = snapshot.localNameOf(chat),
+        mutes = snapshot.mutes,
+        me = snapshot.me,
         isLastMessageMuted = snapshot.isLastMessageMuted(chat),
     )
 }

@@ -215,6 +215,16 @@ internal class ConversationShortcuts(
         }
     }
 
+    /**
+     * Removes the conversation shortcuts of [chatIds] that are not share targets, cached ones too: chats whose name
+     * changed while no notification shows them, which would keep the old name. A share target gets its new name from
+     * [publishShareTargets]; a notification brings the shortcut back.
+     */
+    suspend fun forget(chatIds: Set<Long>) {
+        val notTargets = chatIds - shareTargets - shareKeys?.keys.orEmpty()
+        if (notTargets.isNotEmpty()) remove(notTargets)
+    }
+
     /** Removes every conversation shortcut of the account, cached ones too, e.g. when it logs out. */
     suspend fun removeAll() {
         published.clear()
