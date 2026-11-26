@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.repository.DailyDigestSettings
 import dev.kyralabs.pingogram.core.testing.FakeDailyDigestSettingsRepository
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -101,6 +102,44 @@ class DailyDigestWorkerTest {
 
             assertNull(posted())
             assertEquals(1, scheduled.size)
+        }
+
+    @Test
+    fun `it counts once TDLib has caught up with the server`() =
+        runTest {
+            var synced = false
+            val account =
+                DigestAccountParts(
+                    loggedIn = { true },
+                    synced = { synced = true },
+                    chats = { if (synced) listOf(chat(1), chat(2)) else listOf(chat(1)) },
+                )
+
+            runWorker(account)
+
+            val title = requireNotNull(posted()).extras.getCharSequence(NotificationCompat.EXTRA_TITLE).toString()
+            assertEquals("2 unread chats", title)
+        }
+
+    @Test
+    fun `offline, it counts what the phone has once the wait is over`() =
+        runTest {
+            val offline =
+                DigestAccountParts(loggedIn = { true }, synced = { awaitCancellation() }, chats = { listOf(chat(1)) })
+
+            runWorker(offline)
+
+            assertEquals("1 unread chat", posted()?.extras?.getCharSequence(NotificationCompat.EXTRA_TITLE).toString())
+        }
+
+    @Test
+    fun `a digest that cannot be read still schedules the next one`() =
+        runTest {
+            val broken = DigestAccountParts(loggedIn = { true }, chats = { throw IllegalStateException("database") })
+
+            assertTrue(runCatching { runWorker(broken) }.isFailure)
+
+            assertEquals(listOf(LocalTime.of(8, 30)), scheduled)
         }
 
     @Test
