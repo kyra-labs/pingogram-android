@@ -128,6 +128,17 @@ class PlatformAppLanguageRepositoryTest {
     }
 
     @Test
+    @Config(sdk = [26, 28, 30, 32])
+    fun `before Android 13, the activity's context in the chosen language keeps the system's font scale`() {
+        RuntimeEnvironment.setFontScale(2f)
+
+        val french = contextInLanguage(context, InAppLanguage("fr"))
+
+        assertEquals(2f, french.resources.configuration.fontScale, 0f)
+        assertEquals(Locale.FRENCH, french.resources.configuration.locales[0])
+    }
+
+    @Test
     @Config(sdk = [32])
     fun `before Android 13, a language not read yet leaves the context as it is`() {
         assertSame(context, contextInLanguage(context, null))
