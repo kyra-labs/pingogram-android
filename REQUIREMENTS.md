@@ -366,6 +366,10 @@ the typing status (FR-X17) and removing tracking from links (FR-X8) (owner decis
   service notifications, secret or locked chats. When a chat was last opened is kept on the phone for the account,
   not in backups; until the chosen time has passed since the phone began keeping it, nothing is suggested. Nothing
   acts by itself or on several chats at once. The settings go into backups.
+- FR-X25 Should: **Privacy screen** (owner decisions 2026-11-25). Privacy and security → "Privacy screen", off by
+  default, and a Quick Settings tile that turns the same switch. While it is on, message text and photos in a
+  conversation are blurred (a tonal cover below Android 12), and a tap shows one until it is scrolled away; the
+  widgets show chat names without message text. It stays on until turned off. The setting goes into backups.
 
 ## 6. Non-functional requirements
 
