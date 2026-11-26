@@ -186,7 +186,7 @@ internal class ConversationNotificationFactory(
                 context.getString(R.string.notification_new_message)
             }
 
-            chat != null && muted?.mutes(chat, message) == true -> {
+            chat != null && muted?.mutes(chat, message, senders.myUserId?.let(senders.users::get)) == true -> {
                 resources.getString(UiR.string.preview_muted_word)
             }
 

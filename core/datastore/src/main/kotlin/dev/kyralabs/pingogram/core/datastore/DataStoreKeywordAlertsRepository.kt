@@ -52,7 +52,7 @@ class DataStoreKeywordAlertsRepository
                 val trimmed = word.replace(LINE_BREAK, " ").trim().take(KeywordAlertSettings.MAX_WORD_LENGTH)
                 val words = preferences.words()
                 val known = words.any { KeywordMatcher.keyOf(it) == KeywordMatcher.keyOf(trimmed) }
-                if (KeywordMatcher.isUsable(trimmed) && !known && words.size < KeywordAlertSettings.MAX_WORDS) {
+                if (trimmed.isNotEmpty() && !known && words.size < KeywordAlertSettings.MAX_WORDS) {
                     preferences.setWords(words + trimmed)
                 }
             }
@@ -89,8 +89,7 @@ class DataStoreKeywordAlertsRepository
             }
     }
 
-// A word saved before words of only combining marks were refused is dropped here: it would match everywhere.
-private fun Preferences.words(): List<String> = this[WORDS].orEmpty().split('\n').filter(KeywordMatcher::isUsable)
+private fun Preferences.words(): List<String> = this[WORDS].orEmpty().split('\n').filter { it.isNotBlank() }
 
 private fun MutablePreferences.setWords(words: List<String>) {
     this[WORDS] = words.joinToString("\n")

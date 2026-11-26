@@ -22,7 +22,7 @@ class FakeKeywordAlertsRepository(
         change {
             val trimmed = word.trim()
             val known = it.words.any { kept -> KeywordMatcher.keyOf(kept) == KeywordMatcher.keyOf(trimmed) }
-            if (!KeywordMatcher.isUsable(trimmed) || known || it.words.size >= KeywordAlertSettings.MAX_WORDS) {
+            if (trimmed.isEmpty() || known || it.words.size >= KeywordAlertSettings.MAX_WORDS) {
                 it
             } else {
                 it.copy(words = (it.words + trimmed).toImmutableList())

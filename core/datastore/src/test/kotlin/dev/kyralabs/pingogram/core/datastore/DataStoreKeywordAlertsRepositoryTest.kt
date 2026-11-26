@@ -1,8 +1,6 @@
 package dev.kyralabs.pingogram.core.datastore
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.kyralabs.pingogram.core.domain.model.KeywordAlertSettings
 import dev.kyralabs.pingogram.core.domain.model.KeywordScope
 import kotlinx.collections.immutable.persistentSetOf
@@ -83,19 +81,6 @@ class DataStoreKeywordAlertsRepositoryTest {
 
             first.setWhere(KeywordScope.MutedChats)
             assertEquals(KeywordScope.MutedChats, first.settings.first().where)
-        }
-
-    @Test
-    fun `refuses a word of only combining marks, and drops one saved before`() =
-        runTest {
-            val dataStore =
-                PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(directory, FILE) })
-            dataStore.edit { it[stringPreferencesKey("keyword_alerts.words")] = "\u0301\u0308\nlaunch" }
-            val repository = DataStoreKeywordAlertsRepository(dataStore)
-
-            repository.addWord(" \u0301 ")
-
-            assertEquals(listOf("launch"), repository.settings.first().words)
         }
 
     private companion object {

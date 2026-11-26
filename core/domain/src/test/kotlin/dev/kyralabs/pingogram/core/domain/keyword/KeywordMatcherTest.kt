@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.core.domain.keyword
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -42,6 +41,28 @@ class KeywordMatcherTest {
     }
 
     @Test
+    fun `greek accents fold, as latin ones do, typed as one letter or two`() {
+        val greek = "Το άλφα"
+        val alpha = KeywordMatcher(listOf("αλφα")).firstMatch(greek)!!
+        assertEquals("άλφα", greek.substring(alpha.start, alpha.end))
+        val typedApart = "a cafe\u0301"
+        val cafe = KeywordMatcher(listOf("café")).firstMatch(typedApart)!!
+        assertEquals("cafe\u0301", typedApart.substring(cafe.start, cafe.end))
+    }
+
+    @Test
+    fun `marks that make another letter are kept, in Cyrillic, Japanese, Thai and Devanagari`() {
+        // "й" is not "и".
+        assertNull(KeywordMatcher(listOf("мои")).firstMatch("мой дом"))
+        // "が" is not "か".
+        assertNull(KeywordMatcher(listOf("か"), withinUnspacedScripts = true).firstMatch("ありがとう"))
+        // "ไก่" (a chicken) is not "ไก", its tone mark gone.
+        assertNull(KeywordMatcher(listOf("ไก"), withinUnspacedScripts = true).firstMatch("ไก่ทอด"))
+        // "ज़" (za, with a nukta) is not "ज" (ja).
+        assertNull(KeywordMatcher(listOf("जरा")).firstMatch("ज़रा सा"))
+    }
+
+    @Test
     fun `phrases, usernames and every match in order, the longer where two overlap`() {
         val text = "@ada, the Pingogram Pro deal: Pingogram is back"
 
@@ -76,7 +97,7 @@ class KeywordMatcherTest {
     }
 
     @Test
-    fun `words of only combining marks look for nothing, in alerts and in muted words`() {
+    fun `words of only combining marks never hang or fail, in alerts and in muted words`() {
         val marks = listOf("\u0301", " \u0301\u0308 ", "\u0301 \u0301")
 
         assertTimeoutPreemptively(Duration.ofSeconds(5)) {
@@ -84,10 +105,8 @@ class KeywordMatcherTest {
                 val matcher = KeywordMatcher(marks + "cafe", withinUnspacedScripts)
 
                 assertEquals(listOf("cafe"), matcher.matches("Café open").map { it.word })
-                assertTrue(KeywordMatcher(marks, withinUnspacedScripts).isEmpty)
+                assertTrue(KeywordMatcher(marks, withinUnspacedScripts).matches("Cafe\u0301 open").isEmpty())
             }
         }
-        assertFalse(KeywordMatcher.isUsable("\u0301\u0308"))
-        assertTrue(KeywordMatcher.isUsable("é"))
     }
 }

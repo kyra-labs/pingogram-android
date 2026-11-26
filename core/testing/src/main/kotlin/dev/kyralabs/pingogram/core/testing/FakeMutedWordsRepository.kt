@@ -23,7 +23,7 @@ class FakeMutedWordsRepository(
         change {
             val trimmed = word.trim().take(MutedWordSettings.MAX_WORD_LENGTH)
             val known = it.words.any { kept -> KeywordMatcher.keyOf(kept) == KeywordMatcher.keyOf(trimmed) }
-            if (!KeywordMatcher.isUsable(trimmed) || known || it.words.size >= MutedWordSettings.MAX_WORDS) {
+            if (trimmed.isEmpty() || known || it.words.size >= MutedWordSettings.MAX_WORDS) {
                 it
             } else {
                 it.copy(words = (it.words + trimmed).toImmutableList())

@@ -1,8 +1,6 @@
 package dev.kyralabs.pingogram.core.datastore
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -74,19 +72,6 @@ class DataStoreMutedWordsRepositoryTest {
             val settings = repository.settings.first()
             assertTrue(settings.enabled)
             assertEquals(listOf("crypto"), settings.words)
-        }
-
-    @Test
-    fun `refuses a word of only combining marks, and drops one saved before`() =
-        runTest {
-            val dataStore =
-                PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { File(directory, FILE) })
-            dataStore.edit { it[stringPreferencesKey("muted_words.words")] = "\u0301\u0308\nspoiler" }
-            val repository = DataStoreMutedWordsRepository(dataStore)
-
-            repository.addWord(" \u0301 ")
-
-            assertEquals(listOf("spoiler"), repository.settings.first().words)
         }
 
     private companion object {

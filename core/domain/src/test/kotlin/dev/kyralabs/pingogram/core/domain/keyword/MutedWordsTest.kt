@@ -8,6 +8,11 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
+import dev.kyralabs.pingogram.core.domain.model.TextEntity
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UserStatus
+import dev.kyralabs.pingogram.core.domain.model.UserType
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -67,6 +72,55 @@ class MutedWordsTest {
 
     private fun text(value: String) = FormattedText(value, persistentListOf())
 
+    /** The current user, Ada, "@ada_l". */
+    private val me =
+        User(
+            id = ME,
+            firstName = "Ada",
+            lastName = "",
+            usernames = persistentListOf("ada_l"),
+            phoneNumber = "",
+            status = UserStatus.Empty,
+            profilePhoto = null,
+            isVerified = false,
+            isScam = false,
+            isFake = false,
+            isPremium = false,
+            isContact = false,
+            isMutualContact = false,
+            isSupport = false,
+            type = UserType.Regular,
+            haveAccess = true,
+        )
+
+    private fun MutedWords.mutes(
+        chat: Chat,
+        message: Message,
+    ) = mutes(chat, message, me)
+
+    @Test
+    fun `a message that mentions the user never collapses once read, by name or by username`() {
+        val byUsername =
+            FormattedText(
+                "@ADA_L big spoiler ahead",
+                persistentListOf(TextEntity(offset = 0, length = 6, type = TextEntityType.Mention)),
+            )
+        val byName =
+            FormattedText(
+                "Ada, big spoiler ahead",
+                persistentListOf(TextEntity(offset = 0, length = 3, type = TextEntityType.MentionName(userId = ME))),
+            )
+        val someoneElse =
+            FormattedText(
+                "@bob big spoiler ahead",
+                persistentListOf(TextEntity(offset = 0, length = 4, type = TextEntityType.Mention)),
+            )
+
+        assertFalse(on.mutes(group, message(MessageContent.Text(byUsername, linkPreview = null))))
+        assertFalse(on.mutes(group, message(MessageContent.Text(byName, linkPreview = null))))
+        assertTrue(on.mutes(group, message(MessageContent.Text(someoneElse, linkPreview = null))))
+    }
+
     @Test
     fun `a group's message with a muted word is muted`() {
         assertTrue(on.mutes(group, message()))
@@ -86,5 +140,9 @@ class MutedWordsTest {
         assertFalse(MutedWords(MutedWordSettings(words = persistentListOf("spoiler"))).mutes(group, message()))
         assertFalse(MutedWords(MutedWordSettings(enabled = true)).mutes(group, message()))
         assertFalse(on.mutes(group, message(MessageContent.Text(text("Nothing to see"), linkPreview = null))))
+    }
+
+    private companion object {
+        const val ME = 1L
     }
 }
