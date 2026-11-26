@@ -129,12 +129,12 @@ internal class StickerPlayer(
             position = upcoming
             frame = (position % animation.frameCount).toInt()
             val index = next
-            val drawn =
+            val rendered =
                 withContext(stickers.renderDispatcher) {
                     val bitmap = buffers[index] ?: createBitmap(width, height).also { buffers[index] = it }
                     renderer.render(frame, bitmap)
                 }
-            if (!drawn) {
+            if (!rendered) {
                 failed = true
                 return
             }
