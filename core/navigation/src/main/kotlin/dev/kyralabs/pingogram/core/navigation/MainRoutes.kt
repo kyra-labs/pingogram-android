@@ -380,6 +380,10 @@ data object TranscriptionSettingsRoute
 @Serializable
 data object ChatsShownFirstRoute
 
+/** Muted words (`REQUIREMENTS.md` FR-X21), kept on this phone only, pushed above [SettingsChatsRoute]. */
+@Serializable
+data object MutedWordsRoute
+
 /**
  * The texts the composer inserts by "/" and their name (`REQUIREMENTS.md` FR-X2), pushed above
  * [SettingsChatsRoute].
