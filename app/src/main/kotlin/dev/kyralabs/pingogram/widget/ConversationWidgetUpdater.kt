@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
@@ -204,6 +205,8 @@ class ConversationWidgetUpdater
         ): Flow<ConversationContent> =
             channelFlow {
                 val load = MutableStateFlow<Outcome<Unit>?>(null)
+                // The newest messages shown, kept while the history does not reach them (newestMessages).
+                var kept = emptyList<Message>()
                 launch {
                     retries.collectLatest {
                         load.value = null
@@ -238,6 +241,7 @@ class ConversationWidgetUpdater
                                 )
                             val resources = context.resources
                             val title = widgetTitle(chat, users, me, resources, localNames)
+                            val newest = newestMessages(chat, history, kept).also { kept = it }
                             Frame(
                                 ConversationContent.Chat(
                                     chatId = key.chatId,
@@ -245,7 +249,7 @@ class ConversationWidgetUpdater
                                     title = title,
                                     unreadCount = chat.unreadCount,
                                     isMuted = chat.isMuted,
-                                    messages = widgetMessages(chat, history.messages, users, me, resources, muted),
+                                    messages = widgetMessages(chat, newest, users, me, resources, muted),
                                     canReply = access == WriteAccess.Allowed,
                                     isSecret = chat.type is ChatType.Secret,
                                 ),
