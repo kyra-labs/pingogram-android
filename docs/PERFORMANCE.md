@@ -552,6 +552,11 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   - v2.3.0's benchmark has no `PG:` sections, so the start times, `app.inject`, `main.onCreate` and
     `main.awaitSettings` compare. Afterwards the phone runs New; `.\gradlew.bat :app:installFossBenchmarkRelease`
     puts `main` back, keeping the session.
+  - **v2.3.0 against v2.5.0** (the owner's Galaxy S24 Ultra, 2026-11-26, the account as it is that day; cold starts,
+    medians of 10): the first frame 494 ms against 496, the chat list 666 ms against 674. The code starts as fast as it
+    did, so v2.5.0's distance from the old v2.3.0 baseline (456 ms to the first frame against 383) is the account's
+    database growth: TDLib opening its database (`tdlib.open`, §2). The script's third run was thermal (its v2.5.0 went
+    from 674 to 866 ms to the chat list), so it compares only as a check of the phone's drift.
 - Baseline (2026-10-22, `benchmarkRelease`, Galaxy S24 Ultra on Android 17 at 120 Hz, clocks not locked; medians of
   10 starts, frame percentiles over 5 runs; "profile" is `BaselineProfileMode.Require` with the shipped profile, "none"
   is `CompilationMode.None`). The phone is far faster than §1's reference device, so meeting a budget here is not

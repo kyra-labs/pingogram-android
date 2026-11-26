@@ -257,7 +257,7 @@ The rest of the review of 2026-11-23, in this order:
 14. [ ] Start: the settings read once and kept, not awaited by each activity start (`main.awaitSettings`: 38 ms on a
     warm start in v2.3.0, 56 ms in v2.5.0, whose warm start to the chat list took 181 ms against 2.4.0's 143)
 15. [ ] Start: the wait for TDLib's sign-in state (`PG:loginKnown`, about 220 ms of v2.5.0's 612 ms cold start)
-16. [ ] Start: v2.3.0 measured on the same account, to separate the database's growth from the code (v2.5.0's cold
+16. [x] Start: v2.3.0 measured on the same account, to separate the database's growth from the code (v2.5.0's cold
     start to the first frame is 456 ms, 2.3.0's baseline 383)
 
 Translations (the owner, on Weblate):
