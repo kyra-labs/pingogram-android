@@ -114,6 +114,7 @@ internal class ChatPinnedMessages(
                     preview = named.previewOf(message),
                     canUnpin = canUnpin,
                     thumbnail = message.content.pinnedThumbnail(),
+                    isOutgoing = message.isOutgoing,
                 )
             }
         }.onStart { emit(null) }

@@ -214,11 +214,11 @@ class ConversationWidgetUpdater
                 }
                 combine(
                     combine(account.chats.chat(key.chatId), account.messages.history(key.chatId), load, ::Triple),
-                    combine(account.users.users, account.localNames.names, ::Pair),
+                    combine(account.users.users, account.localNames.names, account.mutedWords, ::Triple),
                     account.users.myUserId,
                     account.groups.basicGroups,
                     account.groups.supergroups,
-                ) { (chat, history, loaded), (users, localNames), me, basicGroups, supergroups ->
+                ) { (chat, history, loaded), (users, localNames, muted), me, basicGroups, supergroups ->
                     val failure = (loaded as? Outcome.Failure)?.error
                     when {
                         failure == DomainError.NotFound -> {
@@ -245,7 +245,7 @@ class ConversationWidgetUpdater
                                     title = title,
                                     unreadCount = chat.unreadCount,
                                     isMuted = chat.isMuted,
-                                    messages = widgetMessages(chat, history.messages, users, me, resources),
+                                    messages = widgetMessages(chat, history.messages, users, me, resources, muted),
                                     canReply = access == WriteAccess.Allowed,
                                     isSecret = chat.type is ChatType.Secret,
                                 ),

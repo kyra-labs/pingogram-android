@@ -4,6 +4,7 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -66,7 +67,7 @@ data class WidgetChat(
  * user's own chat, "Deleted Account" for one, the name given on this phone ([localNames], `REQUIREMENTS.md` FR-X20)
  * unless the chat is a contact's, and in groups "You:" or the sender's name before the message, as the chat list
  * does. A secret chat's messages stay off the home screen ("Secret chat"); a chat without messages shows an
- * empty line.
+ * empty line. A group's last message with a muted word ([mutedWords], FR-X21) says so instead of its text.
  */
 internal fun widgetChats(
     chats: List<Chat>,
@@ -76,6 +77,7 @@ internal fun widgetChats(
     limit: Int,
     slot: Int = 0,
     localNames: Map<Long, String> = emptyMap(),
+    mutedWords: MutedWords? = null,
 ): List<WidgetChat> =
     chats.take(limit).map { chat ->
         val userId = (chat.type as? ChatType.Private)?.userId
@@ -89,7 +91,7 @@ internal fun widgetChats(
                     isDeletedAccount -> resources.getString(UiR.string.user_deleted_account)
                     else -> localNames.shownName(chat.id, isContact = users[userId]?.isContact == true) ?: chat.title
                 },
-            preview = chat.previewText(users, myUserId, resources),
+            preview = chat.previewText(users, myUserId, resources, mutedWords),
             unreadCount = chat.unreadCount,
             hasUnreadMention = chat.unreadMentionCount > 0,
             isMuted = chat.isMuted,
@@ -101,6 +103,7 @@ private fun Chat.previewText(
     users: Map<Long, User>,
     myUserId: Long?,
     resources: Resources,
+    mutedWords: MutedWords?,
 ): String {
     val message = lastMessage
     return when {
@@ -119,7 +122,12 @@ private fun Chat.previewText(
                     is MessageSender.Chat -> if (sender.chatId == id) UiText.Plain(title) else null
                 }
             }
-            val text = messagePreviewText(message, myUserId, name).resolve(resources)
+            val text =
+                if (mutedWords?.mutes(this, message, myUserId?.let(users::get)) == true) {
+                    resources.getString(UiR.string.preview_muted_word)
+                } else {
+                    messagePreviewText(message, myUserId, name).resolve(resources)
+                }
             val sender = senderPrefix(message, users)?.resolve(resources)
             if (sender == null) text else resources.getString(R.string.widget_preview_sender, sender, text)
         }

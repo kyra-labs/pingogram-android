@@ -10,7 +10,9 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -27,6 +29,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messageText
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,6 +82,7 @@ class RecentChatsWidgetUpdaterTest {
     private val accounts = MutableStateFlow<Map<Int, WidgetAccount>>(emptyMap())
     private val localNames = FakeLocalChatNamesRepository()
     private val activeSlot = MutableStateFlow(0)
+    private val mutedWords = MutableStateFlow(MutedWords(MutedWordSettings()))
 
     private fun TestScope.account(
         client: FakeTdlibClient,
@@ -110,6 +114,7 @@ class RecentChatsWidgetUpdaterTest {
                     SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
                 ),
             localNames = localNames,
+            mutedWords = mutedWords,
         )
     }
 
@@ -304,6 +309,22 @@ class RecentChatsWidgetUpdaterTest {
 
             val contact = updater.currentContent(0) as RecentChatsContent.Chats
             assertEquals(listOf("Alice", "Book club", "Saved Messages", "Alice"), contact.chats.map { it.title })
+        }
+
+    @Test
+    fun `a group's last message with a muted word says so, a private chat's does not`() =
+        runTest {
+            mutedWords.value = MutedWords(MutedWordSettings(enabled = true, words = persistentListOf("hi")))
+            val updater = updater(FakeWidgets(0))
+            chats()
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(
+                listOf("Hi", "\u2068Alice\u2069: Message with a muted word", "", "Secret chat"),
+                content.chats.map { it.preview },
+            )
         }
 
     @Test

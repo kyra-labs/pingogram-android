@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.widget
 import android.content.res.Resources
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -67,7 +68,8 @@ data class WidgetMessage(
 /**
  * [chat]'s newest [limit] [messages] (newest first, as the history keeps them) for its Conversation widget, oldest
  * first, as a conversation reads: each with "You" or its sender's short name, none for a channel's posts and service
- * messages, and its text as the chat list words it. A secret chat's are left out.
+ * messages, and its text as the chat list words it, or that it has a muted word ([mutedWords], FR-X21). A secret
+ * chat's are left out.
  */
 internal fun widgetMessages(
     chat: Chat,
@@ -75,6 +77,7 @@ internal fun widgetMessages(
     users: Map<Long, User>,
     myUserId: Long?,
     resources: Resources,
+    mutedWords: MutedWords? = null,
     limit: Int = MAX_MESSAGES,
 ): List<WidgetMessage> {
     if (chat.type is ChatType.Secret) return emptyList()
@@ -88,7 +91,12 @@ internal fun widgetMessages(
         WidgetMessage(
             id = message.id,
             sender = senderOf(chat, message, users)?.resolve(resources),
-            text = messagePreviewText(message, myUserId, name).resolve(resources),
+            text =
+                if (mutedWords?.mutes(chat, message, myUserId?.let(users::get)) == true) {
+                    resources.getString(UiR.string.preview_muted_word)
+                } else {
+                    messagePreviewText(message, myUserId, name).resolve(resources)
+                },
         )
     }
 }

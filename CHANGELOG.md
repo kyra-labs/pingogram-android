@@ -15,8 +15,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the forward and share sheets and the home-screen widgets show, and a private note. Only your phone and your backups
   keep them; Settings → Chats can turn them off.
 - Muted words: in groups, messages with words or phrases you choose collapse into a line you tap to show, and the chat
-  list and notifications say "Message with a muted word" instead of their text. Never your own messages, ones that
-  mention or reply to you, channels or ads. Turn it on in Settings → Chats → Muted words.
+  list, forum topics, notifications, widgets, reply quotes and the pinned bar say "Message with a muted word" instead
+  of their text. Never your own messages, ones that mention or reply to you, channels or ads. Turn it on in Settings → Chats → Muted words.
 - Unanswered: a button at the top of Chats lists private chats where the other person wrote last and you haven't
   answered for 3 days, with Reply and Dismiss. It never sends anything; Settings → Chats sets the days or hides it.
 - Daily digest: one quiet notification each morning with your unread chats, mentions and the day's reminders across

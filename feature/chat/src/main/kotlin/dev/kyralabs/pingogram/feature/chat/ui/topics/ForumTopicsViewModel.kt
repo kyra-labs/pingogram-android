@@ -12,13 +12,16 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.component.AvatarShape
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -41,7 +44,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -52,6 +57,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.Locale
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The topic list of forum [chatId] (`REQUIREMENTS.md` FR-C9) as [uiState]: the forum in the top bar and its topics.
@@ -85,6 +91,7 @@ class ForumTopicsViewModel internal constructor(
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
+    mutedWordSettings: Flow<MutedWordSettings> = flowOf(MutedWordSettings()),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -97,6 +104,7 @@ class ForumTopicsViewModel internal constructor(
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
+        mutedWords: MutedWordsRepository,
     ) : this(
         chatId,
         chatRepository,
@@ -108,6 +116,7 @@ class ForumTopicsViewModel internal constructor(
         timePatterns,
         dispatcher,
         Locale::getDefault,
+        mutedWords.settings,
     )
 
     /** Creates the view model of forum `chatId`'s topic list. */
@@ -153,9 +162,10 @@ class ForumTopicsViewModel internal constructor(
             repository.topics(chatId),
             load,
             people,
-            combine(clock.minutes, managing, ::Pair),
-        ) { chat, topics, load, people, (now, managing) -> state(chat, topics, load, people, now, managing) }
-            .flowOn(dispatcher)
+            combine(clock.minutes, managing, mutedWordSettings.distinctUntilChanged().map(::MutedWords), ::Triple),
+        ) { chat, topics, load, people, (now, managing, muted) ->
+            state(chat, topics, load, people, now, managing, muted)
+        }.flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ForumTopicsUiState())
 
     private val ownEffects = Channel<ForumTopicsEffect>(Channel.BUFFERED)
@@ -250,6 +260,7 @@ class ForumTopicsViewModel internal constructor(
         people: ChatPeople,
         now: Instant,
         managing: Managing,
+        muted: MutedWords,
     ): ForumTopicsUiState {
         latestTopics = allTopics.topics
         val rights = managing.rights
@@ -263,8 +274,11 @@ class ForumTopicsViewModel internal constructor(
                     TopicsContent.Content(
                         topics =
                             topics.topics
-                                .map { it.toRow(chat, people, formatter, now, rights) }
-                                .toImmutableList(),
+                                .map { topic ->
+                                    topic
+                                        .toRow(chat, people, formatter, now, rights)
+                                        .withMutedPreview(topic, chat, people, muted)
+                                }.toImmutableList(),
                         reachedEnd = topics.reachedEnd,
                         isLoadingMore = load.isLoading,
                         moreError = load.error,
@@ -387,4 +401,19 @@ private fun ForumTopic.toRow(
         // The topic's own setting, else its forum's.
         isMuted = muteFor?.let { it > 0 } ?: (chat?.isMuted == true),
     )
+}
+
+/**
+ * This row with its preview saying "Message with a muted word" where the topic's last message has one
+ * (`REQUIREMENTS.md` FR-X21), as the chat list's does.
+ */
+private fun TopicRow.withMutedPreview(
+    topic: ForumTopic,
+    chat: Chat?,
+    people: ChatPeople,
+    muted: MutedWords,
+): TopicRow {
+    val last = topic.lastMessage
+    val hides = chat != null && last != null && muted.mutes(chat, last, people.myUserId?.let(people.users::get))
+    return if (hides) copy(preview = UiText.resource(UiR.string.preview_muted_word)) else this
 }
