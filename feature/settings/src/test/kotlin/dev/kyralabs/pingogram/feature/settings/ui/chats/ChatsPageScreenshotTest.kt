@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
 import dev.kyralabs.pingogram.feature.settings.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.settings.ui.FONT_SCALE_200
@@ -52,6 +53,16 @@ class ChatsPageScreenshotTest {
             "draftsButtonOffLight",
             ThemeMode.Light,
             defaults.copy(chatList = ChatListSettings(showDraftsButton = false)),
+        )
+
+    /** The whole page, down to the Chat list group, with "Unanswered button" off and its days dimmed (FR-X22). */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun unansweredOffLight() =
+        capture(
+            "unansweredOffLight",
+            ThemeMode.Light,
+            defaults.copy(unanswered = UnansweredSettings(showButton = false, afterDays = 7)),
         )
 
     /** The whole page, down to the Chat list group, with "Compact chat list" on (`REQUIREMENTS.md` FR-X19). */

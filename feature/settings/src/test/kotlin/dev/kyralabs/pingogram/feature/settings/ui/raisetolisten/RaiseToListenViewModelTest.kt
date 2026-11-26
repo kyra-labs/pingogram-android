@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeUnansweredSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatListOptions
 import dev.kyralabs.pingogram.feature.settings.ui.chats.ChatsPageEvent
@@ -117,6 +118,7 @@ class RaiseToListenViewModelTest {
                         FakeChatListSettingsRepository(),
                         FakeCompactChatListRepository(),
                         FakeNotesAndNamesRepository(),
+                        FakeUnansweredSettingsRepository(),
                     ),
                     FakeTranscriptionSettingsRepository(),
                     FakeVoiceTranscriber(),

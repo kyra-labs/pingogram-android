@@ -1466,6 +1466,14 @@
     <string name="settings_section_chat_list">Chat list</string>
     <string name="settings_drafts_button">Drafts button</string>
     <string name="settings_drafts_button_summary">Shows a button for your unsent messages at the top of Chats</string>
+    <string name="settings_unanswered_button">Unanswered button</string>
+    <string name="settings_unanswered_button_summary">Shows a button at the top of Chats for people still waiting for your answer</string>
+    <string name="settings_unanswered_after">Unanswered after</string>
+    <string name="settings_unanswered_after_summary">How long a private chat waits for your answer before it shows there</string>
+    <plurals name="settings_unanswered_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
     <!-- Settings → Chats → Chat list (FR-X19): smaller avatars on lower rows. -->
     <string name="settings_compact_chat_list">Compact chat list</string>
     <string name="settings_compact_chat_list_summary">Smaller pictures and lower rows, so more chats fit</string>

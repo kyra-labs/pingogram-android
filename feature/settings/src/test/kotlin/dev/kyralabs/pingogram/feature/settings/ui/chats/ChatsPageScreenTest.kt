@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
@@ -18,6 +19,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
+import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.COMPACT
@@ -77,6 +80,13 @@ class ChatsPageScreenTest {
     ) = composeRule.onNode(
         hasText(string(title)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch),
     )
+
+    private fun days(count: Int) =
+        RuntimeEnvironment.getApplication().resources.getQuantityString(
+            R.plurals.settings_unanswered_days,
+            count,
+            count,
+        )
 
     private fun open(
         @StringRes title: Int,
@@ -255,6 +265,32 @@ class ChatsPageScreenTest {
             .performClick()
 
         assertEquals(listOf(ChatsPageEvent.SetShowDraftsButton(false)), events)
+    }
+
+    @Test
+    fun `the unanswered button row is a switch, on at first, and its days choose when a chat counts`() {
+        setScreen()
+
+        switchRow(R.string.settings_unanswered_button)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_unanswered_button_summary)))
+            .performClick()
+        composeRule.onNodeWithText(days(7)).performScrollTo()
+        composeRule.assertAccessible()
+        composeRule.onNodeWithText(days(7)).performClick()
+
+        assertEquals(
+            listOf(ChatsPageEvent.SetShowUnansweredButton(false), ChatsPageEvent.SetUnansweredAfterDays(7)),
+            events,
+        )
+    }
+
+    @Test
+    fun `the unanswered days are dimmed while the button is off`() {
+        setScreen(ChatsPageUiState.Content(unanswered = UnansweredSettings(showButton = false)))
+
+        composeRule.onNodeWithText(days(7)).performScrollTo().assertIsNotEnabled()
     }
 
     @Test

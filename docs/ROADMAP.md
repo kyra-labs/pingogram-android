@@ -268,7 +268,7 @@ Translations (the owner, on Weblate):
 Features, in this order:
 - [x] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
 - [x] Muted words: group messages with chosen words collapse into a line to tap open; never sponsored messages
-- [ ] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
+- [x] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
   with Reply and Dismiss; it never sends anything
 - [ ] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
   Catch-up
