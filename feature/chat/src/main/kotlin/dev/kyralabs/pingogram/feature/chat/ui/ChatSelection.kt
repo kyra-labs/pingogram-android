@@ -33,8 +33,10 @@ import kotlinx.coroutines.launch
  * - **Selecting**: "Select" in a message's actions starts it ([select]); then a tap or a long press on a message
  *   selects it or no longer ([toggle]), an album as a whole. Deselecting the last one ends it, as do the close button
  *   and back ([clear]).
- * - **Kept** in the [savedState] by message id, so selection mode survives rotation and process death. Only loaded
- *   messages show as selected: a deleted message drops out at once, and the next change keeps only loaded ones.
+ * - **Kept** in the [savedState] by message id, so selection mode survives rotation and process death. A deleted
+ *   message drops out at once, and the next change keeps only the others. One the history no longer holds, as it
+ *   keeps a bounded window of messages while the user scrolls on, stays selected as it was last loaded ([held]), so
+ *   the toolbar's actions take every selected message; after process death, only loaded ones are.
  * - **Toolbar** ([actionsFor]): copying where every message may be saved and one has a text, forwarding, saving
  *   their files to Downloads where every one may be saved and has a file, unpinning where every one is pinned,
  *   reporting and deleting where TDLib allows it for every one of them (`getMessageProperties`, asked for all at
@@ -58,6 +60,9 @@ internal class ChatSelection(
 
     private val selected: Set<Long>
         get() = savedState.get<LongArray>(KEY_SELECTION)?.toSet().orEmpty()
+
+    /** The selected messages as last loaded, by id; changed on the main thread only, as everything here. */
+    private val held = HashMap<Long, Message>()
 
     /**
      * Selection mode with the selected messages of [history] and the toolbar's actions for them; null while none of
@@ -87,19 +92,19 @@ internal class ChatSelection(
     /** Starts selection mode with [messageIds] (a message, or an album's every item), or adds them to it. */
     fun select(messageIds: List<Long>) {
         scope.launch {
-            val loaded = loadedIds() ?: return@launch
-            write(selected.filterTo(LinkedHashSet()) { it in loaded } + messageIds.filter { it in loaded })
+            val history = current()?.history ?: return@launch
+            val loaded = history.messages.mapTo(HashSet()) { it.id }
+            write(selectedIn(history, selected).mapTo(LinkedHashSet()) { it.id } + messageIds.filter { it in loaded })
         }
     }
 
-    /** Selects message [messageId] (an album's every item), or deselects it if it is; keeps only loaded messages. */
+    /** Selects message [messageId] (an album's every item), or deselects it if it is; drops deleted messages. */
     fun toggle(messageId: Long) {
         scope.launch {
             val context = current() ?: return@launch
             val message = context.history.messages.findById(messageId) ?: return@launch
             val unit = context.albumOf(message).map { it.id }
-            val loaded = context.history.messages.mapTo(HashSet()) { it.id }
-            val ids = selected.filterTo(LinkedHashSet()) { it in loaded }
+            val ids = selectedIn(context.history, selected).mapTo(LinkedHashSet()) { it.id }
             if (ids.containsAll(unit)) ids.removeAll(unit.toSet()) else ids.addAll(unit)
             write(ids)
         }
@@ -158,7 +163,29 @@ internal class ChatSelection(
         savedState[KEY_SELECTION] = ids.toLongArray()
     }
 
-    private suspend fun loadedIds(): Set<Long>? = current()?.history?.messages?.mapTo(HashSet()) { it.id }
+    /**
+     * The messages of [history] among [ids], and those [held] beyond the run of messages it holds, oldest first. The
+     * run has no gaps, so a selected message missing within it, or past an end the run reaches, was deleted.
+     */
+    private fun selectedIn(
+        history: ChatHistory,
+        ids: Set<Long>,
+    ): List<Message> {
+        val loaded = history.messages.filter { it.id in ids }
+        loaded.forEach { held[it.id] = it }
+        val loadedIds = loaded.mapTo(HashSet()) { it.id }
+        val newest = history.messages.firstOrNull()?.id
+        val oldest = history.messages.lastOrNull()?.id
+
+        fun beyond(id: Long) =
+            if (newest == null || oldest == null) {
+                !(history.reachedStart && history.reachedEnd)
+            } else {
+                (id > newest && !history.reachedEnd) || (id < oldest && !history.reachedStart)
+            }
+        held.keys.retainAll { it in ids && (it in loadedIds || beyond(it)) }
+        return (loaded + held.filterKeys { it !in loadedIds }.values).sortedBy { it.id }
+    }
 
     /**
      * What the toolbar offers for [messages], in its order, with TDLib's properties of each; null when TDLib could not
@@ -226,9 +253,3 @@ private fun ActionContext.senderNameOf(message: Message): UiText =
             )
         }
     }
-
-/** The messages of [history] among [ids], oldest first. */
-private fun selectedIn(
-    history: ChatHistory,
-    ids: Set<Long>,
-): List<Message> = if (ids.isEmpty()) emptyList() else history.messages.filter { it.id in ids }.sortedBy { it.id }
