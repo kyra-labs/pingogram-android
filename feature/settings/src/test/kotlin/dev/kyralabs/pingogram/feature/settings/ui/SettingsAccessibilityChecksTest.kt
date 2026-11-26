@@ -40,6 +40,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerC
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.mutedwords.MutedWordsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.mutedwords.MutedWordsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
@@ -321,6 +323,12 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun keywordAlertsEmpty() =
         check { KeywordAlertsScreen(KeywordAlertsPreviewStates.empty, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun mutedWords() = check { MutedWordsScreen(MutedWordsPreviewStates.words, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun mutedWordsEmpty() = check { MutedWordsScreen(MutedWordsPreviewStates.empty, onEvent = {}, onBack = {}) }
 
     @Test
     fun keywordFolders() =

@@ -114,7 +114,9 @@ internal fun KeywordAlertsScreen(
             stringResource(R.string.settings_keyword_alerts_intro),
             Modifier.padding(bottom = MaterialTheme.spacing.small),
         )
-        AddWordRow(word, state.canAdd) { onEvent(KeywordAlertsEvent.Add(it)) }
+        AddWordRow(word, state.canAdd, KeywordAlertSettings.MAX_WORDS, KeywordAlertSettings.MAX_WORD_LENGTH) {
+            onEvent(KeywordAlertsEvent.Add(it))
+        }
         // The empty page shows only the field and the suggestions (board 30b): the settings come with the first word.
         if (settings.words.isEmpty()) {
             KeywordsEmpty(state, onEvent)
@@ -126,11 +128,16 @@ internal fun KeywordAlertsScreen(
     }
 }
 
-/** "Add word": the field (one line, user content) with "Add" at its end, which the keyboard's Done also presses. */
+/**
+ * "Add word": the field (one line, user content, at most [maxLength] characters) with "Add" at its end, which the
+ * keyboard's Done also presses; disabled, saying so, once there are [maxWords]. Keyword alerts and muted words.
+ */
 @Composable
-private fun AddWordRow(
+internal fun AddWordRow(
     word: TextFieldState,
     canAdd: Boolean,
+    maxWords: Int,
+    maxLength: Int,
     onAdd: (String) -> Unit,
 ) {
     val typed = word.text.isNotBlank()
@@ -159,13 +166,12 @@ private fun AddWordRow(
                 null
             } else {
                 {
-                    val most = KeywordAlertSettings.MAX_WORDS
-                    Text(pluralStringResource(R.plurals.settings_keyword_alerts_full, most, most))
+                    Text(pluralStringResource(R.plurals.settings_keyword_alerts_full, maxWords, maxWords))
                 }
             },
         textStyle = LocalTextStyle.current.userContent,
         lineLimits = TextFieldLineLimits.SingleLine,
-        inputTransformation = { if (length > KeywordAlertSettings.MAX_WORD_LENGTH) revertAllChanges() },
+        inputTransformation = { if (length > maxLength) revertAllChanges() },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         onKeyboardAction = { add() },
         shape = TextFieldDefaults.roundedShape,

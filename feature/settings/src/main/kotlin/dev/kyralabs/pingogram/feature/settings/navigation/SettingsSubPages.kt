@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.navigation.ConnectedWebsitesRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
+import dev.kyralabs.pingogram.core.navigation.MutedWordsRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
@@ -41,6 +42,7 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.DoubleTapReaction -> QuickReactionRoute
             SettingsSubPage.SwipeActions -> SwipeActionsRoute
             SettingsSubPage.ChatsShownFirst -> ChatsShownFirstRoute
+            SettingsSubPage.MutedWords -> MutedWordsRoute
             SettingsSubPage.Snippets -> SnippetsRoute
             SettingsSubPage.Transcription -> TranscriptionSettingsRoute
             SettingsSubPage.RaiseToListen -> RaiseToListenRoute

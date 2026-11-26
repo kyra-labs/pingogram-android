@@ -1472,6 +1472,12 @@
     <!-- Settings → Chats → Chat list (FR-X20): the user's own names and private notes, kept on the phone, for the chats Telegram gives no contact name or note. -->
     <string name="settings_notes_and_names">Notes and names on this phone</string>
     <string name="settings_notes_and_names_summary">Your own names and private notes for groups, channels, bots and people who aren\'t your contacts. Telegram never sees them</string>
+    <!-- Muted words (REQUIREMENTS.md FR-X21): the page's title and its row on Settings → Chats -->
+    <string name="settings_muted_words">Muted words</string>
+    <string name="settings_muted_words_summary">Collapse group messages with words you choose</string>
+    <string name="settings_muted_words_switch">Collapse messages with muted words</string>
+    <string name="settings_muted_words_switch_summary">In groups only. Never your own messages, ones that mention or reply to you, channels or ads</string>
+    <string name="settings_muted_words_matching">Matches whole words, in any letter case, with or without accents, and within the text in Chinese, Japanese, Thai and other scripts written without spaces. A tap on a collapsed message shows it. Only this phone keeps these words, and your backups.</string>
     <string name="settings_show_stories">Show stories</string>
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
     <string name="settings_edit_folders_button">Edit folders button</string>
@@ -1792,7 +1798,7 @@
     <string name="settings_keyword_alerts_add_word">Add word</string>
     <string name="settings_keyword_alerts_add_word_hint">A word or phrase</string>
     <string name="settings_keyword_alerts_add">Add</string>
-    <!-- %1$d: the most words, 20 -->
+    <!-- %1$d: the most words, 20 for keyword alerts, 100 for muted words -->
     <plurals name="settings_keyword_alerts_full">
         <item quantity="one">You can keep up to %1$d word. Remove it to add another.</item>
         <item quantity="other">You can keep up to %1$d words. Remove one to add another.</item>
