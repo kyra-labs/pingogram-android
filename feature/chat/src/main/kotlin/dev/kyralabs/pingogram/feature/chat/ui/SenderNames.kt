@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.mentionsUser
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.fullName
@@ -79,17 +80,16 @@ internal fun senderHueOf(
     id: Long,
 ): Int = SenderHues.indexOf((ref as? User)?.accentColorId ?: -1, id)
 
-/** Whether this text mentions user [userId] by name (td_api.tl `textEntityTypeMentionName`). */
-internal fun FormattedText.mentions(userId: Long?): Boolean =
-    userId != null && entities.any { (it.type as? TextEntityType.MentionName)?.userId == userId }
-
 /** The sender's hue where the bubble [showsSender] (incoming in a group), else -1. */
 internal fun ItemInputs.senderHue(showsSender: Boolean): Int =
     if (showsSender) senderHueOf(sender, message.sender.id) else -1
 
-/** Whether the message mentions the user: TDLib's unread mention, or a mention by name in its [text]. */
+/**
+ * Whether the message mentions the user: TDLib's unread mention, or a mention by name or by one of their usernames in
+ * its [text], read or not.
+ */
 internal fun ItemInputs.mentionsMe(text: FormattedText): Boolean =
-    message.containsUnreadMention || text.mentions(myUserId)
+    message.containsUnreadMention || text.mentionsUser(myUserId, myUsernames)
 
 /**
  * Where [text] mentions the user: by name (td_api.tl `textEntityTypeMentionName`) or by one of their usernames

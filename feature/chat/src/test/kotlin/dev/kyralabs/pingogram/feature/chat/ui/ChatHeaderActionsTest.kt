@@ -160,6 +160,29 @@ class ChatHeaderActionsTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `a mention of one of the user's usernames is still theirs once read, so it never collapses for a muted word`() =
+        runViewModelTest {
+            users.setUsers(user(ME).copy(usernames = persistentListOf("Me_Myself")), user(GRACE))
+            val read =
+                groupMessage(2, GRACE).copy(
+                    containsUnreadMention = false,
+                    content =
+                        MessageContent.Text(
+                            FormattedText(
+                                "@me_myself look",
+                                persistentListOf(TextEntity(0, 10, TextEntityType.Mention)),
+                            ),
+                            linkPreview = null,
+                        ),
+                )
+            val viewModel = showing(groupChat, history(read))
+            runCurrent()
+
+            assertTrue(viewModel.bubble(2).mentionsMe)
+            assertEquals(listOf(0 until 10), viewModel.bubble(2).myMentions)
+        }
+
+    @Test
     fun `a channel's posts carry their views, and the unread divider counts the unread posts`() =
         runViewModelTest {
             val info =

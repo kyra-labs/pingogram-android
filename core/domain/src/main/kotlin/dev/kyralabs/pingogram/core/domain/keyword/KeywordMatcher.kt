@@ -64,7 +64,7 @@ class KeywordMatcher(
             )
         }
 
-    /** Whether a match must have no letter or digit just before it ([start]) and just after it ([end]). */
+    /** Whether a match must have no letter, digit or mark just before it ([start]) and just after it ([end]). */
     private data class Edges(
         val start: Boolean,
         val end: Boolean,
@@ -94,9 +94,20 @@ class KeywordMatcher(
         ): Boolean {
             val before = text.getOrNull(start - 1)
             val after = text.getOrNull(end)
-            return (!edges.start || before == null || !before.isLetterOrDigit()) &&
-                (!edges.end || after == null || !after.isLetterOrDigit())
+            // A mark kept after the match belongs to its last letter, which it makes another: never a match there.
+            return after?.isMark() != true &&
+                (!edges.start || before == null || !before.isWordChar()) &&
+                (!edges.end || after == null || !after.isWordChar())
         }
+
+        /** A letter, a digit, or a mark kept on a letter. */
+        private fun Char.isWordChar(): Boolean = isLetterOrDigit() || isMark()
+
+        private fun Char.isMark(): Boolean =
+            when (Character.getType(this).toByte()) {
+                Character.NON_SPACING_MARK, Character.COMBINING_SPACING_MARK, Character.ENCLOSING_MARK -> true
+                else -> false
+            }
     }
 
     companion object {
@@ -114,23 +125,36 @@ class KeywordMatcher(
 
         private fun Int.isUnspaced(): Boolean = Character.UnicodeScript.of(this) in UNSPACED_SCRIPTS
 
+        /** The scripts whose letters carry accents that do not make another letter, which matching ignores. */
+        private val ACCENTED_SCRIPTS = setOf(Character.UnicodeScript.LATIN, Character.UnicodeScript.GREEK)
+
+        /** The Combining Diacritical Marks block: acute, grave, circumflex, diaeresis, tilde, cedilla and the like. */
+        private val COMBINING_DIACRITICS = '\u0300'..'\u036F'
+
         /** What two words are compared by: [word] trimmed, in lower case, without its accents. */
         fun keyOf(word: String): String = fold(word.trim()).text
 
         /**
-         * [value] in lower case without its accents: each char decomposed (NFD) and its combining marks dropped, so the
-         * folded text keeps an index into [value] for every char.
+         * [value] in lower case without its accents: each char decomposed (NFD), and the combining diacritics
+         * (U+0300 to U+036F) of a Latin or Greek letter dropped ("é" is "e", "ά" is "α"), so the folded text keeps an
+         * index into [value] for every char. Marks that make another letter stay: Cyrillic "й" is not "и", Japanese "が"
+         * not "か", nor Thai tone marks or the Devanagari nukta.
          */
         private fun fold(value: String): Folded {
             val text = StringBuilder(value.length)
             val origins = ArrayList<Int>(value.length)
             var index = 0
+            var foldsAccents = false
             while (index < value.length) {
                 val codePoint = value.codePointAt(index)
                 val size = Character.charCount(codePoint)
                 val decomposed = Normalizer.normalize(value.substring(index, index + size), Normalizer.Form.NFD)
+                // A mark typed on its own follows its letter: it folds as that letter's would.
+                if (decomposed[0] !in COMBINING_DIACRITICS) {
+                    foldsAccents = Character.UnicodeScript.of(decomposed.codePointAt(0)) in ACCENTED_SCRIPTS
+                }
                 decomposed
-                    .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
+                    .filterNot { foldsAccents && it in COMBINING_DIACRITICS }
                     .lowercase(Locale.ROOT)
                     .forEach { char ->
                         text.append(char)
