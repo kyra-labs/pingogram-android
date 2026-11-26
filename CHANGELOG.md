@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Muted words: in groups, messages with words or phrases you choose collapse into a line you tap to show, and the chat
   list and notifications say "Message with a muted word" instead of their text. Never your own messages, ones that
   mention or reply to you, channels or ads. Turn it on in Settings → Chats → Muted words.
+- Unanswered: a button at the top of Chats lists private chats where the other person wrote last and you haven't
+  answered for 3 days, with Reply and Dismiss. It never sends anything; Settings → Chats sets the days or hides it.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.

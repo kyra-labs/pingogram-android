@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
 import dev.kyralabs.pingogram.core.domain.repository.VoiceTranscriber
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -37,7 +38,8 @@ sealed interface ChatsPageUiState {
      * play at the ear ([raiseToListen]), whether they skip their silences ([skipSilence]), the chat list's swipes,
      * which the Swipe actions row sums up ([chatList]), whether voice messages are transcribed as they show
      * ([transcribeAutomatically]; null where the phone cannot transcribe), whether the chat list is compact
-     * ([compactChatList], FR-X19), and whether the user's notes and names for chats show ([notesAndNames], FR-X20).
+     * ([compactChatList], FR-X19), whether the user's notes and names for chats show ([notesAndNames], FR-X20), and
+     * whether the header offers Unanswered and after how many days ([unanswered], FR-X22).
      */
     data class Content(
         val sendKeys: SendKeys = SendKeys(),
@@ -50,6 +52,7 @@ sealed interface ChatsPageUiState {
         val showsUndoRedo: Boolean = true,
         val compactChatList: Boolean = false,
         val notesAndNames: Boolean = true,
+        val unanswered: UnansweredSettings = UnansweredSettings(),
     ) : ChatsPageUiState
 }
 
@@ -88,6 +91,16 @@ sealed interface ChatsPageEvent {
     /** "Notes and names on this phone" turned on or off. */
     data class SetNotesAndNames(
         val enabled: Boolean,
+    ) : ChatsPageEvent
+
+    /** "Unanswered button" turned on or off. */
+    data class SetShowUnansweredButton(
+        val show: Boolean,
+    ) : ChatsPageEvent
+
+    /** "Unanswered after" set to [days], one of `UnansweredSettings.DAYS`. */
+    data class SetUnansweredAfterDays(
+        val days: Int,
     ) : ChatsPageEvent
 
     /** "Raise to listen" turned on or off. */
@@ -163,6 +176,7 @@ class ChatsPageViewModel
                     composer.showsUndoRedo,
                     chatList.compact,
                     chatList.notesAndNames,
+                    chatList.unanswered,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
@@ -203,6 +217,14 @@ class ChatsPageViewModel
 
                 is ChatsPageEvent.SetNotesAndNames -> {
                     chatListOptions.notesAndNames.setEnabled(event.enabled)
+                }
+
+                is ChatsPageEvent.SetShowUnansweredButton -> {
+                    chatListOptions.unanswered.setShowButton(event.show)
+                }
+
+                is ChatsPageEvent.SetUnansweredAfterDays -> {
+                    chatListOptions.unanswered.setAfterDays(event.days)
                 }
 
                 is ChatsPageEvent.SetRaiseToListen -> {

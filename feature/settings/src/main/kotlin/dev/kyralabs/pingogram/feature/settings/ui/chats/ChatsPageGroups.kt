@@ -137,17 +137,16 @@ internal fun VoiceMessagesGroup(
 
 /**
  * "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first, then
- * "Drafts button", "Compact chat list" ([compact], `REQUIREMENTS.md` FR-X19), "Notes and names on this phone"
- * ([notesAndNames], FR-X20) and the row of Muted words (FR-X21).
+ * "Drafts button", Unanswered's rows (`REQUIREMENTS.md` FR-X22), "Compact chat list" (FR-X19), "Notes and names on
+ * this phone" (FR-X20) and the row of Muted words (FR-X21).
  */
 @Composable
 internal fun ChatListBehaviorGroup(
-    chatList: ChatListSettings,
-    compact: Boolean,
-    notesAndNames: Boolean,
+    state: ChatsPageUiState.Content,
     onEvent: (ChatsPageEvent) -> Unit,
     pages: ChatsPagePages,
 ) {
+    val chatList = state.chatList
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
         item { shapes ->
             SettingsRow(
@@ -170,11 +169,12 @@ internal fun ChatListBehaviorGroup(
                 onCheckedChange = { onEvent(ChatsPageEvent.SetShowDraftsButton(it)) },
             )
         }
+        unansweredItems(state.unanswered, onEvent)
         item { shapes ->
             SwitchItem(
                 title = stringResource(R.string.settings_compact_chat_list),
                 summary = stringResource(R.string.settings_compact_chat_list_summary),
-                checked = compact,
+                checked = state.compactChatList,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetCompactChatList(it)) },
             )
@@ -183,7 +183,7 @@ internal fun ChatListBehaviorGroup(
             SwitchItem(
                 title = stringResource(R.string.settings_notes_and_names),
                 summary = stringResource(R.string.settings_notes_and_names_summary),
-                checked = notesAndNames,
+                checked = state.notesAndNames,
                 shapes = shapes,
                 onCheckedChange = { onEvent(ChatsPageEvent.SetNotesAndNames(it)) },
             )

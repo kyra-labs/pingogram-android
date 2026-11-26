@@ -4,12 +4,14 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeUnansweredSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeVoiceTranscriber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,6 +38,7 @@ class ChatsPageViewModelTest {
     private val chatListSettings = FakeChatListSettingsRepository()
     private val compactChatList = FakeCompactChatListRepository()
     private val notesAndNames = FakeNotesAndNamesRepository()
+    private val unanswered = FakeUnansweredSettingsRepository()
     private val transcriptionSettings = FakeTranscriptionSettingsRepository()
     private val transcriber = FakeVoiceTranscriber()
 
@@ -53,7 +56,7 @@ class ChatsPageViewModelTest {
         ChatsPageViewModel(
             composerSettings,
             playbackSettings,
-            ChatListOptions(chatListSettings, compactChatList, notesAndNames),
+            ChatListOptions(chatListSettings, compactChatList, notesAndNames, unanswered),
             transcriptionSettings,
             transcriber,
         ).also { runCurrent() }
@@ -196,6 +199,18 @@ class ChatsPageViewModelTest {
 
             send(viewModel, ChatsPageEvent.SetShowDraftsButton(true))
             assertTrue(viewModel.content.chatList.showDraftsButton)
+        }
+
+    @Test
+    fun `the unanswered button shows after 3 days at first, and changing either saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(UnansweredSettings(showButton = true, afterDays = 3), viewModel.content.unanswered)
+
+            send(viewModel, ChatsPageEvent.SetUnansweredAfterDays(7))
+            send(viewModel, ChatsPageEvent.SetShowUnansweredButton(false))
+
+            assertEquals(UnansweredSettings(showButton = false, afterDays = 7), viewModel.content.unanswered)
         }
 
     @Test
