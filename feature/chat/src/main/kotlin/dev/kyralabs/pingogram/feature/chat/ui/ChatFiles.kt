@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.uploadFileId
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
@@ -21,10 +22,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
@@ -44,19 +48,27 @@ internal class ChatFiles(
     /**
      * The state of every file of the messages in [history], by id: one [FileRepository.observe] per file, followed for
      * as long as its message is loaded. A file TDLib has not reported is left out until it is. Each change of a file
-     * puts that one file into the map, rather than building it again from all of them (`docs/PERFORMANCE.md`).
+     * puts that one file into the map, rather than building it again from all of them (`docs/PERFORMANCE.md`). When
+     * the messages' files change, those still loaded keep their known states until TDLib reports them again, so a
+     * downloaded document never reads as not downloaded meanwhile.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun statesOf(history: Flow<ChatHistory>): Flow<ImmutableMap<Int, FileState>> =
-        history
-            .map { it.messages.mapNotNullTo(LinkedHashSet()) { message -> message.content.downloadableFileId } }
-            .distinctUntilChanged()
-            .flatMapLatest { ids ->
-                ids
-                    .map { id -> repository.observe(id).map { state -> id to state } }
-                    .merge()
-                    .runningFold(NoStates) { states, (id, state) -> states.putting(id, state) }
-            }.distinctUntilChanged()
+        flow {
+            var known: PersistentMap<Int, FileState> = NoStates
+            emitAll(
+                history
+                    .map { it.messages.mapNotNullTo(LinkedHashSet()) { message -> message.content.downloadableFileId } }
+                    .distinctUntilChanged()
+                    .flatMapLatest { ids ->
+                        ids
+                            .map { id -> repository.observe(id).map { state -> id to state } }
+                            .merge()
+                            .runningFold(known.retaining(ids)) { states, (id, state) -> states.putting(id, state) }
+                            .onEach { known = it }
+                    },
+            )
+        }.distinctUntilChanged()
 
     /**
      * The upload of every message of [history] being sent from this device with a photo, video, GIF or document
@@ -113,6 +125,10 @@ internal fun ChatItem.Bubble.uploadsIn(uploads: ImmutableMap<Long, MessageUpload
 private val NoUploads: ImmutableMap<Long, MessageUpload> = persistentMapOf()
 
 private val NoStates: PersistentMap<Int, FileState> = persistentMapOf()
+
+/** [this] with only the files among [ids]. */
+private fun PersistentMap<Int, FileState>.retaining(ids: Set<Int>): PersistentMap<Int, FileState> =
+    if (keys.all(ids::contains)) this else mutate { it.keys.retainAll(ids) }
 
 /** The progress to show: none while TDLib has neither started the upload nor told the size. */
 private val FileUpload.progressOrNull: Float?
