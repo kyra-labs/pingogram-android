@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.data.repository.FileChatNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
+import dev.kyralabs.pingogram.core.data.repository.FileUnansweredDismissalRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
@@ -243,6 +244,7 @@ import dev.kyralabs.pingogram.core.domain.repository.TranscriptRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredDismissalRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
@@ -574,6 +576,9 @@ interface RepositoryModule {
 
     @Binds
     fun chatNoteRepository(repository: FileChatNoteRepository): ChatNoteRepository
+
+    @Binds
+    fun unansweredDismissalRepository(repository: FileUnansweredDismissalRepository): UnansweredDismissalRepository
 
     @Binds
     fun bookmarkRepository(repository: FileBookmarkRepository): BookmarkRepository
