@@ -223,7 +223,8 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 Owner decision of 2026-11-17. Each works on the phone with what TDLib already gives; nothing is sent anywhere but
 Telegram, nothing acts for the user, and sponsored messages are shown exactly as Telegram sends them (§2). Every
 feature here can be turned off in Settings; a new behavior that changes an existing one is off by default (owner
-decision 2026-11-23).
+decision 2026-11-23). Two are on by default, as Telegram's own apps behave or as they only protect the user: sending
+the typing status (FR-X17) and removing tracking from links (FR-X8) (owner decision 2026-11-26).
 
 - FR-X1 Should: **Mentions & replies.** One page, opened from the Chats tab's header, listing the messages that mention
   the user and the replies to the user's messages, across all chats, newest first, unread first; each opens its chat
@@ -342,8 +343,9 @@ decision 2026-11-23).
   Japanese and Thai) shows as a line, "Message from Ada · muted word · Tap to show", which shows it until the user
   leaves the chat. Never channels or private chats, never the user's own messages, never a message that mentions or
   replies to the user, never service or sponsored messages (Telegram's terms). The chat list's preview and
-  notifications say "Message with a muted word" instead of its text. Nothing is deleted or marked read; the words stay
-  on the phone, are never sent to Telegram, and go into backups.
+  notifications say "Message with a muted word" instead of its text. Nothing is deleted; a collapsed message is read
+  as any message the open chat shows (owner decision 2026-11-26). The words stay on the phone, are never sent to
+  Telegram, and go into backups.
 - FR-X22 Should: **Unanswered** (owner decisions 2026-11-25). A button in the Chats tab's header, as Drafts' (FR-X16),
   shown while at least one chat is unanswered, opens a page of the private chats whose last message is the other
   person's and has had no answer for a chosen number of days (Settings → Chats → "Unanswered button", on by default,
