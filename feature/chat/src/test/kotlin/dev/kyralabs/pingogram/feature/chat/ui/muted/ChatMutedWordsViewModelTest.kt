@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.muted
 
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.testing.FakeMutedWordsRepository
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -9,7 +10,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.channelChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.groupChat
-import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.chat.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chat.ui.MutedMessageEvent

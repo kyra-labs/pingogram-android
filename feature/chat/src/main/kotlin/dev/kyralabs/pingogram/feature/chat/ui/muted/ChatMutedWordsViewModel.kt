@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.MutedMessageEvent
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 
 /**
  * Muted words in chat [chatId] (`REQUIREMENTS.md` FR-X21): the [filter] that collapses its messages with a muted word,
