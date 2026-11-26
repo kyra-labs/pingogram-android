@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.PageToOpen
+import dev.kyralabs.pingogram.core.navigation.CatchUpRoute
 import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.WidgetChatPickerRoute
@@ -44,6 +45,7 @@ internal fun OpenChatEffect(
  * when signed out, as [OpenChatEffect]:
  * - Locked chats, which a locked chat's notification asks for (`docs/adr/0029-locked-chats.md`: it names no chat),
  *   above the chat list; the page asks for the passcode first.
+ * - Catch-up, which the Daily digest's notification asks for (`REQUIREMENTS.md` FR-X23), above the chat list.
  * - The Chats tab, whose Focus switcher the Focus tile's long press opened through `FocusSwitcherRequests` (board 31).
  * - Settings → Focus, which the Focus tile opens while there is no profile to turn on.
  * - A Conversation widget's chat picker, which its "Choose a chat" asks for (board 33), and its reply sheet, which its
@@ -65,6 +67,7 @@ internal fun OpenPageEffect(
             if (!inMainGraph) return@LaunchedEffect
             when (page) {
                 PageToOpen.LockedChats -> navController.navigateAboveChats(LockedChatsRoute)
+                PageToOpen.CatchUp -> navController.navigateAboveChats(CatchUpRoute)
                 PageToOpen.Focus -> navController.navigateAboveChats(FocusRoute)
                 PageToOpen.FocusSwitcher -> navController.navigateToTopLevelDestination(TopLevelDestination.Chats)
                 is PageToOpen.WidgetChat -> navController.navigate(WidgetChatPickerRoute(page.appWidgetId))
