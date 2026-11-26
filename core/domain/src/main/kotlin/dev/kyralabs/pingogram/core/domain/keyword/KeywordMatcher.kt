@@ -25,7 +25,7 @@ class KeywordMatcher(
     private val needles: List<Pair<String, String>> =
         words
             .map { it.trim() }
-            .filter { it.isNotEmpty() }
+            .filter(::isUsable)
             .distinctBy(::keyOf)
             .map { it to fold(it).text }
 
@@ -116,6 +116,12 @@ class KeywordMatcher(
 
         /** What two words are compared by: [word] trimmed, in lower case, without its accents. */
         fun keyOf(word: String): String = fold(word.trim()).text
+
+        /**
+         * Whether [word] has something to look for once folded: a word of only accents or other combining marks folds
+         * to nothing, which would match everywhere and never stop, so it is not a word.
+         */
+        fun isUsable(word: String): Boolean = keyOf(word).isNotBlank()
 
         /**
          * [value] in lower case without its accents: each char decomposed (NFD) and its combining marks dropped, so the

@@ -37,6 +37,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Returning to the app after Android closed its screen opens it sooner: the theme and privacy settings stay in memory
   instead of being read again.
 
+### Fixed
+- A keyword alert or muted word made only of accent marks no longer freezes or closes the app; such words can't be
+  added, and any saved before are dropped.
+
 ## [2.5.0] - 2026-11-25
 
 ### Added
