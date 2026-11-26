@@ -355,6 +355,8 @@ sealed interface ChatItem {
      * @property isChannelPost a post of the channel the conversation is, put on a warm container (§13.7).
      * @property views how many saw a channel post (td_api.tl `interactionInfo.view_count`), in its meta; 0 for other
      *   messages.
+     * @property isMuted it has a muted word (`REQUIREMENTS.md` FR-X21) and shows as a line to tap open instead; set
+     *   by the route (`MutedMessages`), never by the conversation's mapping.
      */
     data class Bubble(
         val id: Long,
@@ -410,6 +412,7 @@ sealed interface ChatItem {
         val giveaway: GiveawayUi? = null,
         /** Where a forwarded message comes from, which tapping "Forwarded from …" opens; null if not forwarded. */
         val forwardSource: ForwardSource? = null,
+        val isMuted: Boolean = false,
     ) : ChatItem {
         override val key: Any = album?.let { albumKey(it.id) } ?: id
 
