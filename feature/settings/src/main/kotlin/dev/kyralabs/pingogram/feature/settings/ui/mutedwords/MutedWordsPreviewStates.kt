@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.mutedwords
 
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
 /** The page's states for previews and goldens: on with words, off without any, and the most words. */
 internal object MutedWordsPreviewStates {
@@ -16,7 +17,7 @@ internal object MutedWordsPreviewStates {
         MutedWordsUiState(
             MutedWordSettings(
                 enabled = true,
-                words = persistentListOf(*Array(MutedWordSettings.MAX_WORDS) { "word ${it + 1}" }),
+                words = List(MutedWordSettings.MAX_WORDS) { "word ${it + 1}" }.toImmutableList(),
             ),
         )
 }

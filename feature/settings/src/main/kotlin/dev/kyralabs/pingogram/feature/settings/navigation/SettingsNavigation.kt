@@ -182,8 +182,8 @@ private fun NavGraphBuilder.stickerPages(
  * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
  * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute] and [ChatAppearanceRoute] above Appearance,
  * [QuickReactionRoute], [SnippetsRoute], [TranscriptionSettingsRoute], [SwipeActionsRoute], [ChatsShownFirstRoute]
- * and [MutedWordsRoute] above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set
- * ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above Notifications,
+ * and [MutedWordsRoute] above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet
+ * of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage, [EditProxyRoute] above the
  * proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination), [PrivacySettingRoute],
  * [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute] and [DeleteAccountRoute]
