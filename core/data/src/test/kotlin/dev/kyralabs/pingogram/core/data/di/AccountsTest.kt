@@ -104,6 +104,8 @@ class AccountsTest {
         ).also {
             if (start) it.start()
             runCurrent()
+            // What reading the registry deleted, the storage of slots not on the device, is its own test's.
+            deleted.clear()
         }
     }
 
@@ -411,6 +413,21 @@ class AccountsTest {
             assertEquals(listOf(1), deleted)
             assertEquals(1, accounts.add())
             assertNotSame(leaving, clients.getValue(1))
+        }
+
+    @Test
+    fun `the storage of slots not on the device is deleted as the registry is read, before one is added again`() =
+        runTest {
+            // A logout cut short: the registry no longer has slot 1, whose storage was not deleted yet.
+            registryFile.write(AccountRegistry(slots = listOf(0, 2), active = 0))
+            val accounts = accounts(start = false)
+
+            accounts.active
+
+            assertNull(accounts.add())
+            runCurrent()
+            assertEquals(listOf(1, 3), deleted)
+            assertEquals(1, accounts.add())
         }
 
     @Test

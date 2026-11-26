@@ -97,7 +97,8 @@ class Accounts internal constructor(
     private val bySlot = mutableMapOf<AccountSlot, Lazy<Account>>()
 
     // Changed only under this object's lock: slots that left the device and are not free again until their client
-    // closed and their storage is deleted, so an account added meanwhile never signs in on the closing client.
+    // closed and their storage is deleted, so an account added meanwhile never signs in on the closing client or on
+    // what a slot left behind ([readRegistry]).
     private val closing = mutableSetOf<Int>()
     private val loaded = CompletableDeferred<Unit>()
     private var registryRead = false
@@ -141,19 +142,38 @@ class Accounts internal constructor(
     /**
      * Reads which accounts there are, once, whichever of [start] and [active] comes first; then starts them in the
      * background, off the caller's thread, which may be the main thread asking for [active].
+     *
+     * The other slots' storage is deleted then, before [add] can take one: a logout cut short by the process's end
+     * leaves it behind, as the registry drops the slot before its client closed ([remove]) and [closing] is kept in
+     * memory only.
      */
     private fun readRegistry() {
-        val registry =
+        val (registry, left) =
             synchronized(this) {
                 if (registryRead) return
                 registryRead = true
-                registryFile.read().also {
-                    mutableRegistry.value = it
-                    mutableIsDemo.value = factory.isDemoOn()
-                }
+                val registry =
+                    registryFile.read().also {
+                        mutableRegistry.value = it
+                        mutableIsDemo.value = factory.isDemoOn()
+                    }
+                // The first slot's storage is the app's client's, which runs, signed in or not.
+                val left = (1 until AccountSlot.MAX_ACCOUNTS).filter { it !in registry.slots && it !in closing }
+                closing += left
+                registry to left
             }
         loaded.complete(Unit)
         appScope.launch(io) { registry.slots.forEach { account(AccountSlot(it)) } }
+        if (left.isNotEmpty()) appScope.launch(io) { left.forEach { deleteLeftStorage(AccountSlot(it)) } }
+    }
+
+    /** Deletes the storage [slot] kept though it left the device; only then is it free again ([add]). */
+    private fun deleteLeftStorage(slot: AccountSlot) {
+        try {
+            factory.deleteStorage(slot)
+        } finally {
+            synchronized(this) { closing -= slot.index }
+        }
     }
 
     /** The first slot's account, which is always there, signed in or not; its client is the app's [TdlibClient]. */
