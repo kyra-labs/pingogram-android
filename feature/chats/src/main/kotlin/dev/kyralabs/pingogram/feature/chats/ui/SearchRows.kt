@@ -163,7 +163,8 @@ private fun ChatSubtitle(text: String) {
 /**
  * A message in search, a [SegmentedListItem] of the messages' group ([shapes]): its chat's small avatar and name, the
  * date at the end, and two lines of the message after its sender in a group, the query's words highlighted
- * ([highlight]) in `primary`. Screen readers hear "Chat, Sender: text, date".
+ * ([highlight]) in `primary`; [trailingContent] at its end where a page gives one (Unanswered's Dismiss). Screen
+ * readers hear "Chat, Sender: text, date".
  */
 @Composable
 internal fun SearchMessageRow(
@@ -172,6 +173,7 @@ internal fun SearchMessageRow(
     shapes: ListItemShapes,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val chatTitle = item.chatTitle.resolve()
     val sender = item.sender?.let { stringResource(R.string.chat_list_sender, it.resolve()) }
@@ -199,6 +201,7 @@ internal fun SearchMessageRow(
             )
         },
         supportingContent = { MessagePreview(preview) },
+        trailingContent = trailingContent,
         colors = itemColors,
         content = {
             TitleWithDate(item.date) {

@@ -325,6 +325,16 @@
     <string name="drafts_loading">Loading drafts</string>
     <string name="drafts_empty_title">No drafts</string>
     <string name="drafts_empty_body">A message you start and don\'t send waits here until you send or clear it.</string>
+    <!-- Unanswered (REQUIREMENTS.md FR-X22): private chats where the other person wrote last and is waiting -->
+    <string name="unanswered_title">Unanswered</string>
+    <string name="unanswered_back">Back</string>
+    <string name="unanswered_loading">Loading unanswered chats</string>
+    <string name="unanswered_empty_title">All caught up</string>
+    <string name="unanswered_empty_body">People who wrote to you last and are still waiting for your answer show here.</string>
+    <!-- What tapping a chat on the Unanswered page does, read by screen readers -->
+    <string name="unanswered_reply">Reply</string>
+    <!-- The button at the end of a chat on the Unanswered page; %1$s: the chat's name, read by screen readers -->
+    <string name="unanswered_dismiss">Dismiss %1$s</string>
     <!-- The Channel feed (REQUIREMENTS.md FR-X5): an unread post's time, after its dot. -->
     <string name="feed_new_at">New · %1$s</string>
     <string name="feed_open_in_channel">Open in channel</string>
