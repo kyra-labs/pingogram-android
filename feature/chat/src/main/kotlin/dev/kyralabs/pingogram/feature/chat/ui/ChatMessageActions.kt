@@ -35,6 +35,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,46 +149,62 @@ internal class ChatMessageActions(
                         val picker = reactionPicker(available, quick.size, reactionsMessage)
                         val actions = context.actionsOf(message, properties.value, inThread)
                         // What needs no detection ("Show original", a summary's actions) is usually in by now.
-                        var translation = if (translate.isCompleted) translate.await() else emptyList()
-                        var findings = TextFindings.None
+                        val translation = if (translate.isCompleted) translate.await() else emptyList()
                         val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
                                 reactionsMessageId = reactionsMessage.id,
                                 reactions = quick,
-                                actions = sheetActions(link, actions, translation, findings),
+                                actions = sheetActions(link, actions, translation, TextFindings.None),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
                                 link = link,
-                                findings = findings,
+                                findings = TextFindings.None,
                             )
                         mutableSheet.value = sheet
                         launch { loadCustomEmojiPictures(sheet) }
-                        val joinOpenSheet = {
-                            mutableSheet.update { open ->
-                                open?.takeIf { it.messageId == messageId }?.copy(
-                                    actions = sheetActions(link, actions, translation, findings),
-                                    findings = findings,
-                                ) ?: open
-                            }
-                        }
-                        launch {
-                            val answered = translate.await()
-                            if (answered != translation) {
-                                translation = answered
-                                joinOpenSheet()
-                            }
-                        }
-                        launch {
-                            val answered = found.await()
-                            if (answered.actions.isNotEmpty()) {
-                                findings = answered
-                                joinOpenSheet()
-                            }
-                        }
+                        joinLater(sheet, actions, translation, translate, found)
                     }
                 }
             }
+    }
+
+    /**
+     * Adds to the open [sheet], which shows [actions] and [translation], what answers after it opened: the
+     * translation's actions ([translate], once the device detected the language) and what the classifier finds
+     * ([found]).
+     */
+    private fun CoroutineScope.joinLater(
+        sheet: MessageActionsSheet,
+        actions: List<MessageAction>,
+        translation: List<MessageAction>,
+        translate: Deferred<List<MessageAction>>,
+        found: Deferred<TextFindings>,
+    ) {
+        var translated = translation
+        var findings = sheet.findings
+        val join = {
+            mutableSheet.update { open ->
+                open?.takeIf { it.messageId == sheet.messageId }?.copy(
+                    actions = sheetActions(sheet.link, actions, translated, findings),
+                    findings = findings,
+                ) ?: open
+            }
+        }
+        launch {
+            val answered = translate.await()
+            if (answered != translated) {
+                translated = answered
+                join()
+            }
+        }
+        launch {
+            val answered = found.await()
+            if (answered.actions.isNotEmpty()) {
+                findings = answered
+                join()
+            }
+        }
     }
 
     /** Shows the open sheet's reactions picker if [shown] and it has one, else its quick reactions and actions. */
