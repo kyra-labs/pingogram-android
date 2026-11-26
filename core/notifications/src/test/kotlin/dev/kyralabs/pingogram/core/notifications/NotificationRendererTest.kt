@@ -9,6 +9,7 @@ import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.domain.model.ChatNote
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.messageNotification
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.notificationGroup
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateSupergroup
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateUser
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -217,6 +219,36 @@ class NotificationRendererTest {
             harness.client.emit(groupWith(id = 10, chatId = 200, notificationId = 2))
             runCurrent()
             assertEquals("Team", conversationTitleOf(checkNotNull(harness.posted(10))))
+        }
+
+    @Test
+    fun `a group's message with a muted word says so, and a channel's post shows its text`() =
+        runTest {
+            val harness = started()
+            harness.mutedWords.settings.value = MutedWordSettings(enabled = true, words = persistentListOf("spoiler"))
+            harness.client.emit(updateBasicGroup(basicGroup(id = 5)))
+            harness.client.emit(updateNewChat(chat(id = 200, type = TdApi.ChatTypeBasicGroup(5), title = "Team")))
+            runCurrent()
+
+            harness.client.emit(
+                updateNotificationGroup(
+                    groupId = 9,
+                    chatId = 200,
+                    added =
+                        listOf(
+                            messageNotification(
+                                id = 1,
+                                message = message(id = 11, chatId = 200, content = messageText("Big spoiler ahead")),
+                            ),
+                        ),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(
+                listOf("Message with a muted word"),
+                checkNotNull(harness.posted(9)).messages().map { it.text.toString() },
+            )
         }
 
     private fun groupWith(
