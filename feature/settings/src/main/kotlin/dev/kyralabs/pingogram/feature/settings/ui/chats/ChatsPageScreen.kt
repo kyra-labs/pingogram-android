@@ -97,6 +97,7 @@ internal class ChatsPagePages(
     val onOpenSwipeActions: () -> Unit = {},
     val onOpenShownFirst: () -> Unit = {},
     val onOpenRaiseToListen: () -> Unit = {},
+    val onOpenMutedWords: () -> Unit = {},
 )
 
 @PingogramPreviews

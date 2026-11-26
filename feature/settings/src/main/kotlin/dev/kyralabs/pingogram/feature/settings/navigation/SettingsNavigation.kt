@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
 import dev.kyralabs.pingogram.core.navigation.FocusRoute
 import dev.kyralabs.pingogram.core.navigation.KeywordAlertsRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
+import dev.kyralabs.pingogram.core.navigation.MutedWordsRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NewStickerSetRoute
@@ -180,8 +181,8 @@ private fun NavGraphBuilder.stickerPages(
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [PowerSavingRoute], [LanguageRoute],
  * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
  * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute] and [ChatAppearanceRoute] above Appearance,
- * [QuickReactionRoute], [SnippetsRoute], [TranscriptionSettingsRoute], [SwipeActionsRoute] and [ChatsShownFirstRoute]
- * above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set
+ * [QuickReactionRoute], [SnippetsRoute], [TranscriptionSettingsRoute], [SwipeActionsRoute], [ChatsShownFirstRoute]
+ * and [MutedWordsRoute] above Chats, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set
  * ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage, [EditProxyRoute] above the
  * proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination), [PrivacySettingRoute],

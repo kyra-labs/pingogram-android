@@ -86,6 +86,7 @@ private fun subPageTitle(subPage: SettingsSubPage): Int =
         SettingsSubPage.DoubleTapReaction -> R.string.settings_double_tap
         SettingsSubPage.SwipeActions -> R.string.settings_swipe_actions
         SettingsSubPage.ChatsShownFirst -> R.string.shown_first_title
+        SettingsSubPage.MutedWords -> R.string.settings_muted_words
         SettingsSubPage.Snippets -> R.string.settings_snippets
         SettingsSubPage.Transcription -> R.string.settings_transcription
         SettingsSubPage.RaiseToListen -> R.string.settings_raise_to_listen

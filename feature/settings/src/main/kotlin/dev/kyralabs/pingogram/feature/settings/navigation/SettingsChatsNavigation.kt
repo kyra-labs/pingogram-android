@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
+import dev.kyralabs.pingogram.core.navigation.MutedWordsRoute
 import dev.kyralabs.pingogram.core.navigation.QuickReactionRoute
 import dev.kyralabs.pingogram.core.navigation.RaiseToListenRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsChatsRoute
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceS
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.mutedwords.MutedWordsRoute as MutedWordsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.raisetolisten.RaiseToListenRoute as RaiseToListenScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
@@ -55,7 +57,7 @@ private fun NavGraphBuilder.appearancePages(
 
 /**
  * The Chats page and the pages it opens with [onOpen]: Double-tap to react, Snippets, voice message transcription,
- * Raise to listen, Swipe actions and Chats shown first.
+ * Raise to listen, Swipe actions, Chats shown first and Muted words.
  */
 private fun NavGraphBuilder.chatPages(
     onOpen: (route: Any) -> Unit,
@@ -71,6 +73,7 @@ private fun NavGraphBuilder.chatPages(
                     onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
                     onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
                     onOpenRaiseToListen = { onOpen(RaiseToListenRoute) },
+                    onOpenMutedWords = { onOpen(MutedWordsRoute) },
                 ),
             onBack = onBack,
         )
@@ -81,4 +84,5 @@ private fun NavGraphBuilder.chatPages(
     settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
     settingsPage<TranscriptionSettingsRoute> { TranscriptionSettingsScreenRoute(onBack = onBack) }
     settingsPage<SnippetsRoute> { SnippetsScreenRoute(onBack = onBack) }
+    settingsPage<MutedWordsRoute> { MutedWordsScreenRoute(onBack = onBack) }
 }
