@@ -270,7 +270,7 @@ Features, in this order:
 - [x] Muted words: group messages with chosen words collapse into a line to tap open; never sponsored messages
 - [x] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
   with Reply and Dismiss; it never sends anything
-- [ ] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
+- [x] Daily digest: one optional morning notification of the day's unread chats, mentions and reminders, opening
   Catch-up
 - [ ] Cleanup suggestions: chats not opened for a chosen time, with Mute, Archive or Leave decided one by one
 - [ ] A Quick Settings tile that blurs message text and photos until tapped
