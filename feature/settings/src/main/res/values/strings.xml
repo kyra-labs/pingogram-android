@@ -1467,6 +1467,20 @@
     <string name="settings_drafts_button">Drafts button</string>
     <string name="settings_drafts_button_summary">Shows a button for your unsent messages at the top of Chats</string>
     <string name="settings_unanswered_button">Unanswered button</string>
+    <!-- Settings → Chats → Cleanup suggestions (FR-X24). -->
+    <string name="settings_cleanup">Cleanup suggestions</string>
+    <string name="settings_cleanup_switch">Suggest chats to clean up</string>
+    <string name="settings_cleanup_switch_summary">Chats you haven\'t opened on this phone for a while, to mute, archive or leave. Nothing happens unless you choose it</string>
+    <string name="settings_cleanup_months">Not opened for</string>
+    <plurals name="settings_cleanup_months_choice">
+        <item quantity="one">%d month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <string name="settings_cleanup_muted">Muted</string>
+    <string name="settings_cleanup_archived">Archived</string>
+    <string name="settings_cleanup_left">Left</string>
+    <string name="settings_cleanup_none">Nothing to clean up</string>
+    <string name="settings_cleanup_none_body">Chats show here once you haven\'t opened them on this phone for the time chosen.</string>
     <!-- Settings → Notifications → Daily digest (FR-X23). -->
     <string name="settings_daily_digest">Daily digest</string>
     <string name="settings_daily_digest_summary">One quiet notification each morning with your unread chats, mentions and the day\'s reminders</string>
