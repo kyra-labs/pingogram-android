@@ -278,6 +278,28 @@ Features, in this order:
 - [ ] Proxies: added from a QR code, their speed tested, and a working one chosen when the current one fails
 - [ ] Two-line compact chat list rows, if the owner wants them after trying the one-line rows
 
+## v2.7.0
+
+From the second review of 2026-11-26, what is not fixed before v2.6.0 (owner decision 2026-11-26):
+
+- [ ] Calls: "Add people" survives its screen closing; starting and answering a call run outside the screen's scope;
+  leaving a conference while it joins leaves it; an outgoing video call gets the camera's service type
+- [ ] The rest of the users map's projection: about 20 collectors still take the whole map, the widgets and three
+  contact pickers on the main thread
+- [ ] Drafts and Unanswered without loading the whole chat list
+- [ ] The notification summary posted only when it changes; keyword alerts without a coroutine per message;
+  `contacts()` without a `CreatePrivateChat` per contact; decoded stickers kept by memory, not by count
+- [ ] The link cleaner leaves code untouched and covers captions and edits
+- [ ] Birthday reminders follow a contact's changed birthday
+- [ ] Tall image documents decoded at the width they show
+- [ ] Unanswered leaves out Telegram's service account; removing an account stops waiting for its client after a
+  timeout
+- [ ] detekt's banned-name rules without an import-alias way round, and production sources told by source set, not
+  by the absolute path
+- [ ] `ChatViewModel` after its split: one way to read the current history, each state owned once, its internal types
+  in their own files
+- [ ] Tests: a backup from an older release restores; the daily digest's and birthdays' schedulers
+
 ## Later
 
 - [ ] UnifiedPush for `foss` (ADR 0004, "UnifiedPush for `foss`"): a spike against several distributors, then an ADR
@@ -286,7 +308,8 @@ Features, in this order:
   `GroupCallManager` share their call binding, camera, hold and finish code; `MainRoutes` split so a route edit stops
   recompiling every feature; `ChatListViewModel`'s 20 parameters; the code `ProfileViewModel` and `ChatInfoViewModel`
   duplicate; `StoryViewerViewModel`'s own downloads and ticker; `flowOn` and fewer `SharingStarted.Eagerly` in
-  `feature:settings`; per-chat DataStore keys removed with their chat
+  `feature:settings`; per-chat DataStore keys removed with their chat; `ChatViewModel` under detekt's LargeClass
+  limit, its bots', composer's, message actions' and selection's parts moved into holders
 - [ ] A native sticker renderer only if a trace shows Lottie's software rendering missing frames after v2.5.0's
   scheduling fixes; no Rust toolchain (the review of 2026-11-23: the slow paths are mapping and flows, and the APK
   budget is tight)
