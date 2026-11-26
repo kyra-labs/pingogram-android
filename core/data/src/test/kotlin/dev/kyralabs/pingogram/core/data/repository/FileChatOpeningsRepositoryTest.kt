@@ -2,7 +2,9 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.repository.ChatOpenings
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -26,6 +28,7 @@ class FileChatOpeningsRepositoryTest {
 
     private val client = FakeTdlibClient()
     private val openChats = OpenChats()
+    private val chatLock = FakeChatLockRepository(locked = setOf(LOCKED))
     private var now: Instant = BEGUN
 
     private val clock =
@@ -41,7 +44,8 @@ class FileChatOpeningsRepositoryTest {
 
     private fun TestScope.repository(file: File? = this@FileChatOpeningsRepositoryTest.file) =
         FileChatOpeningsRepository(client, clock, backgroundScope, file, StandardTestDispatcher(testScheduler)).also {
-            ChatOpeningRecorder(openChats, it, backgroundScope)
+            val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), openChats)
+            ChatOpeningRecorder(openChats, it, chats, chatLock, backgroundScope)
             testScheduler.runCurrent()
         }
 
@@ -59,6 +63,21 @@ class FileChatOpeningsRepositoryTest {
             assertEquals(expected, repository.openings.first())
             assertEquals(expected, repository().openings.first())
             assertEquals("since\t${BEGUN.epochSecond}\n7\t${LATER.epochSecond}\n", file.readText())
+        }
+
+    @Test
+    fun `a locked chat and a secret chat are never recorded`() =
+        runTest {
+            val repository = repository()
+            val secret = TdApiFixtures.chat(id = SECRET, type = TdApi.ChatTypeSecret(3, 42))
+            client.emit(TdApiFixtures.updateNewChat(secret))
+            testScheduler.runCurrent()
+
+            now = LATER
+            listOf(LOCKED, SECRET, 7L).forEach(openChats::open)
+            testScheduler.runCurrent()
+
+            assertEquals(persistentMapOf(7L to LATER), repository.openings.first().lastOpened)
         }
 
     @Test
@@ -118,5 +137,7 @@ class FileChatOpeningsRepositoryTest {
     private companion object {
         val BEGUN: Instant = Instant.parse("2026-11-26T09:00:00Z")
         val LATER: Instant = Instant.parse("2026-11-27T10:00:00Z")
+        const val LOCKED = 11L
+        const val SECRET = 12L
     }
 }

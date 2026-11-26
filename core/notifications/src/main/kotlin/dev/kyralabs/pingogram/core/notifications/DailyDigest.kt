@@ -1,8 +1,10 @@
 package dev.kyralabs.pingogram.core.notifications
 
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.model.catchUpOrder
+import dev.kyralabs.pingogram.core.domain.repository.shownName
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -26,13 +28,23 @@ internal data class DailyDigest(
     }
 }
 
-/** One account's part of the digest: its main list's loaded chats, locked chats, reminders and names on this phone. */
+/**
+ * One account's part of the digest: its main list's loaded chats, locked chats, reminders, names on this phone, and
+ * the users who are [contacts], whose contact name their private chat keeps.
+ */
 internal class DigestAccount(
     val chats: List<Chat>,
     val locked: Set<Long> = emptySet(),
     val reminders: List<MessageReminder> = emptyList(),
     val localNames: Map<Long, String> = emptyMap(),
-)
+    val contacts: Set<Long> = emptySet(),
+) {
+    /** The name [chat] shows: the one on this phone, unless it is a contact's private chat ([shownName]). */
+    fun nameOf(chat: Chat): String {
+        val isContact = (chat.type as? ChatType.Private)?.userId in contacts
+        return localNames.shownName(chat.id, isContact) ?: chat.title
+    }
+}
 
 /**
  * The digest of [accounts] on [today] in [zone]: chats as Catch-up takes them (muted ones and channels only if
@@ -68,7 +80,7 @@ internal fun dailyDigestOf(
             if (hidesContent) {
                 emptyList()
             } else {
-                shown.take(DailyDigest.MAX_NAMES).map { (account, chat) -> account.localNames[chat.id] ?: chat.title }
+                shown.take(DailyDigest.MAX_NAMES).map { (account, chat) -> account.nameOf(chat) }
             },
     )
 }

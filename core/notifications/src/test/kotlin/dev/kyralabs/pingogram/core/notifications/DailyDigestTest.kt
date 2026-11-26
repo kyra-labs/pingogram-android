@@ -65,6 +65,20 @@ class DailyDigestTest {
     }
 
     @Test
+    fun `a contact's private chat keeps the contact name, not the name on this phone`() {
+        val ada = chat(5, unread = 1).copy(type = ChatType.Private(userId = 50), title = "Ada Lovelace")
+        val bob = chat(6, unread = 1).copy(type = ChatType.Private(userId = 60), title = "Bob")
+        val account =
+            DigestAccount(
+                chats = listOf(ada, bob),
+                localNames = mapOf(5L to "Ada from work", 6L to "Bob the plumber"),
+                contacts = setOf(50L),
+            )
+
+        assertEquals(setOf("Ada Lovelace", "Bob the plumber"), digest(account).names.toSet())
+    }
+
+    @Test
     fun `locked chats and their reminders never count`() {
         val account =
             DigestAccount(

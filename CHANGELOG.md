@@ -43,6 +43,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   playing: it stays still instead.
 - An account whose logout was cut short, as Android closed the app, no longer leaves what it kept on the phone: it's
   deleted the next time the app starts.
+- Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
 - The Conversation widget keeps showing a chat's newest messages, and new ones as they come, while you read far back
   in that chat in the app.
 
