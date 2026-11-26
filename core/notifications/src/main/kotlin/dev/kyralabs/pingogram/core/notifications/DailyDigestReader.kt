@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.MessageReminder
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepositories
@@ -19,10 +20,11 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Reads the Daily digest (`REQUIREMENTS.md` FR-X23) of every account on the device that is signed in: once TDLib is
- * ready, the first pages of its main list (TDLib knows only the chats loaded so far; unread ones are among the most
- * recent), its locked chats, reminders and names on this phone, then [dailyDigestOf] with Catch-up's choice of muted
- * chats and the passcode's "Hide content". An account TDLib does not report signed in in time is left out.
+ * Reads the Daily digest (`REQUIREMENTS.md` FR-X23) of every account on the device that is signed in: once TDLib has
+ * caught up with the server (or after [SYNC_TIMEOUT], offline), the first pages of its main list (TDLib knows only the
+ * chats loaded so far; unread ones are among the most recent), its locked chats, reminders and names on this phone,
+ * then [dailyDigestOf] with Catch-up's choice of muted chats and the passcode's "Hide content". An account TDLib does
+ * not report signed in in time is left out.
  */
 internal class DailyDigestReader(
     private val accounts: suspend () -> List<DigestAccountParts>,
@@ -53,12 +55,17 @@ internal class DailyDigestReader(
 
     private suspend fun DigestAccountParts.read(): DigestAccount? {
         if (withTimeoutOrNull(LOGIN_TIMEOUT) { loggedIn() } != true) return null
+        // The local database holds the unread chats of the last run; offline, it is all there is.
+        withTimeoutOrNull(SYNC_TIMEOUT) { synced() }
         return DigestAccount(chats(), lockedChatIds(), reminders(), localNames(), contacts())
     }
 
     internal companion object {
         /** How long TDLib may take to open its database and report the login. */
         val LOGIN_TIMEOUT = 30.seconds
+
+        /** How long TDLib may take to connect and catch up on what happened while the app was not running. */
+        val SYNC_TIMEOUT = 30.seconds
 
         /** The main list's pages read at most: the chats with unread messages are among the most recent. */
         const val MAX_PAGES = 4
@@ -67,11 +74,13 @@ internal class DailyDigestReader(
 
 /**
  * What the digest reads of one account: whether it is signed in ([loggedIn], waiting for TDLib to say), the main list's
- * chats once its first pages are loaded ([chats]), its locked chats, reminders, names on this phone and contacts.
+ * chats once its first pages are loaded ([chats]) and TDLib has caught up with the server ([synced]), its locked chats,
+ * reminders, names on this phone and contacts.
  */
 internal class DigestAccountParts(
     val loggedIn: suspend () -> Boolean,
     val chats: suspend () -> List<Chat>,
+    val synced: suspend () -> Unit = {},
     val lockedChatIds: suspend () -> Set<Long> = { emptySet() },
     val reminders: suspend () -> List<MessageReminder> = { emptyList() },
     val localNames: suspend () -> Map<Long, String> = { emptyMap() },
@@ -79,6 +88,7 @@ internal class DigestAccountParts(
 ) {
     constructor(repositories: AccountRepositories, notesAndNames: NotesAndNamesRepository) : this(
         loggedIn = { repositories.authRepository().awaitLoggedIn() },
+        synced = { repositories.connectionRepository().connectionStatus.first { it == ConnectionStatus.Ready } },
         chats = { repositories.chatRepository().firstPagesOfMainList() },
         lockedChatIds = { repositories.chatLockRepository().lockedChatIds.first() },
         reminders = { repositories.reminderRepository().reminders.first() },

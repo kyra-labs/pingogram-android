@@ -48,6 +48,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   take every one of them instead of only those still near.
 - A zoomed-in photo stays on the part you were looking at after rotating the phone, and the status and navigation bar
   icons stay readable when dark mode switches while a photo, video or story is open.
+- The Conversation widget keeps showing a chat's newest messages, and new ones as they come, while you read far back
+  in that chat in the app.
 - A message's menu opens at once again on a long press: "Translate" joins it once your phone has told the message's
   language, instead of the menu waiting for that.
 
