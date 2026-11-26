@@ -53,6 +53,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A downloaded document or song in a conversation no longer shows its download button for a moment while you scroll.
 - A message's menu opens at once again on a long press: "Translate" joins it once your phone has told the message's
   language, instead of the menu waiting for that.
+- The daily digest and birthday reminders no longer go missing when Android held them past their time, for example
+  while the phone slept: they still come once Android lets them.
 - The daily digest and birthday reminders come after the phone restarts without opening the app first. The app now
   asks Android to tell it when the phone has started.
 
