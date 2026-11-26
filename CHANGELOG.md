@@ -46,6 +46,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
 - Messages you selected stay selected while you scroll far away from them, so Delete, Forward and the other actions
   take every one of them instead of only those still near.
+- The daily digest and birthday reminders no longer go missing when Android held them past their time, for example
+  while the phone slept: they still come once Android lets them.
 
 ## [2.5.0] - 2026-11-25
 
