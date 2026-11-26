@@ -154,7 +154,8 @@ object NotificationIntents {
 
     private const val IMMUTABLE_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
-    private const val SCHEME = "pingogram"
+    /** The scheme of the data URIs the app's notifications open it with. */
+    internal const val SCHEME = "pingogram"
     private const val CHAT_HOST = "chat"
     private const val LOCKED_CHATS_HOST = "locked-chats"
     private const val EXTRA_CHAT_ID = "dev.kyralabs.pingogram.extra.CHAT_ID"
