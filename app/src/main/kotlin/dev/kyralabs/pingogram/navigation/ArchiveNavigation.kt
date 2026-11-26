@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.catchUpScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.draftsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.feedScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.mentionsScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.unansweredScreen
 
 /**
  * The archived chats, pushed above the Chats tab as a conversation is, and their settings, pushed above them, and
@@ -41,6 +42,13 @@ internal fun NavGraphBuilder.archive(
     )
     // Drafts, pushed above the Chats tab from its header: a chat it opens is pushed above it.
     draftsScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+    // Unanswered, pushed above the Chats tab from its header: Reply pushes the chat above it, its message box focused.
+    unansweredScreen(
+        onBack = { navController.popBackStack() },
+        onReply = { chatId ->
+            navController.navigate(ChatRoute(chatId, focusComposer = true)) { launchSingleTop = true }
+        },
+    )
     // The Channel feed, pushed above the Chats tab from its Feed tab: a post it opens pushes its channel at the post,
     // and a post's "Forward" opens the forward sheet above it.
     feedScreen(
