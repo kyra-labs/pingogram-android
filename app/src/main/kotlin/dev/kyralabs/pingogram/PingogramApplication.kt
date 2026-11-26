@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.AutomaticBackups
 import dev.kyralabs.pingogram.core.notifications.BirthdayReminderAlarms
+import dev.kyralabs.pingogram.core.notifications.DailyDigestSchedule
 import dev.kyralabs.pingogram.core.notifications.KeywordAlertNotifier
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ReminderAlarms
@@ -83,6 +84,10 @@ class PingogramApplication :
     /** Keeps the rings of the birthday reminders scheduled, for every account (`REQUIREMENTS.md` FR-X18). */
     @Inject
     lateinit var birthdayReminderAlarms: dagger.Lazy<BirthdayReminderAlarms>
+
+    /** Keeps the Daily digest scheduled while the user has it on (`REQUIREMENTS.md` FR-X23). */
+    @Inject
+    lateinit var dailyDigestSchedule: dagger.Lazy<DailyDigestSchedule>
 
     /** Posts the keyword alerts of muted chats, for every account (the owner's board 30). */
     @Inject
@@ -204,6 +209,8 @@ class PingogramApplication :
                 // Schedules the message and birthday reminders' rings, a few seconds after the start too.
                 reminderAlarms.get().start()
                 birthdayReminderAlarms.get().start()
+                // Schedules the Daily digest while it is on, a few seconds after the start as well.
+                dailyDigestSchedule.get().start()
                 // Posts a notification for each new keyword match of a muted chat, while the setting asks for it.
                 keywordAlertNotifier.get().start()
                 // Offers to restore a backup once an account that asked for a login is ready.
