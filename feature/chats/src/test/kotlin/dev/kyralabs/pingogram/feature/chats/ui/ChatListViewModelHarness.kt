@@ -8,6 +8,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredDismissalRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordAlertsRepository
@@ -70,6 +72,12 @@ abstract class ChatListViewModelHarness {
     protected val unansweredDismissals = FakeUnansweredDismissalRepository()
     protected val savedState = SavedStateHandle()
 
+    /** Where [createViewModel] reads the names on this phone: [localNames], unless a test holds them back. */
+    protected open val localChatNames: LocalChatNamesRepository get() = localNames
+
+    /** Where [createViewModel] reads Unanswered's dismissals: [unansweredDismissals], unless a test holds them back. */
+    protected open val dismissals: UnansweredDismissalRepository get() = unansweredDismissals
+
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -109,10 +117,10 @@ abstract class ChatListViewModelHarness {
         communityRepository = communities,
         forumTopicRepository = forumTopics,
         catchUpChats = CatchUpChats(chats, chatListSettings, chatLock),
-        unansweredChats = UnansweredChats(chats, users, chatLock, unansweredDismissals, unanswered, clock),
+        unansweredChats = UnansweredChats(chats, users, chatLock, dismissals, unanswered, clock),
         keywordChats = KeywordAlertChats(chats, keywordHits, keywordAlerts, chatLock),
         shownLists = shownLists,
-        localChatNames = localNames,
+        localChatNames = localChatNames,
         mutedWords = mutedWords,
         clock = clock,
         timePatterns = timePatterns,

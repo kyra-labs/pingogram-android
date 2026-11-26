@@ -307,7 +307,12 @@ class ChatListViewModel internal constructor(
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
             clock.minutes,
-            combine(localChatNames.names, mutedWords.settings.distinctUntilChanged().map(::MutedWords), ::Pair),
+            combine(
+                localChatNames.names,
+                // One function per settings: rows compare it by identity.
+                mutedWords.settings.distinctUntilChanged().map { MutedWords(it)::mutes },
+                ::Pair,
+            ),
         ) { (users, supergroups, secretChats), actions, myUserId, now, (localNames, muted) ->
             RowSnapshot(users, supergroups, secretChats, actions, myUserId, now, localNames, muted)
         }.sharedIn(viewModelScope, dispatcher)
@@ -506,7 +511,8 @@ class ChatListViewModel internal constructor(
                 catchUp,
                 combine(
                     hasDrafts,
-                    unansweredChats.offeredAt(rowSources.map { it.now }.distinctUntilChanged()),
+                    // Not offered until known: the header shows without waiting for the dismissals or the notes.
+                    unansweredChats.offeredAt(clock.minutes).onStart { emit(false) },
                     ::Pair,
                 ),
             ) { unread, mentioned, me, catchUpCount, (drafts, unanswered) ->
