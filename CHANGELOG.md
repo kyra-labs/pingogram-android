@@ -46,6 +46,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
 - Messages you selected stay selected while you scroll far away from them, so Delete, Forward and the other actions
   take every one of them instead of only those still near.
+- A zoomed-in photo stays on the part you were looking at after rotating the phone, and the status and navigation bar
+  icons stay readable when dark mode switches while a photo, video or story is open.
 - The Conversation widget keeps showing a chat's newest messages, and new ones as they come, while you read far back
   in that chat in the app.
 

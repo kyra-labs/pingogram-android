@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.PingogramDarkTheme
+import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaViewerPreviewStates
@@ -109,6 +110,7 @@ internal fun MediaViewerScreen(
 ) {
     // The photo grows out of its bubble into its page: the viewer comes in once it has one.
     PostponeOverlayEnter(ready = state !is MediaViewerUiState.Loading)
+    val appDark = isDarkTheme()
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }
@@ -118,7 +120,7 @@ internal fun MediaViewerScreen(
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
         val leave = remember(dismiss, onBack) { { dismiss.dismiss(onBack) } }
         PredictiveBackDismiss(dismiss, onBack)
-        ImmersiveSystemBars(hidden = content != null && !chrome.visible)
+        ImmersiveSystemBars(hidden = content != null && !chrome.visible, appDark = appDark)
         val zoom = remember { ZoomState() }
         val zoomed by remember(zoom) { derivedStateOf { zoom.isZoomed } }
         val scrim = MaterialTheme.colorScheme.scrim
