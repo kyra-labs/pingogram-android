@@ -251,6 +251,49 @@ class NotificationRendererTest {
             )
         }
 
+    @Test
+    fun `a push-only message with a muted word says so too, unless it mentions the user`() =
+        runTest {
+            val harness = started()
+            harness.mutedWords.settings.value = MutedWordSettings(enabled = true, words = persistentListOf("spoiler"))
+            harness.client.emit(updateBasicGroup(basicGroup(id = 5)))
+            harness.client.emit(updateNewChat(chat(id = 200, type = TdApi.ChatTypeBasicGroup(5), title = "Team")))
+            runCurrent()
+
+            fun push(id: Int) =
+                TdApi.Notification(
+                    id,
+                    0,
+                    false,
+                    TdApi.NotificationTypeNewPushMessage(
+                        10L + id,
+                        TdApi.MessageSenderUser(42),
+                        "Ada",
+                        false,
+                        TdApi.PushMessageContentText("Big spoiler ahead", false),
+                    ),
+                )
+            harness.client.emit(updateNotificationGroup(groupId = 9, chatId = 200, added = listOf(push(1))))
+            harness.client.emit(
+                updateNotificationGroup(
+                    groupId = 10,
+                    chatId = 200,
+                    type = TdApi.NotificationGroupTypeMentions(),
+                    added = listOf(push(2)),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(
+                listOf("Message with a muted word"),
+                checkNotNull(harness.posted(9)).messages().map { it.text.toString() },
+            )
+            assertEquals(
+                listOf("Big spoiler ahead"),
+                checkNotNull(harness.posted(10)).messages().map { it.text.toString() },
+            )
+        }
+
     private fun groupWith(
         id: Int,
         chatId: Long,

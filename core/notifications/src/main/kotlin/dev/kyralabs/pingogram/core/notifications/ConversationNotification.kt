@@ -112,7 +112,8 @@ internal class ConversationNotificationFactory(
                 ?: context.getString(R.string.notification_unknown_chat)
         val chatIcon = avatars.icon(chat?.photo, group.chatId, title)
         val muted = mutedWords?.settings?.first()?.let(::MutedWords)
-        val messages = group.notifications.map { notification -> message(notification, chat, senders, muted) }
+        val mentions = group.type == NotificationGroupType.Mentions
+        val messages = group.notifications.map { notification -> message(notification, chat, senders, muted, mentions) }
         val isGroupConversation = chat?.isGroup == true
         return ConversationNotification(
             groupId = group.id,
@@ -138,6 +139,7 @@ internal class ConversationNotificationFactory(
         chat: Chat?,
         senders: Senders,
         muted: MutedWords?,
+        mentions: Boolean,
     ): NotificationMessage {
         val content = notification.content
         val (sender, text) =
@@ -156,7 +158,7 @@ internal class ConversationNotificationFactory(
                             content.sender?.let { person(it, senders) }
                                 ?: Person.Builder().setName(content.senderName).build()
                         }
-                    sender to (content.text ?: context.getString(R.string.notification_new_message))
+                    sender to pushText(content, chat, muted, mentions)
                 }
 
                 NotificationContent.NewSecretChat -> {
@@ -168,6 +170,21 @@ internal class ConversationNotificationFactory(
                 }
             }
         return NotificationMessage(text, notification.date.seconds.inWholeMilliseconds, sender)
+    }
+
+    /**
+     * What a push-only message says: its text, "Message with a muted word" for a group's with one ([muted],
+     * `REQUIREMENTS.md` FR-X21; never in a group of [mentions]), or "New message" for one without text.
+     */
+    private fun pushText(
+        content: NotificationContent.NewPushMessage,
+        chat: Chat?,
+        muted: MutedWords?,
+        mentions: Boolean,
+    ): CharSequence {
+        val text = content.text ?: return context.getString(R.string.notification_new_message)
+        val isMuted = chat != null && muted?.mutesPush(chat, text, content.isOutgoing, mentions) == true
+        return if (isMuted) resources.getString(UiR.string.preview_muted_word) else text
     }
 
     /**
