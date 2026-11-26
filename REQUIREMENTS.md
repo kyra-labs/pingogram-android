@@ -357,6 +357,13 @@ decision 2026-11-23).
   are unread, how many mention the user and how many reminders are due that day, with up to five chat names. Locked
   chats never count, and while the passcode's "Hide content" is on it shows the counts alone. A tap opens Catch-up.
   No new permission; nothing is sent. The settings go into backups.
+- FR-X24 Should: **Cleanup suggestions** (owner decisions 2026-11-25). Settings → Chats → "Cleanup suggestions" shows,
+  one at a time, a chat of the main list not opened on this phone for a chosen time ("Not opened for 1 · 3 · 6 · 12
+  months", 3 by default; on by default), the longest unopened first, with Mute, Archive, Leave and Not now. Leave is
+  only for groups and channels the user does not own, and asks first. Never pinned chats, Saved Messages, Telegram's
+  service notifications, secret or locked chats. When a chat was last opened is kept on the phone for the account,
+  not in backups; until the chosen time has passed since the phone began keeping it, nothing is suggested. Nothing
+  acts by itself or on several chats at once. The settings go into backups.
 
 ## 6. Non-functional requirements
 
