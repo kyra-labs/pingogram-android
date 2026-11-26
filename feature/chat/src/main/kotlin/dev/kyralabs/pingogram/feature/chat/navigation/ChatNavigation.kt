@@ -63,6 +63,7 @@ fun NavGraphBuilder.chatScreen(
                 onBack = onBack,
                 onOpenMedia = onOpenMedia,
                 onOpenChat = onOpenChat,
+                focusComposer = route.focusComposer,
                 onOpenThread = { chatId, topic -> onOpenThread(destinationOf(chatId, topic)) },
                 onOpenProfile = onOpenProfile,
                 onOpenChatInfo = onOpenChatInfo,

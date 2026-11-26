@@ -199,6 +199,21 @@ internal fun HeaderDraftsButton(
 }
 
 /**
+ * Unanswered (`docs/DESIGN_SYSTEM.md` §6 "Unanswered"): a [TopBarAction] with the reply symbol, which opens the page
+ * of private chats waiting for an answer, shown only while one waits and its button is on ([summary]'s).
+ */
+@Composable
+internal fun HeaderUnansweredButton(
+    summary: () -> ChatListSummary,
+    onClick: () -> Unit,
+) {
+    if (!summary().hasUnanswered) return
+    TopBarAction(label = stringResource(R.string.unanswered_title), onClick = onClick) {
+        Icon(painterResource(UiR.drawable.ic_reply), contentDescription = null)
+    }
+}
+
+/**
  * Mentions & replies (`docs/DESIGN_SYSTEM.md` §6): a [TopBarAction] with the alternate email symbol, which opens the
  * page, and how many chats have unread mentions ([summary]'s) in a `primary` badge. Screen readers hear "Mentions &
  * replies, 3 chats with unread mentions".

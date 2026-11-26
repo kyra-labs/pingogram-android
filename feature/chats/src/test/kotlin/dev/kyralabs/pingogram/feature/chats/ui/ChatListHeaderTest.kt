@@ -124,6 +124,27 @@ class ChatListHeaderTest {
     }
 
     @Test
+    fun `while someone waits for an answer the header offers Unanswered`() {
+        var opened = 0
+        val label = string(R.string.unanswered_title)
+
+        show(summary = ChatListPreviewData.summary)
+        composeRule.onNodeWithContentDescription(label).assertDoesNotExist()
+
+        val withOpenUnanswered =
+            ChatListHeaderActions(
+                search = GlobalSearchState(),
+                searchOpen = mutableStateOf(false),
+                openSearch = {},
+                openAccount = {},
+                openUnanswered = { opened++ },
+            )
+        show(summary = ChatListPreviewData.summary.copy(hasUnanswered = true), actions = withOpenUnanswered)
+        composeRule.onNodeWithContentDescription(label).assertHasClickAction().performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
     fun draftsButtonLight() = captureExpanded("draftsButton.light", ChatListPreviewData.summary.copy(hasDrafts = true))
 
     @Test

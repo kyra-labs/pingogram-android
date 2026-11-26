@@ -421,6 +421,13 @@ data object MentionsRoute
 data object DraftsRoute
 
 /**
+ * Unanswered (`REQUIREMENTS.md` FR-X22), `:feature:chats`: the private chats waiting for the user's answer, pushed
+ * above the Chats tab from its header.
+ */
+@Serializable
+data object UnansweredRoute
+
+/**
  * The Channel feed (`REQUIREMENTS.md` FR-X5), `:feature:chats`: the newest posts of the channels the user follows as
  * one list, pushed above the Chats tab from the Feed tab that starts its folder row.
  */
@@ -491,7 +498,8 @@ data object NewChannelMembersRoute
  * row of the chat list, the archive or search. With [messageId] (a message found by search) it opens at that message,
  * highlighted; without, at the newest messages or the first unread one. A forum without [topicId] shows its topics;
  * with it, the conversation of that topic (FR-C9). With [threadId], the thread of replies to that message of the chat
- * (a channel post's comments, in its discussion group).
+ * (a channel post's comments, in its discussion group). With [focusComposer] (Unanswered's Reply, FR-X22) its message
+ * box is focused as it opens.
  */
 @Serializable
 data class ChatRoute(
@@ -500,6 +508,7 @@ data class ChatRoute(
     val topicId: Int? = null,
     val threadId: Long? = null,
     val directMessagesTopicId: Long? = null,
+    val focusComposer: Boolean = false,
 )
 
 /**

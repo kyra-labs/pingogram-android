@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
  *   ([openMentions], `REQUIREMENTS.md` FR-X1).
  * - **Drafts**: its button, while a chat has a draft, opens the page of unsent messages ([openDrafts],
  *   `REQUIREMENTS.md` FR-X16).
+ * - **Unanswered**: its button, while a private chat waits for an answer, opens their page ([openUnanswered],
+ *   `REQUIREMENTS.md` FR-X22).
  * - **Focus**: the Focus switcher's "Manage" opens Settings → Focus ([openFocus], board 31).
  * - **Feed**: the Feed tab, first in the folder row, opens the Channel feed ([openFeed], `REQUIREMENTS.md` FR-X5).
  * - **Restore**: the restore card above the list opens Backup & restore restoring a backup ([openBackup], by its
@@ -34,6 +36,7 @@ class ChatListHeaderActions(
     val openCatchUp: () -> Unit = {},
     val openMentions: () -> Unit = {},
     val openDrafts: () -> Unit = {},
+    val openUnanswered: () -> Unit = {},
     val openFocus: () -> Unit = {},
     val openFeed: () -> Unit = {},
     val openBackup: (document: String) -> Unit = {},
@@ -52,6 +55,7 @@ class ChatListHeaderActions(
             openCatchUp = openCatchUp,
             openMentions = openMentions,
             openDrafts = openDrafts,
+            openUnanswered = openUnanswered,
             openFocus = openFocus,
             openFeed = open,
             openBackup = openBackup,

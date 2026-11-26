@@ -2,10 +2,13 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.draft
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 /** The Chats tab header's summary ([ChatListViewModel.summary]): the status line's counts and the account's avatar. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -90,6 +94,24 @@ class ChatListSummaryTest : ChatListViewModelHarness() {
             chatLock.lock(setOf(4L))
             afterCountPace()
             assertFalse(summary().hasDrafts)
+        }
+
+    @Test
+    fun `offers Unanswered while someone has waited for an answer, unless its button is off`() =
+        runTest {
+            users.setUsers(user(2), user(ME))
+            val waiting = message(chatId = 2, id = 20, date = NOW.minus(Duration.ofDays(4)))
+            chats.setChats(ChatListType.Main, chat(id = 2, lastMessage = waiting.copy(date = NOW.epochSecond)))
+            val summary = summaryOf(createViewModel())
+            assertFalse(summary().hasUnanswered)
+
+            chats.setChats(ChatListType.Main, chat(id = 2, lastMessage = waiting))
+            afterCountPace()
+            assertTrue(summary().hasUnanswered)
+
+            unanswered.settings.value = UnansweredSettings(showButton = false)
+            afterCountPace()
+            assertFalse(summary().hasUnanswered)
         }
 
     @Test

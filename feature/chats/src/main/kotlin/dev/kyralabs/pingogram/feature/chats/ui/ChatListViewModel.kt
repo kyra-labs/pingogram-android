@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import dev.kyralabs.pingogram.feature.chats.ui.keyword.KeywordAlertChats
+import dev.kyralabs.pingogram.feature.chats.ui.unanswered.UnansweredChats
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
@@ -125,6 +126,7 @@ class ChatListViewModel internal constructor(
     communityRepository: CommunityRepository,
     forumTopicRepository: ForumTopicRepository,
     catchUpChats: CatchUpChats,
+    unansweredChats: UnansweredChats,
     private val keywordChats: KeywordAlertChats,
     private val shownLists: ShownChatListRepository,
     localChatNames: LocalChatNamesRepository,
@@ -150,6 +152,7 @@ class ChatListViewModel internal constructor(
         communityRepository: CommunityRepository,
         forumTopicRepository: ForumTopicRepository,
         catchUpChats: CatchUpChats,
+        unansweredChats: UnansweredChats,
         keywordChats: KeywordAlertChats,
         shownLists: ShownChatListRepository,
         localChatNames: LocalChatNamesRepository,
@@ -172,6 +175,7 @@ class ChatListViewModel internal constructor(
         communityRepository,
         forumTopicRepository,
         catchUpChats,
+        unansweredChats,
         keywordChats,
         shownLists,
         localChatNames,
@@ -500,14 +504,19 @@ class ChatListViewModel internal constructor(
                 mentions,
                 account,
                 catchUp,
-                hasDrafts,
-            ) { unread, mentioned, me, catchUpCount, drafts ->
+                combine(
+                    hasDrafts,
+                    unansweredChats.offeredAt(rowSources.map { it.now }.distinctUntilChanged()),
+                    ::Pair,
+                ),
+            ) { unread, mentioned, me, catchUpCount, (drafts, unanswered) ->
                 ChatListSummary(
                     unreadChats = unread.unreadUnmutedCount,
                     mentionChats = mentioned,
                     account = me,
                     catchUpChats = catchUpCount,
                     hasDrafts = drafts,
+                    hasUnanswered = unanswered,
                 )
             }.distinctUntilChanged()
                 .atCountPace()
