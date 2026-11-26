@@ -53,7 +53,7 @@ internal class DailyDigestReader(
 
     private suspend fun DigestAccountParts.read(): DigestAccount? {
         if (withTimeoutOrNull(LOGIN_TIMEOUT) { loggedIn() } != true) return null
-        return DigestAccount(chats(), lockedChatIds(), reminders(), localNames())
+        return DigestAccount(chats(), lockedChatIds(), reminders(), localNames(), contacts())
     }
 
     internal companion object {
@@ -67,7 +67,7 @@ internal class DailyDigestReader(
 
 /**
  * What the digest reads of one account: whether it is signed in ([loggedIn], waiting for TDLib to say), the main list's
- * chats once its first pages are loaded ([chats]), its locked chats, reminders and names on this phone.
+ * chats once its first pages are loaded ([chats]), its locked chats, reminders, names on this phone and contacts.
  */
 internal class DigestAccountParts(
     val loggedIn: suspend () -> Boolean,
@@ -75,6 +75,7 @@ internal class DigestAccountParts(
     val lockedChatIds: suspend () -> Set<Long> = { emptySet() },
     val reminders: suspend () -> List<MessageReminder> = { emptyList() },
     val localNames: suspend () -> Map<Long, String> = { emptyMap() },
+    val contacts: suspend () -> Set<Long> = { emptySet() },
 ) {
     constructor(repositories: AccountRepositories, notesAndNames: NotesAndNamesRepository) : this(
         loggedIn = { repositories.authRepository().awaitLoggedIn() },
@@ -83,6 +84,15 @@ internal class DigestAccountParts(
         reminders = { repositories.reminderRepository().reminders.first() },
         localNames = {
             NotesLocalChatNamesRepository(repositories.chatNoteRepository(), notesAndNames).names.first()
+        },
+        contacts = {
+            repositories
+                .userRepository()
+                .users
+                .first()
+                .values
+                .filter { it.isContact }
+                .mapTo(HashSet()) { it.id }
         },
     )
 }
