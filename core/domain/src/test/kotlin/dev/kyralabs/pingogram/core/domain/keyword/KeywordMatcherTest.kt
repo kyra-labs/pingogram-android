@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.core.domain.keyword
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 /** Keyword alerts' matching (board 30): whole words, any case, accents ignored, where in the text. */
 class KeywordMatcherTest {
@@ -92,5 +94,19 @@ class KeywordMatcherTest {
 
         assertTrue(matcher.isEmpty)
         assertTrue(matcher.matches("anything").isEmpty())
+    }
+
+    @Test
+    fun `words of only combining marks never hang or fail, in alerts and in muted words`() {
+        val marks = listOf("\u0301", " \u0301\u0308 ", "\u0301 \u0301")
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5)) {
+            listOf(false, true).forEach { withinUnspacedScripts ->
+                val matcher = KeywordMatcher(marks + "cafe", withinUnspacedScripts)
+
+                assertEquals(listOf("cafe"), matcher.matches("Café open").map { it.word })
+                assertTrue(KeywordMatcher(marks, withinUnspacedScripts).matches("Cafe\u0301 open").isEmpty())
+            }
+        }
     }
 }

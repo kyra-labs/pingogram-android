@@ -158,7 +158,9 @@ class CallManagerTest {
             assertEquals(CallPhase.Ended(CallEndReason.HungUp), manager.call.value?.phase)
             assertTrue(engine.sessions.single().closed)
             assertEquals(SystemEndCause.Local, system.calls.single().ended)
-            assertEquals("stop", foreground.events.last())
+            // The service stops itself once it sees the call end: stopped from here, it could be before it entered
+            // the foreground, which ends the app.
+            assertEquals(listOf("start+mic"), foreground.events)
 
             advanceTimeBy(3.seconds)
             assertNull(manager.call.value)
@@ -305,7 +307,7 @@ class CallManagerTest {
                 CallPhase.Ended(CallEndReason.Failed(DomainError.CallPrivacyRestricted)),
                 manager.call.value?.phase,
             )
-            assertEquals("stop", foreground.events.last())
+            assertEquals(listOf("start+mic"), foreground.events)
         }
 
     @Test

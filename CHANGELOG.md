@@ -38,6 +38,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   instead of being read again.
 
 ### Fixed
+- Ending a call or leaving a voice chat right as it started no longer closes the app.
 - Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
 
 ## [2.5.0] - 2026-11-25

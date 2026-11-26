@@ -797,8 +797,7 @@ class CallManager
                 session?.close()
                 call.scope.cancel()
             }
-            // Stopping the service drops its types, the screen's included.
-            foreground.stop()
+            // The service stops itself, which drops its types, the screen's included.
             publish()
             clearEnded =
                 scope.launch {
