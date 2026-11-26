@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 
@@ -300,14 +301,22 @@ class ChatListViewModel internal constructor(
             }
         }
 
+    /** The minute, read once for the rows and the header. */
+    private val minutes: Flow<Instant> = clock.minutes.sharedIn(viewModelScope, dispatcher)
+
     /** What rows show besides their chats, in one snapshot. */
     private val rowSources: Flow<RowSnapshot> =
         combine(
             combine(userRepository.users, groupRepository.supergroups, secretChatRepository.secretChats, ::Triple),
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
-            clock.minutes,
-            combine(localChatNames.names, mutedWords.settings.distinctUntilChanged().map(::MutedWords), ::Pair),
+            minutes,
+            combine(
+                localChatNames.names,
+                // One function per settings: rows compare it by identity.
+                mutedWords.settings.distinctUntilChanged().map { MutedWords(it)::mutes },
+                ::Pair,
+            ),
         ) { (users, supergroups, secretChats), actions, myUserId, now, (localNames, muted) ->
             RowSnapshot(users, supergroups, secretChats, actions, myUserId, now, localNames, muted)
         }.sharedIn(viewModelScope, dispatcher)
@@ -506,7 +515,8 @@ class ChatListViewModel internal constructor(
                 catchUp,
                 combine(
                     hasDrafts,
-                    unansweredChats.offeredAt(rowSources.map { it.now }.distinctUntilChanged()),
+                    // Not offered until known: the header shows without waiting for the dismissals or the notes.
+                    unansweredChats.offeredAt(minutes).onStart { emit(false) },
                     ::Pair,
                 ),
             ) { unread, mentioned, me, catchUpCount, (drafts, unanswered) ->

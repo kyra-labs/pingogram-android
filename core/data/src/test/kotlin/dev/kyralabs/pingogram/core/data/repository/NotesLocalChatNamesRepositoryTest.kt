@@ -2,11 +2,15 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.domain.model.ChatNote
+import dev.kyralabs.pingogram.core.domain.repository.ChatNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.shownName
 import dev.kyralabs.pingogram.core.testing.FakeChatNoteRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -37,6 +41,20 @@ class NotesLocalChatNamesRepositoryTest {
                 awaitItem()
                 notes.set(ChatNote(GROUP, name = "Readers"))
                 assertEquals(mapOf(GROUP to "Readers", PERSON to "Dev from the meetup"), awaitItem())
+            }
+        }
+
+    @Test
+    fun `with the setting off, no name waits for the notes`() =
+        runTest {
+            val unread =
+                object : ChatNoteRepository by this@NotesLocalChatNamesRepositoryTest.notes {
+                    override val notes: Flow<ImmutableMap<Long, ChatNote>> = emptyFlow()
+                }
+            setting.enabled.value = false
+
+            NotesLocalChatNamesRepository(unread, setting).names.test {
+                assertEquals(emptyMap<Long, String>(), awaitItem())
             }
         }
 
