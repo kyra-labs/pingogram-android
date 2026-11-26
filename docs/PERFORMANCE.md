@@ -70,6 +70,27 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   `android.enableR8.fullMode=true`; keep rules minimal and documented.
 - TDLib: create the client on a background thread immediately; send `SetTdlibParameters` before
   the first frame; `getChats(limit = 20)` first, then `loadChats` in pages of 50 while idle.
+- TDLib opening its database is the cold start's largest step: about 340 ms on the owner's account (`tdlib.open`
+  337 ms, 240–465, of `PG:loginKnown`'s 385; `tdlib.create` 65, `tdlib.parameters` 32 alongside it, `tdlib.stepQueued`
+  0.2; Galaxy S24 Ultra, 2026-11-26, medians of 10). It grows with the account's database, not with the code (§9), and
+  TDLib documents no option that shortens it without losing its caches (`td_api.tl` at the pinned commit,
+  core.telegram.org/tdlib/options):
+  - **The three databases** `SetTdlibParameters` asks for are caches kept between restarts: files downloaded and
+    uploaded (`use_file_database`); users, groups and channels (`use_chat_info_database`); chats and messages
+    (`use_message_database`, which implies the other two). Without them every start fetches the chats and messages
+    again, so none are cached to render at once (above) or to open in 150 ms (`REQUIREMENTS.md`). TDLib documents no
+    start-up cost for any of them.
+  - **No database maintenance:** TDLib documents no function that compacts or cleans its databases.
+    `optimizeStorage` and the `use_storage_optimizer` option delete files, not database records (the app already runs
+    it weekly, §3); `getDatabaseStatistics` returns "an unspecified human-readable format".
+  - **The options that "significantly reduce disk usage"** say nothing about the start, and each costs something:
+    `disable_persistent_network_statistics` loses Data usage across restarts, and
+    `disable_time_adjustment_protection` TDLib's protection from clock changes.
+
+  So the start hides what it can instead: `PingogramApplication` starts TDLib first, as soon as the caches subscribe
+  to its updates (`accounts.start()`; updates have no replay, `docs/TDLIB.md`), before the settings read, the font
+  warm-up and `app.starters` take the `Default` dispatcher. It cannot start earlier: Hilt's injection makes the caches
+  (`app.inject`, 8 ms), and the app's first code before it runs only that long before.
 - On the way to the first frame and the first login step (review of 2026-10-22, all off the main thread unless said):
   - `DefaultTdlibClient` builds TDLib's parameters while TDLib's library loads and its client starts. The database
     key's Keystore unwrap takes most of that time, and the two used to run one after the other.

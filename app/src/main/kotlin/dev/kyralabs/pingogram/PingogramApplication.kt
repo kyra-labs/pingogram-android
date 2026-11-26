@@ -154,6 +154,10 @@ class PingogramApplication :
             super.onCreate()
             accounts.start()
         }
+        // Creates the TDLib client and sends its parameters on a background dispatcher; returns immediately. First, as
+        // soon as the caches above subscribe to its updates, which have no replay: TDLib opening its database is the
+        // longest step of a cold start (docs/PERFORMANCE.md §2), and the work below must not take the dispatcher first.
+        StartupTrace.section(StartupTrace.TDLIB_START) { tdlibClient.start() }
         // Reads the settings file while the activity is created, once per process: the splash screen waits for it
         // (main.awaitSettings).
         applicationScope.launch {
@@ -170,9 +174,6 @@ class PingogramApplication :
             NavigationLabelWidths.warmUp(this@PingogramApplication)
         }
         startInBackground()
-        // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
-        // first frame (docs/PERFORMANCE.md §2); returns immediately.
-        StartupTrace.section(StartupTrace.TDLIB_START) { tdlibClient.start() }
     }
 
     /**
