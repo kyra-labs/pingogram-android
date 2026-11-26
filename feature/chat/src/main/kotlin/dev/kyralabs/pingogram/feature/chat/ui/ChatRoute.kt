@@ -245,31 +245,30 @@ internal fun ConversationRoute(
             mutedWordsViewModel,
             sharedMedia,
         ) {
-            sharedMedia.readyingOpenedMedia { event ->
-                when (event) {
-                    is SuggestedPostEvent -> {
-                        suggestedPostsViewModel.onEvent(event)
-                    }
+            // A tap on a muted message's line goes to its own view model too (REQUIREMENTS.md FR-X21).
+            sharedMedia.readyingOpenedMedia(
+                mutedWordsViewModel.routing { event ->
+                    when (event) {
+                        is SuggestedPostEvent -> {
+                            suggestedPostsViewModel.onEvent(event)
+                        }
 
-                    is MutedMessageEvent -> {
-                        mutedWordsViewModel.onEvent(event)
-                    }
+                        is BookmarkEvent -> {
+                            viewModel.onEvent(ChatEvent.DismissMessageActions)
+                            bookmarkViewModel.onEvent(event)
+                        }
 
-                    is BookmarkEvent -> {
-                        viewModel.onEvent(ChatEvent.DismissMessageActions)
-                        bookmarkViewModel.onEvent(event)
-                    }
+                        is ReminderEvent -> {
+                            viewModel.onEvent(ChatEvent.DismissMessageActions)
+                            reminderViewModel.onEvent(event)
+                        }
 
-                    is ReminderEvent -> {
-                        viewModel.onEvent(ChatEvent.DismissMessageActions)
-                        reminderViewModel.onEvent(event)
+                        else -> {
+                            viewModel.onEvent(event)
+                        }
                     }
-
-                    else -> {
-                        viewModel.onEvent(event)
-                    }
-                }
-            }
+                },
+            )
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val sendsSilently by sendKeysViewModel.sendsSilently.collectAsStateWithLifecycle()

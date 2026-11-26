@@ -27,8 +27,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of a group's conversation with a message collapsed for a muted word (FR-X21), on a compact phone, light, dark,
- * right to left and at 200% font, and the event of tapping it.
+ * Goldens of a group's conversation with a message collapsed for a muted word (FR-X21), on a compact phone, light,
+ * dark, right to left and at 200% font, and the event of tapping it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)

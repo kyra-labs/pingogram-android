@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 
 /**
  * Muted words in chat [chatId] (`REQUIREMENTS.md` FR-X21): the [filter] that collapses its messages with a muted word,
@@ -63,6 +64,10 @@ class ChatMutedWordsViewModel
                 }
             }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+        /** [next], with the events of muted messages ([MutedMessageEvent]) handled here instead. */
+        fun routing(next: (ChatEvent) -> Unit): (ChatEvent) -> Unit =
+            { event -> if (event is MutedMessageEvent) onEvent(event) else next(event) }
 
         fun onEvent(event: MutedMessageEvent) {
             when (event) {
