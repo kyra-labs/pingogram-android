@@ -36,6 +36,26 @@
     <string name="birthday_notification_text">Today is their birthday. Send them a message?</string>
     <string name="notification_channel_keyword_alerts">Keyword alerts</string>
     <string name="notification_channel_keyword_alerts_description">Messages with your keyword alert words from muted chats, matched on this phone.</string>
+    <string name="notification_channel_daily_digest">Daily digest</string>
+    <string name="notification_channel_daily_digest_description">One quiet morning summary of your unread chats, mentions and reminders.</string>
+    <!-- The Daily digest (FR-X23): its counts, joined with " · ", over up to five chat names. -->
+    <plurals name="daily_digest_unread">
+        <item quantity="one">%d unread chat</item>
+        <item quantity="other">%d unread chats</item>
+    </plurals>
+    <plurals name="daily_digest_mentions">
+        <item quantity="one">%d mentions you</item>
+        <item quantity="other">%d mention you</item>
+    </plurals>
+    <plurals name="daily_digest_reminders">
+        <item quantity="one">%d reminder today</item>
+        <item quantity="other">%d reminders today</item>
+    </plurals>
+    <string name="daily_digest_text">Tap to catch up</string>
+    <plurals name="daily_digest_more">
+        <item quantity="one">%1$s and %2$d more</item>
+        <item quantity="other">%1$s and %2$d more</item>
+    </plurals>
     <!-- A keyword alert's subtext, beside the app's name: the word that matched, and that its chat is muted (alerts come for muted chats only). -->
     <string name="keyword_alert_subtext">Keyword: %1$s · muted</string>
     <string name="keyword_alert_open">Open</string>

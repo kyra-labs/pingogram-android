@@ -118,6 +118,15 @@ enum class PingogramChannel(
         R.string.notification_channel_keyword_alerts_description,
         NotificationManagerCompat.IMPORTANCE_HIGH,
     ),
+
+    /** The Daily digest (`REQUIREMENTS.md` FR-X23): one quiet morning summary, without sound or badge. */
+    DailyDigest(
+        "daily_digest",
+        R.string.notification_channel_daily_digest,
+        R.string.notification_channel_daily_digest_description,
+        NotificationManagerCompat.IMPORTANCE_LOW,
+        showBadge = false,
+    ),
     ;
 
     /**
