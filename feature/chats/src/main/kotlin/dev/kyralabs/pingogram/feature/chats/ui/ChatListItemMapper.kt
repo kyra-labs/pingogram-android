@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
@@ -36,8 +37,8 @@ import java.time.Instant
 
 /**
  * What rows show besides their chats, as of one emission: the users, supergroups, secret chats and actions of every
- * chat, the current user, the minute (for times and online dots that expire), and the user's own names for chats
- * ([localNames], `REQUIREMENTS.md` FR-X20).
+ * chat, the current user, the minute (for times and online dots that expire), the user's own names for chats
+ * ([localNames], `REQUIREMENTS.md` FR-X20), and their muted words ([mutedWords], FR-X21).
  */
 internal class RowSnapshot(
     val users: ImmutableMap<Long, User>,
@@ -47,10 +48,14 @@ internal class RowSnapshot(
     val myUserId: Long?,
     val now: Instant,
     val localNames: ImmutableMap<Long, String> = persistentMapOf(),
+    val mutedWords: MutedWords? = null,
 ) {
     /** The user's own name for [chat], unless it is a contact's private chat, whose contact name shows (FR-X20). */
     fun localNameOf(chat: Chat): String? =
         localNames.shownName(chat.id, isContact = chat.userId?.let(users::get)?.isContact == true)
+
+    /** Whether [chat]'s last message has a muted word, which its preview then says instead of its text (FR-X21). */
+    fun isLastMessageMuted(chat: Chat): Boolean = chat.lastMessage?.let { mutedWords?.mutes(chat, it) } == true
 }
 
 /**
@@ -120,6 +125,7 @@ private data class RowInputs(
     val now: Instant,
     val timeFormatter: ChatListTimeFormatter,
     val localName: String?,
+    val isLastMessageMuted: Boolean = false,
 ) {
     /** Whether these are the inputs [chat] has in [sources] ([inputsOf]), found without building those. */
     fun matches(
@@ -132,7 +138,11 @@ private data class RowInputs(
                 myUserId == snapshot.myUserId &&
                 now == snapshot.now &&
                 timeFormatter == sources.timeFormatter
-        return sameList && this.chat == chat && localName == snapshot.localNameOf(chat) && sameAround(chat, sources)
+        return sameList &&
+            this.chat == chat &&
+            localName == snapshot.localNameOf(chat) &&
+            isLastMessageMuted == snapshot.isLastMessageMuted(chat) &&
+            sameAround(chat, sources)
     }
 
     /** Whether what [chat]'s row shows besides the chat itself is the same in [sources]. */
@@ -174,6 +184,7 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         now = snapshot.now,
         timeFormatter = timeFormatter,
         localName = snapshot.localNameOf(chat),
+        isLastMessageMuted = snapshot.isLastMessageMuted(chat),
     )
 }
 
@@ -307,6 +318,10 @@ private fun RowInputs.preview(
 
         draft != null -> {
             ChatPreview.Draft(draftPreviewText(draft.content))
+        }
+
+        message != null && isLastMessageMuted -> {
+            ChatPreview.Message(senderPrefix(message, name), UiText.resource(R.string.preview_muted_word), null)
         }
 
         message != null -> {

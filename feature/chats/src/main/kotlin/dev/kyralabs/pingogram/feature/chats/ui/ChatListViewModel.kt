@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
@@ -30,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ShownChatListRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -126,6 +128,7 @@ class ChatListViewModel internal constructor(
     private val keywordChats: KeywordAlertChats,
     private val shownLists: ShownChatListRepository,
     localChatNames: LocalChatNamesRepository,
+    mutedWords: MutedWordsRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -150,6 +153,7 @@ class ChatListViewModel internal constructor(
         keywordChats: KeywordAlertChats,
         shownLists: ShownChatListRepository,
         localChatNames: LocalChatNamesRepository,
+        mutedWords: MutedWordsRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -171,6 +175,7 @@ class ChatListViewModel internal constructor(
         keywordChats,
         shownLists,
         localChatNames,
+        mutedWords,
         clock,
         timePatterns,
         dispatcher,
@@ -298,9 +303,9 @@ class ChatListViewModel internal constructor(
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
             clock.minutes,
-            localChatNames.names,
-        ) { (users, supergroups, secretChats), actions, myUserId, now, localNames ->
-            RowSnapshot(users, supergroups, secretChats, actions, myUserId, now, localNames)
+            combine(localChatNames.names, mutedWords.settings.distinctUntilChanged().map(::MutedWords), ::Pair),
+        ) { (users, supergroups, secretChats), actions, myUserId, now, (localNames, muted) ->
+            RowSnapshot(users, supergroups, secretChats, actions, myUserId, now, localNames, muted)
         }.sharedIn(viewModelScope, dispatcher)
 
     /** Locked chats (docs/adr/0029-locked-chats.md) never show here, open or not: they have a list of their own. */

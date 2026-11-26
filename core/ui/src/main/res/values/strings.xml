@@ -124,6 +124,8 @@
     <!-- %1$s is the emoji the sticker stands for. -->
     <string name="preview_sticker_emoji">%1$s Sticker</string>
     <string name="preview_voice_message">Voice message</string>
+    <!-- In place of a group message's text in the chat list and notifications, while it has a muted word (REQUIREMENTS.md FR-X21) -->
+    <string name="preview_muted_word">Message with a muted word</string>
     <string name="preview_video_message">Video message</string>
     <string name="preview_audio">Audio</string>
     <!-- %1$s is the performer of a song, %2$s its title. -->

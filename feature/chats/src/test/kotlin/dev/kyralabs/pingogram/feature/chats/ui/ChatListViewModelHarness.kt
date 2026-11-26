@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordAlertsRepository
 import dev.kyralabs.pingogram.core.testing.FakeKeywordHitRepository
 import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
+import dev.kyralabs.pingogram.core.testing.FakeMutedWordsRepository
 import dev.kyralabs.pingogram.core.testing.FakeShownChatListRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
@@ -61,6 +62,7 @@ abstract class ChatListViewModelHarness {
     protected val clock = FakeWallClock(NOW)
     protected val timePatterns = FakeTimePatterns()
     protected val localNames = FakeLocalChatNamesRepository()
+    protected val mutedWords = FakeMutedWordsRepository()
     protected val savedState = SavedStateHandle()
 
     @BeforeEach
@@ -105,6 +107,7 @@ abstract class ChatListViewModelHarness {
         keywordChats = KeywordAlertChats(chats, keywordHits, keywordAlerts, chatLock),
         shownLists = shownLists,
         localChatNames = localNames,
+        mutedWords = mutedWords,
         clock = clock,
         timePatterns = timePatterns,
         dispatcher = StandardTestDispatcher(testScheduler),
