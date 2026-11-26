@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
+import dev.kyralabs.pingogram.core.notifications.CatchUpIntents
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalIsDemo
@@ -355,12 +356,13 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, the Telegram link it
-     * views, what it shares, the Focus page or switcher the Focus tile asks for, or a Conversation widget's chat
-     * picker or reply sheet.
+     * views, what it shares, the Focus page or switcher the Focus tile asks for, Catch-up from the Daily digest, or a
+     * Conversation widget's chat picker or reply sheet.
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let { viewModel.openChat(it, NotificationIntents.messageIdOf(intent)) }
         if (NotificationIntents.opensLockedChats(intent)) viewModel.setPageToOpen(PageToOpen.LockedChats)
+        if (CatchUpIntents.opensCatchUp(intent)) viewModel.setPageToOpen(PageToOpen.CatchUp)
         FocusTile.pageOf(intent)?.let { page ->
             if (page == PageToOpen.FocusSwitcher) focusSwitcherRequests.request()
             viewModel.setPageToOpen(page)

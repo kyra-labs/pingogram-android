@@ -241,6 +241,9 @@ sealed interface PageToOpen {
     /** Locked chats, from a locked chat's notification. */
     data object LockedChats : PageToOpen
 
+    /** Catch-up, from the Daily digest's notification (`REQUIREMENTS.md` FR-X23). */
+    data object CatchUp : PageToOpen
+
     /** The Chats tab with its Focus switcher, from the Focus tile's long press. */
     data object FocusSwitcher : PageToOpen
 
