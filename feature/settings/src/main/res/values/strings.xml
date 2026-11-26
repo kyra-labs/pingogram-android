@@ -1467,6 +1467,10 @@
     <string name="settings_drafts_button">Drafts button</string>
     <string name="settings_drafts_button_summary">Shows a button for your unsent messages at the top of Chats</string>
     <string name="settings_unanswered_button">Unanswered button</string>
+    <!-- Settings → Notifications → Daily digest (FR-X23). -->
+    <string name="settings_daily_digest">Daily digest</string>
+    <string name="settings_daily_digest_summary">One quiet notification each morning with your unread chats, mentions and the day\'s reminders</string>
+    <string name="settings_daily_digest_time">Time</string>
     <string name="settings_unanswered_button_summary">Shows a button at the top of Chats for people still waiting for your answer</string>
     <string name="settings_unanswered_after">Unanswered after</string>
     <string name="settings_unanswered_after_summary">How long a private chat waits for your answer before it shows there</string>

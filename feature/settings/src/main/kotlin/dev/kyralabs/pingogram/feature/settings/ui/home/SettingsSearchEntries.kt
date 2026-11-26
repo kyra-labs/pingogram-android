@@ -35,6 +35,7 @@ internal val SettingEntries: List<HomeEntry> by lazy {
         setting(SettingsPage.Chats, R.string.settings_unanswered_button),
         setting(SettingsPage.Chats, R.string.settings_compact_chat_list),
         setting(SettingsPage.Chats, R.string.settings_notes_and_names),
+        setting(SettingsPage.Notifications, R.string.settings_daily_digest),
     )
 }
 

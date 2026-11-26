@@ -42,6 +42,11 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.DailyDigestEffects
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.DailyDigestEvent
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.DailyDigestGroup
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.DailyDigestUiState
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.DailyDigestViewModel
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -59,8 +64,10 @@ internal fun NotificationSettingsRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NotificationSettingsViewModel = hiltViewModel(),
+    dailyDigestViewModel: DailyDigestViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val dailyDigest by dailyDigestViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -107,6 +114,7 @@ internal fun NotificationSettingsRoute(
             }
         }
     }
+    DailyDigestEffects(dailyDigestViewModel.effects, snackbarHostState)
     NotificationSettingsScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -114,6 +122,8 @@ internal fun NotificationSettingsRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        dailyDigest = dailyDigest,
+        onDailyDigestEvent = dailyDigestViewModel::onEvent,
     )
 }
 
@@ -160,6 +170,7 @@ private fun ScopeGroups(
  * - private chats, groups and channels, each with its defaults ([ScopeGroup]): notifications, message previews,
  *   mentions and pinned messages where they apply, "Sound and vibration" in Android's settings (sounds belong to the
  *   notification channels there), and the chats with settings of their own;
+ * - "Daily digest", its switch and its time ([DailyDigestGroup], `REQUIREMENTS.md` FR-X23), once read;
  * - "Reactions", whom the account hears of reactions and poll votes from ([NotificationSettingsPage.Reactions]);
  * - "Keep connected", where the build offers it, with its cost in battery said under the switch;
  * - "Reset all notification settings", after a destructive confirmation.
@@ -172,6 +183,8 @@ internal fun NotificationSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    dailyDigest: DailyDigestUiState = DailyDigestUiState(),
+    onDailyDigestEvent: (DailyDigestEvent) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_notifications),
@@ -197,6 +210,7 @@ internal fun NotificationSettingsScreen(
                 onChange = { onEvent(NotificationSettingsEvent.SetFromAllAccounts(it)) },
             )
         }
+        DailyDigestGroup(dailyDigest, onDailyDigestEvent)
         ReactionsGroup(
             contactJoined = state.contactJoined,
             onOpen = onOpen,
