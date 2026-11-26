@@ -344,6 +344,13 @@ decision 2026-11-23).
   replies to the user, never service or sponsored messages (Telegram's terms). The chat list's preview and
   notifications say "Message with a muted word" instead of its text. Nothing is deleted or marked read; the words stay
   on the phone, are never sent to Telegram, and go into backups.
+- FR-X22 Should: **Unanswered** (owner decisions 2026-11-25). A button in the Chats tab's header, as Drafts' (FR-X16),
+  shown while at least one chat is unanswered, opens a page of the private chats whose last message is the other
+  person's and has had no answer for a chosen number of days (Settings → Chats → "Unanswered button", on by default,
+  "After 1 · 2 · 3 · 7 · 14 days", 3 by default). Never bots, Saved Messages, deleted accounts, locked or archived
+  chats, nor a chat whose last message is older than 30 days. Each chat has Reply (it opens with the message box
+  focused) and Dismiss (it leaves the page until a newer message comes; kept on the phone for the account, not in
+  backups). Nothing is ever sent by itself. The settings go into backups.
 
 ## 6. Non-functional requirements
 

@@ -161,6 +161,8 @@ internal val BackedUpSettings: Set<String> =
         "stickers.suggestions",
         "stickers.loop",
         "transcription.automatic",
+        "unanswered.button",
+        "unanswered.after_days",
     )
 
 /**
