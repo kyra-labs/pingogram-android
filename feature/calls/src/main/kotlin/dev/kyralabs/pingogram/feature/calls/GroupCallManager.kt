@@ -723,7 +723,6 @@ class GroupCallManager
                 session?.close()
                 call.scope.cancel()
             }
-            foreground.stop()
             publish()
             clearEnded =
                 scope.launch {

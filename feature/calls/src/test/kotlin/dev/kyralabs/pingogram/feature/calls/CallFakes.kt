@@ -465,7 +465,7 @@ class FakeSystemCall(
 }
 
 class FakeCallForeground : CallForeground {
-    /** Each start, with whether it asked for the microphone; then "stop". */
+    /** Each start, with whether it asked for the microphone, and each change of the screen's capture. */
     val events = mutableListOf<String>()
 
     override fun start(withMicrophone: Boolean) {
@@ -478,10 +478,6 @@ class FakeCallForeground : CallForeground {
     override suspend fun setScreenCapture(on: Boolean): Boolean {
         events += if (on) "screen" else "no screen"
         return allowsScreenCapture || !on
-    }
-
-    override fun stop() {
-        events += "stop"
     }
 }
 

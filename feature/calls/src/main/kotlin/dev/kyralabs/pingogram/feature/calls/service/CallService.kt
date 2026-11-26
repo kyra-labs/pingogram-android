@@ -239,10 +239,6 @@ class CallService : Service() {
                     }
                 return reached && withTimeoutOrNull(SCREEN_TIMEOUT) { running.first { it == on } } != null
             }
-
-            override fun stop() {
-                context.stopService(Intent(context, CallService::class.java))
-            }
         }
 }
 

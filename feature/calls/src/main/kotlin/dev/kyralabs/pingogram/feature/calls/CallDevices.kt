@@ -9,6 +9,8 @@ interface CallForeground {
     /**
      * Keeps the app running with the call's ongoing notification, while the call rings or goes on. [withMicrophone]
      * once the user is talking: Android lets the service use the microphone in the background only from then on.
+     * Nothing stops it from outside: it stops itself once no call or voice chat goes on, after it entered the
+     * foreground, which Android wants first; stopped before that, the app is ended.
      */
     fun start(withMicrophone: Boolean)
 
@@ -17,8 +19,6 @@ interface CallForeground {
      * does: Android lets a screen's capture start only then. False where Android refused, or it took too long.
      */
     suspend fun setScreenCapture(on: Boolean): Boolean
-
-    fun stop()
 }
 
 /** The tones the caller hears from their own phone. */

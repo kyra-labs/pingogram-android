@@ -37,6 +37,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Returning to the app after Android closed its screen opens it sooner: the theme and privacy settings stay in memory
   instead of being read again.
 
+### Fixed
+- Ending a call or leaving a voice chat right as it started no longer closes the app; ending a call while you're in a
+  voice chat no longer takes the voice chat's ongoing notification away.
+
 ## [2.5.0] - 2026-11-25
 
 ### Added

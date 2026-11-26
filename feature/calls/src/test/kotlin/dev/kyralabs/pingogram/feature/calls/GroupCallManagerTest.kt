@@ -220,6 +220,7 @@ class GroupCallManagerTest {
         runTest {
             val manager = manager()
             val session = joined(manager)
+            val serviceEvents = foreground.events.toList()
 
             manager.leave()
             runCurrent()
@@ -229,7 +230,8 @@ class GroupCallManagerTest {
             assertFalse(line.isBusy)
             assertEquals(GroupCallPhase.Ended(GroupCallEndReason.Left), manager.call.value?.phase)
             assertEquals(SystemEndCause.Local, system.calls.single().ended)
-            assertEquals("stop", foreground.events.last())
+            // The service stops itself once it sees the voice chat end.
+            assertEquals(serviceEvents, foreground.events)
 
             advanceTimeBy(3_000)
             assertNull(manager.call.value)
