@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
 /**
@@ -29,41 +30,29 @@ class CleanupChats internal constructor(
     clock: WallClock,
 ) {
     @Inject
-    constructor(
-        chatRepository: ChatRepository,
-        userRepository: UserRepository,
-        chatLock: ChatLockRepository,
-        openings: ChatOpeningsRepository,
+    internal constructor(
+        sources: CleanupSources,
         settings: CleanupSettingsRepository,
         clock: WallClock,
-    ) : this(
-        CleanupSources(
-            chats = chatRepository.chatList(ChatListType.Main),
-            users = userRepository.users,
-            me = userRepository.myUserId,
-            locked = chatLock.lockedChatIds,
-            openings = openings.openings,
-            loadMore = { (chatRepository.loadChats(ChatListType.Main) as? Outcome.Success)?.value == true },
-        ),
-        settings.settings,
-        clock,
-    )
+    ) : this(sources, settings.settings, clock)
 
     /** The suggested chats, the longest unopened first, then every change and every minute. */
     val chats: Flow<List<Chat>> =
         combine(
             sources.chats,
-            combine(sources.users, sources.me, ::Pair),
+            combine(sources.users, sources.me, sources.joinDates.supergroups, ::Triple),
             combine(sources.locked, sources.openings, ::Pair),
             settings,
             clock.minutes,
-        ) { list, (users, me), (locked, openings), cleanup, now ->
+        ) { list, (users, me, supergroups), (locked, openings), cleanup, now ->
             if (!cleanup.enabled) {
                 emptyList()
             } else {
                 val rule = CleanupRule(me, locked, openings, CleanupRule.cutoffOf(now, clock.zone(), cleanup.months))
                 list
                     .filter { chat -> rule.suggests(chat, (chat.type as? ChatType.Private)?.userId?.let(users::get)) }
+                    // Asked last, of the chats left: a basic group's needs TDLib.
+                    .filter { chat -> rule.suggestsJoined(sources.joinDates.of(chat, supergroups, me)) }
                     .sortedBy { openings.lastOpenedOf(it.id) }
             }
         }
@@ -83,7 +72,10 @@ class CleanupChats internal constructor(
         }
 }
 
-/** What [CleanupChats] reads: the main list, the users, the current user, locked chats and when chats were opened. */
+/**
+ * What [CleanupChats] reads: the main list, the users, the current user, locked chats, when chats were opened, and when
+ * groups were joined.
+ */
 internal class CleanupSources(
     val chats: Flow<List<Chat>>,
     val users: Flow<Map<Long, User>>,
@@ -91,4 +83,22 @@ internal class CleanupSources(
     val locked: Flow<Set<Long>>,
     val openings: Flow<ChatOpenings>,
     val loadMore: suspend () -> Boolean = { false },
-)
+    val joinDates: ChatJoinDates = ChatJoinDates(flowOf(emptyMap())) { _, _ -> null },
+) {
+    @Inject
+    constructor(
+        chatRepository: ChatRepository,
+        userRepository: UserRepository,
+        chatLock: ChatLockRepository,
+        openings: ChatOpeningsRepository,
+        joinDates: ChatJoinDates,
+    ) : this(
+        chats = chatRepository.chatList(ChatListType.Main),
+        users = userRepository.users,
+        me = userRepository.myUserId,
+        locked = chatLock.lockedChatIds,
+        openings = openings.openings,
+        loadMore = { (chatRepository.loadChats(ChatListType.Main) as? Outcome.Success)?.value == true },
+        joinDates = joinDates,
+    )
+}
