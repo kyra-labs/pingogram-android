@@ -8,7 +8,8 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
  * [count], counted from the oldest (0) as the list shows them, so the newest is the last; with its [sender] (null where
  * the chat itself posts, as a channel does) and one line of it ([preview]). [canUnpin] where the user may unpin it,
  * which the close button then does; otherwise it only hides the bar. [thumbnail]: a small picture of its photo, video,
- * GIF or round video, or a file's tile, before the text.
+ * GIF or round video, or a file's tile, before the text. [isOutgoing] for the user's own message, which muted words
+ * never hide.
  */
 @Immutable
 data class PinnedBar(
@@ -19,6 +20,7 @@ data class PinnedBar(
     val preview: UiText,
     val canUnpin: Boolean,
     val thumbnail: PinnedThumbnail? = null,
+    val isOutgoing: Boolean = false,
 ) {
     override fun toString() = "PinnedBar(messageId=$messageId, position=$position, count=$count, canUnpin=$canUnpin, …)"
 }

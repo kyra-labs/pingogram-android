@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui.muted
 
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.OverlayCopies
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The conversation's bubbles collapsed for muted words (`REQUIREMENTS.md` FR-X21), kept by the route from one state
@@ -17,7 +19,10 @@ internal class MutedMessages {
     private var decided = HashMap<Any, Decision>()
     private var next = HashMap<Any, Decision>()
 
-    /** [state] with the bubbles [filter] collapses marked ([ChatItem.Bubble.isMuted]); as it is without a filter. */
+    /**
+     * [state] with the bubbles [filter] collapses marked ([ChatItem.Bubble.isMuted]), the quotes and the pinned bar it
+     * hides saying "Message with a muted word" instead; as it is without a filter.
+     */
     fun apply(
         state: ChatUiState,
         filter: MutedWordsFilter?,
@@ -27,15 +32,34 @@ internal class MutedMessages {
         var changed = false
         val items =
             content.items.map { item ->
-                if (item is ChatItem.Bubble && item.id !in filter.shown && hasMutedWord(item, filter)) {
+                if (item !is ChatItem.Bubble) return@map item
+                val muted = item.id !in filter.shown && hasMutedWord(item, filter)
+                val quote = item.reply
+                val hiddenQuote = quote?.takeIf(filter::hidesQuote)?.copy(text = MUTED)
+                if (muted || hiddenQuote != null) {
                     changed = true
-                    copies.entry(item.key, item, overlay = true) { item.copy(isMuted = true) }
+                    copies.entry(item.key, item, overlay = muted to (hiddenQuote != null)) {
+                        item.copy(isMuted = muted, reply = hiddenQuote ?: quote)
+                    }
                 } else {
                     item
                 }
             }
         decided = next.also { next = decided.apply { clear() } }
-        return if (changed) state.copy(content = content.copy(items = copies.list(items))) else state
+        val pinned = state.pinnedBar?.takeIf(filter::hidesPinned)?.copy(preview = MUTED)
+        return when {
+            changed -> {
+                state.copy(content = content.copy(items = copies.list(items)), pinnedBar = pinned ?: state.pinnedBar)
+            }
+
+            pinned != null -> {
+                state.copy(pinnedBar = pinned)
+            }
+
+            else -> {
+                state
+            }
+        }
     }
 
     /** Whether [bubble] has a muted word, as decided before for the same bubble and words. */
@@ -65,3 +89,6 @@ internal class MutedMessages {
         ): Boolean = this.bubble === bubble && words == filter.words && myUserId == filter.myUserId
     }
 }
+
+/** What a hidden quote or pinned message says instead of its text. */
+private val MUTED = UiText.resource(UiR.string.preview_muted_word)

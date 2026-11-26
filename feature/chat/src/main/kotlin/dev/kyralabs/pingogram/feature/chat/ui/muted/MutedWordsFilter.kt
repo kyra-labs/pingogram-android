@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.feature.chat.ui.muted
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.keyword.KeywordMatcher
+import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
+import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -26,6 +29,21 @@ internal data class MutedWordsFilter(
             !bubble.mentionsMe &&
             (myUserId == null || bubble.reply?.senderId != myUserId) &&
             matcher.firstMatch(bubble.text.text) != null
+
+    /**
+     * Whether [quote], a reply's quote of another message, hides its text: the quoted message is not the user's own,
+     * is not shown with a tap, and its text has a muted word.
+     */
+    fun hidesQuote(quote: ReplyQuote): Boolean =
+        (myUserId == null || quote.senderId != myUserId) &&
+            quote.messageId !in shown &&
+            quote.text.hasMutedWord()
+
+    /** Whether the pinned messages [bar] hides its message's text, as [hidesQuote] a quote's. */
+    fun hidesPinned(bar: PinnedBar): Boolean = !bar.isOutgoing && bar.messageId !in shown && bar.preview.hasMutedWord()
+
+    /** Whether this text, where it is the message's own words, has a muted word. */
+    private fun UiText.hasMutedWord(): Boolean = (this as? UiText.Plain)?.text?.let(matcher::firstMatch) != null
 
     override fun toString() = "MutedWordsFilter(words=${words.size}, shown=${shown.size})"
 }

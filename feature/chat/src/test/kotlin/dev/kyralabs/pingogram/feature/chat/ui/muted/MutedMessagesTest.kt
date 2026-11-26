@@ -5,14 +5,17 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentSet
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** A group's bubbles collapsed for muted words (FR-X21), and only the bubbles that may be. */
 class MutedMessagesTest {
@@ -71,6 +74,34 @@ class MutedMessagesTest {
     }
 
     @Test
+    fun `a quote of a message with a muted word says so, unless it is the user's own or tapped open`() {
+        val id = state.bubbles.first { it.id != MOTION }.id
+        val quote = ReplyQuote(UiText.Plain("Bob"), BOB, UiText.Plain("Big motion ahead"), messageId = 77)
+        val quoting = with(id) { it.copy(reply = quote) }
+
+        val hidden = MutedMessages().apply(quoting, filter("motion")).bubble(id).reply
+        val own = MutedMessages().apply(with(id) { it.copy(reply = quote.copy(senderId = ME)) }, filter("motion"))
+        val open = MutedMessages().apply(quoting, filter("motion", shown = setOf(77L)))
+
+        assertEquals(UiText.resource(UiR.string.preview_muted_word), hidden?.text)
+        assertEquals(quote.copy(senderId = ME), own.bubble(id).reply)
+        assertEquals(quote, open.bubble(id).reply)
+    }
+
+    @Test
+    fun `the pinned bar says so too, unless the pinned message is the user's own`() {
+        val bar =
+            PinnedBar(5, position = 0, count = 1, sender = null, preview = UiText.Plain("motion"), canUnpin = false)
+
+        val hidden = MutedMessages().apply(state.copy(pinnedBar = bar), filter("motion")).pinnedBar
+        val ownBar = bar.copy(isOutgoing = true)
+        val own = MutedMessages().apply(state.copy(pinnedBar = ownBar), filter("motion")).pinnedBar
+
+        assertEquals(UiText.resource(UiR.string.preview_muted_word), hidden?.preview)
+        assertEquals(ownBar, own)
+    }
+
+    @Test
     fun `the same state again is the same list, without matching again`() {
         val muted = MutedMessages()
 
@@ -82,6 +113,7 @@ class MutedMessagesTest {
 
     private companion object {
         const val ME = 1L
+        const val BOB = 2L
 
         /** The preview group's message about motion. */
         const val MOTION = 24L
