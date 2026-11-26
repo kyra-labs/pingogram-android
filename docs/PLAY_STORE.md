@@ -99,6 +99,7 @@ types). The texts are ready to paste; each feature also explains itself in the a
 | `READ_CONTACTS` | none; prominent disclosure (Play's User Data policy) | opt-in contacts sync; the rationale sheet says what is sent before Android asks, and it is off by default | |
 | `BLUETOOTH_CONNECT` | none | names of Bluetooth headsets to move a call to (Android 12+) | |
 | `POST_NOTIFICATIONS`, `POST_PROMOTED_NOTIFICATIONS` | none | message notifications; Live Updates of transfers on Android 16 | |
+| `RECEIVE_BOOT_COMPLETED` | none (normal permission) | after the phone restarts, the daily digest and birthday reminders the user turned on are scheduled again | |
 
 Not in the `gms` build: `FOREGROUND_SERVICE_SPECIAL_USE` ("Keep connected", `foss` only, which Play would question).
 

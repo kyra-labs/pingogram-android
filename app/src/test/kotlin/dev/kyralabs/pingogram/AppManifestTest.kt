@@ -29,10 +29,10 @@ import org.xmlpull.v1.XmlPullParser
  * (approved 2026-10-20); WorkManager's WAKE_LOCK runs notification actions as a foreground service before Android 12
  * only, so it stops at API 30; FOREGROUND_SERVICE and FOREGROUND_SERVICE_DATA_SYNC run the transfers the user started
  * in WorkManager's foreground service of type dataSync (approved 2026-10-20), and POST_PROMOTED_NOTIFICATIONS lets
- * Android 16 show their progress as a Live Update (approved 2026-10-21); WorkManager's RECEIVE_BOOT_COMPLETED is
- * left out, except in the foss flavor, whose "Keep connected" service needs its
- * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
- * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
+ * Android 16 show their progress as a Live Update (approved 2026-10-21); WorkManager's RECEIVE_BOOT_COMPLETED brings
+ * the Daily digest and birthday reminders' work back after a reboot (approved 2026-11-26), and the foss flavor's "Keep
+ * connected" service after it too, with its type's FOREGROUND_SERVICE_SPECIAL_USE (approved 2026-10-19; [FlavorManifest]
+ * in each flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver); the gms flavor's
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
  * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
@@ -81,6 +81,8 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
                 Manifest.permission.ACCESS_NETWORK_STATE,
+                // The Daily digest's and birthday reminders' work after a reboot, and foss' "Keep connected".
+                Manifest.permission.RECEIVE_BOOT_COMPLETED,
                 // Installing an app file the user tapped in a chat, through Android's package installer.
                 Manifest.permission.REQUEST_INSTALL_PACKAGES,
                 // Contacts sync only, opt-in (docs/adr/0011-contacts-sync.md): read when the user turns it on, opens
@@ -126,6 +128,7 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC to "",
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
+                Manifest.permission.RECEIVE_BOOT_COMPLETED to "",
                 // Installing an app file the user tapped in a chat, on every version.
                 Manifest.permission.REQUEST_INSTALL_PACKAGES to "",
                 // Contacts sync's only permission, on every version.
