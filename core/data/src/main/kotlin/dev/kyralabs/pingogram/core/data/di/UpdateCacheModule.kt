@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.FileChatNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.FileReminderRepository
 import dev.kyralabs.pingogram.core.data.repository.FileSnippetRepository
 import dev.kyralabs.pingogram.core.data.repository.FileTranscriptRepository
+import dev.kyralabs.pingogram.core.data.repository.FileUnansweredDismissalRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccentColorRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountFreezeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAiTextRepository
@@ -120,6 +121,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun chatNoteCache(repository: FileChatNoteRepository): TdlibUpdateCache
+
+    /** Not a cache of TDLib's state: it forgets the account's dismissed unanswered chats when it logs out. */
+    @Binds
+    @IntoSet
+    fun unansweredDismissalCache(repository: FileUnansweredDismissalRepository): TdlibUpdateCache
 
     /** Not a cache of TDLib's state: it deletes the account's bookmarks when it logs out. */
     @Binds

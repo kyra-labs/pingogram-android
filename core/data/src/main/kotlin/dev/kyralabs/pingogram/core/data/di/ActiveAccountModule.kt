@@ -114,6 +114,7 @@ import dev.kyralabs.pingogram.core.domain.repository.TranscriptRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnansweredDismissalRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
@@ -464,6 +465,10 @@ object ActiveAccountModule {
 
     @Provides
     fun chatNoteRepository(accounts: Accounts): ChatNoteRepository = accounts.active.chatNoteRepository()
+
+    @Provides
+    fun unansweredDismissalRepository(accounts: Accounts): UnansweredDismissalRepository =
+        accounts.active.unansweredDismissalRepository()
 
     /** The active account's own names for chats, while the setting shows them (`REQUIREMENTS.md` FR-X20). */
     @Provides
