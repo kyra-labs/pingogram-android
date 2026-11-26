@@ -188,6 +188,25 @@ class ChatSelectionTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `messages the history no longer holds stay selected, and deleting takes every one`() =
+            runViewModelTest {
+                val viewModel = selecting(1, 3)
+
+                // Scrolled on past the history's bound, which keeps the newer messages only.
+                messages.setHistory(
+                    PRIVATE_CHAT,
+                    history(*messages().filter { it.id != 1L }.toTypedArray(), reachedStart = false),
+                )
+                runCurrent()
+                assertEquals(setOf(1L, 3L), viewModel.selectedIds)
+
+                send(viewModel, SelectionEvent.Act(MessageAction.Delete))
+                send(viewModel, ChatEvent.ConfirmDelete(forEveryone = false))
+
+                assertEquals(listOf("delete:$PRIVATE_CHAT:[1, 3]:false"), messageActions.calls)
+            }
+
+        @Test
         fun `selection mode survives process death`() =
             runViewModelTest {
                 val handle = SavedStateHandle()
