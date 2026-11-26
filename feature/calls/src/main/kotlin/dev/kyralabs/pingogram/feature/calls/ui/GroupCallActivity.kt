@@ -37,6 +37,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
+import dev.kyralabs.pingogram.core.ui.text.IncognitoKeyboard
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
@@ -137,24 +138,27 @@ class GroupCallActivity : ComponentActivity() {
             LaunchedEffect(state) { if (state == GroupCallUiState.Closed) finish() }
             val watching = (state as? GroupCallUiState.InCall)?.let { it.watches() && it.hasControls } == true
             LaunchedEffect(watching) { updatePictureInPicture(watching) }
-            settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings, stillAnimations = still) {
-                    GroupCallScreen(
-                        state = state,
-                        onEvent = viewModel::onEvent,
-                        onMinimize = ::minimize,
-                        onRequestMicrophone = { permissions.launch(CALL_PERMISSIONS) },
-                        onOpenSettings = ::openAppSettings,
-                        video = video,
-                        selfVideo = selfVideo,
-                        participantVideo = participantVideo,
-                        pictureInPicture = inPictureInPicture,
-                        onAddPeople = { inviting = true },
-                        snackbarHostState = snackbarHostState,
-                        comments = rememberComments(snackbarHostState),
-                        onShareLink = ::shareLink,
-                    )
-                    if (inviting) InviteSheet(state, onClose = { inviting = false })
+            val incognito by commentsViewModel.incognitoKeyboard.collectAsStateWithLifecycle()
+            IncognitoKeyboard(incognito) {
+                settings?.let { appearanceSettings ->
+                    CallTheme(appearanceSettings, stillAnimations = still) {
+                        GroupCallScreen(
+                            state = state,
+                            onEvent = viewModel::onEvent,
+                            onMinimize = ::minimize,
+                            onRequestMicrophone = { permissions.launch(CALL_PERMISSIONS) },
+                            onOpenSettings = ::openAppSettings,
+                            video = video,
+                            selfVideo = selfVideo,
+                            participantVideo = participantVideo,
+                            pictureInPicture = inPictureInPicture,
+                            onAddPeople = { inviting = true },
+                            snackbarHostState = snackbarHostState,
+                            comments = rememberComments(snackbarHostState),
+                            onShareLink = ::shareLink,
+                        )
+                        if (inviting) InviteSheet(state, onClose = { inviting = false })
+                    }
                 }
             }
         }

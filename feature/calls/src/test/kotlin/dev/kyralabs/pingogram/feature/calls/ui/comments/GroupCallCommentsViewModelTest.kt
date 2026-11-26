@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupCallComment
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.testing.FakeIncognitoKeyboardRepository
 import dev.kyralabs.pingogram.feature.calls.CALL_ID
 import dev.kyralabs.pingogram.feature.calls.CHAT_ID
 import dev.kyralabs.pingogram.feature.calls.CallLine
@@ -53,6 +54,7 @@ class GroupCallCommentsViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeGroupCallRepository()
     private val users = FakeUserRepository()
+    private val incognito = FakeIncognitoKeyboardRepository()
     private val created = mutableListOf<GroupCallCommentsViewModel>()
     private val chats = GroupCallChats { id -> flowOf(GroupCallChat(id, "Book club", null)) }
 
@@ -92,7 +94,7 @@ class GroupCallCommentsViewModelTest {
 
     private suspend fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): GroupCallCommentsViewModel {
         val manager = joined()
-        return GroupCallCommentsViewModel(handle, manager, repository, chats, users).also { viewModel ->
+        return GroupCallCommentsViewModel(handle, manager, repository, chats, users, incognito).also { viewModel ->
             created += viewModel
             backgroundScope.launch { viewModel.uiState.collect {} }
             backgroundScope.launch { viewModel.announcement.collect {} }
@@ -151,11 +153,25 @@ class GroupCallCommentsViewModelTest {
             runCurrent()
             assertFalse(viewModel.available().isShown)
 
-            val restored = GroupCallCommentsViewModel(handle, joined(), repository, chats, users)
+            val restored = GroupCallCommentsViewModel(handle, joined(), repository, chats, users, incognito)
             created += restored
             backgroundScope.launch { restored.uiState.collect {} }
             runCurrent()
             assertFalse(restored.available().isShown)
+        }
+
+    @Test
+    fun `the comment field keeps the keyboard from learning while Incognito keyboard is on`() =
+        runTest(dispatcher) {
+            val viewModel = viewModel()
+            backgroundScope.launch { viewModel.incognitoKeyboard.collect {} }
+            runCurrent()
+            assertFalse(viewModel.incognitoKeyboard.value)
+
+            incognito.enabled.value = true
+            runCurrent()
+
+            assertTrue(viewModel.incognitoKeyboard.value)
         }
 
     @Test

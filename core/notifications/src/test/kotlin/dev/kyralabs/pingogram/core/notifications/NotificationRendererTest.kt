@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.text.Spanned
 import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
+import androidx.core.content.pm.ShortcutManagerCompat
 import dev.kyralabs.pingogram.core.common.FirstFrameGate
 import dev.kyralabs.pingogram.core.domain.model.ChatNote
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
@@ -220,6 +221,36 @@ class NotificationRendererTest {
             runCurrent()
             assertEquals("Team", conversationTitleOf(checkNotNull(harness.posted(10))))
         }
+
+    @Test
+    fun `turning names on this phone off posts the notification again under the title, its shortcut too`() =
+        runTest {
+            val harness = started()
+            harness.client.emit(updateBasicGroup(basicGroup(id = 5)))
+            harness.client.emit(updateNewChat(chat(id = 200, type = TdApi.ChatTypeBasicGroup(5), title = "Team")))
+            harness.chatNotes.set(ChatNote(200, name = "Launch crew"))
+            harness.client.emit(groupWith(id = 9, chatId = 200, notificationId = 1))
+            runCurrent()
+            assertEquals("Launch crew", shortcutLabel(harness, 200))
+
+            harness.notesAndNames.enabled.value = false
+            runCurrent()
+
+            assertEquals("Team", conversationTitleOf(checkNotNull(harness.posted(9))))
+            assertEquals("Team", shortcutLabel(harness, 200))
+        }
+
+    private fun shortcutLabel(
+        harness: NotificationsHarness,
+        chatId: Long,
+    ): String? {
+        val flags = ShortcutManagerCompat.FLAG_MATCH_DYNAMIC or ShortcutManagerCompat.FLAG_MATCH_CACHED
+        return ShortcutManagerCompat
+            .getShortcuts(harness.context, flags)
+            .firstOrNull { it.id == NotificationIntents.shortcutId(chatId) }
+            ?.shortLabel
+            ?.toString()
+    }
 
     @Test
     fun `a group's message with a muted word says so, and a channel's post shows its text`() =

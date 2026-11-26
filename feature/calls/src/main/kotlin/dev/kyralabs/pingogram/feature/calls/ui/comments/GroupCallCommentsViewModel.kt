@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallComments
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
+import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.GroupCallPhase
@@ -60,6 +61,7 @@ class GroupCallCommentsViewModel
         private val repository: GroupCallRepository,
         private val chats: GroupCallChats,
         private val userRepository: UserRepository,
+        incognitoKeyboard: IncognitoKeyboardRepository,
     ) : ViewModel() {
         private val shown = MutableStateFlow(savedStateHandle[KEY_SHOWN] ?: true)
 
@@ -69,6 +71,13 @@ class GroupCallCommentsViewModel
         private val effectChannel = Channel<CommentEffect>(Channel.BUFFERED)
 
         val effects: Flow<CommentEffect> = effectChannel.receiveAsFlow()
+
+        /**
+         * Whether the comment field asks the keyboard not to learn (Privacy and security → "Incognito keyboard",
+         * FR-X7): the voice chat is an activity of its own, outside the app's.
+         */
+        val incognitoKeyboard: StateFlow<Boolean> =
+            incognitoKeyboard.enabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), false)
 
         /** The call's id while the user is in one that may have comments (not a live stream, not over). */
         private val callId: Flow<Int?> =
