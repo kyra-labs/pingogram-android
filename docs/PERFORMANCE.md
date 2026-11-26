@@ -529,6 +529,25 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
 
   Send back the `*-benchmarkData.json` file under that folder and what `compare.py` printed. The budget is
   `sendMessageSumMs.median` ≤ 50 ms (`benchmark/budgets.json`).
+- Two versions on the account and database already on the phone, to tell the code's share of a slower start from the
+  database's growth (for instance v2.3.0 against v2.5.0), with `tools/benchmark/compare-versions.ps1` on Windows:
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File tools\benchmark\compare-versions.ps1 -Old v2.3.0 -New v2.5.0
+  ```
+
+  It builds each tag's `benchmarkRelease` in a git worktree beside the repository and runs that tag's own
+  `StartupBenchmark`, in the order New, Old, New; the second run of New shows how much the phone drifted while Old ran.
+  - **No uninstall, no new sign-in.** Builds without `-Pversion` are all versionCode 1 and signed with the computer's
+    debug key, so each installs over the one before as a replacement, keeping the session and TDLib's database. That
+    holds while both versions have the same TDLib (v2.3.0 to v2.5.0: TDLib 1.8.70) and read each other's settings
+    files; the app keeps no database of its own.
+  - **Nothing of the account leaves the phone.** Only the `*-benchmarkData.json` files (times, the device's model, the
+    benchmark names) are kept, in `benchmark\build\versions`, with `comparison.txt`: `compare.py`'s report of each run
+    of New against Old's. The worktrees, with the traces Gradle pulled into them, are deleted.
+  - v2.3.0's benchmark has no `PG:` sections, so the start times, `app.inject`, `main.onCreate` and
+    `main.awaitSettings` compare. Afterwards the phone runs New; `.\gradlew.bat :app:installFossBenchmarkRelease`
+    puts `main` back, keeping the session.
 - Baseline (2026-10-22, `benchmarkRelease`, Galaxy S24 Ultra on Android 17 at 120 Hz, clocks not locked; medians of
   10 starts, frame percentiles over 5 runs; "profile" is `BaselineProfileMode.Require` with the shipped profile, "none"
   is `CompilationMode.None`). The phone is far faster than §1's reference device, so meeting a budget here is not
