@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.testTimeSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -77,6 +78,21 @@ class AnimatedStickersTest {
 
         animation.newRenderer().render(0, frame)
 
+        assertEquals(Color.TRANSPARENT, frame.getPixel(32, 32))
+    }
+
+    @Test
+    fun `a sticker whose layers Lottie cannot build draws nothing instead of failing`() {
+        // A precomposition layer whose asset is missing: it parses, but Lottie fails building its layers.
+        val json =
+            """{"v":"5.5.2","fr":30,"ip":0,"op":30,"w":64,"h":64,"assets":[],"layers":[""" +
+                """{"ty":0,"refId":"missing","ind":1,"ip":0,"op":30,"st":0,"w":64,"h":64,"ks":{}}]}"""
+        val tgs = folder.newFile("broken.tgs")
+        GZIPOutputStream(tgs.outputStream()).use { it.write(json.toByteArray()) }
+        val animation = checkNotNull(LottieStickerDecoder().decode(tgs))
+        val frame = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+
+        assertFalse(animation.newRenderer().render(0, frame))
         assertEquals(Color.TRANSPARENT, frame.getPixel(32, 32))
     }
 
@@ -261,6 +277,45 @@ class AnimatedStickersTest {
 
             assertEquals(0, shown)
             waiting.cancel()
+        }
+
+    @Test
+    fun `a sticker that cannot be drawn tries once, and gives its slot to the next`() =
+        runTest {
+            val oneSlot =
+                AnimatedStickers(files, decoder, Dispatchers.Unconfined, maxAnimating = 1, timeSource = testTimeSource)
+            var renders = 0
+            val broken =
+                object : StickerAnimation {
+                    override val frameCount = 60
+                    override val frameRate = 60f
+
+                    override fun newRenderer() =
+                        StickerFrameRenderer { _, _ ->
+                            renders++
+                            false
+                        }
+                }
+            val brokenDraws = MutableStateFlow(0L)
+            val brokenOne = StickerPlayer(oneSlot, broken, 64, 64, brokenDraws) { brokenDraws.value++ }
+            val failing = launch { brokenOne.playOnScreen(FocusedWindow) { brokenDraws.value++ } }
+            advanceTimeBy(SHORT_MILLIS)
+
+            files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
+            val animation = checkNotNull(oneSlot.animation(FILE_ID))
+            var shown = 0
+            val draws = MutableStateFlow(0L)
+            val next = StickerPlayer(oneSlot, animation, 64, 64, draws) {
+                shown++
+                draws.value++
+            }
+            val playing = launch { next.playOnScreen(FocusedWindow) { draws.value++ } }
+            advanceTimeBy(PLAY_MILLIS)
+
+            assertEquals(1, renders)
+            assertTrue("shown $shown", shown > 0)
+            failing.cancel()
+            playing.cancel()
         }
 
     private object FocusedWindow : WindowInfo {

@@ -39,6 +39,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ### Fixed
 - Ending a call or leaving a voice chat right as it started no longer closes the app.
+- A damaged animated sticker or custom emoji no longer closes the app, and no longer keeps other stickers from
+  playing: it stays still instead.
 
 ## [2.5.0] - 2026-11-25
 

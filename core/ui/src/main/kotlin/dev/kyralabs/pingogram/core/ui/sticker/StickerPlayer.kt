@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.WindowInfo
 import androidx.core.graphics.createBitmap
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -48,6 +49,9 @@ internal class StickerPlayer(
     /** It went through its last frame since it started showing: with looping off, it stops there. */
     private var played = false
 
+    /** Its renderer could not draw a frame: it never plays again, nor holds a slot. */
+    private var failed = false
+
     /**
      * Plays for as long as the caller runs: whenever the window has the focus and what shows the frames is on screen
      * (drawn after [requestDraw]), holding one of the [AnimatedStickers.slots] while it plays.
@@ -64,6 +68,8 @@ internal class StickerPlayer(
             } finally {
                 stickers.slots.release()
             }
+            // Trying again would fail again, every frame.
+            if (failed) awaitCancellation()
             if (stickers.still.value || (played && !stickers.loop.value)) {
                 showFirstFrame()
                 // Played once with looping off: it rests until looping is turned on again.
@@ -123,9 +129,14 @@ internal class StickerPlayer(
             position = upcoming
             frame = (position % animation.frameCount).toInt()
             val index = next
-            withContext(stickers.renderDispatcher) {
-                val bitmap = buffers[index] ?: createBitmap(width, height).also { buffers[index] = it }
-                renderer.render(frame, bitmap)
+            val drawn =
+                withContext(stickers.renderDispatcher) {
+                    val bitmap = buffers[index] ?: createBitmap(width, height).also { buffers[index] = it }
+                    renderer.render(frame, bitmap)
+                }
+            if (!drawn) {
+                failed = true
+                return
             }
             val image = images[index] ?: checkNotNull(buffers[index]).asImageBitmap().also { images[index] = it }
             val drawn = draws.value

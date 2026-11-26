@@ -45,18 +45,20 @@ private class LottieStickerAnimation(
 private class LottieFrameRenderer(
     private val composition: LottieComposition,
 ) : StickerFrameRenderer {
-    private val drawable = LottieDrawable().also { it.setComposition(composition) }
+    /** Null where Lottie could not build the sticker's layers: it draws nothing. */
+    private val drawable = lottieOrNull("build") { LottieDrawable().also { it.setComposition(composition) } }
     private val startFrame = composition.startFrame.roundToInt()
     private val canvas = Canvas()
 
     override fun render(
         frame: Int,
         bitmap: Bitmap,
-    ) {
+    ): Boolean {
         bitmap.eraseColor(Color.TRANSPARENT)
+        val drawable = drawable ?: return false
         val bounds = composition.bounds
         // A sticker without a size has nothing to scale: its frames stay blank.
-        if (bounds.isEmpty) return
+        if (bounds.isEmpty) return true
         val scale = min(bitmap.width / bounds.width().toFloat(), bitmap.height / bounds.height().toFloat())
         val width = (bounds.width() * scale).roundToInt()
         val height = (bounds.height() * scale).roundToInt()
@@ -65,18 +67,29 @@ private class LottieFrameRenderer(
         drawable.setBounds(left, top, left + width, top + height)
         drawable.frame = startFrame + frame
         canvas.setBitmap(bitmap)
-        try {
-            drawable.draw(canvas)
-        } catch (
-            // A malformed sticker that parsed fails while drawing, in whatever way Lottie meets it; this runs on the
-            // render thread, where it would take the app down. Its frame stays blank instead.
-            @Suppress("TooGenericExceptionCaught") e: RuntimeException,
-        ) {
-            bitmap.eraseColor(Color.TRANSPARENT)
-            Log.w(TAG, "Could not draw a sticker frame: ${e.javaClass.simpleName}")
-        }
+        if (lottieOrNull("draw") { drawable.draw(canvas) } != null) return true
+        bitmap.eraseColor(Color.TRANSPARENT)
+        return false
     }
 }
+
+/**
+ * What [block] makes of a sticker; null where Lottie fails on a malformed sticker that parsed, as it builds its layers
+ * ([what]: "build") or draws them ("draw"), in whatever way it meets it. This runs on the render thread, where the
+ * failure would take the app down.
+ */
+private inline fun <T : Any> lottieOrNull(
+    what: String,
+    block: () -> T,
+): T? =
+    try {
+        block()
+    } catch (
+        @Suppress("TooGenericExceptionCaught") e: RuntimeException, // Lottie's failures have no common type.
+    ) {
+        Log.w(TAG, "Could not $what a sticker: ${e.javaClass.simpleName}")
+        null
+    }
 
 private const val TAG = "LottieStickerDecoder"
 
