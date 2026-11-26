@@ -56,10 +56,7 @@ internal class ZoomState {
         set(value) {
             val old = field
             field = value
-            if (old != null && value != null && value != old && isZoomed) {
-                stopAnimation()
-                zoom = zoom.copy(pan = clampPan(panFor(zoom.pan, old, value), value, zoom.scale))
-            }
+            if (old != null && value != null && value != old) boundsMoved(old, value)
         }
 
     /** Zoomed in beyond the fitted photo: drags pan it rather than turn the page or close the viewer. */
@@ -138,6 +135,16 @@ internal class ZoomState {
     fun reset() {
         stopAnimation()
         zoom = Zoom.Fit
+    }
+
+    /** The page or the photo's size changed [from] one to [to]: a zoomed photo keeps showing the same part of it. */
+    private fun boundsMoved(
+        from: ZoomBounds,
+        to: ZoomBounds,
+    ) {
+        if (!isZoomed) return
+        stopAnimation()
+        zoom = zoom.copy(pan = clampPan(panFor(zoom.pan, from, to), to, zoom.scale))
     }
 
     /** Stops a running animation; the next one starts from the zoom as it is then. */
