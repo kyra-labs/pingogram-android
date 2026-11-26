@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.PingogramDarkTheme
+import dev.kyralabs.pingogram.core.ui.theme.isDarkTheme
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.DismissState
 import dev.kyralabs.pingogram.feature.media.ui.ImmersiveSystemBars
@@ -74,6 +75,7 @@ internal fun StoryViewerScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     videoSurface: @Composable (Modifier) -> Unit = {},
 ) {
+    val appDark = isDarkTheme()
     PingogramDarkTheme {
         val dismiss = rememberDismissState()
         // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
@@ -84,7 +86,7 @@ internal fun StoryViewerScreen(
         PredictiveBackDismiss(dismiss, onClose, leaveAtScale = false) { active ->
             currentOnEvent(StoryViewerEvent.BackGesture(active))
         }
-        ImmersiveSystemBars(hidden = false)
+        ImmersiveSystemBars(hidden = false, appDark = appDark)
         val scrim = MaterialTheme.colorScheme.scrim
         val title = LocalResources.current.getString(R.string.story_viewer_title)
         BoxWithConstraints(modifier.fillMaxSize().testTag(STORY_VIEWER_TEST_TAG).semantics { paneTitle = title }) {
