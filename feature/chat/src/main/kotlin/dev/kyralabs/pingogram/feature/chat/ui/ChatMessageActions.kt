@@ -117,7 +117,8 @@ internal class ChatMessageActions(
      * [showsPicker] and the sheet has one, with "Open link" and "Copy link" first for the [link] of its text the long
      * press landed on, and "Add to calendar" and "Open in maps" for what the device finds in its text ([findInText],
      * asked only now, beside TDLib); then asks for the pictures of the custom emoji it shows. The sheet does not wait
-     * for the device's classifier, which can take a while: what it finds joins the open sheet once found.
+     * for the device's classifier, which can take a while, nor for the language detection that "Translate" needs:
+     * what they find joins the open sheet once found.
      */
     fun show(
         messageId: Long,
@@ -146,27 +147,42 @@ internal class ChatMessageActions(
                         val quick = reactionOptions(available.top.take(MAX_QUICK_REACTIONS), reactionsMessage)
                         val picker = reactionPicker(available, quick.size, reactionsMessage)
                         val actions = context.actionsOf(message, properties.value, inThread)
-                        val translation = translate.await()
+                        // What needs no detection ("Show original", a summary's actions) is usually in by now.
+                        var translation = if (translate.isCompleted) translate.await() else emptyList()
+                        var findings = TextFindings.None
                         val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
                                 reactionsMessageId = reactionsMessage.id,
                                 reactions = quick,
-                                actions = sheetActions(link, actions, translation, TextFindings.None),
+                                actions = sheetActions(link, actions, translation, findings),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
                                 link = link,
-                                findings = TextFindings.None,
+                                findings = findings,
                             )
                         mutableSheet.value = sheet
                         launch { loadCustomEmojiPictures(sheet) }
-                        val findings = found.await()
-                        if (findings.actions.isNotEmpty()) {
+                        val joinOpenSheet = {
                             mutableSheet.update { open ->
                                 open?.takeIf { it.messageId == messageId }?.copy(
                                     actions = sheetActions(link, actions, translation, findings),
                                     findings = findings,
                                 ) ?: open
+                            }
+                        }
+                        launch {
+                            val answered = translate.await()
+                            if (answered != translation) {
+                                translation = answered
+                                joinOpenSheet()
+                            }
+                        }
+                        launch {
+                            val answered = found.await()
+                            if (answered.actions.isNotEmpty()) {
+                                findings = answered
+                                joinOpenSheet()
                             }
                         }
                     }
