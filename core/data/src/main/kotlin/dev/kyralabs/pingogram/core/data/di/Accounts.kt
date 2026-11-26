@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.tdlib.AccountStorage
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.TdlibClientFactory
+import dev.kyralabs.pingogram.core.tdlib.TdlibDirectories
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -158,19 +159,22 @@ class Accounts internal constructor(
                         mutableIsDemo.value = factory.isDemoOn()
                     }
                 // The first slot's storage is the app's client's, which runs, signed in or not.
-                val left = (1 until AccountSlot.MAX_ACCOUNTS).filter { it !in registry.slots && it !in closing }
-                closing += left
-                registry to left
+                val others = (1 until AccountSlot.MAX_ACCOUNTS).filter { it !in registry.slots && it !in closing }
+                closing += others
+                registry to others
             }
         loaded.complete(Unit)
         appScope.launch(io) { registry.slots.forEach { account(AccountSlot(it)) } }
         if (left.isNotEmpty()) appScope.launch(io) { left.forEach { deleteLeftStorage(AccountSlot(it)) } }
     }
 
-    /** Deletes the storage [slot] kept though it left the device; only then is it free again ([add]). */
+    /**
+     * Deletes the storage [slot] kept though it left the device, if it kept any (deleting checks the Keystore too, which
+     * slots that were never used need not cost each start); only then is the slot free again ([add]).
+     */
     private fun deleteLeftStorage(slot: AccountSlot) {
         try {
-            factory.deleteStorage(slot)
+            if (factory.hasStorage(slot)) factory.deleteStorage(slot)
         } finally {
             synchronized(this) { closing -= slot.index }
         }
@@ -415,6 +419,9 @@ interface AccountFactory {
         scope: CoroutineScope,
     ): AccountComponent
 
+    /** Whether [slot] has a TDLib directory, which holds its database and files. Blocking: off the main thread. */
+    fun hasStorage(slot: AccountSlot): Boolean
+
     /** Blocking: off the main thread. */
     fun deleteStorage(slot: AccountSlot)
 
@@ -442,6 +449,7 @@ class DefaultAccountFactory
         private val storage: AccountStorage,
         private val dependencies: Provider<AccountDependencies>,
         private val demo: DemoClients,
+        @param:ApplicationContext private val context: Context,
     ) : AccountFactory {
         override fun client(
             slot: AccountSlot,
@@ -453,6 +461,8 @@ class DefaultAccountFactory
             client: TdlibClient,
             scope: CoroutineScope,
         ): AccountComponent = DaggerAccountComponent.factory().create(slot, client, scope, dependencies.get())
+
+        override fun hasStorage(slot: AccountSlot) = TdlibDirectories.of(context.filesDir, slot).root.exists()
 
         override fun deleteStorage(slot: AccountSlot) = storage.delete(slot)
 

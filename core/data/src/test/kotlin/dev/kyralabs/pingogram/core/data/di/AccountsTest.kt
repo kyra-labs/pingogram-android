@@ -55,6 +55,9 @@ class AccountsTest {
 
     private val deleted = mutableListOf<Int>()
 
+    /** The slots with storage on the device, for those not in the registry. */
+    private val stored = mutableSetOf<Int>()
+
     /** The demo's marker as the factory keeps it, its clients, and whether leaving deleted what it made. */
     private var demoOn = false
     private val demoClients = mutableListOf<FakeTdlibClient>()
@@ -81,6 +84,8 @@ class AccountsTest {
                         scope: CoroutineScope,
                     ) = component(slot.index, client, scope).also { components[slot.index] = it }
 
+                    override fun hasStorage(slot: AccountSlot) = slot.index in stored
+
                     override fun deleteStorage(slot: AccountSlot) {
                         deleted += slot.index
                     }
@@ -104,8 +109,6 @@ class AccountsTest {
         ).also {
             if (start) it.start()
             runCurrent()
-            // What reading the registry deleted, the storage of slots not on the device, is its own test's.
-            deleted.clear()
         }
     }
 
@@ -420,13 +423,14 @@ class AccountsTest {
         runTest {
             // A logout cut short: the registry no longer has slot 1, whose storage was not deleted yet.
             registryFile.write(AccountRegistry(slots = listOf(0, 2), active = 0))
+            stored += 1
             val accounts = accounts(start = false)
 
             accounts.active
 
             assertNull(accounts.add())
             runCurrent()
-            assertEquals(listOf(1, 3), deleted)
+            assertEquals(listOf(1), deleted)
             assertEquals(1, accounts.add())
         }
 
