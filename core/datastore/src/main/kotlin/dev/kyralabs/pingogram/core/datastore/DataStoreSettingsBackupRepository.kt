@@ -128,6 +128,8 @@ internal val BackedUpSettings: Set<String> =
         "composer.undo_redo",
         "composer.recent_emoji",
         "contacts.share_phone_number",
+        "daily_digest.enabled",
+        "daily_digest.minute",
         "contacts.birthdays_row",
         "focus.profiles",
         "focus.manual",
