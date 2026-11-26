@@ -50,6 +50,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   icons stay readable when dark mode switches while a photo, video or story is open.
 - The Conversation widget keeps showing a chat's newest messages, and new ones as they come, while you read far back
   in that chat in the app.
+- A downloaded document or song in a conversation no longer shows its download button for a moment while you scroll.
 - The daily digest and birthday reminders no longer go missing when Android held them past their time, for example
   while the phone slept: they still come once Android lets them.
 
