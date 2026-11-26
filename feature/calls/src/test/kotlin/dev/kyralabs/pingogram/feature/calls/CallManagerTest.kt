@@ -147,7 +147,6 @@ class CallManagerTest {
                 .state.value = CallMediaState.Connected
             runCurrent()
             clock.now += 61_000
-            val serviceEvents = foreground.events.toList()
 
             manager.hangUp()
             runCurrent()
@@ -161,7 +160,7 @@ class CallManagerTest {
             assertEquals(SystemEndCause.Local, system.calls.single().ended)
             // The service stops itself once it sees the call end: stopped from here, it could be before it entered
             // the foreground, which ends the app.
-            assertEquals(serviceEvents, foreground.events)
+            assertEquals(listOf("start+mic"), foreground.events)
 
             advanceTimeBy(3.seconds)
             assertNull(manager.call.value)
