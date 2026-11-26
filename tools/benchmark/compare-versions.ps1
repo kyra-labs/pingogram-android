@@ -13,7 +13,7 @@
 #
 # Nothing of the account leaves the phone: the only files kept are the benchmarks' *-benchmarkData.json (times, the
 # device's model and the benchmark names), in benchmark\build\versions. The worktrees, with the traces Gradle pulled
-# into them, are deleted at the end.
+# into them, are deleted at the end; the script fails if one cannot be.
 param(
     [string]$Old = "v2.3.0",
     [string]$New = "v2.5.0"
@@ -25,7 +25,11 @@ Set-Location $root
 if (-not (Test-Path "secrets.properties")) {
     throw "secrets.properties is missing: the builds need it (docs/OWNER_SETUP.md)."
 }
-$installed = adb shell pm list packages dev.kyralabs.pingogram
+# The user the phone shows now: pm asked about every user fails where another profile (Samsung's Secure Folder or Dual
+# Messenger, a work profile) is one the shell may not read ("Shell does not have permission to access user 150").
+$user = "$(adb shell am get-current-user)".Trim()
+if ($user -notmatch '^\d+$') { $user = "0" }
+$installed = adb shell pm list packages --user $user dev.kyralabs.pingogram
 if (-not ($installed | Select-String -Pattern '^package:dev\.kyralabs\.pingogram$')) {
     throw "Pingogram is not installed: .\gradlew.bat :app:installFossBenchmarkRelease, then sign in on the phone."
 }
@@ -39,7 +43,24 @@ $out = Join-Path $root "benchmark\build\versions"
 if (Test-Path $out) { Remove-Item -Path $out -Recurse -Force }
 New-Item -ItemType Directory -Path $out | Out-Null
 
+# Removes the worktree at [tree] and says whether it is gone. Gradle's outputs in it go deeper than Windows' 260
+# characters, which git deletes only with core.longpaths, and Gradle's daemons keep files in it open until they stop.
+function Remove-Worktree([string]$tree) {
+    if (Test-Path -LiteralPath (Join-Path $tree "gradlew.bat")) {
+        Push-Location $tree
+        try { & .\gradlew.bat --stop | Out-Null } finally { Pop-Location }
+    }
+    git -c core.longpaths=true worktree remove --force $tree | Out-Host
+    if (Test-Path -LiteralPath $tree) {
+        # What git left, through Windows' extended-length paths.
+        Remove-Item -LiteralPath "\\?\$tree" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    git worktree prune | Out-Host
+    return -not (Test-Path -LiteralPath $tree)
+}
+
 $worktrees = @{}
+$left = @()
 $runs = @($New, $Old, $New)
 try {
     for ($i = 0; $i -lt $runs.Count; $i++) {
@@ -47,11 +68,10 @@ try {
         if (-not $worktrees.ContainsKey($tag)) {
             # Beside the repository, at its depth: the build's paths stay as short as the repository's own.
             $tree = Join-Path (Split-Path -Parent $root) "pingogram-$tag"
-            if (Test-Path $tree) {
-                git worktree remove --force $tree
-                if (Test-Path $tree) { Remove-Item -Path $tree -Recurse -Force }
+            if ((Test-Path -LiteralPath $tree) -and -not (Remove-Worktree $tree)) {
+                throw "$tree is left from an earlier run and could not be removed: delete it, then git worktree prune."
             }
-            git worktree add --detach $tree $tag
+            git -c core.longpaths=true worktree add --detach $tree $tag
             if ($LASTEXITCODE -ne 0) { throw "No worktree for $tag." }
             Copy-Item "secrets.properties" $tree
             if (Test-Path "local.properties") { Copy-Item "local.properties" $tree }
@@ -77,9 +97,12 @@ try {
         Get-ChildItem -Path $results -Recurse -Filter "*benchmarkData.json" | Copy-Item -Destination $dest
     }
 } finally {
-    foreach ($tree in $worktrees.Values) { git worktree remove --force $tree }
-    git worktree prune
+    $left = @($worktrees.Values | Where-Object { -not (Remove-Worktree $_) })
+    if ($left.Count -gt 0) {
+        Write-Warning "Not removed: $($left -join ', '). Delete them by hand, then run git worktree prune."
+    }
 }
+if ($left.Count -gt 0) { throw "Worktrees left behind: $($left -join ', ')." }
 
 # Old's run as the baseline, then each run of New against it. A budget miss sets the exit code, not a failure here.
 $report = Join-Path $out "comparison.txt"

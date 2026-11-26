@@ -548,7 +548,10 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
     files; the app keeps no database of its own.
   - **Nothing of the account leaves the phone.** Only the `*-benchmarkData.json` files (times, the device's model, the
     benchmark names) are kept, in `benchmark\build\versions`, with `comparison.txt`: `compare.py`'s report of each run
-    of New against Old's. The worktrees, with the traces Gradle pulled into them, are deleted.
+    of New against Old's. The worktrees, with the traces Gradle pulled into them, are deleted after Gradle's daemons
+    stop, with git's `core.longpaths` (Gradle's outputs go past Windows' 260 characters); the script fails, naming
+    them, if one is left. It asks the phone only about its current user, as other profiles (Secure Folder, Dual
+    Messenger) refuse the shell.
   - v2.3.0's benchmark has no `PG:` sections, so the start times, `app.inject`, `main.onCreate` and
     `main.awaitSettings` compare. Afterwards the phone runs New; `.\gradlew.bat :app:installFossBenchmarkRelease`
     puts `main` back, keeping the session.
