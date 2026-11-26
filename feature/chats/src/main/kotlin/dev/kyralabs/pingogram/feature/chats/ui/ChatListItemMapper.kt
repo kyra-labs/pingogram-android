@@ -59,8 +59,7 @@ internal class RowSnapshot(
         localNames.shownName(chat.id, isContact = chat.userId?.let(users::get)?.isContact == true)
 
     /** Whether [chat]'s last message has a muted word, which its preview then says instead of its text (FR-X21). */
-    fun isLastMessageMuted(chat: Chat): Boolean =
-        chat.lastMessage?.let { mutes?.invoke(chat, it, me) } == true
+    fun isLastMessageMuted(chat: Chat): Boolean = chat.lastMessage?.let { mutes?.invoke(chat, it, me) } == true
 }
 
 /** Whether a message of a chat, as the current user sees it, has a muted word ([MutedWords.mutes]). */

@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 
@@ -300,13 +301,16 @@ class ChatListViewModel internal constructor(
             }
         }
 
+    /** The minute, read once for the rows and the header. */
+    private val minutes: Flow<Instant> = clock.minutes.sharedIn(viewModelScope, dispatcher)
+
     /** What rows show besides their chats, in one snapshot. */
     private val rowSources: Flow<RowSnapshot> =
         combine(
             combine(userRepository.users, groupRepository.supergroups, secretChatRepository.secretChats, ::Triple),
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
-            clock.minutes,
+            minutes,
             combine(
                 localChatNames.names,
                 // One function per settings: rows compare it by identity.
@@ -512,7 +516,7 @@ class ChatListViewModel internal constructor(
                 combine(
                     hasDrafts,
                     // Not offered until known: the header shows without waiting for the dismissals or the notes.
-                    unansweredChats.offeredAt(clock.minutes).onStart { emit(false) },
+                    unansweredChats.offeredAt(minutes).onStart { emit(false) },
                     ::Pair,
                 ),
             ) { unread, mentioned, me, catchUpCount, (drafts, unanswered) ->
