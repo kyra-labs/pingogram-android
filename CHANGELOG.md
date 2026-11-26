@@ -14,6 +14,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   your contact, give the chat your own name, which search finds and the chat list, the conversation, notifications,
   the forward and share sheets and the home-screen widgets show, and a private note. Only your phone and your backups
   keep them; Settings → Chats can turn them off.
+- Muted words: in groups, messages with words or phrases you choose collapse into a line you tap to show, and the chat
+  list says "Message with a muted word" instead of their text. Never your own messages, ones that mention or reply to
+  you, channels or ads. Turn it on in Settings → Chats → Muted words.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.

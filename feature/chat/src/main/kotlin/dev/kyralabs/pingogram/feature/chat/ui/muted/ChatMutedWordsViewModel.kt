@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.MutedMessageEvent
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +64,10 @@ class ChatMutedWordsViewModel
                 }
             }.distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+        /** [next], with the events of muted messages ([MutedMessageEvent]) handled here instead. */
+        fun routing(next: (ChatEvent) -> Unit): (ChatEvent) -> Unit =
+            { event -> if (event is MutedMessageEvent) onEvent(event) else next(event) }
 
         fun onEvent(event: MutedMessageEvent) {
             when (event) {

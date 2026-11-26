@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.muted
 
 import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.testing.FakeMutedWordsRepository
+import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GROUP_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -82,6 +83,21 @@ class ChatMutedWordsViewModelTest {
             words.settings.value = MutedWordSettings(enabled = true)
             runCurrent()
             assertNull(viewModel.filter.value)
+        }
+
+    @Test
+    fun `the route's events reach the conversation, but a muted message's tap comes here`() =
+        runTest {
+            val viewModel = viewModel()
+            val passed = mutableListOf<ChatEvent>()
+            val onEvent = viewModel.routing { passed += it }
+
+            onEvent(ChatEvent.DismissMessageActions)
+            onEvent(MutedMessageEvent.Show(42))
+            runCurrent()
+
+            assertEquals(listOf<ChatEvent>(ChatEvent.DismissMessageActions), passed)
+            assertEquals(persistentSetOf(42L), viewModel.filter.value?.shown)
         }
 
     @Test

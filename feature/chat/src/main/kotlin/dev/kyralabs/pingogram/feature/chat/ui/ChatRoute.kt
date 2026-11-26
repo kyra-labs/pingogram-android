@@ -72,6 +72,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.keyword.LocalKeywordMatchBar
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.rememberKeywordMatchSlot
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
+import dev.kyralabs.pingogram.feature.chat.ui.muted.ChatMutedWordsViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.muted.MutedMessages
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.LocalPinnedMessagesLauncher
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
@@ -215,38 +217,58 @@ internal fun ConversationRoute(
         hiltViewModel<ChatLocalNameViewModel, ChatLocalNameViewModel.Factory>(key = "local-name-$chatId") {
             it.create(chatId)
         },
+    mutedWordsViewModel: ChatMutedWordsViewModel =
+        hiltViewModel<ChatMutedWordsViewModel, ChatMutedWordsViewModel.Factory>(key = "muted-words-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val conversation by viewModel.uiState.collectAsStateWithLifecycle()
     // The chat's name on this phone (REQUIREMENTS.md FR-X20) titles its own conversation; a topic or thread keeps its
     // header.
     val localName by localNameViewModel.name.collectAsStateWithLifecycle()
-    val state = remember(conversation, localName, topic) { conversation.withLocalName(localName, topic != null) }
+    // A group's messages with a muted word collapse into a line until tapped (REQUIREMENTS.md FR-X21).
+    val mutedFilter by mutedWordsViewModel.filter.collectAsStateWithLifecycle()
+    val mutedMessages = remember { MutedMessages() }
+    val state =
+        remember(conversation, localName, topic, mutedFilter) {
+            mutedMessages.apply(conversation.withLocalName(localName, topic != null), mutedFilter)
+        }
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
     // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
     val sharedMedia = LocalSharedMediaShapes.current
     val onEvent: (ChatEvent) -> Unit =
-        remember(viewModel, suggestedPostsViewModel, bookmarkViewModel, reminderViewModel, sharedMedia) {
-            sharedMedia.readyingOpenedMedia { event ->
-                when (event) {
-                    is SuggestedPostEvent -> {
-                        suggestedPostsViewModel.onEvent(event)
-                    }
+        remember(
+            viewModel,
+            suggestedPostsViewModel,
+            bookmarkViewModel,
+            reminderViewModel,
+            mutedWordsViewModel,
+            sharedMedia,
+        ) {
+            // A tap on a muted message's line goes to its own view model too (REQUIREMENTS.md FR-X21).
+            sharedMedia.readyingOpenedMedia(
+                mutedWordsViewModel.routing { event ->
+                    when (event) {
+                        is SuggestedPostEvent -> {
+                            suggestedPostsViewModel.onEvent(event)
+                        }
 
-                    is BookmarkEvent -> {
-                        viewModel.onEvent(ChatEvent.DismissMessageActions)
-                        bookmarkViewModel.onEvent(event)
-                    }
+                        is BookmarkEvent -> {
+                            viewModel.onEvent(ChatEvent.DismissMessageActions)
+                            bookmarkViewModel.onEvent(event)
+                        }
 
-                    is ReminderEvent -> {
-                        viewModel.onEvent(ChatEvent.DismissMessageActions)
-                        reminderViewModel.onEvent(event)
-                    }
+                        is ReminderEvent -> {
+                            viewModel.onEvent(ChatEvent.DismissMessageActions)
+                            reminderViewModel.onEvent(event)
+                        }
 
-                    else -> {
-                        viewModel.onEvent(event)
+                        else -> {
+                            viewModel.onEvent(event)
+                        }
                     }
-                }
-            }
+                },
+            )
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val sendsSilently by sendKeysViewModel.sendsSilently.collectAsStateWithLifecycle()
