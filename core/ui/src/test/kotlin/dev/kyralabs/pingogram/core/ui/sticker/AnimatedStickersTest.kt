@@ -305,10 +305,11 @@ class AnimatedStickersTest {
             val animation = checkNotNull(oneSlot.animation(FILE_ID))
             var shown = 0
             val draws = MutableStateFlow(0L)
-            val next = StickerPlayer(oneSlot, animation, 64, 64, draws) {
-                shown++
-                draws.value++
-            }
+            val next =
+                StickerPlayer(oneSlot, animation, 64, 64, draws) {
+                    shown++
+                    draws.value++
+                }
             val playing = launch { next.playOnScreen(FocusedWindow) { draws.value++ } }
             advanceTimeBy(PLAY_MILLIS)
 
