@@ -93,6 +93,9 @@ interface TdlibClient {
   and work in JVM tests, except their native `toString()`.
 - `PingogramApplication.onCreate()` calls `start()`, so TDLib starts in the background before
   the first frame (`docs/PERFORMANCE.md` §2).
+- The first account's client marks each step of its first start with an async trace section (`TdlibStartTrace`:
+  `tdlib.create`, `tdlib.parameters`, `tdlib.open`, `tdlib.stepQueued`), which `StartupBenchmark` reports; the
+  other accounts' clients, and the instances made after `Closed`, mark none.
 
 ## Parameters
 
