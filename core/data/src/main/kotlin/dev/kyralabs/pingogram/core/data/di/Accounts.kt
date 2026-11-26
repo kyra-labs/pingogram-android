@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.tdlib.AccountStorage
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.TdlibClientFactory
+import dev.kyralabs.pingogram.core.tdlib.TdlibDirectories
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -97,7 +98,8 @@ class Accounts internal constructor(
     private val bySlot = mutableMapOf<AccountSlot, Lazy<Account>>()
 
     // Changed only under this object's lock: slots that left the device and are not free again until their client
-    // closed and their storage is deleted, so an account added meanwhile never signs in on the closing client.
+    // closed and their storage is deleted, so an account added meanwhile never signs in on the closing client or on
+    // what a slot left behind ([readRegistry]).
     private val closing = mutableSetOf<Int>()
     private val loaded = CompletableDeferred<Unit>()
     private var registryRead = false
@@ -141,19 +143,41 @@ class Accounts internal constructor(
     /**
      * Reads which accounts there are, once, whichever of [start] and [active] comes first; then starts them in the
      * background, off the caller's thread, which may be the main thread asking for [active].
+     *
+     * The other slots' storage is deleted then, before [add] can take one: a logout cut short by the process's end
+     * leaves it behind, as the registry drops the slot before its client closed ([remove]) and [closing] is kept in
+     * memory only.
      */
     private fun readRegistry() {
-        val registry =
+        val (registry, left) =
             synchronized(this) {
                 if (registryRead) return
                 registryRead = true
-                registryFile.read().also {
-                    mutableRegistry.value = it
-                    mutableIsDemo.value = factory.isDemoOn()
-                }
+                val registry =
+                    registryFile.read().also {
+                        mutableRegistry.value = it
+                        mutableIsDemo.value = factory.isDemoOn()
+                    }
+                // The first slot's storage is the app's client's, which runs, signed in or not.
+                val others = (1 until AccountSlot.MAX_ACCOUNTS).filter { it !in registry.slots && it !in closing }
+                closing += others
+                registry to others
             }
         loaded.complete(Unit)
         appScope.launch(io) { registry.slots.forEach { account(AccountSlot(it)) } }
+        if (left.isNotEmpty()) appScope.launch(io) { left.forEach { deleteLeftStorage(AccountSlot(it)) } }
+    }
+
+    /**
+     * Deletes the storage [slot] kept though it left the device, if it kept any: deleting asks the Keystore too, which
+     * slots never used need not cost each start. Only then is the slot free again ([add]).
+     */
+    private fun deleteLeftStorage(slot: AccountSlot) {
+        try {
+            if (factory.hasStorage(slot)) factory.deleteStorage(slot)
+        } finally {
+            synchronized(this) { closing -= slot.index }
+        }
     }
 
     /** The first slot's account, which is always there, signed in or not; its client is the app's [TdlibClient]. */
@@ -395,6 +419,9 @@ interface AccountFactory {
         scope: CoroutineScope,
     ): AccountComponent
 
+    /** Whether [slot] has a TDLib directory, which holds its database and files. Blocking: off the main thread. */
+    fun hasStorage(slot: AccountSlot): Boolean
+
     /** Blocking: off the main thread. */
     fun deleteStorage(slot: AccountSlot)
 
@@ -422,6 +449,7 @@ class DefaultAccountFactory
         private val storage: AccountStorage,
         private val dependencies: Provider<AccountDependencies>,
         private val demo: DemoClients,
+        @param:ApplicationContext private val context: Context,
     ) : AccountFactory {
         override fun client(
             slot: AccountSlot,
@@ -433,6 +461,8 @@ class DefaultAccountFactory
             client: TdlibClient,
             scope: CoroutineScope,
         ): AccountComponent = DaggerAccountComponent.factory().create(slot, client, scope, dependencies.get())
+
+        override fun hasStorage(slot: AccountSlot) = TdlibDirectories.of(context.filesDir, slot).root.exists()
 
         override fun deleteStorage(slot: AccountSlot) = storage.delete(slot)
 

@@ -41,6 +41,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Ending a call or leaving a voice chat right as it started no longer closes the app.
 - A damaged animated sticker or custom emoji no longer closes the app, and no longer keeps other stickers from
   playing: it stays still instead.
+- An account whose logout was cut short, as Android closed the app, no longer leaves what it kept on the phone: it's
+  deleted the next time the app starts.
 - A zoomed-in photo stays on the part you were looking at after rotating the phone, and the status and navigation bar
   icons stay readable when dark mode switches while a photo, video or story is open.
 
