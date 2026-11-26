@@ -28,11 +28,12 @@ class MutedWords(
         chat: Chat,
         message: Message,
     ): Boolean {
-        val matcher = matcher ?: return false
         val type = chat.type
         val isGroup = type is ChatType.BasicGroup || (type is ChatType.Supergroup && !type.isChannel)
-        if (!isGroup || message.isOutgoing || message.containsUnreadMention) return false
-        return message.content.mutableText()?.let(matcher::firstMatch) != null
+        return isGroup &&
+            !message.isOutgoing &&
+            !message.containsUnreadMention &&
+            matcher?.let { words -> message.content.mutableText()?.let(words::firstMatch) } != null
     }
 }
 
