@@ -50,6 +50,43 @@ class ImmersiveBarsTest {
         assertEquals(listOf("hide", "show"), bars.changes)
     }
 
+    @Test
+    fun `dark mode switching on under the viewer leaves the dark theme's icons on leaving`() {
+        val bars = RecordingBars(lightStatusBars = true, lightNavigationBars = true, behavior = SWIPE)
+        val immersive = ImmersiveBars(bars)
+        immersive.enter()
+        immersive.themeIs(dark = false)
+
+        // The app sets the icons for its dark theme: light, as the viewer has them.
+        bars.lightStatusBars = false
+        bars.lightNavigationBars = false
+        immersive.themeIs(dark = true)
+        bars.changes.clear()
+        immersive.leave()
+
+        assertEquals(emptyList<String>(), bars.changes)
+    }
+
+    @Test
+    fun `dark mode switching off under the viewer turns the icons light again, and dark on leaving`() {
+        val bars = RecordingBars(lightStatusBars = false, lightNavigationBars = false, behavior = SWIPE)
+        val immersive = ImmersiveBars(bars)
+        immersive.enter()
+        immersive.themeIs(dark = true)
+
+        // The app sets the icons for its light theme: dark, over the viewer's dark background.
+        bars.lightStatusBars = true
+        bars.lightNavigationBars = true
+        bars.changes.clear()
+        immersive.themeIs(dark = false)
+        immersive.leave()
+
+        assertEquals(
+            listOf("status=false", "navigation=false", "status=true", "navigation=true"),
+            bars.changes,
+        )
+    }
+
     private class RecordingBars(
         lightStatusBars: Boolean,
         lightNavigationBars: Boolean,

@@ -47,8 +47,20 @@ internal class ZoomState {
     var zoom by mutableStateOf(Zoom.Fit)
         private set
 
-    /** The page and the fitted photo, from the page's layout; null until it is laid out. */
+    /**
+     * The page and the fitted photo, from the page's layout; null until it is laid out. Rotating the phone or resizing
+     * the window keeps the zoom, as the activity is not created again: the pan follows the photo's new size, so the
+     * same part of it stays in the middle, within the new bounds.
+     */
     var bounds: ZoomBounds? = null
+        set(value) {
+            val old = field
+            field = value
+            if (old != null && value != null && value != old && isZoomed) {
+                stopAnimation()
+                zoom = zoom.copy(pan = clampPan(panFor(zoom.pan, old, value), value, zoom.scale))
+            }
+        }
 
     /** Zoomed in beyond the fitted photo: drags pan it rather than turn the page or close the viewer. */
     val isZoomed: Boolean get() = zoom.scale > MIN_SCALE
@@ -208,4 +220,14 @@ internal suspend fun PointerInputScope.detectZoomGestures(
         } while (event.changes.any { it.pressed })
         if (panned) state.fling(tracker.calculateVelocity(), decay, scope)
     }
+}
+
+/** [pan] in [from] moved to [to]: the same point of the photo in the page's middle, at the photo's new size. */
+private fun panFor(
+    pan: Offset,
+    from: ZoomBounds,
+    to: ZoomBounds,
+): Offset {
+    if (from.content.width <= 0f || from.content.height <= 0f) return Offset.Zero
+    return Offset(pan.x * to.content.width / from.content.width, pan.y * to.content.height / from.content.height)
 }

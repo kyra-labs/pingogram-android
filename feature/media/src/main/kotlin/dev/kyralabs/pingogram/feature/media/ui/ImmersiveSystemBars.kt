@@ -18,9 +18,16 @@ import androidx.core.view.WindowInsetsControllerCompat
  * Each window attribute changes only where it differs ([ImmersiveBars]): each change is a window relayout, a binder
  * call to the window manager on the main thread, in the frames that open and close the viewer
  * (`docs/audit/performance-review-2026-11.md`, M3).
+ *
+ * Dark mode can switch while the viewer shows, as the activity is not created again: the app then sets the icons for
+ * its new theme ([appDark], the app's theme around the viewer's own dark one), in an effect of its own that runs
+ * before this one, and the viewer turns them light again.
  */
 @Composable
-internal fun ImmersiveSystemBars(hidden: Boolean) {
+internal fun ImmersiveSystemBars(
+    hidden: Boolean,
+    appDark: Boolean,
+) {
     val window = LocalActivity.current?.window ?: return
     val view = LocalView.current
     val bars = remember(window, view) { ImmersiveBars(ControllerBars(WindowCompat.getInsetsController(window, view))) }
@@ -28,6 +35,7 @@ internal fun ImmersiveSystemBars(hidden: Boolean) {
         bars.enter()
         onDispose { bars.leave() }
     }
+    LaunchedEffect(bars, appDark) { bars.themeIs(appDark) }
     LaunchedEffect(bars, hidden) { bars.hide(hidden) }
 }
 
@@ -45,27 +53,44 @@ internal interface SystemBars {
 /**
  * The viewer's system bars on [bars]: [enter] turns their icons light and lets a swipe show them for a while, changing
  * only what differs and remembering it; [leave] puts back only what [enter] changed, and shows the bars again only if
- * [hide] hid them.
+ * [hide] hid them. Once the app's theme changed ([themeIs]), which set the icons for the new theme, the icons turn
+ * light again, and what [leave] puts back of them is the new theme's.
  */
 internal class ImmersiveBars(
     private val bars: SystemBars,
 ) {
-    private val restore = mutableListOf<() -> Unit>()
+    private val restoreIcons = mutableListOf<() -> Unit>()
+    private var restoreBehavior: (() -> Unit)? = null
     private var hidden = false
+    private var dark: Boolean? = null
 
     fun enter() {
-        if (bars.lightStatusBars) {
-            bars.lightStatusBars = false
-            restore += { bars.lightStatusBars = true }
-        }
-        if (bars.lightNavigationBars) {
-            bars.lightNavigationBars = false
-            restore += { bars.lightNavigationBars = true }
-        }
+        lightIcons()
         val behavior = bars.behavior
         if (behavior != SWIPE_BEHAVIOR) {
             bars.behavior = SWIPE_BEHAVIOR
-            restore += { bars.behavior = behavior }
+            restoreBehavior = { bars.behavior = behavior }
+        }
+    }
+
+    /** The app's theme is [dark] now: a change since the last call means the app set the icons for its new theme. */
+    fun themeIs(dark: Boolean) {
+        val changed = this.dark != null && this.dark != dark
+        this.dark = dark
+        if (changed) {
+            restoreIcons.clear()
+            lightIcons()
+        }
+    }
+
+    private fun lightIcons() {
+        if (bars.lightStatusBars) {
+            bars.lightStatusBars = false
+            restoreIcons += { bars.lightStatusBars = true }
+        }
+        if (bars.lightNavigationBars) {
+            bars.lightNavigationBars = false
+            restoreIcons += { bars.lightNavigationBars = true }
         }
     }
 
@@ -77,8 +102,10 @@ internal class ImmersiveBars(
 
     fun leave() {
         hide(false)
-        restore.forEach { it() }
-        restore.clear()
+        restoreIcons.forEach { it() }
+        restoreIcons.clear()
+        restoreBehavior?.invoke()
+        restoreBehavior = null
     }
 
     private companion object {
