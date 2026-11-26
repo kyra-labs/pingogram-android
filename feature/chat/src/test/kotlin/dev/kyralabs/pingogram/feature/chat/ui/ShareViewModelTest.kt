@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.snapshots.Snapshot
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -283,6 +284,24 @@ class ShareViewModelTest : ChatViewModelHarness() {
             runCurrent()
 
             assertEquals(listOf("Ada"), search.chatQueries)
+        }
+
+    @Test
+    fun `a query finds a chat by its name on this phone, first`() =
+        runViewModelTest {
+            search.onSearchChats = { flowOf(Outcome.Success(persistentListOf(groupChat))) }
+            val viewModel = shareViewModel(localNames = mapOf(PRIVATE_CHAT to "Book club"))
+
+            send(viewModel, ShareEvent.QueryChanged("book"))
+            advanceTimeBy(DEBOUNCE + 1)
+            runCurrent()
+
+            assertEquals(
+                listOf(PRIVATE_CHAT, GROUP_CHAT),
+                viewModel.sheet.value!!
+                    .targets
+                    .map { it.chatId },
+            )
         }
 
     @Test

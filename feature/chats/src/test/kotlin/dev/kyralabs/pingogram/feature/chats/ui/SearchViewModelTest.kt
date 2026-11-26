@@ -284,15 +284,6 @@ class SearchViewModelTest {
         }
 
     @Test
-    fun `a name matches when each word typed starts one of its words`() {
-        assertTrue("Ada Lovelace".matchesWords("", Locale.US))
-        assertTrue("Ada Lovelace".matchesWords("LOVE", Locale.US))
-        assertTrue("Ada Lovelace".matchesWords("lov ad", Locale.US))
-        assertFalse("Ada Lovelace".matchesWords("velace", Locale.US))
-        assertFalse("Ada Lovelace".matchesWords("ada grace", Locale.US))
-    }
-
-    @Test
     fun `without top people or recent chats there is nothing to suggest`() =
         runTest {
             assertTrue(viewModel().suggestions.isEmpty)

@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.WriteAccess
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalNameChats
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.shownName
@@ -41,12 +42,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * The chats a sheet that picks chats offers (the forward sheet, `ChatForwarding`; the share sheet, `ShareViewModel`):
  * without a query Saved Messages first (created on the device if needed), then the main chat list in TDLib's order,
- * as far as it is loaded, whose next page [loadMore] loads; with a query ([setQuery]), the chats
- * [SearchRepository.searchChats] finds once it has not changed for [DEBOUNCE_MILLIS], the previous search cancelled.
+ * as far as it is loaded, whose next page [loadMore] loads; with a query ([setQuery]), the chats named on this phone
+ * to match it ([LocalNameChats]), then those [SearchRepository.searchChats] finds, once it has not changed for
+ * [DEBOUNCE_MILLIS], the previous search cancelled.
  * Either way only the chats the sheet's filter lets through, each once, as [ForwardTarget]s. [withContacts] adds the
  * private chats of the user's contacts after them ([SearchRepository.contacts], [SearchRepository.searchContacts]),
  * for a picker of people (a bot's keyboard button that asks for users). Runs in [scope], the view model's.
@@ -63,6 +66,7 @@ internal class ChatTargets(
 ) {
     private val query = MutableStateFlow("")
     private val pages = MutableStateFlow(PageLoad())
+    private val localNameChats = LocalNameChats(preferences.localNames, users, chats)
 
     /** What the search field holds now; it is searched once it has not changed for [DEBOUNCE_MILLIS]. */
     fun setQuery(text: String) {
@@ -177,20 +181,25 @@ internal class ChatTargets(
             }
         }
 
-    /** The chats [text] finds, local ones first; loading until the first answer, an error in place of none. */
+    /**
+     * The chats [text] finds, those named on this phone first, then local ones; loading until the first answer, an
+     * error in place of none.
+     */
     private fun searchChats(text: String): Flow<Found> =
-        search
-            .searchChats(text)
-            .combine(contacts { search.searchContacts(text) }) { result, people ->
-                when {
-                    result is Outcome.Success -> Found(result.value + people, isSearch = true)
+        combine(
+            search.searchChats(text),
+            flow { emit(localNameChats.matching(text, Locale.getDefault())) },
+            contacts { search.searchContacts(text) },
+        ) { result, named, people ->
+            when {
+                result is Outcome.Success -> Found(named + result.value + people, isSearch = true)
 
-                    // A failed search still shows the contacts it found.
-                    people.isNotEmpty() -> Found(people, isSearch = true)
+                // A failed search still shows the chats named on this phone and the contacts it found.
+                named.isNotEmpty() || people.isNotEmpty() -> Found(named + people, isSearch = true)
 
-                    else -> Found(emptyList(), isSearch = true, error = (result as Outcome.Failure).error)
-                }
-            }.onStart { emit(Found(emptyList(), isSearch = true, isLoading = true)) }
+                else -> Found(emptyList(), isSearch = true, error = (result as Outcome.Failure).error)
+            }
+        }.onStart { emit(Found(emptyList(), isSearch = true, isLoading = true)) }
 
     /** Whether a page of the main chat list loads, and whether TDLib has no more. */
     private data class PageLoad(

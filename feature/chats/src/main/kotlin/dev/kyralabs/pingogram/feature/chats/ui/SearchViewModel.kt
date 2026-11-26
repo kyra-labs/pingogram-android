@@ -10,10 +10,12 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.matchesWords
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
+import dev.kyralabs.pingogram.core.domain.repository.LocalNameChats
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
@@ -122,7 +124,7 @@ class SearchViewModel internal constructor(
     /**
      * The people the user writes to most, read once while the screen collects, for the header ([topPeople]).
      */
-    private val localNameChats = LocalNameChats(localChatNames, userRepository, chatRepository)
+    private val localNameChats = LocalNameChats(localChatNames.names, userRepository, chatRepository)
 
     private val topChats: Flow<List<Chat>> =
         flow { emit(searchRepository.topPeople().getOrNull().orEmpty()) }

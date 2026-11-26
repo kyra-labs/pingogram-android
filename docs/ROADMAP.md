@@ -266,7 +266,7 @@ Translations (the owner, on Weblate):
 - [ ] Brazilian Portuguese added
 
 Features, in this order:
-- [ ] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
+- [x] Notes and names on this phone: a private note on any chat, and a chat's own name for you, both in backups
 - [ ] Muted words: group messages with chosen words collapse into a line to tap open; never sponsored messages
 - [ ] Unanswered: private chats where the other person wrote last and nothing was answered for a chosen number of days,
   with Reply and Dismiss; it never sends anything
