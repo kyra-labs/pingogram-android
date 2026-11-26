@@ -22,6 +22,7 @@ class DefaultTdlibClientTest {
     private val native = FakeTdlibNative()
     private val parametersProvider = FakeParametersProvider()
     private val log = RecordingTdlibLog()
+    private val trace = RecordingStartTrace()
 
     private fun TestScope.client(
         logSettings: TdlibLogSettings = TdlibLogSettings(verbosity = 1, file = null),
@@ -33,6 +34,7 @@ class DefaultTdlibClientTest {
         log = log,
         scope = backgroundScope,
         updateBufferCapacity = updateBufferCapacity,
+        trace = trace,
     )
 
     /** A started client whose TDLib instance exists. */
@@ -268,6 +270,50 @@ class DefaultTdlibClientTest {
         }
 
     @Test
+    fun `traces each step of the first start, from start to the login step in authState`() =
+        runTest {
+            val client = client()
+            client.start()
+            assertEquals(listOf("+tdlib.create", "+tdlib.parameters"), trace.events)
+
+            runCurrent()
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+            runCurrent()
+            assertEquals(
+                listOf("+tdlib.create", "+tdlib.parameters", "-tdlib.parameters", "-tdlib.create", "+tdlib.open"),
+                trace.events,
+            )
+
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.ready()))
+            // On TDLib's thread, before the queue hands the step on.
+            assertEquals(listOf("-tdlib.open", "+tdlib.stepQueued"), trace.events.takeLast(2))
+            runCurrent()
+
+            assertEquals("-tdlib.stepQueued", trace.events.last())
+            assertEquals(AuthState.Ready, client.authState.value)
+        }
+
+    @Test
+    fun `traces only the first start, not a TDLib instance made after Closed`() =
+        runTest {
+            startedClient()
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+            runCurrent()
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitPhoneNumber()))
+            runCurrent()
+            val firstStart = trace.events.toList()
+
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.closed()))
+            runCurrent()
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitPhoneNumber()))
+            runCurrent()
+
+            assertEquals(8, firstStart.size)
+            assertEquals(firstStart, trace.events)
+        }
+
+    @Test
     fun `Closed starts a new TDLib client, which is asked for parameters again`() =
         runTest {
             startedClient()
@@ -359,6 +405,19 @@ class DefaultTdlibClientTest {
             val function: TdApi.Function<*>,
             val respond: (TdApi.Object) -> Unit,
         )
+    }
+
+    /** The sections begun (+) and ended (-), in order. */
+    private class RecordingStartTrace : TdlibStartTrace {
+        val events = mutableListOf<String>()
+
+        override fun begin(section: String) {
+            events += "+$section"
+        }
+
+        override fun end(section: String) {
+            events += "-$section"
+        }
     }
 
     private class FakeParametersProvider : TdlibParametersProvider {

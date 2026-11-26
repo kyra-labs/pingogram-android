@@ -40,8 +40,12 @@ from the first measurement on the owner's phone (`dumpsys meminfo` with one, two
   not progress; the client sets it as TDLib reports it, rather than waiting for the login steps' flow, which comes
   through the update router (§3) and `Default`, both busy at a cold start. Each state the splash waits for has an async
   trace section from the main view model's creation until it is known (`PG:loginKnown`, `PG:appearanceKnown`,
-  `PG:lockKnown`), which `StartupBenchmark` reports. The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over
-  the app's first frame and holds nothing back; the splash theme for the next start is handed to the system off the main
+  `PG:lockKnown`), which `StartupBenchmark` reports. The login state waits for TDLib's start in the first account, whose
+  steps have async sections too (`TdlibStartTrace`), which cold starts report: the client's creation with `libtdjni`'s
+  load (`tdlib.create`), the parameters with the database key's unwrap (`tdlib.parameters`, at the same time), TDLib
+  opening its database until it reports the login step (`tdlib.open`), and that step's wait in the update queue until
+  `authState` holds it (`tdlib.stepQueued`). The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over the
+  app's first frame and holds nothing back; the splash theme for the next start is handed to the system off the main
   thread.
 - Start-up binder calls the first frame does not need wait until the window drew it (`FirstFrameGate`; 3 s in a
   process that shows no activity): deleting the notification channels of accounts that left the device, and posting

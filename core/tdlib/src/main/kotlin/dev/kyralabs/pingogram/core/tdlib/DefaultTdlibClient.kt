@@ -24,6 +24,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -56,6 +57,7 @@ class DefaultTdlibClient internal constructor(
      * of stays closed and its storage can be deleted.
      */
     private val restartsAfterClose: () -> Boolean = { true },
+    private val trace: TdlibStartTrace = TdlibStartTrace.None,
 ) : TdlibClient {
     @Inject
     constructor(
@@ -70,6 +72,8 @@ class DefaultTdlibClient internal constructor(
         logSettings = { TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir)) },
         log = AndroidTdlibLog(config.isDebug),
         scope = clientScope(dispatcher, AndroidTdlibLog(config.isDebug)),
+        // The first account's start is the app's: StartupBenchmark measures it.
+        trace = TdlibStartTrace.Platform,
     )
 
     private val inbox = Channel<TdApi.Object>(Channel.UNLIMITED)
@@ -95,13 +99,27 @@ class DefaultTdlibClient internal constructor(
      */
     private val preparedParameters = AtomicReference<Deferred<TdApi.SetTdlibParameters>?>(null)
 
+    /** How far the first session's start is, for its trace sections ([TdlibStartTrace]). */
+    private val startPhase = AtomicInteger(START_IDLE)
+
     override fun start() {
         if (!started.compareAndSet(false, true)) return
-        preparedParameters.set(scope.async { parametersProvider.parameters() })
+        trace.begin(TdlibStartTrace.CREATE)
+        trace.begin(TdlibStartTrace.PARAMETERS)
+        preparedParameters.set(
+            scope.async {
+                try {
+                    parametersProvider.parameters()
+                } finally {
+                    trace.end(TdlibStartTrace.PARAMETERS)
+                }
+            },
+        )
         scope.launch { pumpUpdates() }
         scope.launch {
             configureLogging()
             session.value = newSession()
+            trace.end(TdlibStartTrace.CREATE)
         }
     }
 
@@ -132,7 +150,10 @@ class DefaultTdlibClient internal constructor(
         Session(
             native.createClient(
                 // UNLIMITED: trySend always succeeds, and in order.
-                onUpdate = { update -> inbox.trySend(update) },
+                onUpdate = { update ->
+                    traceStepReported(update)
+                    inbox.trySend(update)
+                },
                 onException = { error -> log.warn("A TDLib callback threw", error) },
             ),
         )
@@ -156,6 +177,17 @@ class DefaultTdlibClient internal constructor(
         }
     }
 
+    /** On TDLib's thread: the first login step after the first parameters ends [TdlibStartTrace.OPEN]. */
+    private fun traceStepReported(update: TdApi.Object) {
+        val state = (update as? TdApi.UpdateAuthorizationState)?.authorizationState ?: return
+        if (state !is TdApi.AuthorizationStateWaitTdlibParameters &&
+            startPhase.compareAndSet(START_OPENING, START_QUEUED)
+        ) {
+            trace.end(TdlibStartTrace.OPEN)
+            trace.begin(TdlibStartTrace.STEP_QUEUED)
+        }
+    }
+
     private fun applyAuthorizationState(state: TdApi.AuthorizationState) {
         val authState = AuthState.from(state)
         if (authState == null) {
@@ -164,6 +196,11 @@ class DefaultTdlibClient internal constructor(
         }
         log.debug { "Authorization state: $authState" }
         mutableAuthState.value = authState
+        if (state !is TdApi.AuthorizationStateWaitTdlibParameters &&
+            startPhase.compareAndSet(START_QUEUED, START_DONE)
+        ) {
+            trace.end(TdlibStartTrace.STEP_QUEUED)
+        }
         if (authState == AuthState.WaitTdlibParameters) {
             scope.launch { sendParameters() }
         } else if (authState == AuthState.Closed) {
@@ -174,7 +211,9 @@ class DefaultTdlibClient internal constructor(
 
     private suspend fun sendParameters() {
         val session = session.value ?: return
-        val parameters = preparedParameters.getAndSet(null)?.await() ?: parametersProvider.parameters()
+        val prepared = preparedParameters.getAndSet(null)
+        val parameters = prepared?.await() ?: parametersProvider.parameters()
+        if (prepared != null && startPhase.compareAndSet(START_IDLE, START_OPENING)) trace.begin(TdlibStartTrace.OPEN)
         val result = session.send(parameters)
         if (result !is TdResult.Failure) return
         val error = result.error
@@ -202,6 +241,12 @@ class DefaultTdlibClient internal constructor(
 
         /** `SetTdlibParameters` answers 401 when the database key cannot open the database (td_api.tl). */
         private const val WRONG_DATABASE_KEY = 401
+
+        // startPhase: the first parameters not sent yet, sent, their login step reported by TDLib, then applied.
+        private const val START_IDLE = 0
+        private const val START_OPENING = 1
+        private const val START_QUEUED = 2
+        private const val START_DONE = 3
 
         fun clientScope(
             dispatcher: CoroutineDispatcher,

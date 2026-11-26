@@ -17,7 +17,9 @@ import org.junit.runner.RunWith
  * Cold and warm start of the launcher activity, the startup budgets in `docs/PERFORMANCE.md` §1, with the app's own
  * startup sections (§2): Hilt's injection of the application (`app.inject`, cold starts only), the activity's
  * `onCreate` (`main.onCreate`), the wait for the settings behind the splash screen (`main.awaitSettings`), and when
- * each state the splash screen waits for became known (`PG:loginKnown`, `PG:appearanceKnown`, `PG:lockKnown`).
+ * each state the splash screen waits for became known (`PG:loginKnown`, `PG:appearanceKnown`, `PG:lockKnown`). Cold
+ * starts also report the steps of TDLib's start that the login state waits for (`tdlib.create`, `tdlib.parameters`,
+ * `tdlib.open`, `tdlib.stepQueued`).
  *
  * `CompilationNone` is the worst case, a fresh install with nothing precompiled. `BaselineProfile` is what users
  * get from the shipped Baseline Profile, so it fails until one has been generated (`:app:generateBaselineProfile`).
@@ -43,7 +45,11 @@ class StartupBenchmark {
     private fun metrics(startupMode: StartupMode) =
         buildList<Metric> {
             add(StartupTimingMetric())
-            if (startupMode == StartupMode.COLD) add(TraceSectionMetric(APP_INJECT))
+            if (startupMode == StartupMode.COLD) {
+                add(TraceSectionMetric(APP_INJECT))
+                // A warm start finds TDLib started.
+                TDLIB_START.forEach { add(TraceSectionMetric(it)) }
+            }
             add(TraceSectionMetric(ACTIVITY_CREATE))
             add(TraceSectionMetric(AWAIT_SETTINGS))
             SPLASH_STATES.forEach { add(TraceSectionMetric(it)) }
@@ -77,3 +83,6 @@ private const val APP_INJECT = "app.inject"
 private const val ACTIVITY_CREATE = "main.onCreate"
 private const val AWAIT_SETTINGS = "main.awaitSettings"
 private val SPLASH_STATES = listOf("PG:loginKnown", "PG:appearanceKnown", "PG:lockKnown")
+
+// The sections of :core:tdlib's TdlibStartTrace: where PG:loginKnown's wait goes.
+private val TDLIB_START = listOf("tdlib.create", "tdlib.parameters", "tdlib.open", "tdlib.stepQueued")
