@@ -13,7 +13,6 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.backup.SignInRestoreOffer
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
-import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.AutomaticBackups
 import dev.kyralabs.pingogram.core.notifications.BirthdayReminderAlarms
@@ -25,6 +24,7 @@ import dev.kyralabs.pingogram.core.notifications.StorageOptimization
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
+import dev.kyralabs.pingogram.startup.FirstFrameSettings
 import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.startup.asyncTraceSection
 import dev.kyralabs.pingogram.ui.NavigationLabelWidths
@@ -117,11 +117,11 @@ class PingogramApplication :
     lateinit var messageRepository: dagger.Lazy<MessageRepository>
 
     /**
-     * The Appearance settings, read as the app starts: they and the passcode lock's, in the same file, are what the
-     * splash screen waits for, and the first activity finds them in memory (docs/PERFORMANCE.md §2).
+     * The settings the splash screen waits for with the passcode lock's, read as the app starts and kept, so every
+     * activity finds them in memory (docs/PERFORMANCE.md §2). Lazy: made off the main thread.
      */
     @Inject
-    lateinit var appearanceRepository: dagger.Lazy<AppearanceRepository>
+    lateinit var firstFrameSettings: dagger.Lazy<FirstFrameSettings>
 
     /** Where work that must not hold up the first frame runs: the `Default` dispatcher. */
     @Inject
@@ -149,9 +149,14 @@ class PingogramApplication :
             super.onCreate()
             accounts.start()
         }
-        // Reads the settings file while the activity is created: the splash screen waits for it (main.awaitSettings).
+        // Reads the settings file while the activity is created, once per process: the splash screen waits for it
+        // (main.awaitSettings).
         applicationScope.launch {
-            asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
+            asyncTraceSection(StartupTrace.READ_SETTINGS) {
+                val settings = firstFrameSettings.get()
+                settings.appearance.first { it != null }
+                settings.screenPrivacy.first { it != null }
+            }
         }
         // Parses the font and makes its typefaces while the activity is created, instead of in the first frame, then
         // measures the navigation bar's labels with them, which the first frame would otherwise do.

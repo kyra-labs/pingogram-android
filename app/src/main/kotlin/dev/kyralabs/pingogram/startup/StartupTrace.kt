@@ -27,7 +27,7 @@ internal object StartupTrace {
     const val AWAIT_SETTINGS = "main.awaitSettings"
 
     /**
-     * The settings file's first read, which `PingogramApplication` starts so the first activity finds the settings in
+     * The settings file's first read, which `PingogramApplication` starts so every activity finds the settings in
      * memory: an async section, as it runs on a background dispatcher.
      */
     const val READ_SETTINGS = "app.readSettings"
