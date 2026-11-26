@@ -35,6 +35,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -117,7 +118,8 @@ internal class ChatMessageActions(
      * [showsPicker] and the sheet has one, with "Open link" and "Copy link" first for the [link] of its text the long
      * press landed on, and "Add to calendar" and "Open in maps" for what the device finds in its text ([findInText],
      * asked only now, beside TDLib); then asks for the pictures of the custom emoji it shows. The sheet does not wait
-     * for the device's classifier, which can take a while: what it finds joins the open sheet once found.
+     * for the device's classifier, which can take a while, nor for the language detection that "Translate" needs:
+     * what they find joins the open sheet once found.
      */
     fun show(
         messageId: Long,
@@ -146,7 +148,8 @@ internal class ChatMessageActions(
                         val quick = reactionOptions(available.top.take(MAX_QUICK_REACTIONS), reactionsMessage)
                         val picker = reactionPicker(available, quick.size, reactionsMessage)
                         val actions = context.actionsOf(message, properties.value, inThread)
-                        val translation = translate.await()
+                        // What needs no detection ("Show original", a summary's actions) is usually in by now.
+                        val translation = if (translate.isCompleted) translate.await() else emptyList()
                         val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
@@ -160,18 +163,48 @@ internal class ChatMessageActions(
                             )
                         mutableSheet.value = sheet
                         launch { loadCustomEmojiPictures(sheet) }
-                        val findings = found.await()
-                        if (findings.actions.isNotEmpty()) {
-                            mutableSheet.update { open ->
-                                open?.takeIf { it.messageId == messageId }?.copy(
-                                    actions = sheetActions(link, actions, translation, findings),
-                                    findings = findings,
-                                ) ?: open
-                            }
-                        }
+                        joinLater(sheet, actions, translation, translate, found)
                     }
                 }
             }
+    }
+
+    /**
+     * Adds to the open [sheet], which shows [actions] and [translation], what answers after it opened: the
+     * translation's actions ([translate], once the device detected the language) and what the classifier finds
+     * ([found]).
+     */
+    private fun CoroutineScope.joinLater(
+        sheet: MessageActionsSheet,
+        actions: List<MessageAction>,
+        translation: List<MessageAction>,
+        translate: Deferred<List<MessageAction>>,
+        found: Deferred<TextFindings>,
+    ) {
+        var translated = translation
+        var findings = sheet.findings
+        val join = {
+            mutableSheet.update { open ->
+                open?.takeIf { it.messageId == sheet.messageId }?.copy(
+                    actions = sheetActions(sheet.link, actions, translated, findings),
+                    findings = findings,
+                ) ?: open
+            }
+        }
+        launch {
+            val answered = translate.await()
+            if (answered != translated) {
+                translated = answered
+                join()
+            }
+        }
+        launch {
+            val answered = found.await()
+            if (answered.actions.isNotEmpty()) {
+                findings = answered
+                join()
+            }
+        }
     }
 
     /** Shows the open sheet's reactions picker if [shown] and it has one, else its quick reactions and actions. */

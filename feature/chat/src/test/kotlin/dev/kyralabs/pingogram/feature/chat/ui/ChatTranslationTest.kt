@@ -106,6 +106,24 @@ class ChatTranslationTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `the actions open without waiting for the language's detection, and Translate joins them`() =
+        runViewModelTest {
+            val detection = CompletableDeferred<Unit>()
+            languageDetector.held = detection
+            val viewModel = translating()
+
+            val shown = actionsOf(viewModel, 2)
+            assertTrue(MessageAction.Copy in shown)
+            assertFalse(MessageAction.Translate in shown)
+
+            detection.complete(Unit)
+            runCurrent()
+
+            val actions = checkNotNull(viewModel.state.messageActions).actions
+            assertEquals(actions.indexOf(MessageAction.Copy) + 1, actions.indexOf(MessageAction.Translate))
+        }
+
+    @Test
     fun `offers no translation for a message in a language the user reads, Pingogram's or the system's`() =
         runViewModelTest {
             languageDetector.preferred = listOf("en-US", "de-DE")
