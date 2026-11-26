@@ -169,8 +169,8 @@ class Accounts internal constructor(
     }
 
     /**
-     * Deletes the storage [slot] kept though it left the device, if it kept any (deleting checks the Keystore too, which
-     * slots that were never used need not cost each start); only then is the slot free again ([add]).
+     * Deletes the storage [slot] kept though it left the device, if it kept any: deleting asks the Keystore too, which
+     * slots never used need not cost each start. Only then is the slot free again ([add]).
      */
     private fun deleteLeftStorage(slot: AccountSlot) {
         try {
