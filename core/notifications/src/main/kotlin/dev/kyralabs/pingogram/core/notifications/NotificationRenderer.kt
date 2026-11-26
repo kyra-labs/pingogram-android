@@ -287,6 +287,7 @@ internal class AccountNotificationRenderer(
     private val focus = parts.focus
     private val firstFrame = parts.firstFrame
     private val shortcuts = parts.shortcuts.of(account.slot)
+    private val localNames = localNamesOf(account, parts)
     private val factory =
         ConversationNotificationFactory(
             context = context,
@@ -295,7 +296,7 @@ internal class AccountNotificationRenderer(
             groupRepository = account.groups,
             avatars = AvatarIcons(context, account.files, parts.appearance, parts.ioDispatcher),
             slot = account.slot,
-            localNames = localNamesOf(account, parts),
+            localNames = localNames,
             mutedWords = parts.mutedWords,
         )
     private val manager = NotificationManagerCompat.from(context)
@@ -310,6 +311,8 @@ internal class AccountNotificationRenderer(
     private var lockedChatIds = emptySet<Long>()
     private var staleCancelled = false
     private var accountName: String? = null
+
+    private val nameChanges = ChatNameChanges()
 
     /** What shows again after being hidden was seen before: it does not alert ([render]). */
     private var quiet = false
@@ -329,13 +332,14 @@ internal class AccountNotificationRenderer(
         account.chatLock.lockedChatIds,
         accountNames.distinctUntilChanged(),
         combine(account.auth.authStep, show) { step, shows -> step.isSignedOut() || !shows }.distinctUntilChanged(),
-    ) { active, locked, name, hidden -> Rendering(active, locked, name, hidden) }
+        localNames?.names?.distinctUntilChanged() ?: flowOf(emptyMap()),
+    ) { active, locked, name, hidden, names -> Rendering(active, locked, name, hidden, names) }
         .collect {
             if (it.hidden) {
                 clear()
                 quiet = true
             } else {
-                render(it.active, it.locked, it.name)
+                render(it)
                 quiet = false
             }
         }
@@ -345,6 +349,7 @@ internal class AccountNotificationRenderer(
         val locked: Set<Long>,
         val name: String?,
         val hidden: Boolean,
+        val names: Map<Long, String>,
     )
 
     /**
@@ -357,42 +362,46 @@ internal class AccountNotificationRenderer(
             if (shown[groupId]?.visible == true) post(group, alert = false)
         }
 
-    private suspend fun render(
-        active: ActiveNotifications,
-        locked: Set<Long>,
-        name: String?,
-    ) = mutex.withLock {
-        latest = active
-        val renamed = name != accountName
-        accountName = name
-        // Chats locked since the last render: their conversation shortcuts would name them.
-        val newlyLocked = locked - lockedChatIds
-        lockedChatIds = locked
-        if (newlyLocked.isNotEmpty()) shortcuts.remove(newlyLocked)
-        val lockedBefore = shown.values.any { it.locked }
-        var change = LockedChange(changed = renamed)
-        (shown.keys - active.groups.keys).forEach { groupId ->
-            if (shown.remove(groupId)?.locked == true) change += LockedChange(changed = true)
-            manager.cancel(groupTag, groupId)
-        }
-        for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
-            change += render(group, active.openChatIds, locked, renamed)
-        }
-        // The one notification of the locked chats, while any has a group.
-        if (change.changed) {
-            when {
-                shown.values.any { it.locked } -> {
-                    notify(lockedTag, LOCKED_ID, builder.locked(change.alert, account.slot, accountName))
-                }
+    private suspend fun render(rendering: Rendering) =
+        mutex.withLock {
+            val active = rendering.active
+            val locked = rendering.locked
+            latest = active
+            val renamed = rendering.name != accountName
+            accountName = rendering.name
+            // Chats locked since the last render: their conversation shortcuts would name them.
+            val newlyLocked = locked - lockedChatIds
+            lockedChatIds = locked
+            if (newlyLocked.isNotEmpty()) shortcuts.remove(newlyLocked)
+            // Chats whose name on this phone changed, or went with the setting: their notifications post again, and
+            // so their shortcuts take the new name. A shortcut Android keeps without a notification goes instead.
+            val relabeled = nameChanges.since(rendering.names)
+            val gone = relabeled - active.groups.values.mapTo(HashSet()) { it.chatId } - locked
+            if (gone.isNotEmpty()) shortcuts.forget(gone)
+            val lockedBefore = shown.values.any { it.locked }
+            var change = LockedChange(changed = renamed)
+            (shown.keys - active.groups.keys).forEach { groupId ->
+                if (shown.remove(groupId)?.locked == true) change += LockedChange(changed = true)
+                manager.cancel(groupTag, groupId)
+            }
+            for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
+                change += render(group, active.openChatIds, locked, renamed || group.chatId in relabeled)
+            }
+            // The one notification of the locked chats, while any has a group.
+            if (change.changed) {
+                when {
+                    shown.values.any { it.locked } -> {
+                        notify(lockedTag, LOCKED_ID, builder.locked(change.alert, account.slot, accountName))
+                    }
 
-                lockedBefore -> {
-                    manager.cancel(lockedTag, LOCKED_ID)
+                    lockedBefore -> {
+                        manager.cancel(lockedTag, LOCKED_ID)
+                    }
                 }
             }
+            updateSummary()
+            if (active.isRestored && !staleCancelled) cancelStale()
         }
-        updateSummary()
-        if (active.isRestored && !staleCancelled) cancelStale()
-    }
 
     /**
      * Posts, cancels or holds back [group] as it changed since it was last rendered (or posts it again where the

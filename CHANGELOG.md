@@ -43,6 +43,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   playing: it stays still instead.
 - An account whose logout was cut short, as Android closed the app, no longer leaves what it kept on the phone: it's
   deleted the next time the app starts.
+- Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
 - A zoomed-in photo stays on the part you were looking at after rotating the phone, and the status and navigation bar
   icons stay readable when dark mode switches while a photo, video or story is open.
 
