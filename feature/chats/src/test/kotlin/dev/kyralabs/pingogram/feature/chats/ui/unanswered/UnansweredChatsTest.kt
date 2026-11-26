@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.FakeChatRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
 import dev.kyralabs.pingogram.feature.chats.ui.FakeWallClock
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -122,6 +123,18 @@ class UnansweredChatsTest {
             chats.setChats(ChatListType.Main, privateChat(ADA, ago = 3.days, messageId = NEWER))
 
             assertEquals(listOf(ADA), ids())
+        }
+
+    @Test
+    fun `the header offers the page while someone waits and its button is on`() =
+        runTest {
+            assertEquals(false, unanswered.offeredAt(flowOf(NOW)).first())
+
+            lists()
+            assertEquals(true, unanswered.offeredAt(flowOf(NOW)).first())
+
+            settings.settings.value = UnansweredSettings(showButton = false)
+            assertEquals(false, unanswered.offeredAt(flowOf(NOW)).first())
         }
 
     @Test

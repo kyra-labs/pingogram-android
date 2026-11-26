@@ -82,6 +82,8 @@ internal val ChatListUiState.folderBar: FolderBarState
  * @property account the signed-in user, for the header's avatar; null until TDLib named them.
  * @property hasDrafts a main or archived chat among those loaded has a draft the chat list shows: the header offers
  *   Drafts (`REQUIREMENTS.md` FR-X16). Locked chats never count.
+ * @property hasUnanswered the header offers Unanswered (`REQUIREMENTS.md` FR-X22): its button is on and a private chat
+ *   among those loaded waits for the user's answer.
  */
 @Immutable
 data class ChatListSummary(
@@ -91,6 +93,7 @@ data class ChatListSummary(
     /** The chats Catch-up would go through (`CatchUpChats`). */
     val catchUpChats: Int = 0,
     val hasDrafts: Boolean = false,
+    val hasUnanswered: Boolean = false,
 ) {
     /** The status line shows: something is unread. */
     val hasStatus: Boolean get() = unreadChats > 0 || mentionChats > 0

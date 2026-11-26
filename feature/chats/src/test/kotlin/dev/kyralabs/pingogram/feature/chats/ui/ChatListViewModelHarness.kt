@@ -15,12 +15,15 @@ import dev.kyralabs.pingogram.core.testing.FakeKeywordHitRepository
 import dev.kyralabs.pingogram.core.testing.FakeLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakeMutedWordsRepository
 import dev.kyralabs.pingogram.core.testing.FakeShownChatListRepository
+import dev.kyralabs.pingogram.core.testing.FakeUnansweredDismissalRepository
+import dev.kyralabs.pingogram.core.testing.FakeUnansweredSettingsRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
 import dev.kyralabs.pingogram.feature.chats.ui.catchup.CatchUpChats
 import dev.kyralabs.pingogram.feature.chats.ui.keyword.KeywordAlertChats
+import dev.kyralabs.pingogram.feature.chats.ui.unanswered.UnansweredChats
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -63,6 +66,8 @@ abstract class ChatListViewModelHarness {
     protected val timePatterns = FakeTimePatterns()
     protected val localNames = FakeLocalChatNamesRepository()
     protected val mutedWords = FakeMutedWordsRepository()
+    protected val unanswered = FakeUnansweredSettingsRepository()
+    protected val unansweredDismissals = FakeUnansweredDismissalRepository()
     protected val savedState = SavedStateHandle()
 
     @BeforeEach
@@ -104,6 +109,7 @@ abstract class ChatListViewModelHarness {
         communityRepository = communities,
         forumTopicRepository = forumTopics,
         catchUpChats = CatchUpChats(chats, chatListSettings, chatLock),
+        unansweredChats = UnansweredChats(chats, users, chatLock, unansweredDismissals, unanswered, clock),
         keywordChats = KeywordAlertChats(chats, keywordHits, keywordAlerts, chatLock),
         shownLists = shownLists,
         localChatNames = localNames,

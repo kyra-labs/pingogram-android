@@ -196,6 +196,7 @@ internal fun ChatListTopBar(
                         if (LocalChatSwipes.current.draftsButton) {
                             HeaderDraftsButton(summary, onClick = { actions?.openDrafts?.invoke() })
                         }
+                        HeaderUnansweredButton(summary, onClick = { actions?.openUnanswered?.invoke() })
                         HeaderSearchButton(actions)
                         HeaderAccountButton(summary, actions)
                     }
