@@ -48,6 +48,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   take every one of them instead of only those still near.
 - A zoomed-in photo stays on the part you were looking at after rotating the phone, and the status and navigation bar
   icons stay readable when dark mode switches while a photo, video or story is open.
+- The Conversation widget keeps showing a chat's newest messages, and new ones as they come, while you read far back
+  in that chat in the app.
 - The daily digest and birthday reminders no longer go missing when Android held them past their time, for example
   while the phone slept: they still come once Android lets them.
 

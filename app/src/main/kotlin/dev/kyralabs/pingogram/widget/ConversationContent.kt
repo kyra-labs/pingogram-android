@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -64,6 +65,24 @@ data class WidgetMessage(
     val sender: String?,
     val text: String,
 )
+
+/**
+ * [chat]'s newest messages for its Conversation widget, newest first: [history]'s while it reaches the chat's newest
+ * message. While it does not, as the user reads further back in the app (the history keeps a bounded window) or opened
+ * the chat at an older message, the ones [kept] from when it did, with the chat's last message joining them as new ones
+ * come.
+ */
+internal fun newestMessages(
+    chat: Chat,
+    history: ChatHistory,
+    kept: List<Message>,
+    limit: Int = MAX_MESSAGES,
+): List<Message> =
+    if (history.reachedEnd) {
+        history.messages.take(limit)
+    } else {
+        (listOfNotNull(chat.lastMessage) + kept).distinctBy { it.id }.sortedByDescending { it.id }.take(limit)
+    }
 
 /**
  * [chat]'s newest [limit] [messages] (newest first, as the history keeps them) for its Conversation widget, oldest

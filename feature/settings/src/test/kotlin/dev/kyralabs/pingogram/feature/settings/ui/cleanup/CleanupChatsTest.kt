@@ -3,9 +3,11 @@ package dev.kyralabs.pingogram.feature.settings.ui.cleanup
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatPosition
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -94,6 +96,42 @@ class CleanupChatsTest {
         }
 
     @Test
+    fun `a group or channel joined or created within the months chosen is never suggested`() =
+        runTest {
+            val groups =
+                listOf(
+                    chat(GROUP, type = ChatType.BasicGroup(1)),
+                    chat(NEW_GROUP, type = ChatType.BasicGroup(2)),
+                    chat(NEW_CHANNEL, type = ChatType.Supergroup(supergroupId = 3, isChannel = true)),
+                    chat(OLD_CHANNEL, type = ChatType.Supergroup(supergroupId = 4, isChannel = true)),
+                )
+            val joinDates =
+                ChatJoinDates(
+                    supergroups =
+                        flowOf(
+                            mapOf(
+                                3L to supergroup(3, joined = NOW.minusSeconds(DAY)),
+                                4L to supergroup(4, joined = JUNE.minusSeconds(DAY * 30)),
+                            ),
+                        ),
+                    memberSince = { chatId, _ -> if (chatId == NEW_GROUP) NOW.minusSeconds(DAY) else null },
+                )
+            val sources =
+                CleanupSources(
+                    chats = flowOf(groups),
+                    users = flowOf(emptyMap()),
+                    me = flowOf(ME),
+                    locked = flowOf(emptySet()),
+                    openings = openings,
+                    joinDates = joinDates,
+                )
+
+            val suggested = CleanupChats(sources, settings, clock).chats.first().map { it.id }
+
+            assertEquals(setOf(GROUP, OLD_CHANNEL), suggested.toSet())
+        }
+
+    @Test
     fun `turned off, nothing is suggested`() =
         runTest {
             settings.value = CleanupSettings(enabled = false)
@@ -131,6 +169,22 @@ class CleanupChatsTest {
         permissions = ChatPermissions.All,
     )
 
+    private fun supergroup(
+        id: Long,
+        joined: Instant,
+    ) = Supergroup(
+        id = id,
+        usernames = persistentListOf(),
+        memberCount = 0,
+        status = ChatMemberStatus.Member,
+        isChannel = true,
+        isForum = false,
+        isVerified = false,
+        isScam = false,
+        isFake = false,
+        joinedDate = joined.epochSecond,
+    )
+
     private fun user(
         id: Long,
         isSupport: Boolean = false,
@@ -162,6 +216,9 @@ class CleanupChatsTest {
         const val SECRET = 6L
         const val ME = 1L
         const val SUPPORT = 8L
+        const val NEW_GROUP = -101L
+        const val NEW_CHANNEL = -102L
+        const val OLD_CHANNEL = -103L
         const val DAY = 86_400L
         val BEGUN: Instant = Instant.parse("2026-01-01T00:00:00Z")
         val JUNE: Instant = Instant.parse("2026-06-01T00:00:00Z")

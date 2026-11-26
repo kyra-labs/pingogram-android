@@ -48,8 +48,12 @@ class DailyDigestWorker
         override suspend fun doWork(): Result {
             val current = settings.settings.first()
             if (current.enabled) {
-                post(read())
-                scheduleNext(current.time)
+                // Tomorrow's digest is scheduled even when today's cannot be read: the chain never breaks.
+                try {
+                    post(read())
+                } finally {
+                    scheduleNext(current.time)
+                }
             }
             return Result.success()
         }
