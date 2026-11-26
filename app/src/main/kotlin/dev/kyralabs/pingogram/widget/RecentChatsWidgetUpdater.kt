@@ -5,10 +5,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
@@ -20,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
@@ -221,12 +224,12 @@ class RecentChatsWidgetUpdater
                 val unread = chatRepository.unreadMessageCount(ChatListType.Main).map { it.unreadUnmutedCount }
                 combine(
                     combine(chats, unread, ::Pair),
-                    combine(account.users.users, account.localNames.names, ::Pair),
+                    combine(account.users.users, account.localNames.names, account.mutedWords, ::Triple),
                     account.users.myUserId,
                     account.groups.supergroups,
                     loaded,
-                ) { (list, unreadMessages), (users, localNames), me, supergroups, done ->
-                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot, localNames)
+                ) { (list, unreadMessages), (users, localNames, muted), me, supergroups, done ->
+                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot, localNames, muted)
                     val shown = list.take(MAX_CHATS)
                     if (rows.isEmpty() && !done) {
                         null
@@ -303,6 +306,7 @@ internal data class WidgetAccount(
     val avatars: AvatarIcons,
     val messages: MessageRepository,
     val localNames: LocalChatNamesRepository,
+    val mutedWords: Flow<MutedWords> = flowOf(MutedWords(MutedWordSettings())),
 )
 
 /** Whether this chat is a forum, whose avatar is a rounded square. */
@@ -319,6 +323,7 @@ internal class WidgetAccounts
         private val appearance: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
         private val notesAndNames: NotesAndNamesRepository,
+        private val mutedWords: MutedWordsRepository,
     ) {
         private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
 
@@ -341,6 +346,7 @@ internal class WidgetAccounts
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
                     messages = repositories.messageRepository(),
                     localNames = NotesLocalChatNamesRepository(repositories.chatNoteRepository(), notesAndNames),
+                    mutedWords = mutedWords.settings.distinctUntilChanged().map(::MutedWords),
                 )
             }
     }

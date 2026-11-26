@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.widget
 
 import android.app.Application
+import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -8,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.MutedWordSettings
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -45,6 +47,21 @@ class ConversationContentTest {
                 WidgetMessage(3, "You", "Third"),
                 WidgetMessage(4, "Rahul", "Fourth"),
             ),
+            shown,
+        )
+    }
+
+    @Test
+    fun `a group message with a muted word says so, the user's own does not`() {
+        val group = chat(GROUP, ChatType.Supergroup(supergroupId = 7, isChannel = false))
+        val history =
+            listOf(message(GROUP, 2, ME, "Spoiler, sorry", isOutgoing = true), message(GROUP, 1, MEERA, "Spoiler"))
+        val muted = MutedWords(MutedWordSettings(enabled = true, words = persistentListOf("spoiler")))
+
+        val shown = widgetMessages(group, history, users, ME, resources, mutedWords = muted)
+
+        assertEquals(
+            listOf(WidgetMessage(1, "Meera", "Message with a muted word"), WidgetMessage(2, "You", "Spoiler, sorry")),
             shown,
         )
     }
