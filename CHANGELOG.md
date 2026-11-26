@@ -37,6 +37,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Returning to the app after Android closed its screen opens it sooner: the theme and privacy settings stay in memory
   instead of being read again.
 
+### Fixed
+- Incognito keyboard now also covers a voice chat's comment field and its "Add people" search.
+
 ## [2.5.0] - 2026-11-25
 
 ### Added
