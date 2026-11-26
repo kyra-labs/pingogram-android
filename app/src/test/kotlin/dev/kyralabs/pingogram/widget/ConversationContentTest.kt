@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.widget
 import android.app.Application
 import dev.kyralabs.pingogram.core.domain.keyword.MutedWords
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -14,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -63,6 +65,24 @@ class ConversationContentTest {
         assertEquals(
             listOf(WidgetMessage(1, "Meera", "Message with a muted word"), WidgetMessage(2, "You", "Spoiler, sorry")),
             shown,
+        )
+    }
+
+    @Test
+    fun `while the history is further back than the newest messages, the widget keeps them, and new ones join`() {
+        val group = chat(GROUP, ChatType.Supergroup(supergroupId = 7, isChannel = false))
+        val newest = listOf(40L, 30L, 20L, 10L).map { message(GROUP, it, MEERA, "Message $it") }
+        val kept = newestMessages(group, ChatHistory(newest.toImmutableList(), reachedStart = true), emptyList())
+        // The user scrolled back past the history's bound: it holds older messages only.
+        val older = listOf(3L, 2L, 1L).map { message(GROUP, it, RAHUL, "Old $it") }
+        val farBack = ChatHistory(older.toImmutableList(), reachedStart = true, reachedEnd = false)
+        val arrived = message(GROUP, 50, RAHUL, "New")
+
+        assertEquals(listOf(40L, 30L, 20L), kept.map { it.id })
+        assertEquals(listOf(40L, 30L, 20L), newestMessages(group, farBack, kept).map { it.id })
+        assertEquals(
+            listOf(50L, 40L, 30L),
+            newestMessages(group.copy(lastMessage = arrived), farBack, kept).map { it.id },
         )
     }
 

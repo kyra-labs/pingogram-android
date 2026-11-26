@@ -6,10 +6,13 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
@@ -196,7 +199,10 @@ class ConversationWidgetUpdater
             }.distinctUntilChanged()
                 .flatMapLatest { state -> state?.let { flowOf(it) } ?: chat(key, account) }
 
-        /** The chat's header and newest messages as they change, its history loaded first (again on [retry]). */
+        /**
+         * The chat's header and newest messages as they change, its history loaded first (again on [retry]). The newest
+         * messages shown are kept while the history does not reach them ([newestMessages]).
+         */
         @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
         private fun chat(
             key: ConversationKey,
@@ -204,6 +210,7 @@ class ConversationWidgetUpdater
         ): Flow<ConversationContent> =
             channelFlow {
                 val load = MutableStateFlow<Outcome<Unit>?>(null)
+                var kept = emptyList<Message>()
                 launch {
                     retries.collectLatest {
                         load.value = null
@@ -230,22 +237,17 @@ class ConversationWidgetUpdater
                         }
 
                         else -> {
-                            val access =
-                                chat.writeAccess(
-                                    chat.userIn(users),
-                                    (chat.type as? ChatType.BasicGroup)?.let { basicGroups[it.basicGroupId] },
-                                    (chat.type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] },
-                                )
+                            val access = chat.writeAccessIn(users, basicGroups, supergroups)
                             val resources = context.resources
-                            val title = widgetTitle(chat, users, me, resources, localNames)
+                            val newest = newestMessages(chat, history, kept).also { kept = it }
                             Frame(
                                 ConversationContent.Chat(
                                     chatId = key.chatId,
                                     slot = key.slot,
-                                    title = title,
+                                    title = widgetTitle(chat, users, me, resources, localNames),
                                     unreadCount = chat.unreadCount,
                                     isMuted = chat.isMuted,
-                                    messages = widgetMessages(chat, history.messages, users, me, resources, muted),
+                                    messages = widgetMessages(chat, newest, users, me, resources, muted),
                                     canReply = access == WriteAccess.Allowed,
                                     isSecret = chat.type is ChatType.Secret,
                                 ),
@@ -286,6 +288,18 @@ class ConversationWidgetUpdater
 /** No messages yet, while the newest page is still on its way or failed: nothing to show but loading or the error. */
 private fun ChatHistory.isEmptyBecause(loaded: Outcome<Unit>?): Boolean =
     messages.isEmpty() && !reachedStart && (loaded == null || loaded is Outcome.Failure)
+
+/** Whether the user may write in [this], from its user's, basic group's or supergroup's info. */
+private fun Chat.writeAccessIn(
+    users: Map<Long, User>,
+    basicGroups: Map<Long, BasicGroup>,
+    supergroups: Map<Long, Supergroup>,
+): WriteAccess =
+    writeAccess(
+        userIn(users),
+        (type as? ChatType.BasicGroup)?.let { basicGroups[it.basicGroupId] },
+        (type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] },
+    )
 
 private fun Chat.userIn(users: Map<Long, User>) =
     when (val type = type) {
