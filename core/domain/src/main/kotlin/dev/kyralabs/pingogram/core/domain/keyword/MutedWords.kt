@@ -32,16 +32,30 @@ class MutedWords(
         message: Message,
         me: User?,
     ): Boolean {
-        val type = chat.type
-        val isGroup = type is ChatType.BasicGroup || (type is ChatType.Supergroup && !type.isChannel)
         val text = message.content.mutableText()
-        return isGroup &&
+        return chat.isGroup &&
             !message.isOutgoing &&
             !message.containsUnreadMention &&
             text != null &&
             !text.mentionsUser(me?.id, me?.usernames.orEmpty()) &&
             matcher?.firstMatch(text.text) != null
     }
+
+    /**
+     * Whether a push-only message of [chat], of which TDLib keeps nothing but [text], has a muted word: in a group,
+     * not the user's own ([isOutgoing]), and never one of a notification group of mentions ([mentionsMe]: TDLib files
+     * a mention of the user, or a reply to them, there).
+     */
+    fun mutesPush(
+        chat: Chat,
+        text: String,
+        isOutgoing: Boolean,
+        mentionsMe: Boolean,
+    ): Boolean = chat.isGroup && !isOutgoing && !mentionsMe && matcher?.firstMatch(text) != null
+
+    /** A basic group, or a supergroup that is no channel. */
+    private val Chat.isGroup: Boolean
+        get() = type.let { it is ChatType.BasicGroup || (it is ChatType.Supergroup && !it.isChannel) }
 }
 
 /** The text muted words look in: a text message's text, or a caption. */
