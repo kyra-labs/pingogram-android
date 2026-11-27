@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeProxyAutoSwitchRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,7 +41,9 @@ class ProxiesViewModelTest {
     }
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
-    private fun TestScope.viewModel() = ProxiesViewModel(TdlibProxyRepository(client)).also { runCurrent() }
+    private val autoSwitch = FakeProxyAutoSwitchRepository()
+
+    private fun TestScope.viewModel() = ProxiesViewModel(TdlibProxyRepository(client), autoSwitch).also { runCurrent() }
 
     private val ProxiesViewModel.content get() = uiState.value as ProxiesUiState.Content
 
@@ -88,6 +91,20 @@ class ProxiesViewModelTest {
             runCurrent()
 
             assertEquals(listOf("fast.example", "slow.example", "gone.example"), servers())
+        }
+
+    @Test
+    fun `switching to a working proxy is off at first, and turning it on saves and shows`() =
+        runTest {
+            proxies.add("a.example")
+            val viewModel = viewModel()
+            assertFalse(viewModel.content.autoSwitch)
+
+            viewModel.onEvent(ProxiesEvent.SetAutoSwitch(true))
+            runCurrent()
+
+            assertTrue(autoSwitch.enabled.value)
+            assertTrue(viewModel.content.autoSwitch)
         }
 
     @Test
