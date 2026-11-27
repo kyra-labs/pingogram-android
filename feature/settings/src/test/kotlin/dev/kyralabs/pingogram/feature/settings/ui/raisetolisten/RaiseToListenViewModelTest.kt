@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeListenSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
@@ -114,6 +115,7 @@ class RaiseToListenViewModelTest {
                 ChatsPageViewModel(
                     FakeComposerSettingsRepository(),
                     playbackSettings,
+                    FakeListenSettingsRepository(),
                     ChatListOptions(
                         FakeChatListSettingsRepository(),
                         FakeCompactChatListRepository(),

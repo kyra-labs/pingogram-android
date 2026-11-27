@@ -1209,6 +1209,8 @@
     <string name="settings_confirm_bot_commands_summary">Asks before a command picked from a bot’s menu is sent</string>
     <string name="settings_undo_redo">Undo and redo</string>
     <string name="settings_undo_redo_summary">In the message box’s menu, while there is something to undo or redo</string>
+    <string name="settings_listen">Listen to messages</string>
+    <string name="settings_listen_summary">Reads a message, or a channel’s unread posts, aloud with a voice on this phone</string>
 
     <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
     <string name="settings_section_network">Network</string>

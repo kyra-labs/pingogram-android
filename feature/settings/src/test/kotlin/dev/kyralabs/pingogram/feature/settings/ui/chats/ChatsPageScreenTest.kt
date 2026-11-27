@@ -255,6 +255,19 @@ class ChatsPageScreenTest {
     }
 
     @Test
+    fun `listen to messages is a switch, on at first, whose tap turns it off`() {
+        setScreen()
+
+        switchRow(R.string.settings_listen)
+            .performScrollTo()
+            .assert(toggleState(ToggleableState.On))
+            .assert(hasText(string(R.string.settings_listen_summary)))
+            .performClick()
+
+        assertEquals(listOf(ChatsPageEvent.SetListens(false)), events)
+    }
+
+    @Test
     fun `the drafts button row is a switch, on at first, whose tap turns it off`() {
         setScreen()
 

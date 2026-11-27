@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.TranscriptionSettings
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.ListenSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.domain.repository.TranscriptionSettingsRepository
@@ -38,8 +39,9 @@ sealed interface ChatsPageUiState {
      * play at the ear ([raiseToListen]), whether they skip their silences ([skipSilence]), the chat list's swipes,
      * which the Swipe actions row sums up ([chatList]), whether voice messages are transcribed as they show
      * ([transcribeAutomatically]; null where the phone cannot transcribe), whether the chat list is compact
-     * ([compactChatList], FR-X19), whether the user's notes and names for chats show ([notesAndNames], FR-X20), and
-     * whether the header offers Unanswered and after how many days ([unanswered], FR-X22).
+     * ([compactChatList], FR-X19), whether the user's notes and names for chats show ([notesAndNames], FR-X20),
+     * whether the header offers Unanswered and after how many days ([unanswered], FR-X22), and whether messages can be
+     * listened to ([listens], FR-X26).
      */
     data class Content(
         val sendKeys: SendKeys = SendKeys(),
@@ -53,6 +55,7 @@ sealed interface ChatsPageUiState {
         val compactChatList: Boolean = false,
         val notesAndNames: Boolean = true,
         val unanswered: UnansweredSettings = UnansweredSettings(),
+        val listens: Boolean = true,
     ) : ChatsPageUiState
 }
 
@@ -103,6 +106,11 @@ sealed interface ChatsPageEvent {
         val days: Int,
     ) : ChatsPageEvent
 
+    /** "Listen to messages" turned on or off. */
+    data class SetListens(
+        val enabled: Boolean,
+    ) : ChatsPageEvent
+
     /** "Raise to listen" turned on or off. */
     data class SetRaiseToListen(
         val enabled: Boolean,
@@ -131,7 +139,8 @@ sealed interface ChatsPageEffect {
  * The Chats page (`REQUIREMENTS.md` FR-S2, owner decision 2026-11-19): how chats behave, apart from how they look.
  * It shows what is saved, so a change that cannot be saved does not show, and says so in a snackbar. The settings keep
  * the keys they had on Appearance ([ComposerSettingsRepository], [PlaybackSettingsRepository],
- * [TranscriptionSettingsRepository], whose switch the transcription page shares where [VoiceTranscriber] can work).
+ * [TranscriptionSettingsRepository], whose switch the transcription page shares where [VoiceTranscriber] can work);
+ * Listen to messages has its own ([ListenSettingsRepository]).
  */
 @HiltViewModel
 class ChatsPageViewModel
@@ -139,6 +148,7 @@ class ChatsPageViewModel
     constructor(
         private val composerSettingsRepository: ComposerSettingsRepository,
         private val playbackSettingsRepository: PlaybackSettingsRepository,
+        private val listenSettingsRepository: ListenSettingsRepository,
         private val chatListOptions: ChatListOptions,
         private val transcriptionSettingsRepository: TranscriptionSettingsRepository,
         private val transcriber: VoiceTranscriber,
@@ -147,7 +157,7 @@ class ChatsPageViewModel
             combine<
                 ComposerChoices,
                 RaiseToListenSettings,
-                Boolean,
+                Pair<Boolean, Boolean>,
                 ChatListChoices,
                 TranscriptionSettings,
                 ChatsPageUiState,
@@ -160,10 +170,10 @@ class ChatsPageViewModel
                     ::ComposerChoices,
                 ),
                 playbackSettingsRepository.raiseToListen,
-                playbackSettingsRepository.skipSilence,
+                combine(playbackSettingsRepository.skipSilence, listenSettingsRepository.enabled, ::Pair),
                 chatListOptions.choices,
                 transcriptionSettingsRepository.settings,
-            ) { composer, raise, skipSilence, chatList, transcription ->
+            ) { composer, raise, (skipSilence, listens), chatList, transcription ->
                 val automatic = transcription.automatic.takeIf { transcriber.isAvailable }
                 ChatsPageUiState.Content(
                     composer.sendKeys,
@@ -177,6 +187,7 @@ class ChatsPageViewModel
                     chatList.compact,
                     chatList.notesAndNames,
                     chatList.unanswered,
+                    listens,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatsPageUiState.Loading)
 
@@ -225,6 +236,10 @@ class ChatsPageViewModel
 
                 is ChatsPageEvent.SetUnansweredAfterDays -> {
                     chatListOptions.unanswered.setAfterDays(event.days)
+                }
+
+                is ChatsPageEvent.SetListens -> {
+                    listenSettingsRepository.setEnabled(event.enabled)
                 }
 
                 is ChatsPageEvent.SetRaiseToListen -> {
