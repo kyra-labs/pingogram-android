@@ -23,6 +23,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   your accounts; a tap opens Catch-up. Turn it on and choose its time in Settings → Notifications.
 - Cleanup suggestions: Settings → Chats → Cleanup suggestions shows, one at a time, chats you haven't opened on this
   phone for 3 months (or 1, 6 or 12), to mute, archive, leave or keep. Nothing happens unless you choose it.
+- Privacy screen: Settings → Privacy and security → Privacy screen blurs message text and photos in chats until you
+  tap one, for reading in public, and keeps message text off the home-screen widgets. It stays on until you turn it
+  off.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.
