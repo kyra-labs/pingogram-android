@@ -275,7 +275,7 @@ Features, in this order:
 - [x] Cleanup suggestions: chats not opened for a chosen time, with Mute, Archive or Leave decided one by one
 - [x] A Quick Settings tile that blurs message text and photos until tapped
 - [x] Listen to posts: Android's on-device text-to-speech reads a message or a channel's unread posts aloud
-- [ ] Proxies: added from a QR code, their speed tested, and a working one chosen when the current one fails
+- [x] Proxies: added from a QR code, their speed tested, and a working one chosen when the current one fails
 - [ ] Two-line compact chat list rows, if the owner wants them after trying the one-line rows
 
 ## v2.7.0

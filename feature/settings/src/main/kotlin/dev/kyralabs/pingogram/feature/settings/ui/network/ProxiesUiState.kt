@@ -19,11 +19,13 @@ sealed interface ProxiesUiState {
      * @property proxies the proxies the user added, each with how it answered its last check.
      * @property busy a change is on its way to TDLib; the rows wait meanwhile.
      * @property deleting the proxy whose removal waits for the user's confirmation; null when none does.
+     * @property autoSwitch "Switch to a working proxy" is on (`REQUIREMENTS.md` FR-X27).
      */
     data class Content(
         val proxies: ImmutableList<ProxyItem>,
         val busy: Boolean = false,
         val deleting: SavedProxy? = null,
+        val autoSwitch: Boolean = false,
     ) : ProxiesUiState {
         /** A proxy is in use: TDLib connects through it rather than directly. */
         val isProxyOn: Boolean get() = proxies.any { it.proxy.isEnabled }
@@ -55,6 +57,11 @@ sealed interface ProxyCheck {
 sealed interface ProxiesEvent {
     /** The "Use proxy" switch: on connects through the proxy used last, off connects directly. */
     data class SetProxyOn(
+        val on: Boolean,
+    ) : ProxiesEvent
+
+    /** "Switch to a working proxy" turned on or off. */
+    data class SetAutoSwitch(
         val on: Boolean,
     ) : ProxiesEvent
 

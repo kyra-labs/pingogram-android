@@ -166,6 +166,7 @@ private fun ProxiesContent(
                     onClick = { onEvent(ProxiesEvent.CheckAgain) },
                 )
             }
+            item(key = AUTO_SWITCH) { shapes -> AutoSwitchItem(state.autoSwitch, shapes, onEvent) }
         }
     }
     if (state.proxies.isEmpty()) return
@@ -318,3 +319,4 @@ private fun pingText(ping: Duration): String {
 // The keys of the proxy group's rows.
 private const val ADD_PROXY = "add"
 private const val CHECK_AGAIN = "check"
+private const val AUTO_SWITCH = "auto-switch"

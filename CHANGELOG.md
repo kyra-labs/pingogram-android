@@ -29,6 +29,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Listen to posts: "Listen" in a message's menu, and "Listen to unread posts" in a channel's menu, read them aloud with
   a voice on your phone, at your voice message speed, without marking anything read. It stops when you leave the
   chat; Settings → Chats can turn it off.
+- Proxies: every account uses the same proxies, a new one included; scanning a proxy's QR code opens it; "Test all"
+  sorts your proxies by speed; and "Switch to a working proxy" (off by default) moves every account to your quickest
+  other proxy when the one in use stops connecting, and says which.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.

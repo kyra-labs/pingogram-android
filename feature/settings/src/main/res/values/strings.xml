@@ -1240,6 +1240,8 @@
     <string name="settings_proxy_details">%1$s · %2$s</string>
     <string name="settings_proxy_check_again">Check again</string>
     <string name="settings_proxy_test_all">Test all</string>
+    <string name="settings_proxy_auto_switch">Switch to a working proxy</string>
+    <string name="settings_proxy_auto_switch_summary">When the proxy in use stops connecting, use the quickest of your other proxies, on every account</string>
     <!-- The more-options button of a proxy, for screen readers. %1$s is the proxy's name or address. -->
     <string name="settings_proxy_options">Options for %1$s</string>
     <string name="settings_proxy_edit">Edit</string>

@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Proxy
 import dev.kyralabs.pingogram.core.domain.model.SavedProxy
+import dev.kyralabs.pingogram.core.domain.repository.ProxyAutoSwitchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -37,6 +38,7 @@ class ProxiesViewModel
     @Inject
     constructor(
         private val repository: ProxyRepository,
+        private val autoSwitch: ProxyAutoSwitchRepository,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<ProxiesUiState>(ProxiesUiState.Loading)
         val uiState: StateFlow<ProxiesUiState> = mutableUiState.asStateFlow()
@@ -50,15 +52,29 @@ class ProxiesViewModel
         private var saved: ImmutableList<SavedProxy> = persistentListOf()
         private var loadJob: Job? = null
         private var sortsBySpeed = false
+        private var autoSwitchOn = false
 
         init {
             load()
+            viewModelScope.launch {
+                autoSwitch.enabled.collect { on ->
+                    autoSwitchOn = on
+                    updateContent { it.copy(autoSwitch = on) }
+                }
+            }
         }
 
         fun onEvent(event: ProxiesEvent) {
             when (event) {
                 is ProxiesEvent.SetProxyOn -> {
                     setProxyOn(event.on)
+                }
+
+                is ProxiesEvent.SetAutoSwitch -> {
+                    viewModelScope.launch {
+                        val error = (autoSwitch.setEnabled(event.on) as? Outcome.Failure)?.error
+                        if (error != null) effectChannel.trySend(ProxiesEffect.ShowError(error))
+                    }
                 }
 
                 is ProxiesEvent.Use -> {
@@ -126,7 +142,7 @@ class ProxiesViewModel
                     }
 
                     else -> {
-                        ProxiesUiState.Content(items)
+                        ProxiesUiState.Content(items, autoSwitch = autoSwitchOn)
                     }
                 }
             }
