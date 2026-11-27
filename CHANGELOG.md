@@ -21,6 +21,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   answered for 3 days, with Reply and Dismiss. It never sends anything; Settings → Chats sets the days or hides it.
 - Daily digest: one quiet notification each morning with your unread chats, mentions and the day's reminders across
   your accounts; a tap opens Catch-up. Turn it on and choose its time in Settings → Notifications.
+- Cleanup suggestions: Settings → Chats → Cleanup suggestions shows, one at a time, chats you haven't opened on this
+  phone for 3 months (or 1, 6 or 12), to mute, archive, leave or keep. Nothing happens unless you choose it.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.

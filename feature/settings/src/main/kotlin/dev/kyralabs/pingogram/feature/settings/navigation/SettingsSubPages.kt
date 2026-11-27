@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
+import dev.kyralabs.pingogram.core.navigation.CleanupRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.ConnectedWebsitesRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
@@ -43,6 +44,7 @@ internal val SettingsSubPage.route: Any
             SettingsSubPage.SwipeActions -> SwipeActionsRoute
             SettingsSubPage.ChatsShownFirst -> ChatsShownFirstRoute
             SettingsSubPage.MutedWords -> MutedWordsRoute
+            SettingsSubPage.Cleanup -> CleanupRoute
             SettingsSubPage.Snippets -> SnippetsRoute
             SettingsSubPage.Transcription -> TranscriptionSettingsRoute
             SettingsSubPage.RaiseToListen -> RaiseToListenRoute

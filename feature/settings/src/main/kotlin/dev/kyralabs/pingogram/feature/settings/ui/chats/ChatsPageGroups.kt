@@ -138,7 +138,7 @@ internal fun VoiceMessagesGroup(
 /**
  * "Chat list": the rows of Swipe actions, with the two swipes' actions as its summary, and of Chats shown first, then
  * "Drafts button", Unanswered's rows (`REQUIREMENTS.md` FR-X22), "Compact chat list" (FR-X19), "Notes and names on
- * this phone" (FR-X20) and the row of Muted words (FR-X21).
+ * this phone" (FR-X20), and the rows of Muted words (FR-X21) and Cleanup suggestions (FR-X24).
  */
 @Composable
 internal fun ChatListBehaviorGroup(
@@ -195,6 +195,9 @@ internal fun ChatListBehaviorGroup(
                 shapes,
                 pages.onOpenMutedWords,
             )
+        }
+        item { shapes ->
+            PageRow(R.string.settings_cleanup, R.string.settings_cleanup_summary, shapes, pages.onOpenCleanup)
         }
     }
 }
