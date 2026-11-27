@@ -22,8 +22,6 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.LocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
-import dev.kyralabs.pingogram.core.domain.repository.MutedWordsRepository
-import dev.kyralabs.pingogram.core.domain.repository.NotesAndNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotesLocalChatNamesRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -224,12 +222,14 @@ class RecentChatsWidgetUpdater
                 val unread = chatRepository.unreadMessageCount(ChatListType.Main).map { it.unreadUnmutedCount }
                 combine(
                     combine(chats, unread, ::Pair),
-                    combine(account.users.users, account.localNames.names, account.mutedWords, ::Triple),
+                    combine(account.users.users, account.localNames.names, account.texts(), ::Triple),
                     account.users.myUserId,
                     account.groups.supergroups,
                     loaded,
-                ) { (list, unreadMessages), (users, localNames, muted), me, supergroups, done ->
-                    val rows = widgetChats(list, users, me, context.resources, MAX_CHATS, slot, localNames, muted)
+                ) { (list, unreadMessages), (users, localNames, texts), me, supergroups, done ->
+                    val rows =
+                        widgetChats(list, users, me, context.resources, MAX_CHATS, slot, localNames, texts.muted)
+                            .map { if (texts.hidden) it.copy(preview = "") else it }
                     val shown = list.take(MAX_CHATS)
                     if (rows.isEmpty() && !done) {
                         null
@@ -295,7 +295,8 @@ class RecentChatsWidgetUpdater
 /**
  * What the widgets read of one account: its login, chats, users, groups (which supergroups are forums, and where the
  * user may write), locked chats, avatars from its files, a chat's messages for the Conversation widget, and the names
- * given on this phone (`REQUIREMENTS.md` FR-X20).
+ * given on this phone (`REQUIREMENTS.md` FR-X20), muted words (FR-X21), and whether the privacy screen keeps message
+ * text off the home screen ([hidesText], FR-X25).
  */
 internal data class WidgetAccount(
     val auth: AuthRepository,
@@ -307,7 +308,21 @@ internal data class WidgetAccount(
     val messages: MessageRepository,
     val localNames: LocalChatNamesRepository,
     val mutedWords: Flow<MutedWords> = flowOf(MutedWords(MutedWordSettings())),
+    val hidesText: Flow<Boolean> = flowOf(false),
 )
+
+/** How a widget words its messages: their [muted] words, and whether the privacy screen [hidden] their text. */
+internal data class WidgetTexts(
+    val muted: MutedWords,
+    val hidden: Boolean,
+)
+
+/** The messages [messages] makes, unless the privacy screen keeps their text off the home screen (FR-X25): none. */
+internal fun WidgetTexts.shown(messages: () -> List<WidgetMessage>): List<WidgetMessage> =
+    if (hidden) emptyList() else messages()
+
+/** The account's [WidgetTexts], as they change. */
+internal fun WidgetAccount.texts(): Flow<WidgetTexts> = combine(mutedWords, hidesText, ::WidgetTexts)
 
 /** Whether this chat is a forum, whose avatar is a rounded square. */
 private fun Chat.isForumIn(supergroups: Map<Long, Supergroup>): Boolean =
@@ -322,8 +337,7 @@ internal class WidgetAccounts
         graphs: AccountGraphs,
         private val appearance: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
-        private val notesAndNames: NotesAndNamesRepository,
-        private val mutedWords: MutedWordsRepository,
+        private val texts: WidgetTextSettings,
     ) {
         private val made = ConcurrentHashMap<AccountRepositories, WidgetAccount>()
 
@@ -345,8 +359,12 @@ internal class WidgetAccounts
                     chatLock = repositories.chatLockRepository(),
                     avatars = AvatarIcons(context, repositories.fileRepository(), appearance, ioDispatcher),
                     messages = repositories.messageRepository(),
-                    localNames = NotesLocalChatNamesRepository(repositories.chatNoteRepository(), notesAndNames),
-                    mutedWords = mutedWords.settings.distinctUntilChanged().map(::MutedWords),
+                    localNames = NotesLocalChatNamesRepository(repositories.chatNoteRepository(), texts.notesAndNames),
+                    mutedWords =
+                        texts.mutedWords.settings
+                            .distinctUntilChanged()
+                            .map(::MutedWords),
+                    hidesText = texts.privacyScreen.enabled.distinctUntilChanged(),
                 )
             }
     }

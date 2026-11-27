@@ -75,6 +75,7 @@ class ConversationWidgetUpdaterTest {
     private val client = FakeTdlibClient()
     private val accounts = MutableStateFlow<Map<Int, WidgetAccount>>(emptyMap())
     private val localNames = FakeLocalChatNamesRepository()
+    private val privacyScreen = MutableStateFlow(false)
 
     private fun TestScope.account(lockedChats: Set<Long>): WidgetAccount {
         val context = RuntimeEnvironment.getApplication()
@@ -100,6 +101,7 @@ class ConversationWidgetUpdaterTest {
                     SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
                 ),
             localNames = localNames,
+            hidesText = privacyScreen,
         )
     }
 
@@ -194,6 +196,22 @@ class ConversationWidgetUpdaterTest {
             settle()
 
             assertEquals("Ally", (updater.currentContent(KEY) as ConversationContent.Chat).title)
+        }
+
+    @Test
+    fun `behind the privacy screen no message text reaches the home screen, and it says so`() =
+        runTest {
+            privacyScreen.value = true
+            history()
+            val updater = updater(FakeWidgets(KEY))
+            chat()
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(KEY) as ConversationContent.Chat
+            assertEquals("Alice", content.title)
+            assertTrue(content.isHidden)
+            assertEquals(emptyList<WidgetMessage>(), content.messages)
         }
 
     @Test

@@ -116,6 +116,7 @@ private fun ColumnScope.Conversation(chat: ConversationContent.Chat) {
         Spacer(GlanceModifier.height(ConversationTokens.gap))
         when {
             chat.isSecret -> Line(context.getString(R.string.widget_secret_chat))
+            chat.isHidden -> Line(context.getString(R.string.widget_privacy_screen))
             shown.isEmpty() -> Line(context.getString(R.string.widget_conversation_empty))
             else -> shown.forEach { MessageLine(it, inline = wide) }
         }
