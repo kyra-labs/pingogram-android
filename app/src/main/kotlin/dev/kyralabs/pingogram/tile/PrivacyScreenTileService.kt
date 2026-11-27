@@ -18,8 +18,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The privacy screen's tile in Quick Settings (`REQUIREMENTS.md` FR-X25, owner decisions 2026-11-25): the same switch
  * as Privacy and security → "Privacy screen", on or off, "On" or "Off" below its name. A tap turns it the other way
- * ([PrivacyScreenToggle]); it stays so until turned again. Android draws the tile; it follows the setting while Quick
- * Settings shows it, and stops with it.
+ * ([PrivacyScreenToggle]); it stays so until turned again. Turning it on works from the lock screen; turning it off
+ * asks to unlock the phone first, so whoever holds a locked phone cannot. Android draws the tile; it follows the
+ * setting while Quick Settings shows it, and stops with it.
  */
 @AndroidEntryPoint
 class PrivacyScreenTileService : TileService() {
@@ -48,8 +49,15 @@ class PrivacyScreenTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        val toggle = PrivacyScreenToggle(repository)
         // The change shows through the setting's flow; one that cannot be saved leaves the tile as it was.
-        scope.launch { PrivacyScreenToggle(repository).toggle() }
+        scope.launch {
+            if (toggle.needsUnlock(isLocked = isLocked)) {
+                unlockAndRun { scope.launch { toggle.toggle() } }
+            } else {
+                toggle.toggle()
+            }
+        }
     }
 
     private fun show(on: Boolean) {
