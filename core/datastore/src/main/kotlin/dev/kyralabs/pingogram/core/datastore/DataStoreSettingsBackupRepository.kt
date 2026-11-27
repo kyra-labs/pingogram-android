@@ -100,6 +100,7 @@ internal val BackedUpSettings: Set<String> =
         "appearance.chat.wallpaper_seed.",
         "auto_download.",
         "calls.data_saving",
+        "chat.listen",
         "chat.double_tap.incoming",
         "chat.double_tap.outgoing",
         "chat.double_tap.incoming_action",
