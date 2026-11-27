@@ -23,9 +23,10 @@ processor `androidx.hilt:hilt-compiler`, 1.4.0, the same `androidxHilt` version 
   `RECEIVE_BOOT_COMPLETED`. Before Android 12 expedited work runs in WorkManager's foreground service, which holds a
   wake lock, so `WAKE_LOCK` and `FOREGROUND_SERVICE` stay, limited to API 30 (`maxSdkVersion`); from Android 12 on it
   runs as an expedited job. `ACCESS_NETWORK_STATE` serves network constraints only (the work has none: TDLib queues
-  requests while offline and sends them once connected, even after a restart), and `RECEIVE_BOOT_COMPLETED` only
-  reschedules work after a reboot (WorkManager schedules non-persisted jobs on API 23+, and its reboot receiver is
-  disabled there): both are removed. `AppManifestTest` pins the result.
+  requests while offline and sends them once connected, even after a restart), and is declared again for Pingogram's
+  own use. `RECEIVE_BOOT_COMPLETED` reschedules work after a reboot (WorkManager schedules non-persisted jobs on API
+  23+): it stays (owner decision 2026-11-26), as the Daily digest and birthday reminders are work scheduled ahead,
+  which would otherwise wait until the app is next opened. `AppManifestTest` pins the result.
 - The work never retries: TDLib accepts the request locally and carries it out itself.
 
 ## Consequences

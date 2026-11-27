@@ -57,6 +57,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   language, instead of the menu waiting for that.
 - The daily digest and birthday reminders no longer go missing when Android held them past their time, for example
   while the phone slept: they still come once Android lets them.
+- The daily digest and birthday reminders come after the phone restarts without opening the app first. The app now
+  asks Android to tell it when the phone has started.
 
 ## [2.5.0] - 2026-11-25
 
