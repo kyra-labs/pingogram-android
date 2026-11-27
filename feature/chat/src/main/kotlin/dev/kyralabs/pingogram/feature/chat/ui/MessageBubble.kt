@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -69,6 +70,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
 import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.currentPrivacyCover
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyReveal
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.rememberPrivacyHiding
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
@@ -158,7 +165,6 @@ internal fun MessageBubbleRow(
     reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val highlight = rememberJumpHighlightStyle()
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
@@ -167,15 +173,16 @@ internal fun MessageBubbleRow(
     val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reminder = LocalReminderChips.current?.labelFor(bubble.id)
+    val privacy = rememberPrivacyHiding(bubble, selecting = selection != null)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .jumpHighlight(resources.jump, bubble, highlight)
+                .jumpHighlight(resources.jump, bubble, rememberJumpHighlightStyle())
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription = bubbleDescription(strings, bubble, reminder)
+                    contentDescription = privacy.spoken(strings, bubble) ?: bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
@@ -184,6 +191,7 @@ internal fun MessageBubbleRow(
                             true
                         }
                         customActions =
+                            privacy.actions(strings) +
                             bubbleActions(
                                 resources = strings,
                                 bubble = bubble,
@@ -198,9 +206,7 @@ internal fun MessageBubbleRow(
                 },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (check != null) {
-            SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
-        }
+        check?.let { SelectionCheck(it.isSelected, reveal?.let { r -> Modifier.selectionReveal(r) } ?: Modifier) }
         BubbleRowContent(
             bubble = bubble,
             fileState = fileState,
@@ -212,6 +218,7 @@ internal fun MessageBubbleRow(
             modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
             focus = focus,
             showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
+            privacy = privacy,
         )
     }
 }
@@ -250,9 +257,10 @@ internal fun BubbleRowContent(
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
     showsShare: Boolean = false,
-) {
+    privacy: PrivacyHiding = PrivacyHiding.None,
+) = CompositionLocalProvider(LocalPrivacyHidden provides privacy.hidden) {
     Row(
-        modifier = modifier,
+        modifier = modifier.privacyReveal(privacy),
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -482,7 +490,13 @@ private fun PaddedBubble(
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { LinkPreviewBlock(it, style.colors) } },
+                {
+                    bubble.linkPreview?.let {
+                        Box(
+                            Modifier.privacyCover(currentPrivacyCover()),
+                        ) { LinkPreviewBlock(it, style.colors) }
+                    }
+                },
                 { if (bubble.showsTime) BubbleMeta(bubble, style.colors) },
             ),
         modifier = modifier.background(style.colors.container, shape),
@@ -531,7 +545,13 @@ private fun MediaBubble(
                 },
                 { if (captionless && bubble.showsTime) OverlayMeta(bubble) },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { LinkPreviewBlock(it, colors) } },
+                {
+                    bubble.linkPreview?.let {
+                        Box(
+                            Modifier.privacyCover(currentPrivacyCover()),
+                        ) { LinkPreviewBlock(it, colors) }
+                    }
+                },
                 { if (!captionless && bubble.showsTime) BubbleMeta(bubble, colors) },
             ),
         modifier =
@@ -657,7 +677,12 @@ private fun BubbleText(
         Text(
             text = text,
             // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
-            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint).linkTarget(textLayout),
+            modifier =
+                Modifier
+                    .privacyCover(currentPrivacyCover())
+                    .then(blocksModifier)
+                    .customEmoji(customEmoji, blocks, tint)
+                    .linkTarget(textLayout),
             color = content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
@@ -665,7 +690,7 @@ private fun BubbleText(
     } else {
         Text(
             text = text,
-            modifier = Modifier.linkTarget(textLayout),
+            modifier = Modifier.privacyCover(currentPrivacyCover()).linkTarget(textLayout),
             color = style.colors.content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },

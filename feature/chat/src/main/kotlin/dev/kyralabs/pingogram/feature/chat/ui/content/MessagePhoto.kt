@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
 import dev.kyralabs.pingogram.feature.chat.ui.requestedState
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -73,7 +74,7 @@ internal fun MessagePhoto(
             maxHeight = sizes.mediaMaxHeight,
             minSize = sizes.mediaMinSize,
         )
-    val hidden = content.hasSpoiler || content.isSecret
+    val hidden = content.hasSpoiler || content.isSecret || LocalPrivacyHidden.current
     val isLive = content.motion != null
     val description = stringResource(if (isLive) R.string.content_live_photo else UiR.string.preview_photo)
     Box(

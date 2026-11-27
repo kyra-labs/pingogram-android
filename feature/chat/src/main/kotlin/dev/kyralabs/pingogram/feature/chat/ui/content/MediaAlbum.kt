@@ -36,6 +36,7 @@ import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.BubbleDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -227,7 +228,7 @@ private fun AlbumItem(
             PhotoImage(
                 photo = item.photo,
                 displaySize = displaySize,
-                hidden = item.hasSpoiler || item.isSecret,
+                hidden = item.hasSpoiler || item.isSecret || LocalPrivacyHidden.current,
                 modifier = modifier.semantics { contentDescription = description },
                 downloads = downloads.downloads,
                 onDownload = downloads.onDownload,
@@ -238,7 +239,7 @@ private fun AlbumItem(
         is MessageContent.Video -> {
             AlbumVideo(
                 still = item.video.still(),
-                hidden = item.hasSpoiler || item.isSecret,
+                hidden = item.hasSpoiler || item.isSecret || LocalPrivacyHidden.current,
                 displaySize = displaySize,
                 kind = stringResource(UiR.string.preview_video),
                 label = mediaDurationText(item.video.duration),
@@ -250,7 +251,7 @@ private fun AlbumItem(
             val gif = stringResource(UiR.string.preview_gif)
             AlbumVideo(
                 still = item.animation.still(),
-                hidden = item.hasSpoiler || item.isSecret,
+                hidden = item.hasSpoiler || item.isSecret || LocalPrivacyHidden.current,
                 displaySize = displaySize,
                 kind = gif,
                 label = gif,
