@@ -83,6 +83,7 @@ class RecentChatsWidgetUpdaterTest {
     private val localNames = FakeLocalChatNamesRepository()
     private val activeSlot = MutableStateFlow(0)
     private val mutedWords = MutableStateFlow(MutedWords(MutedWordSettings()))
+    private val privacyScreen = MutableStateFlow(false)
 
     private fun TestScope.account(
         client: FakeTdlibClient,
@@ -115,6 +116,7 @@ class RecentChatsWidgetUpdaterTest {
                 ),
             localNames = localNames,
             mutedWords = mutedWords,
+            hidesText = privacyScreen,
         )
     }
 
@@ -325,6 +327,20 @@ class RecentChatsWidgetUpdaterTest {
                 listOf("Hi", "\u2068Alice\u2069: Message with a muted word", "", "Secret chat"),
                 content.chats.map { it.preview },
             )
+        }
+
+    @Test
+    fun `behind the privacy screen chats show their names without their messages`() =
+        runTest {
+            privacyScreen.value = true
+            val updater = updater(FakeWidgets(0))
+            chats()
+            runCurrent()
+            settle()
+
+            val content = updater.currentContent(0) as RecentChatsContent.Chats
+            assertEquals(listOf("Alice", "Climbing", "Saved Messages", "Alice"), content.chats.map { it.title })
+            assertEquals(listOf("", "", "", ""), content.chats.map { it.preview })
         }
 
     @Test

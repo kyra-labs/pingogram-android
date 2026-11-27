@@ -55,6 +55,8 @@
     <string name="widget_conversation_failed">Can\'t update right now</string>
     <string name="widget_conversation_retry">Tap to retry</string>
     <string name="widget_conversation_empty">No messages yet</string>
+    <!-- The Conversation widget while the privacy screen keeps message text off the home screen (FR-X25). -->
+    <string name="widget_privacy_screen">Messages are hidden by the privacy screen</string>
     <!-- The reply field's placeholder -->
     <string name="widget_conversation_reply">Reply…</string>
     <!-- Spoken by screen readers for the reply button: "Reply to Trip" -->
@@ -115,6 +117,10 @@
 
     <!-- Quick Settings tiles (docs/DESIGN_SYSTEM.md §13.13, boards 31 and 33): their labels at most about 15 characters -->
     <string name="tile_focus">Focus</string>
+    <!-- The privacy screen's Quick Settings tile (REQUIREMENTS.md FR-X25) and its state below its name. -->
+    <string name="tile_privacy_screen">Privacy screen</string>
+    <string name="tile_privacy_screen_on">On</string>
+    <string name="tile_privacy_screen_off">Off</string>
     <string name="tile_focus_off">Off</string>
     <!-- The Focus tile's subtitle while a profile is on: its name (%1$s) and when it ends (%2$s, a time such as 18:00) -->
     <string name="tile_focus_until">%1$s · until %2$s</string>

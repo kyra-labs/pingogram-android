@@ -107,12 +107,13 @@ phone number's country picker called places that are regions (Hong Kong, Macau, 
 region", its search "Search countries and regions", and "calling code" rather than "country code" for the "+44". Keep
 that wording in every string and translation (the strings' comments say so for translators).
 
-The `foss` build's two permissions beyond `PLAY_STORE.md` §3, for AppGallery's Privacy Description:
+The `foss` build's permissions beyond `PLAY_STORE.md` §3, and what `RECEIVE_BOOT_COMPLETED` does there too, for
+AppGallery's Privacy Description:
 
 | Permission | Explanation to paste |
 |---|---|
 | `FOREGROUND_SERVICE_SPECIAL_USE` | "Keep connected (Settings → Notifications, off by default): keeps the app's connection to Telegram open while the user has turned the setting on, so new messages arrive and notify at once without a push service. An ongoing notification shows while it runs and turns it off. It never starts unless the user turns it on." (`docs/adr/0003-keep-connected-foreground-service.md`) |
-| `RECEIVE_BOOT_COMPLETED` | "Starts Keep connected again after the phone restarts, only for users who turned it on; the receiver is disabled otherwise." |
+| `RECEIVE_BOOT_COMPLETED` | "After the phone restarts, schedules the daily digest and birthday reminders the user turned on again, and starts Keep connected again only for users who turned it on (its receiver is disabled otherwise)." |
 
 ### 3.1 The reviewer's login
 
