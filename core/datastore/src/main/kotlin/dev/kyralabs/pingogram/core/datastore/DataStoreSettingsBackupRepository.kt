@@ -163,6 +163,7 @@ internal val BackedUpSettings: Set<String> =
         "privacy.send_typing_status",
         "privacy.clean_links",
         "privacy.screen",
+        "proxy.auto_switch",
         "share.chats_shown_first",
         "stickers.suggestions",
         "stickers.loop",
