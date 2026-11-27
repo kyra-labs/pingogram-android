@@ -56,9 +56,22 @@ internal fun OnScreenSection(
     onIdsShownChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
+    privacyScreen: Boolean? = null,
+    onPrivacyScreenChange: (Boolean) -> Unit = {},
 ) {
-    if (hidden == null && idsShown == null && directShare == null) return
+    if (hidden == null && idsShown == null && directShare == null && privacyScreen == null) return
     SettingsGroup(title = stringResource(R.string.settings_section_on_screen)) {
+        if (privacyScreen != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_privacy_screen),
+                    summary = stringResource(R.string.settings_privacy_screen_summary),
+                    checked = privacyScreen,
+                    shapes = shapes,
+                    onCheckedChange = onPrivacyScreenChange,
+                )
+            }
+        }
         if (hidden != null) {
             item { shapes ->
                 SwitchItem(

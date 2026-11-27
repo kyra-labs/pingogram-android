@@ -60,6 +60,7 @@ internal fun PrivacySecurityRoute(
     sharePhoneNumberViewModel: SharePhoneNumberViewModel = hiltViewModel(),
     birthdaysRowViewModel: BirthdaysRowViewModel = hiltViewModel(),
     directShareViewModel: DirectShareViewModel = hiltViewModel(),
+    privacyScreenViewModel: PrivacyScreenViewModel = hiltViewModel(),
     draftsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,6 +84,7 @@ internal fun PrivacySecurityRoute(
         cleanLinksViewModel.errors,
         typingStatusViewModel.errors,
         sharePhoneNumberViewModel.errors,
+        privacyScreenViewModel.errors,
     )
     PrivacySecurityRefreshAndSync(viewModel, contactSyncViewModel, snackbarHostState)
     PrivacySecurityScreen(
@@ -114,6 +116,8 @@ internal fun PrivacySecurityRoute(
         onShowsBirthdaysChange = birthdaysRowViewModel::onCheckedChange,
         directShare = directShare,
         onDirectShareChange = directShareViewModel::onCheckedChange,
+        privacyScreen = privacyScreenViewModel.enabled.collectAsStateWithLifecycle().value,
+        onPrivacyScreenChange = privacyScreenViewModel::onCheckedChange,
         drafts = drafts,
         onDraftsEvent = draftsViewModel::onEvent,
     )
@@ -134,9 +138,10 @@ internal fun PrivacySecurityRoute(
  *   ([showsBirthdays], FR-X18);
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
- * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
- *   code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles and info
- *   pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
+ * - On screen: "Privacy screen" ([privacyScreen], off by default, `REQUIREMENTS.md` FR-X25), which blurs message text
+ *   and photos until tapped; "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown
+ *   with its calling code only (`core:ui`'s `phoneNumberToShow`), "Show IDs" ([idsShown], off by default) on profiles
+ *   and info pages, and "Chats in the share sheet" ([directShare], on by default: the Direct Share targets);
  * - Account: the login email, the self-destruct timer of new chats, "Delete cloud drafts" ([drafts], after a
  *   destructive confirmation) and "Delete account" with how long the account may stay unused.
  */
@@ -171,6 +176,8 @@ internal fun PrivacySecurityScreen(
     onShowsBirthdaysChange: (Boolean) -> Unit = {},
     directShare: Boolean? = null,
     onDirectShareChange: (Boolean) -> Unit = {},
+    privacyScreen: Boolean? = null,
+    onPrivacyScreenChange: (Boolean) -> Unit = {},
     drafts: DataOptionsUiState = DataOptionsUiState(),
     onDraftsEvent: (DataOptionsEvent) -> Unit = {},
 ) {
@@ -218,6 +225,8 @@ internal fun PrivacySecurityScreen(
                     onIdsShownChange = onIdsShownChange,
                     directShare = directShare,
                     onDirectShareChange = onDirectShareChange,
+                    privacyScreen = privacyScreen,
+                    onPrivacyScreenChange = onPrivacyScreenChange,
                 )
                 PrivacyAccountGroup(state, onOpen, drafts, onDraftsEvent)
             }
