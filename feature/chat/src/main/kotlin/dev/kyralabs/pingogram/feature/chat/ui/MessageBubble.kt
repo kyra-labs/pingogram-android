@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +33,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.AnnotatedString
@@ -40,6 +45,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.privacy.LocalPrivacyScreen
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.customEmoji
@@ -69,6 +75,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.showsNoteBelowMedia
 import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.hasPrivateContent
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.revealOnTap
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
@@ -167,18 +177,34 @@ internal fun MessageBubbleRow(
     val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reminder = LocalReminderChips.current?.labelFor(bubble.id)
+    // Shown once tapped, until the row scrolls away and leaves the composition (REQUIREMENTS.md FR-X25).
+    var revealed by remember(bubble.id) { mutableStateOf(false) }
+    val hidden = LocalPrivacyScreen.current && !revealed && bubble.hasPrivateContent
+    val showHidden = remember(bubble.id) { { revealed = true } }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlight)
+                .then(if (hidden && selection == null) Modifier.revealOnTap(showHidden) else Modifier)
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription = bubbleDescription(strings, bubble, reminder)
+                    contentDescription =
+                        if (hidden) {
+                            strings.getString(R.string.chat_privacy_hidden, bubble.sender.resolve(strings))
+                        } else {
+                            bubbleDescription(strings, bubble, reminder)
+                        }
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
+                        if (hidden) {
+                            onClick(label = strings.getString(R.string.chat_privacy_show)) {
+                                showHidden()
+                                true
+                            }
+                        }
                         onLongClick(label = strings.getString(R.string.message_actions)) {
                             showActions(null)
                             true
@@ -201,18 +227,20 @@ internal fun MessageBubbleRow(
         if (check != null) {
             SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
         }
-        BubbleRowContent(
-            bubble = bubble,
-            fileState = fileState,
-            playback = playback,
-            resources = resources,
-            onEvent = onEvent,
-            uploads = uploads,
-            isSelected = isSelected,
-            modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
-            focus = focus,
-            showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
-        )
+        CompositionLocalProvider(LocalPrivacyHidden provides hidden) {
+            BubbleRowContent(
+                bubble = bubble,
+                fileState = fileState,
+                playback = playback,
+                resources = resources,
+                onEvent = onEvent,
+                uploads = uploads,
+                isSelected = isSelected,
+                modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
+                focus = focus,
+                showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
+            )
+        }
     }
 }
 
@@ -482,7 +510,7 @@ private fun PaddedBubble(
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { LinkPreviewBlock(it, style.colors) } },
+                { bubble.linkPreview?.let { Box(privacyCover()) { LinkPreviewBlock(it, style.colors) } } },
                 { if (bubble.showsTime) BubbleMeta(bubble, style.colors) },
             ),
         modifier = modifier.background(style.colors.container, shape),
@@ -531,7 +559,7 @@ private fun MediaBubble(
                 },
                 { if (captionless && bubble.showsTime) OverlayMeta(bubble) },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { LinkPreviewBlock(it, colors) } },
+                { bubble.linkPreview?.let { Box(privacyCover()) { LinkPreviewBlock(it, colors) } } },
                 { if (!captionless && bubble.showsTime) BubbleMeta(bubble, colors) },
             ),
         modifier =
@@ -657,7 +685,11 @@ private fun BubbleText(
         Text(
             text = text,
             // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
-            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint).linkTarget(textLayout),
+            modifier =
+                privacyCover()
+                    .then(blocksModifier)
+                    .customEmoji(customEmoji, blocks, tint)
+                    .linkTarget(textLayout),
             color = content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
@@ -665,7 +697,7 @@ private fun BubbleText(
     } else {
         Text(
             text = text,
-            modifier = Modifier.linkTarget(textLayout),
+            modifier = privacyCover().linkTarget(textLayout),
             color = style.colors.content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },

@@ -46,6 +46,7 @@ import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
 
 // The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2, §4:
 // tonal cards in the block tone of the bubble's side), and the reaction badges on its corner (chosen reactions in
@@ -79,7 +80,9 @@ internal fun ReplyQuoteBlock(
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
+        // The quoted words are the message's: the privacy screen hides them with it (REQUIREMENTS.md FR-X25).
         Row(
+            modifier = privacyCover(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
             verticalAlignment = Alignment.CenterVertically,
         ) {

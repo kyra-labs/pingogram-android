@@ -1000,4 +1000,8 @@
     <string name="keyword_match_older">Older match</string>
     <string name="keyword_match_newer">Newer match</string>
     <string name="keyword_match_close">Close keyword matches</string>
+    <!-- A message the privacy screen hides (REQUIREMENTS.md FR-X25), as screen readers hear it. %1$s: its sender. -->
+    <string name="chat_privacy_hidden">Message from %1$s, hidden by the privacy screen</string>
+    <!-- The action that shows a message the privacy screen hides. -->
+    <string name="chat_privacy_show">Show</string>
 </resources>

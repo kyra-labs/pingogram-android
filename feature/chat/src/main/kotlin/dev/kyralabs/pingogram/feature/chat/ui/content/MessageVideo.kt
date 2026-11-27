@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
 
 /**
  * A video message without its caption (`REQUIREMENTS.md` FR-C4): its thumbnail edge to edge in its bubble
@@ -60,7 +61,7 @@ internal fun MessageVideo(
         frame =
             VideoFrameModel(
                 still = video.still(),
-                hidden = content.hasSpoiler || content.isSecret,
+                hidden = content.hasSpoiler || content.isSecret || LocalPrivacyHidden.current,
                 label = label,
                 description =
                     stringResource(R.string.content_kind_and_details, stringResource(UiR.string.preview_video), label),
@@ -93,7 +94,7 @@ internal fun MessageAnimation(
         frame =
             VideoFrameModel(
                 still = animation.still(),
-                hidden = content.hasSpoiler || content.isSecret,
+                hidden = content.hasSpoiler || content.isSecret || LocalPrivacyHidden.current,
                 label = label,
                 description =
                     stringResource(R.string.content_kind_and_details, stringResource(UiR.string.preview_gif), label),
