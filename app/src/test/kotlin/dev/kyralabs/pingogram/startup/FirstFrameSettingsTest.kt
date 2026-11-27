@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeCleanLinksRepository
 import dev.kyralabs.pingogram.core.testing.FakeIncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.testing.FakePhoneNumberVisibilityRepository
+import dev.kyralabs.pingogram.core.testing.FakePrivacyScreenRepository
 import dev.kyralabs.pingogram.startup.FirstFrameSettings.ScreenPrivacy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -23,9 +24,10 @@ class FirstFrameSettingsTest {
     private val phoneNumbers = FakePhoneNumberVisibilityRepository(hidden = true)
     private val incognitoKeyboard = FakeIncognitoKeyboardRepository(enabled = true)
     private val cleanLinks = FakeCleanLinksRepository(enabled = false)
+    private val privacyScreen = FakePrivacyScreenRepository(enabled = true)
 
     private fun TestScope.settings(appearance: AppearanceRepository): FirstFrameSettings =
-        FirstFrameSettings(appearance, phoneNumbers, incognitoKeyboard, cleanLinks, backgroundScope)
+        FirstFrameSettings(appearance, phoneNumbers, incognitoKeyboard, cleanLinks, privacyScreen, backgroundScope)
 
     @Test
     fun `has no settings until they are read`() =
@@ -45,7 +47,12 @@ class FirstFrameSettingsTest {
 
             assertEquals(AppearanceSettings(), settings.appearance.value)
             assertEquals(
-                ScreenPrivacy(phoneNumbersHidden = true, incognitoKeyboard = true, cleanLinks = false),
+                ScreenPrivacy(
+                    phoneNumbersHidden = true,
+                    incognitoKeyboard = true,
+                    cleanLinks = false,
+                    privacyScreen = true,
+                ),
                 settings.screenPrivacy.value,
             )
 
@@ -55,7 +62,12 @@ class FirstFrameSettingsTest {
 
             assertEquals(AppearanceSettings(themeMode = ThemeMode.Dark), settings.appearance.value)
             assertEquals(
-                ScreenPrivacy(phoneNumbersHidden = false, incognitoKeyboard = true, cleanLinks = false),
+                ScreenPrivacy(
+                    phoneNumbersHidden = false,
+                    incognitoKeyboard = true,
+                    cleanLinks = false,
+                    privacyScreen = true,
+                ),
                 settings.screenPrivacy.value,
             )
         }
