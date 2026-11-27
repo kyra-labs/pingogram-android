@@ -28,8 +28,8 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.core.ui.R as UiR
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A video message without its caption (`REQUIREMENTS.md` FR-C4): its thumbnail edge to edge in its bubble

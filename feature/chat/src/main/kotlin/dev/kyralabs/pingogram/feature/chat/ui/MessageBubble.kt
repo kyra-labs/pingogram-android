@@ -168,7 +168,6 @@ internal fun MessageBubbleRow(
     reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val highlight = rememberJumpHighlightStyle()
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
@@ -177,39 +176,27 @@ internal fun MessageBubbleRow(
     val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reminder = LocalReminderChips.current?.labelFor(bubble.id)
-    // Shown once tapped, until the row scrolls away and leaves the composition (REQUIREMENTS.md FR-X25).
-    var revealed by remember(bubble.id) { mutableStateOf(false) }
-    val hidden = LocalPrivacyScreen.current && !revealed && bubble.hasPrivateContent
-    val showHidden = remember(bubble.id) { { revealed = true } }
+    val privacy = rememberPrivacyHiding(bubble)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .jumpHighlight(resources.jump, bubble, highlight)
-                .then(if (hidden && selection == null) Modifier.revealOnTap(showHidden) else Modifier)
+                .jumpHighlight(resources.jump, bubble, rememberJumpHighlightStyle())
+                .then(privacy.revealing(selecting = selection != null))
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
                     contentDescription =
-                        if (hidden) {
-                            strings.getString(R.string.chat_privacy_hidden, bubble.sender.resolve(strings))
-                        } else {
-                            bubbleDescription(strings, bubble, reminder)
-                        }
+                        privacy.describe(strings, bubble) ?: bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
-                        if (hidden) {
-                            onClick(label = strings.getString(R.string.chat_privacy_show)) {
-                                showHidden()
-                                true
-                            }
-                        }
                         onLongClick(label = strings.getString(R.string.message_actions)) {
                             showActions(null)
                             true
                         }
                         customActions =
+                            privacy.actions(strings) +
                             bubbleActions(
                                 resources = strings,
                                 bubble = bubble,
@@ -227,20 +214,19 @@ internal fun MessageBubbleRow(
         if (check != null) {
             SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
         }
-        CompositionLocalProvider(LocalPrivacyHidden provides hidden) {
-            BubbleRowContent(
-                bubble = bubble,
-                fileState = fileState,
-                playback = playback,
-                resources = resources,
-                onEvent = onEvent,
-                uploads = uploads,
-                isSelected = isSelected,
-                modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
-                focus = focus,
-                showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
-            )
-        }
+        BubbleRowContent(
+            bubble = bubble,
+            fileState = fileState,
+            playback = playback,
+            resources = resources,
+            onEvent = onEvent,
+            uploads = uploads,
+            isSelected = isSelected,
+            modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
+            focus = focus,
+            showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
+            privacyHidden = privacy.hidden,
+        )
     }
 }
 
@@ -278,7 +264,8 @@ internal fun BubbleRowContent(
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
     showsShare: Boolean = false,
-) {
+    privacyHidden: Boolean = false,
+) = CompositionLocalProvider(LocalPrivacyHidden provides privacyHidden) {
     Row(
         modifier = modifier,
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,

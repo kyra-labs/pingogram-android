@@ -7,7 +7,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.privacy.LocalPrivacyScreen
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -77,7 +76,8 @@ class PrivacyScreenTest {
         setScreen(privacyScreen = true)
         val before = hiddenMessages().fetchSemanticsNodes().size
 
-        hiddenMessages().onFirst().performSemanticsAction(SemanticsActions.OnClick)
+        val actions = hiddenMessages().onFirst().fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        composeRule.runOnIdle { actions.first { it.label == SHOW }.action() }
         composeRule.waitForIdle()
 
         assertEquals(before - 1, hiddenMessages().fetchSemanticsNodes().size)
@@ -92,5 +92,6 @@ class PrivacyScreenTest {
 
     private companion object {
         const val HIDDEN = "hidden by the privacy screen"
+        const val SHOW = "Show"
     }
 }
