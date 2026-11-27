@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.CleanLinksRepository
 import dev.kyralabs.pingogram.core.domain.repository.IncognitoKeyboardRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
+import dev.kyralabs.pingogram.core.domain.repository.PrivacyScreenRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,7 @@ class FirstFrameSettings
         phoneNumberVisibility: PhoneNumberVisibilityRepository,
         incognitoKeyboard: IncognitoKeyboardRepository,
         cleanLinks: CleanLinksRepository,
+        privacyScreen: PrivacyScreenRepository,
         @ApplicationScope scope: CoroutineScope,
     ) {
         /** The Appearance settings the app's theme follows. */
@@ -35,16 +37,22 @@ class FirstFrameSettings
 
         /** Privacy and security's settings the whole app follows on screen. */
         val screenPrivacy: StateFlow<ScreenPrivacy?> =
-            combine(phoneNumberVisibility.hidden, incognitoKeyboard.enabled, cleanLinks.enabled, ::ScreenPrivacy)
-                .stateIn(scope, SharingStarted.Eagerly, initialValue = null)
+            combine(
+                phoneNumberVisibility.hidden,
+                incognitoKeyboard.enabled,
+                cleanLinks.enabled,
+                privacyScreen.enabled,
+                ::ScreenPrivacy,
+            ).stateIn(scope, SharingStarted.Eagerly, initialValue = null)
 
         /**
-         * Whether phone numbers are hidden on screen, whether text fields ask the keyboard not to learn, and whether
-         * links open without their tracking parameters.
+         * Whether phone numbers are hidden on screen, whether text fields ask the keyboard not to learn, whether
+         * links open without their tracking parameters, and whether the privacy screen hides messages.
          */
         data class ScreenPrivacy(
             val phoneNumbersHidden: Boolean,
             val incognitoKeyboard: Boolean,
             val cleanLinks: Boolean,
+            val privacyScreen: Boolean,
         )
     }
