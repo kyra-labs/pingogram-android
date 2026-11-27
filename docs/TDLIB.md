@@ -53,6 +53,16 @@ per pinned commit in CI and reuse the AAR everywhere.
      run the unit tests, but not to run the app.
 6. Keep `android.useLegacyPackaging = false`; set
    `packaging { jniLibs { useLegacyPackaging = false } }`.
+7. Release builds: the AAR's own rule (`tdlib.yml` writes it) keeps every member of `org.drinkless.tdlib`. `:app`
+   ignores it (`optimization.keepRules.ignoreFrom("org.drinkless:tdlib")`) and keeps in `app/proguard-rules.pro` only
+   what `libtdjni` uses:
+   - every `TdApi` class by name, with its instance fields and `getConstructor()`;
+   - each class's no-argument constructor, so R8 still treats the class as instantiated;
+   - the natives it registers by name (`Client`'s, and `toString` of `TdApi.Object` and `TdApi.Function`);
+   - `Client.LogMessageHandler.onLogMessage`, which it calls.
+
+   It creates objects without a constructor (its strings have no `<init>`). A TDLib update checks this list against
+   the strings of the new `libtdjni.so`.
 
 If the owner prefers, the AAR can instead be committed via Git LFS; document the choice in an ADR.
 
