@@ -76,6 +76,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.drop.rememberBubbleDragOut
 import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.hasPrivateContent
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.revealOnTap
@@ -176,18 +177,16 @@ internal fun MessageBubbleRow(
     val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reminder = LocalReminderChips.current?.labelFor(bubble.id)
-    val privacy = rememberPrivacyHiding(bubble)
+    val privacy = rememberPrivacyHiding(bubble, selecting = selection != null)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, rememberJumpHighlightStyle())
-                .then(privacy.revealing(selecting = selection != null))
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl, dragOut)
                 .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
-                    contentDescription =
-                        privacy.describe(strings, bubble) ?: bubbleDescription(strings, bubble, reminder)
+                    contentDescription = privacy.spoken(strings, bubble) ?: bubbleDescription(strings, bubble, reminder)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
@@ -211,9 +210,7 @@ internal fun MessageBubbleRow(
                 },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (check != null) {
-            SelectionCheck(check.isSelected, if (reveal != null) Modifier.selectionReveal(reveal) else Modifier)
-        }
+        check?.let { SelectionCheck(it.isSelected, reveal?.let { r -> Modifier.selectionReveal(r) } ?: Modifier) }
         BubbleRowContent(
             bubble = bubble,
             fileState = fileState,
@@ -225,7 +222,7 @@ internal fun MessageBubbleRow(
             modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
             focus = focus,
             showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
-            privacyHidden = privacy.hidden,
+            privacy = privacy,
         )
     }
 }
@@ -264,10 +261,10 @@ internal fun BubbleRowContent(
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
     showsShare: Boolean = false,
-    privacyHidden: Boolean = false,
-) = CompositionLocalProvider(LocalPrivacyHidden provides privacyHidden) {
+    privacy: PrivacyHiding = PrivacyHiding.None,
+) = CompositionLocalProvider(LocalPrivacyHidden provides privacy.hidden) {
     Row(
-        modifier = modifier,
+        modifier = modifier.then(privacy.revealing()),
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {

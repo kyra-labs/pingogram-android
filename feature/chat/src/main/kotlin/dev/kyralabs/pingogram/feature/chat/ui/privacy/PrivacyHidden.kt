@@ -49,18 +49,20 @@ internal val ChatItem.Bubble.hasPrivateContent: Boolean
 
 /**
  * Whether a bubble's row hides it now ([hidden]): while the privacy screen is on (`REQUIREMENTS.md` FR-X25), until
- * [show] opens it, by a tap ([revealing]) or by screen readers' "Show" ([actions]), who hear [describe] meanwhile.
+ * [show] opens it, by a tap on the bubble ([revealing], unless [tappable] is false: while messages are being selected,
+ * a tap selects) or by screen readers' "Show" ([actions]), who hear [spoken] meanwhile.
  */
 @Immutable
 internal class PrivacyHiding(
     val hidden: Boolean,
+    private val tappable: Boolean,
     private val show: () -> Unit,
 ) {
-    /** The row's tap that shows it, before anything inside takes it; none while hidden is false or [selecting]. */
-    fun revealing(selecting: Boolean): Modifier = if (hidden && !selecting) Modifier.revealOnTap(show) else Modifier
+    /** The bubble's tap that shows it, before anything inside takes it; none where it is not hidden or tappable. */
+    fun revealing(): Modifier = if (hidden && tappable) Modifier.revealOnTap(show) else Modifier
 
     /** What screen readers hear of a hidden [bubble]: its sender, never its text; null where it is not hidden. */
-    fun describe(
+    fun spoken(
         resources: Resources,
         bubble: ChatItem.Bubble,
     ): String? {
@@ -79,6 +81,11 @@ internal class PrivacyHiding(
             },
         )
     }
+
+    companion object {
+        /** Nothing hidden: the lifted copy of a message, previews and tests. */
+        val None = PrivacyHiding(hidden = false, tappable = false) {}
+    }
 }
 
 /**
@@ -86,10 +93,13 @@ internal class PrivacyHiding(
  * forgets it; never a bubble without text or photos.
  */
 @Composable
-internal fun rememberPrivacyHiding(bubble: ChatItem.Bubble): PrivacyHiding {
+internal fun rememberPrivacyHiding(
+    bubble: ChatItem.Bubble,
+    selecting: Boolean,
+): PrivacyHiding {
     var revealed by remember(bubble.id) { mutableStateOf(false) }
     val hidden = LocalPrivacyScreen.current && !revealed && bubble.hasPrivateContent
-    return remember(hidden) { PrivacyHiding(hidden) { revealed = true } }
+    return remember(hidden, selecting) { PrivacyHiding(hidden, tappable = !selecting) { revealed = true } }
 }
 
 /**
