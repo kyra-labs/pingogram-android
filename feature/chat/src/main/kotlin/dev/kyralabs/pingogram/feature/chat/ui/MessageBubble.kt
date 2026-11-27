@@ -72,7 +72,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.currentPrivacyCover
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyReveal
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.rememberPrivacyHiding
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
@@ -258,7 +260,7 @@ internal fun BubbleRowContent(
     privacy: PrivacyHiding = PrivacyHiding.None,
 ) = CompositionLocalProvider(LocalPrivacyHidden provides privacy.hidden) {
     Row(
-        modifier = modifier.then(privacy.revealing()),
+        modifier = modifier.privacyReveal(privacy),
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -488,7 +490,13 @@ private fun PaddedBubble(
                     }
                 },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { Box(privacyCover()) { LinkPreviewBlock(it, style.colors) } } },
+                {
+                    bubble.linkPreview?.let {
+                        Box(
+                            Modifier.privacyCover(currentPrivacyCover()),
+                        ) { LinkPreviewBlock(it, style.colors) }
+                    }
+                },
                 { if (bubble.showsTime) BubbleMeta(bubble, style.colors) },
             ),
         modifier = modifier.background(style.colors.container, shape),
@@ -537,7 +545,13 @@ private fun MediaBubble(
                 },
                 { if (captionless && bubble.showsTime) OverlayMeta(bubble) },
                 { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
-                { bubble.linkPreview?.let { Box(privacyCover()) { LinkPreviewBlock(it, colors) } } },
+                {
+                    bubble.linkPreview?.let {
+                        Box(
+                            Modifier.privacyCover(currentPrivacyCover()),
+                        ) { LinkPreviewBlock(it, colors) }
+                    }
+                },
                 { if (!captionless && bubble.showsTime) BubbleMeta(bubble, colors) },
             ),
         modifier =
@@ -664,7 +678,8 @@ private fun BubbleText(
             text = text,
             // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
             modifier =
-                privacyCover()
+                Modifier
+                    .privacyCover(currentPrivacyCover())
                     .then(blocksModifier)
                     .customEmoji(customEmoji, blocks, tint)
                     .linkTarget(textLayout),
@@ -675,7 +690,7 @@ private fun BubbleText(
     } else {
         Text(
             text = text,
-            modifier = privacyCover().linkTarget(textLayout),
+            modifier = Modifier.privacyCover(currentPrivacyCover()).linkTarget(textLayout),
             color = style.colors.content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },

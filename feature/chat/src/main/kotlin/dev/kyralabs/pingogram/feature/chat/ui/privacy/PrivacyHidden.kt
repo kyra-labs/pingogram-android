@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -23,6 +24,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.privacy.LocalPrivacyScreen
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -49,18 +51,15 @@ internal val ChatItem.Bubble.hasPrivateContent: Boolean
 
 /**
  * Whether a bubble's row hides it now ([hidden]): while the privacy screen is on (`REQUIREMENTS.md` FR-X25), until
- * [show] opens it, by a tap on the bubble ([revealing], unless [tappable] is false: while messages are being selected,
- * a tap selects) or by screen readers' "Show" ([actions]), who hear [spoken] meanwhile.
+ * [show] opens it, by a tap on the bubble ([privacyReveal], unless [tappable] is false: while messages are being
+ * selected, a tap selects) or by screen readers' "Show" ([actions]), who hear [spoken] meanwhile.
  */
 @Immutable
 internal class PrivacyHiding(
     val hidden: Boolean,
-    private val tappable: Boolean,
-    private val show: () -> Unit,
+    val tappable: Boolean,
+    val show: () -> Unit,
 ) {
-    /** The bubble's tap that shows it, before anything inside takes it; none where it is not hidden or tappable. */
-    fun revealing(): Modifier = if (hidden && tappable) Modifier.revealOnTap(show) else Modifier
-
     /** What screen readers hear of a hidden [bubble]: its sender, never its text; null where it is not hidden. */
     fun spoken(
         resources: Resources,
@@ -102,25 +101,48 @@ internal fun rememberPrivacyHiding(
     return remember(hidden, selecting) { PrivacyHiding(hidden, tappable = !selecting) { revealed = true } }
 }
 
-/**
- * What the bubble's text and link preview draw while [LocalPrivacyHidden]: blurred by `sizes.privacyScreenBlur` on
- * API 31+ (a `RenderEffect`, in the draw phase), a `surfaceContainerHighest` cover below, which draws nothing of it.
- * Media hide as spoilers do instead, behind their blurred minithumbnail: no blur on media (`docs/PERFORMANCE.md`).
- */
+/** The bubble's tap that shows it ([PrivacyHiding.show]), before anything inside takes it; none where not tappable. */
+internal fun Modifier.privacyReveal(privacy: PrivacyHiding): Modifier =
+    if (privacy.hidden && privacy.tappable) revealOnTap(privacy.show) else this
+
+/** How the privacy screen covers a bubble's text: blurred by [radius] (API 31+), else filled with [color]. */
+@Immutable
+internal class PrivacyCover(
+    val radius: Dp,
+    val color: Color,
+)
+
+/** The bubble's [PrivacyCover] while [LocalPrivacyHidden], from the theme; null while it shows. */
 @Composable
-internal fun privacyCover(): Modifier {
-    if (!LocalPrivacyHidden.current) return Modifier
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val radius = MaterialTheme.sizes.privacyScreenBlur
-        Modifier.graphicsLayer {
-            renderEffect = BlurEffect(radius.toPx(), radius.toPx(), TileMode.Decal)
-            clip = true
-        }
+internal fun currentPrivacyCover(): PrivacyCover? =
+    if (LocalPrivacyHidden.current) {
+        PrivacyCover(MaterialTheme.sizes.privacyScreenBlur, MaterialTheme.colorScheme.surfaceContainerHighest)
     } else {
-        val cover = MaterialTheme.colorScheme.surfaceContainerHighest
-        Modifier.drawWithContent { drawRect(cover) }
+        null
     }
-}
+
+/**
+ * What the bubble's text, link preview and quoted words draw under [cover]: blurred on API 31+ (a `RenderEffect`, in
+ * the draw phase), a `surfaceContainerHighest` fill below, which draws nothing of them. Media hide as spoilers do
+ * instead, behind their blurred minithumbnail: no blur on media (`docs/PERFORMANCE.md`). Nothing while [cover] is null.
+ */
+internal fun Modifier.privacyCover(cover: PrivacyCover?): Modifier =
+    when {
+        cover == null -> {
+            this
+        }
+
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            graphicsLayer {
+                renderEffect = BlurEffect(cover.radius.toPx(), cover.radius.toPx(), TileMode.Decal)
+                clip = true
+            }
+        }
+
+        else -> {
+            drawWithContent { drawRect(cover.color) }
+        }
+    }
 
 /**
  * Calls [onReveal] on a tap, before anything inside sees it: a link, a mention or a photo under the tap is not opened
