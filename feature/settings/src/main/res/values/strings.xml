@@ -1239,6 +1239,7 @@
     <!-- A proxy's details: its protocol, then its address or its state, e.g. "SOCKS5 · Available · 120 ms". -->
     <string name="settings_proxy_details">%1$s · %2$s</string>
     <string name="settings_proxy_check_again">Check again</string>
+    <string name="settings_proxy_test_all">Test all</string>
     <!-- The more-options button of a proxy, for screen readers. %1$s is the proxy's name or address. -->
     <string name="settings_proxy_options">Options for %1$s</string>
     <string name="settings_proxy_edit">Edit</string>

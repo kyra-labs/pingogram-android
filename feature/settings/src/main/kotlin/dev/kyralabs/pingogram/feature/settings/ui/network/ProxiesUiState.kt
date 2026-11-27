@@ -72,7 +72,7 @@ sealed interface ProxiesEvent {
 
     data object DismissDelete : ProxiesEvent
 
-    /** Ping every proxy again. */
+    /** "Test all": ping every proxy again, then list them by speed. */
     data object CheckAgain : ProxiesEvent
 
     data object Retry : ProxiesEvent

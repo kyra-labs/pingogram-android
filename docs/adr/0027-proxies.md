@@ -31,11 +31,11 @@ all of it:
   (`toString()` of `Proxy`, `ProxyType`, `SavedProxy` and `ProxyLinkRoute` leaves them out) or the saved state of the
   form (`EditProxyViewModel` keeps them in memory only).
 - **Pages**: Settings → Data and storage → "Proxy" (a "Network" group): "Use proxy" (off connects directly, on uses the
-  proxy used last), "Add proxy", "Check again", and the proxies as radio rows with their protocol and ping, each with
+  proxy used last), "Add proxy", "Test all", and the proxies as radio rows with their protocol and ping, each with
   Edit and Delete (asked first). The form checks the address, the port (1–65535) and an MTProto secret's characters on
   the device before TDLib sees them; "Check" pings the proxy as typed; a new proxy is used at once ("Save and
   connect"), an edited one keeps whether it was in use. Pings go to the proxies the user added and to nothing else,
-  four at a time, once per proxy when the page opens and on "Check again"; never in the background.
+  four at a time, once per proxy when the page opens and on "Test all", which then sorts the list by speed; never in the background.
 - **Links**: `LinkRepository` resolves them to `LinkTarget.ProxyServer`; the app opens `ProxyLinkRoute`, a dialog
   destination of the settings pages (like a sticker set's sheet), which shows the server, port and protocol (never the
   credentials or the secret), pings it, says what a proxy's owner can see, and adds and uses it only on "Connect"; a

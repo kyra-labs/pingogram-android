@@ -161,7 +161,7 @@ private fun ProxiesContent(
         if (state.proxies.isNotEmpty()) {
             item(key = CHECK_AGAIN) { shapes ->
                 SettingsRow(
-                    title = stringResource(R.string.settings_proxy_check_again),
+                    title = stringResource(R.string.settings_proxy_test_all),
                     shapes = shapes,
                     onClick = { onEvent(ProxiesEvent.CheckAgain) },
                 )
