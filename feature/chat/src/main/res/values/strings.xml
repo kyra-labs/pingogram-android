@@ -997,6 +997,15 @@
     <string name="keyword_match_position">%1$d of %2$d</string>
     <string name="keyword_match_position_spoken">Match %1$d of %2$d</string>
     <string name="keyword_match_pane">Keyword matches</string>
+
+    <!-- Listen to posts (REQUIREMENTS.md FR-X26) -->
+    <string name="listen_pane">Listening</string>
+    <string name="listen_position">Listening · %1$d of %2$d</string>
+    <string name="listen_position_spoken">Post %1$d of %2$d</string>
+    <string name="listen_pause">Pause</string>
+    <string name="listen_resume">Play</string>
+    <string name="listen_next">Next post</string>
+    <string name="listen_stop">Stop listening</string>
     <string name="keyword_match_older">Older match</string>
     <string name="keyword_match_newer">Newer match</string>
     <string name="keyword_match_close">Close keyword matches</string>
