@@ -48,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
+import dev.kyralabs.pingogram.core.ui.privacy.LocalPrivacyScreen
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.text.IncognitoKeyboard
@@ -267,6 +268,8 @@ class MainActivity : ComponentActivity() {
                             // A chat's voice chat bar and its info page's voice chat row (feature:calls).
                             LocalVoiceChats provides calls,
                             LocalPhoneNumbersHidden provides privacy.phoneNumbersHidden,
+                            // Messages' text and photos stay hidden until tapped (REQUIREMENTS.md FR-X25).
+                            LocalPrivacyScreen provides privacy.privacyScreen,
                             LocalIsDemo provides isDemo,
                             // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
                             LocalLockedChatGate provides lockedChatGate,
