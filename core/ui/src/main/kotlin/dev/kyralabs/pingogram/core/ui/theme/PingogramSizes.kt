@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.dp
  * @property nextChatPullDistance how far a read channel is pulled up past its newest post to open the next unread
  *   channel: released past it, that channel opens.
  * @property messageMenuBlur the blur radius of the conversation behind a message lifted for its actions (API 31+).
+ * @property privacyScreenBlur the blur radius of a message's text while the privacy screen hides it (API 31+): too
+ *   strong for the words to be read, light enough that the lines still show where the text is.
  * @property messageMenuMinWindowHeight the shortest window that lifts a long-pressed message with its menu beside it;
  *   shorter ones (phones in landscape) show its actions in a bottom sheet. Material's lower bound of medium heights.
  * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll: on a
@@ -156,6 +158,7 @@ data class PingogramSizes(
     val swipeReplyDistance: Dp = 64.dp,
     val nextChatPullDistance: Dp = 96.dp,
     val messageMenuBlur: Dp = 16.dp,
+    val privacyScreenBlur: Dp = 6.dp,
     val messageMenuMinWindowHeight: Dp = 480.dp,
     val mediaMaxWidth: Dp = 320.dp,
     val mediaMaxHeight: Dp = 360.dp,
