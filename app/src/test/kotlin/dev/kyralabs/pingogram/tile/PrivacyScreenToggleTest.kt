@@ -22,4 +22,17 @@ class PrivacyScreenToggleTest {
             toggle.toggle()
             assertFalse(repository.enabled.value)
         }
+
+    @Test
+    fun `turning it off on a locked phone needs unlocking first, turning it on never does`() =
+        runTest {
+            val repository = FakePrivacyScreenRepository()
+            val toggle = PrivacyScreenToggle(repository)
+
+            assertFalse(toggle.needsUnlock(isLocked = true))
+
+            repository.enabled.value = true
+            assertTrue(toggle.needsUnlock(isLocked = true))
+            assertFalse(toggle.needsUnlock(isLocked = false))
+        }
 }
