@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.repository.MirroredProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccentColorRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountFreezeRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
@@ -344,8 +345,9 @@ object ActiveAccountModule {
     fun personalChannelRepository(accounts: Accounts): PersonalChannelRepository =
         accounts.active.personalChannelRepository()
 
+    /** The active account's proxies, each change made on every account too (owner decision 2026-11-27). */
     @Provides
-    fun proxyRepository(accounts: Accounts): ProxyRepository = accounts.active.proxyRepository()
+    fun proxyRepository(repository: MirroredProxyRepository): ProxyRepository = repository
 
     @Provides
     fun networkUsageRepository(accounts: Accounts): NetworkUsageRepository = accounts.active.networkUsageRepository()
