@@ -63,6 +63,9 @@ class PrivacyScreenTest {
     fun `a tap shows a message and does nothing else`() {
         setScreen(privacyScreen = true)
         val before = hiddenMessages().fetchSemanticsNodes().size
+        // What the list reports as it lays out, before the tap.
+        composeRule.waitForIdle()
+        events.clear()
 
         hiddenMessages().onFirst().performClick()
         composeRule.waitForIdle()
