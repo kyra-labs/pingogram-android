@@ -597,7 +597,8 @@ internal class ActionContext(
  * What the actions sheet offers for [message] with TDLib's [properties], in its order: who saw it where TDLib lists
  * them, who added its reactions where TDLib lists them and it has some (as Telegram's apps put them, after the quick
  * reactions), sending a failed message again, replying where the user can write, replying in another chat where TDLib
- * allows it and a reminder ([replyActions]), copying a text or caption the chat lets be saved, copying the message's
+ * allows it and a reminder ([replyActions]), copying a text or caption the chat lets be saved, listening to any text
+ * or caption (Listen to posts; the conversation's route takes it out while its setting is off), copying the message's
  * link where TDLib makes one (to it in its topic or thread in a conversation that is one, [inThread]), forwarding where
  * TDLib allows it (never protected content), editing where the user can write, pinning or unpinning (also for the user
  * alone in a private chat), saving its file (an album's files) to Downloads where the chat lets it be saved, selecting,
@@ -613,6 +614,7 @@ internal fun ActionContext.actionsOf(
         if (message.canBeResent) add(MessageAction.Resend)
         addAll(replyActions(message, properties))
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
+        if (message.textOrCaption.text.isNotBlank()) add(MessageAction.Listen)
         if (properties.canGetLink) add(if (inThread) MessageAction.CopyThreadLink else MessageAction.CopyLink)
         if (properties.canBeForwarded) add(MessageAction.Forward)
         if (properties.canBeEdited && canWrite && message.editTarget != null) add(MessageAction.Edit)

@@ -157,6 +157,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Reply,
                         MessageAction.RemindMe,
                         MessageAction.Copy,
+                        MessageAction.Listen,
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Pin,
@@ -183,6 +184,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Reply,
                         MessageAction.RemindMe,
                         MessageAction.Copy,
+                        MessageAction.Listen,
                         MessageAction.Forward,
                         MessageAction.Bookmark,
                         MessageAction.Select,
@@ -193,7 +195,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             }
 
         @Test
-        fun `nothing allowed offers only selecting`() =
+        fun `nothing allowed offers only selecting, a reminder and listening`() =
             runViewModelTest {
                 allowing(
                     replied = false,
@@ -208,7 +210,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
-                assertEquals(listOf(MessageAction.RemindMe, MessageAction.Select), viewModel.sheet?.actions)
+                assertEquals(
+                    listOf(MessageAction.RemindMe, MessageAction.Listen, MessageAction.Select),
+                    viewModel.sheet?.actions,
+                )
             }
 
         @Test
@@ -292,6 +297,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Reply,
                         MessageAction.RemindMe,
                         MessageAction.Copy,
+                        MessageAction.Listen,
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Unpin,
@@ -337,6 +343,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     listOf(
                         MessageAction.RemindMe,
                         MessageAction.Copy,
+                        MessageAction.Listen,
                         MessageAction.Forward,
                         MessageAction.Pin,
                         MessageAction.Bookmark,

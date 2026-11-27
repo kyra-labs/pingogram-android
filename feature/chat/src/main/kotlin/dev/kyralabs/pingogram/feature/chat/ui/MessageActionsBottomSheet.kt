@@ -256,6 +256,7 @@ internal val MessageAction.label: Int
             MessageAction.ReplyElsewhere -> R.string.message_action_reply_elsewhere
             MessageAction.RemindMe -> R.string.message_action_remind
             MessageAction.Copy -> R.string.message_action_copy
+            MessageAction.Listen -> R.string.message_action_listen
             MessageAction.CopyLink -> R.string.message_action_copy_link
             MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
             MessageAction.Translate -> R.string.message_action_translate
@@ -291,6 +292,7 @@ internal val MessageAction.icon: Int
             MessageAction.ReplyElsewhere -> R.drawable.ic_chat_paste_go
             MessageAction.RemindMe -> UiR.drawable.ic_alarm
             MessageAction.Copy -> UiR.drawable.ic_content_copy
+            MessageAction.Listen -> UiR.drawable.ic_graphic_eq
             MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
             MessageAction.AddToCalendar -> UiR.drawable.ic_edit_calendar
@@ -325,6 +327,7 @@ internal fun MessageAction.eventFor(sheet: MessageActionsSheet): ChatEvent =
         MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(sheet.messageId)
         MessageAction.RemindMe -> ReminderEvent.Open(sheet.messageId)
         MessageAction.Copy -> ChatEvent.Copy(sheet.messageId)
+        MessageAction.Listen -> ListenEvent.Message(sheet.messageId)
         MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(sheet.messageId)
         MessageAction.Translate -> TranslationEvent.Translate(sheet.messageId)
         MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(sheet.messageId)

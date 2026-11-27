@@ -70,6 +70,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordMatchViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.KeywordShown
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.LocalKeywordMatchBar
 import dev.kyralabs.pingogram.feature.chat.ui.keyword.rememberKeywordMatchSlot
+import dev.kyralabs.pingogram.feature.chat.ui.listen.ListenEffects
+import dev.kyralabs.pingogram.feature.chat.ui.listen.ListenViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.listen.LocalListenBar
+import dev.kyralabs.pingogram.feature.chat.ui.listen.LocalListenToUnread
+import dev.kyralabs.pingogram.feature.chat.ui.listen.rememberListenSlot
+import dev.kyralabs.pingogram.feature.chat.ui.listen.rememberListenToUnread
+import dev.kyralabs.pingogram.feature.chat.ui.listen.routing
+import dev.kyralabs.pingogram.feature.chat.ui.listen.withListen
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.muted.ChatMutedWordsViewModel
@@ -221,6 +229,8 @@ internal fun ConversationRoute(
         hiltViewModel<ChatMutedWordsViewModel, ChatMutedWordsViewModel.Factory>(key = "muted-words-$chatId") {
             it.create(chatId)
         },
+    listenViewModel: ListenViewModel =
+        hiltViewModel<ListenViewModel, ListenViewModel.Factory>(key = "listen-$chatId") { it.create(chatId) },
 ) {
     val conversation by viewModel.uiState.collectAsStateWithLifecycle()
     // The chat's name on this phone (REQUIREMENTS.md FR-X20) titles its own conversation; a topic or thread keeps its
@@ -229,9 +239,11 @@ internal fun ConversationRoute(
     // A group's messages with a muted word collapse into a line until tapped (REQUIREMENTS.md FR-X21).
     val mutedFilter by mutedWordsViewModel.filter.collectAsStateWithLifecycle()
     val mutedMessages = remember { MutedMessages() }
+    // "Listen" in the message menu while Listen to messages is on (REQUIREMENTS.md FR-X26).
+    val listens by listenViewModel.enabled.collectAsStateWithLifecycle()
     val state =
-        remember(conversation, localName, topic, mutedFilter) {
-            mutedMessages.apply(conversation.withLocalName(localName, topic != null), mutedFilter)
+        remember(conversation, localName, topic, mutedFilter, listens) {
+            mutedMessages.apply(conversation.withLocalName(localName, topic != null), mutedFilter).withListen(listens)
         }
     // A suggested post's answers and bookmarks go to view models of their own (docs/DESIGN_SYSTEM.md §6 "Suggested
     // posts", "Bookmarks"); "Bookmark" also puts the message's actions away.
@@ -243,31 +255,36 @@ internal fun ConversationRoute(
             bookmarkViewModel,
             reminderViewModel,
             mutedWordsViewModel,
+            listenViewModel,
             sharedMedia,
         ) {
-            // A tap on a muted message's line goes to its own view model too (REQUIREMENTS.md FR-X21).
+            // A tap on a muted message's line goes to its own view model too (REQUIREMENTS.md FR-X21), and so does
+            // "Listen", which puts the message's actions away (FR-X26).
+            val listenRouting = listenViewModel.routing { viewModel.onEvent(ChatEvent.DismissMessageActions) }
             sharedMedia.readyingOpenedMedia(
-                mutedWordsViewModel.routing { event ->
-                    when (event) {
-                        is SuggestedPostEvent -> {
-                            suggestedPostsViewModel.onEvent(event)
-                        }
+                listenRouting(
+                    mutedWordsViewModel.routing { event ->
+                        when (event) {
+                            is SuggestedPostEvent -> {
+                                suggestedPostsViewModel.onEvent(event)
+                            }
 
-                        is BookmarkEvent -> {
-                            viewModel.onEvent(ChatEvent.DismissMessageActions)
-                            bookmarkViewModel.onEvent(event)
-                        }
+                            is BookmarkEvent -> {
+                                viewModel.onEvent(ChatEvent.DismissMessageActions)
+                                bookmarkViewModel.onEvent(event)
+                            }
 
-                        is ReminderEvent -> {
-                            viewModel.onEvent(ChatEvent.DismissMessageActions)
-                            reminderViewModel.onEvent(event)
-                        }
+                            is ReminderEvent -> {
+                                viewModel.onEvent(ChatEvent.DismissMessageActions)
+                                reminderViewModel.onEvent(event)
+                            }
 
-                        else -> {
-                            viewModel.onEvent(event)
+                            else -> {
+                                viewModel.onEvent(event)
+                            }
                         }
-                    }
-                },
+                    },
+                ),
             )
         }
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
@@ -318,6 +335,10 @@ internal fun ConversationRoute(
     BirthdayErrorsEffect(birthdaysViewModel.errors, snackbarHostState)
     BookmarkSheetHost(bookmarkViewModel, snackbarHostState)
     ReminderSheetHost(reminderViewModel, snackbarHostState)
+    // Listen to posts: its player bar, a channel's "Listen to unread posts", its snackbars; it stops with the screen.
+    ListenEffects(listenViewModel, snackbarHostState)
+    val listenBar = rememberListenSlot(listenViewModel)
+    val listenToUnread = rememberListenToUnread(listenViewModel)
     // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
     val topicActions =
         (topic as? MessageTopic.Forum)?.let { forum ->
@@ -350,6 +371,8 @@ internal fun ConversationRoute(
     PhotoSeedEffect(shownWallpaper.wallpaper, seedKnown = shownWallpaper.seed != null, wallpaperViewModel::keepSeed)
     CompositionLocalProvider(
         LocalKeywordMatchBar provides keywordMatch,
+        LocalListenBar provides listenBar,
+        LocalListenToUnread provides listenToUnread,
         LocalCustomEmoji provides customEmoji,
         LocalSendKeys provides sendKeys,
         LocalSendsSilently provides sendsSilently,

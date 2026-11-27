@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenuGroup
@@ -19,14 +20,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.listen.LocalListenToUnread
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The conversation's top bar actions in a group or channel (`docs/DESIGN_SYSTEM.md` §13.5).
 
 /**
  * The actions for a group or channel (§13.5): a channel's mute toggle ([onSetMuted]) in search's
- * place, then "More options", a menu with search ([onSearch]) in a channel and the info page ([onOpenInfo]); a group
- * keeps search and adds the menu. Private and secret chats, forums' topic lists and topics keep [ChatActions].
+ * place, then "More options", a menu with search ([onSearch]) in a channel, the info page ([onOpenInfo]), and "Listen
+ * to unread posts" in a channel that has some ([LocalListenToUnread], `REQUIREMENTS.md` FR-X26); a group keeps search
+ * and adds the menu. Private and secret chats, forums' topic lists and topics keep [ChatActions].
  */
 @Composable
 internal fun GroupActions(
@@ -47,10 +50,16 @@ internal fun GroupActions(
             }
         }
     }
+    val listen = LocalListenToUnread.current.takeIf { header.isChannel }
     MoreMenu(
-        search = onSearch.takeIf { header.isChannel },
-        info = onOpenInfo,
-        infoLabel = if (header.isChannel) R.string.chat_channel_info else R.string.chat_group_info,
+        listOfNotNull(
+            onSearch.takeIf { header.isChannel }?.let { MenuEntry(R.string.search_open, UiR.drawable.ic_search, it) },
+            onOpenInfo?.let {
+                val label = if (header.isChannel) R.string.chat_channel_info else R.string.chat_group_info
+                MenuEntry(label, UiR.drawable.ic_info, it)
+            },
+            listen?.let { MenuEntry(R.string.listen_unread, UiR.drawable.ic_graphic_eq, it) },
+        ),
     )
 }
 
@@ -73,14 +82,17 @@ private fun MuteToggle(
     }
 }
 
-/** "More options": search in a channel ([search]) and the info page ([info]); nothing when it holds neither. */
+/** One item of "More options": its [label], its [icon] and what it does. */
+private class MenuEntry(
+    @param:StringRes val label: Int,
+    @param:DrawableRes val icon: Int,
+    val action: () -> Unit,
+)
+
+/** "More options" with [items], in their order; nothing when there are none. */
 @Composable
-private fun MoreMenu(
-    search: (() -> Unit)?,
-    info: (() -> Unit)?,
-    @StringRes infoLabel: Int,
-) {
-    if (search == null && info == null) return
+private fun MoreMenu(items: List<MenuEntry>) {
+    if (items.isEmpty()) return
     var expanded by remember { mutableStateOf(false) }
     Box {
         FilledTonalIconButton(onClick = { expanded = true }, shapes = IconButtonDefaults.shapes()) {
@@ -91,30 +103,15 @@ private fun MoreMenu(
         }
         DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuGroup(shapes = MenuDefaults.groupShape(0, 1)) {
-                val items = listOfNotNull(search?.let { R.string.search_open to it }, info?.let { infoLabel to it })
-                items.forEachIndexed { index, (label, action) ->
+                items.forEachIndexed { index, item ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(label)) },
+                        text = { Text(stringResource(item.label)) },
                         onClick = {
                             expanded = false
-                            action()
+                            item.action()
                         },
                         shape = MenuDefaults.itemShape(index, items.size).shape,
-                        leadingIcon = {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        if (label ==
-                                            R.string.search_open
-                                        ) {
-                                            UiR.drawable.ic_search
-                                        } else {
-                                            UiR.drawable.ic_info
-                                        },
-                                    ),
-                                contentDescription = null,
-                            )
-                        },
+                        leadingIcon = { Icon(painterResource(item.icon), contentDescription = null) },
                     )
                 }
             }
