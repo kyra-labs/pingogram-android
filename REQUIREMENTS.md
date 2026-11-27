@@ -370,6 +370,12 @@ the typing status (FR-X17) and removing tracking from links (FR-X8) (owner decis
   default, and a Quick Settings tile that turns the same switch. While it is on, message text and photos in a
   conversation are blurred (a tonal cover below Android 12), and a tap shows one until it is scrolled away; the
   widgets show chat names without message text. It stays on until turned off. The setting goes into backups.
+- FR-X26 Should: **Listen to posts** (owner decisions 2026-11-25). Settings → Chats → "Listen to messages", on by
+  default, adds "Listen" to the message menu and, in a channel with unread posts, "Listen to unread posts". Android's
+  text-to-speech reads them aloud in the device's language, with a voice that needs no network connection (each
+  voice is checked); without one, Pingogram points to Android's text-to-speech settings to download one. A player pill
+  under the top bar pauses, skips to the next post and stops, at the voice messages' speed. It stops when the chat is
+  left: no background playback, no new permission. Listening does not mark posts read. The setting goes into backups.
 
 ## 6. Non-functional requirements
 
