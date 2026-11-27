@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.backup.SignInRestoreOffer
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
+import dev.kyralabs.pingogram.core.data.repository.ProxyAutoSwitch
 import dev.kyralabs.pingogram.core.data.repository.ProxyMirror
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.AutomaticBackups
@@ -97,6 +98,10 @@ class PingogramApplication :
     /** Gives every account the proxies of the active one, and each change to them (docs/adr/0027-proxies.md). */
     @Inject
     lateinit var proxyMirror: dagger.Lazy<ProxyMirror>
+
+    /** Switches to a working proxy when the one in use fails, while the user asks it to (REQUIREMENTS.md FR-X27). */
+    @Inject
+    lateinit var proxyAutoSwitch: dagger.Lazy<ProxyAutoSwitch>
 
     /** Has the chat list offer to restore a backup after each sign-in (docs/adr/0039-local-backup-and-restore.md). */
     @Inject
@@ -223,6 +228,8 @@ class PingogramApplication :
                 signInRestoreOffer.get().start()
                 // Brings each account's proxies in step with the active account's, a new account's too.
                 proxyMirror.get().start()
+                // Tries the user's other proxies once the one in use has been connecting for a while, if asked to.
+                proxyAutoSwitch.get().start()
             }
         }
     }

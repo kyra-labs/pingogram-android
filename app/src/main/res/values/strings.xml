@@ -103,6 +103,8 @@
     <string name="link_not_yet">Pingogram can\'t open this link yet</string>
     <string name="link_open_in_browser">Open in browser</string>
     <string name="link_no_browser">No app on this device opens this link</string>
+    <!-- REQUIREMENTS.md FR-X27: the proxy in use stopped connecting; %1$s is the new proxy's name or address. -->
+    <string name="proxy_switched">Switched to %1$s</string>
     <!-- A link with a login code (t.me/login/…): Pingogram never enters it, as someone may be logging in with it -->
     <string name="link_login_code">Pingogram never uses login codes from links. Don\'t share this code with anyone.</string>
     <string name="link_not_found_username">No one has this username</string>

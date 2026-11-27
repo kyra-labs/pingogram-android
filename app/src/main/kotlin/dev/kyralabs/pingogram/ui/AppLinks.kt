@@ -220,6 +220,8 @@ internal fun BoxScope.LinkHandling(
         val openFromOutside = { link: String -> links.open(link, fromOutside = true) }
         OpenLinkEffect(navController, uiState, linkToOpen, onOpen = openFromOutside, onHandled = onLinkOpened)
         LinkEffects(links, navController, snackbars, onOpenSearch, onShare = share)
+        // The proxy switched to by itself, as only the app (with its links) has a view model store to ask.
+        ProxySwitchNotices(snackbars)
     }
     if (shares != null) {
         val openFromOutside = { incoming: IncomingShare ->
