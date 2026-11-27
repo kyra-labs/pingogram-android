@@ -116,6 +116,7 @@ import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UnansweredDismissalRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnreadPostsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
@@ -220,6 +221,9 @@ object ActiveAccountModule {
 
     @Provides
     fun channelFeedRepository(accounts: Accounts): ChannelFeedRepository = accounts.active.channelFeedRepository()
+
+    @Provides
+    fun unreadPostsRepository(accounts: Accounts): UnreadPostsRepository = accounts.active.unreadPostsRepository()
 
     @Provides
     fun contactRepository(accounts: Accounts): ContactRepository = accounts.active.contactRepository()

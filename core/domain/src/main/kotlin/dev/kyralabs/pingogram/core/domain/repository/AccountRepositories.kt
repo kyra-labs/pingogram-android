@@ -64,6 +64,8 @@ interface AccountRepositories {
 
     fun channelFeedRepository(): ChannelFeedRepository
 
+    fun unreadPostsRepository(): UnreadPostsRepository
+
     fun contactRepository(): ContactRepository
 
     fun contactSyncRepository(): ContactSyncRepository

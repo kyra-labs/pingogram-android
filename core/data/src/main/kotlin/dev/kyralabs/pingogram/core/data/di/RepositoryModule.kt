@@ -122,6 +122,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSuggestedPostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibUnreadPostsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
@@ -247,6 +248,7 @@ import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UnansweredDismissalRepository
+import dev.kyralabs.pingogram.core.domain.repository.UnreadPostsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
@@ -347,6 +349,9 @@ interface RepositoryModule {
 
     @Binds
     fun channelFeedRepository(repository: TdlibChannelFeedRepository): ChannelFeedRepository
+
+    @Binds
+    fun unreadPostsRepository(repository: TdlibUnreadPostsRepository): UnreadPostsRepository
 
     @Binds
     fun contactRepository(repository: TdlibContactRepository): ContactRepository
