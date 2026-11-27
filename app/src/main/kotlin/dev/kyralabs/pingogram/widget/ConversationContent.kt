@@ -43,7 +43,7 @@ sealed interface ConversationContent {
     /**
      * Chat [chatId] of the account in [slot]: its [title], [avatar] (null until it is drawn), unread count, whether it
      * is muted, and its newest [messages], oldest first; [canReply] where the user may write in it. A secret chat's
-     * messages stay off the home screen ([isSecret]).
+     * messages stay off the home screen ([isSecret]), as every chat's do behind the privacy screen ([isHidden]).
      */
     data class Chat(
         val chatId: Long,
@@ -55,6 +55,7 @@ sealed interface ConversationContent {
         val canReply: Boolean,
         val isSecret: Boolean = false,
         val avatar: Bitmap? = null,
+        val isHidden: Boolean = false,
     ) : ConversationContent
 }
 
