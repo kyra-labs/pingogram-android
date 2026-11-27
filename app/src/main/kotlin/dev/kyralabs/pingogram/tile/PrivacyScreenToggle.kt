@@ -10,4 +10,7 @@ internal class PrivacyScreenToggle(
 ) {
     /** Saves the opposite of the current setting; fails as the setting's save does. */
     suspend fun toggle(): Outcome<Unit> = repository.setEnabled(!repository.enabled.first())
+
+    /** Whether the phone must be unlocked first: to turn it off while [isLocked]; turning it on never needs it. */
+    suspend fun needsUnlock(isLocked: Boolean): Boolean = isLocked && repository.enabled.first()
 }
