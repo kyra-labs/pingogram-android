@@ -165,7 +165,8 @@ internal fun MessageBubbleRow(
     reveal: SelectionReveal? = null,
 ) {
     val strings = LocalResources.current
-    val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
+    val privacy = rememberPrivacyHiding(bubble, selecting = selection != null)
+    val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift, privacy)
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
@@ -173,7 +174,6 @@ internal fun MessageBubbleRow(
     val dragOut = rememberBubbleDragOut(bubble, resources.dragOut)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val reminder = LocalReminderChips.current?.labelFor(bubble.id)
-    val privacy = rememberPrivacyHiding(bubble, selecting = selection != null)
     Row(
         modifier =
             modifier

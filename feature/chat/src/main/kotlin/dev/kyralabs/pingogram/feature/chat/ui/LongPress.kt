@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -22,6 +23,7 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.toSize
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
 
 /**
  * Calls [onLongPress] once the pointer has stayed down, without moving beyond the touch slop, for the long-press
@@ -153,6 +155,7 @@ internal class ActionsOpener(
     private val onEvent: (ChatEvent) -> Unit,
     private val haptics: HapticFeedback,
     private val lift: MessageLiftState,
+    private val privacy: () -> PrivacyHiding = { PrivacyHiding.None },
 ) : (Rect?) -> Unit {
     /** The link the long press or right click that opens the actions next landed on; null for none. */
     private var pressedLink: String? = null
@@ -172,7 +175,7 @@ internal class ActionsOpener(
         returnFocus: (() -> Unit)? = null,
     ) {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-        lift.lift(messageId, bounds, takesFocus, returnFocus)
+        lift.lift(messageId, bounds, takesFocus, returnFocus, privacy)
         val link = pressedLink.takeIf { bounds != null }
         pressedLink = null
         onEvent(ChatEvent.ShowMessageActions(messageId, link))
@@ -185,9 +188,14 @@ internal fun rememberActionsOpener(
     messageId: Long,
     onEvent: (ChatEvent) -> Unit,
     lift: MessageLiftState,
+    privacy: PrivacyHiding = PrivacyHiding.None,
 ): ActionsOpener {
     val haptics = LocalHapticFeedback.current
-    return remember(messageId, onEvent, haptics, lift) { ActionsOpener(messageId, onEvent, haptics, lift) }
+    // Read as the row's changes: the lifted copy follows a tap that shows the message.
+    val current = rememberUpdatedState(privacy)
+    return remember(messageId, onEvent, haptics, lift) {
+        ActionsOpener(messageId, onEvent, haptics, lift) { current.value }
+    }
 }
 
 /**

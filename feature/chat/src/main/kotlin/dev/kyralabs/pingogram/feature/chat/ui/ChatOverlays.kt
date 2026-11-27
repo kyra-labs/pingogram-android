@@ -17,7 +17,9 @@ internal fun LiftedMessageMenu(
 ) {
     val actions = state.messageActions ?: return
     val anchor = lift.anchor ?: return
-    MessageActionsMenu(actions, anchor, lifted.isOutgoing, lift, onEvent) { LiftedBubble(lifted, state, resources) }
+    MessageActionsMenu(actions, anchor, lifted.isOutgoing, lift, onEvent) {
+        LiftedBubble(lifted, state, resources, anchor.privacy())
+    }
 }
 
 /**

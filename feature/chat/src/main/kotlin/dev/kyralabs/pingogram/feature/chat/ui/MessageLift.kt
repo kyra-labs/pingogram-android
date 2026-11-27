@@ -23,12 +23,15 @@ import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.transition.LocalAnimationsPaused
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
 
 /** Where the row of long-pressed message [messageId] was in the window ([bounds]) when its actions were asked for. */
 @Immutable
 internal data class LiftAnchor(
     val messageId: Long,
     val bounds: Rect,
+    /** Whether the privacy screen hides the message now, read as its row's changes; nothing hidden by default. */
+    val privacy: () -> PrivacyHiding = { PrivacyHiding.None },
 )
 
 /**
@@ -67,15 +70,17 @@ internal class MessageLiftState(
 
     /**
      * Lifts message [messageId] from [bounds], its row in the window, where the floating menu suits the window. A key
-     * or a mouse asked for it if [takesFocus]; [returnFocus], where a key did, gives the focus back to the message.
+     * or a mouse asked for it if [takesFocus]; [returnFocus], where a key did, gives the focus back to the message. Its
+     * copy stays hidden while its row's [privacy] says so (`REQUIREMENTS.md` FR-X25).
      */
     fun lift(
         messageId: Long,
         bounds: Rect?,
         takesFocus: Boolean = false,
         returnFocus: (() -> Unit)? = null,
+        privacy: () -> PrivacyHiding = { PrivacyHiding.None },
     ) {
-        val lifted = bounds?.takeIf { canLift() }?.let { LiftAnchor(messageId, it) }
+        val lifted = bounds?.takeIf { canLift() }?.let { LiftAnchor(messageId, it, privacy) }
         anchor = lifted
         this.takesFocus = lifted != null && takesFocus
         this.returnFocus = returnFocus.takeIf { lifted != null }
