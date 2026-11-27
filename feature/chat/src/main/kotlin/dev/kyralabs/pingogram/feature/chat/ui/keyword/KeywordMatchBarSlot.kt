@@ -47,6 +47,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.actionbar.LocalChatActionBar
+import dev.kyralabs.pingogram.feature.chat.ui.listen.LocalListenBar
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -176,11 +177,12 @@ private fun KeywordMatchSlot(
     }
 }
 
-/** The conversation's action bar, then its keyword match bar, where its route provides them. */
+/** The conversation's action bar, keyword match bar and Listen to posts' player, where its route provides them. */
 @Composable
 internal fun ConversationCards(padding: PaddingValues) {
     LocalChatActionBar.current?.invoke(padding)
     LocalKeywordMatchBar.current?.invoke(padding)
+    LocalListenBar.current?.invoke(padding)
 }
 
 /** The conversation's keyword match bar, provided by its route; null shows none. */
