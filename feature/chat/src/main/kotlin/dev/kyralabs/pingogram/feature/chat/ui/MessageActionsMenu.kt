@@ -77,6 +77,7 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -233,13 +234,15 @@ internal fun liftedBubble(
 
 /**
  * The lifted copy of [bubble], as the list shows it (its file, playback and uploads from [state]); nothing in it acts
- * but the text selection around it.
+ * but the text selection around it, and, while the privacy screen hides it ([privacy], FR-X25), the tap that shows it,
+ * as on its row.
  */
 @Composable
 internal fun LiftedBubble(
     bubble: ChatItem.Bubble,
     state: ChatUiState,
     resources: BubbleResources,
+    privacy: PrivacyHiding = PrivacyHiding.None,
 ) {
     val transfers = state.transfers.collect()
     val fileState = transfers.fileState(bubble.content.downloadableFileId)
@@ -253,6 +256,7 @@ internal fun LiftedBubble(
         uploads = transfers.uploadsOf(bubble),
         isSelected = false,
         modifier = Modifier.fillMaxWidth(),
+        privacy = privacy,
     )
 }
 
