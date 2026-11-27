@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.backup.SignInRestoreOffer
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
+import dev.kyralabs.pingogram.core.data.repository.ProxyMirror
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.AutomaticBackups
 import dev.kyralabs.pingogram.core.notifications.BirthdayReminderAlarms
@@ -92,6 +93,10 @@ class PingogramApplication :
     /** Posts the keyword alerts of muted chats, for every account (the owner's board 30). */
     @Inject
     lateinit var keywordAlertNotifier: dagger.Lazy<KeywordAlertNotifier>
+
+    /** Gives every account the proxies of the active one, and each change to them (docs/adr/0027-proxies.md). */
+    @Inject
+    lateinit var proxyMirror: dagger.Lazy<ProxyMirror>
 
     /** Has the chat list offer to restore a backup after each sign-in (docs/adr/0039-local-backup-and-restore.md). */
     @Inject
@@ -216,6 +221,8 @@ class PingogramApplication :
                 keywordAlertNotifier.get().start()
                 // Offers to restore a backup once an account that asked for a login is ready.
                 signInRestoreOffer.get().start()
+                // Brings each account's proxies in step with the active account's, a new account's too.
+                proxyMirror.get().start()
             }
         }
     }
