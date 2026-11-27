@@ -17,10 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +30,6 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.AnnotatedString
@@ -45,7 +41,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
-import dev.kyralabs.pingogram.core.ui.privacy.LocalPrivacyScreen
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.customEmoji
@@ -77,9 +72,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.giveaway.giveawayActions
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.LocalPrivacyHidden
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.PrivacyHiding
-import dev.kyralabs.pingogram.feature.chat.ui.privacy.hasPrivateContent
 import dev.kyralabs.pingogram.feature.chat.ui.privacy.privacyCover
-import dev.kyralabs.pingogram.feature.chat.ui.privacy.revealOnTap
+import dev.kyralabs.pingogram.feature.chat.ui.privacy.rememberPrivacyHiding
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.LocalReminderChips
 import dev.kyralabs.pingogram.feature.chat.ui.reminders.reminderActions
 import dev.kyralabs.pingogram.feature.chat.ui.rich.RichMessageBody
