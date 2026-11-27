@@ -26,6 +26,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Privacy screen: Settings → Privacy and security → Privacy screen blurs message text and photos in chats until you
   tap one, for reading in public, and keeps message text off the home-screen widgets. It stays on until you turn it
   off.
+- Listen to posts: "Listen" in a message's menu, and "Listen to unread posts" in a channel's menu, read them aloud with
+  a voice on your phone, at your voice message speed, without marking anything read. It stops when you leave the
+  chat; Settings → Chats can turn it off.
 
 ### Changed
 - Opening and leaving a video call no longer holds up the call screen while its video is set up and taken down.

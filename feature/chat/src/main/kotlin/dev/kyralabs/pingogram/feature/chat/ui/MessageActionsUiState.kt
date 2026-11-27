@@ -140,6 +140,9 @@ enum class MessageAction {
     /** Copy its text or caption, as plain text. */
     Copy,
 
+    /** Read its text or caption aloud on the device (Listen to posts, `listen.ListenViewModel`). */
+    Listen,
+
     /** Copy its link (supergroups and channels; an album's link for an album's item). */
     CopyLink,
 
