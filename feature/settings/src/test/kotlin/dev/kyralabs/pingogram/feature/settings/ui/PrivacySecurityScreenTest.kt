@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsEvent
@@ -175,6 +176,32 @@ class PrivacySecurityScreenTest {
         assertTrue(top(R.string.settings_delete_drafts) < top(R.string.settings_delete_account))
         node(R.string.settings_delete_drafts).performClick()
         assertEquals(listOf(DataOptionsEvent.DeleteDrafts), drafts)
+    }
+
+    @Test
+    fun `the privacy screen switch is the first on screen, and sends its change`() {
+        val changes = mutableListOf<Boolean>()
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                PrivacySecurityScreen(
+                    state = SettingsPreviewData.privacySecurity,
+                    onEvent = {},
+                    onOpen = {},
+                    onBack = {},
+                    phoneNumbersHidden = false,
+                    privacyScreen = false,
+                    onPrivacyScreenChange = { changes += it },
+                )
+            }
+        }
+
+        node(R.string.settings_privacy_screen).performClick()
+
+        assertEquals(listOf(true), changes)
+        val privacyScreen = composeRule.onNodeWithText(string(R.string.settings_privacy_screen))
+        val phoneNumbers = composeRule.onNodeWithText(string(R.string.settings_hide_phone_numbers))
+        assertTrue(privacyScreen.getUnclippedBoundsInRoot().top < phoneNumbers.getUnclippedBoundsInRoot().top)
+        composeRule.assertAccessible()
     }
 
     @Test
