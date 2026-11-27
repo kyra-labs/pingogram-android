@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UnansweredSettings
 import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCompactChatListRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakeListenSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNotesAndNamesRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTranscriptionSettingsRepository
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test
 class ChatsPageViewModelTest {
     private val composerSettings = FakeComposerSettingsRepository()
     private val playbackSettings = FakePlaybackSettingsRepository()
+    private val listenSettings = FakeListenSettingsRepository()
     private val chatListSettings = FakeChatListSettingsRepository()
     private val compactChatList = FakeCompactChatListRepository()
     private val notesAndNames = FakeNotesAndNamesRepository()
@@ -56,6 +58,7 @@ class ChatsPageViewModelTest {
         ChatsPageViewModel(
             composerSettings,
             playbackSettings,
+            listenSettings,
             ChatListOptions(chatListSettings, compactChatList, notesAndNames, unanswered),
             transcriptionSettings,
             transcriber,
@@ -239,6 +242,18 @@ class ChatsPageViewModelTest {
 
             send(viewModel, ChatsPageEvent.SetNotesAndNames(true))
             assertTrue(viewModel.content.notesAndNames)
+        }
+
+    @Test
+    fun `messages can be listened to at first, and turning it off saves and shows`() =
+        runTest {
+            val viewModel = viewModel()
+            assertTrue(viewModel.content.listens)
+
+            send(viewModel, ChatsPageEvent.SetListens(false))
+
+            assertFalse(viewModel.content.listens)
+            assertFalse(listenSettings.enabled.value)
         }
 
     @Test
