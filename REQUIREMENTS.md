@@ -376,6 +376,13 @@ the typing status (FR-X17) and removing tracking from links (FR-X8) (owner decis
   voice is checked); without one, Pingogram points to Android's text-to-speech settings to download one. A player pill
   under the top bar pauses, skips to the next post and stops, at the voice messages' speed. It stops when the chat is
   left: no background playback, no new permission. Listening does not mark posts read. The setting goes into backups.
+- FR-X27 Should: **Proxies** (owner decisions 2026-11-25 and 2026-11-27, `docs/adr/0027-proxies.md`). Every account
+  uses the same proxies: the first sync adds to each account what it lacks and removes nothing, then each add, edit,
+  use, removal and "no proxy" reaches every account, and a new account starts with the list and the proxy in use;
+  proxies are the same when their server, port, protocol and its secret or login are. Scanning a proxy's QR code opens
+  its sheet. "Test all" pings every proxy and sorts them by speed. "Switch to a working proxy", off by default: after
+  about 15 seconds of connecting through the proxy in use, Pingogram pings the others and uses the quickest that
+  answers, on every account, and says which; it never turns the proxy off by itself. The setting goes into backups.
 
 ## 6. Non-functional requirements
 
