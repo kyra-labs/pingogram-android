@@ -68,8 +68,6 @@ internal fun PrivacySecurityRoute(
     val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
-    val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
-    val directShare by directShareViewModel.enabled.collectAsStateWithLifecycle()
     val drafts by draftsViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     DataOptionsSnackbars(draftsViewModel, snackbarHostState)
@@ -102,7 +100,7 @@ internal fun PrivacySecurityRoute(
         snackbarHostState = snackbarHostState,
         suggestsFrequent = suggestsFrequent,
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
-        idsShown = idsShown,
+        idsShown = idVisibilityViewModel.shown.collectAsStateWithLifecycle().value,
         onIdsShownChange = idVisibilityViewModel::onCheckedChange,
         incognitoKeyboard = incognitoKeyboardViewModel.enabled.collectAsStateWithLifecycle().value,
         onIncognitoKeyboardChange = incognitoKeyboardViewModel::onCheckedChange,
@@ -114,7 +112,7 @@ internal fun PrivacySecurityRoute(
         onSharesPhoneNumberChange = sharePhoneNumberViewModel::onCheckedChange,
         showsBirthdays = birthdaysRowViewModel.enabled.collectAsStateWithLifecycle().value,
         onShowsBirthdaysChange = birthdaysRowViewModel::onCheckedChange,
-        directShare = directShare,
+        directShare = directShareViewModel.enabled.collectAsStateWithLifecycle().value,
         onDirectShareChange = directShareViewModel::onCheckedChange,
         privacyScreen = privacyScreenViewModel.enabled.collectAsStateWithLifecycle().value,
         onPrivacyScreenChange = privacyScreenViewModel::onCheckedChange,

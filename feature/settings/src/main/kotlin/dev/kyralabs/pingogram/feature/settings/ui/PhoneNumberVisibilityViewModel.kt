@@ -59,7 +59,7 @@ internal fun OnScreenSection(
     privacyScreen: Boolean? = null,
     onPrivacyScreenChange: (Boolean) -> Unit = {},
 ) {
-    if (hidden == null && idsShown == null && directShare == null && privacyScreen == null) return
+    if (listOf(hidden, idsShown, directShare, privacyScreen).all { it == null }) return
     SettingsGroup(title = stringResource(R.string.settings_section_on_screen)) {
         if (privacyScreen != null) {
             item { shapes ->
