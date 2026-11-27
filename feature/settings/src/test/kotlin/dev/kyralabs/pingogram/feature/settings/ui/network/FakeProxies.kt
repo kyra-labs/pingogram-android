@@ -7,13 +7,14 @@ import org.drinkless.tdlib.TdApi
 
 /**
  * TDLib's proxies as [client] answers them: [saved] is what `getProxies` returns, the changes apply to it, and pings
- * answer with [pingSeconds] for a server, or fail for the servers in [unreachable].
+ * answer with [pingSeconds] (a server's own in [serverPings]), or fail for the servers in [unreachable].
  */
 internal class FakeProxies(
     private val client: FakeTdlibClient,
 ) {
     var saved = mutableListOf<TdApi.AddedProxy>()
     var pingSeconds = 0.12
+    val serverPings = mutableMapOf<String, Double>()
     val unreachable = mutableSetOf<String>()
     var refuse: TdError? = null
     private var nextId = 1
@@ -51,7 +52,7 @@ internal class FakeProxies(
             if (request.proxy.server in unreachable) {
                 TdResult.Failure(TdError(400, "Connection refused"))
             } else {
-                TdResult.Success(TdApi.Seconds(pingSeconds))
+                TdResult.Success(TdApi.Seconds(serverPings[request.proxy.server] ?: pingSeconds))
             }
         }
     }

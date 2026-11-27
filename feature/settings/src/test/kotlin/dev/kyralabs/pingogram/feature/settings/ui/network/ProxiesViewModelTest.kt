@@ -72,6 +72,25 @@ class ProxiesViewModelTest {
         }
 
     @Test
+    fun `test all lists the proxies by speed once all have answered, those that failed last`() =
+        runTest {
+            proxies.add("slow.example")
+            proxies.add("gone.example")
+            proxies.add("fast.example")
+            proxies.unreachable += "gone.example"
+            proxies.serverPings["slow.example"] = 0.9
+            proxies.serverPings["fast.example"] = 0.05
+            val viewModel = viewModel()
+            val servers = { viewModel.content.proxies.map { it.proxy.proxy.server } }
+            assertEquals(listOf("slow.example", "gone.example", "fast.example"), servers())
+
+            viewModel.onEvent(ProxiesEvent.CheckAgain)
+            runCurrent()
+
+            assertEquals(listOf("fast.example", "slow.example", "gone.example"), servers())
+        }
+
+    @Test
     fun `a tapped proxy is used, and the list shows it`() =
         runTest {
             proxies.add("a.example", enabled = true)

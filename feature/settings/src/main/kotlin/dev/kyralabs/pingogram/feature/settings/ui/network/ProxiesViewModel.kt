@@ -23,12 +23,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
+import kotlin.time.Duration
 
 /**
  * The Proxy page (`docs/adr/0027-proxies.md`): the proxies TDLib keeps, which one it connects through, and how each
- * answers. Every proxy is pinged once when it first shows, at most [MAX_PINGS] at a time, and again on
- * [ProxiesEvent.CheckAgain]; a ping goes to that proxy only. The list follows [ProxyRepository.proxies], so a proxy
- * added, edited or connected from a link shows at once.
+ * answers. Every proxy is pinged once when it first shows, at most [MAX_PINGS] at a time, and again on "Test all"
+ * ([ProxiesEvent.CheckAgain]), after which the list is sorted by speed once every proxy has answered: the quickest
+ * first, those that did not get through last, in TDLib's order otherwise. A ping goes to that proxy only. The list
+ * follows [ProxyRepository.proxies], so a proxy added, edited or connected from a link shows at once.
  */
 @HiltViewModel
 class ProxiesViewModel
@@ -47,6 +49,7 @@ class ProxiesViewModel
         private val pings = Semaphore(MAX_PINGS)
         private var saved: ImmutableList<SavedProxy> = persistentListOf()
         private var loadJob: Job? = null
+        private var sortsBySpeed = false
 
         init {
             load()
@@ -110,7 +113,9 @@ class ProxiesViewModel
         }
 
         private fun show() {
-            val items = saved.map { ProxyItem(it, checks.value[it.proxy] ?: ProxyCheck.Checking) }.toImmutableList()
+            val checked = saved.map { ProxyItem(it, checks.value[it.proxy] ?: ProxyCheck.Checking) }
+            val answered = checked.none { it.check == ProxyCheck.Checking }
+            val items = (if (sortsBySpeed && answered) checked.sortedWith(BY_SPEED) else checked).toImmutableList()
             mutableUiState.update { state ->
                 when (state) {
                     is ProxiesUiState.Content -> {
@@ -142,6 +147,7 @@ class ProxiesViewModel
 
         private fun checkAgain() {
             if (uiState.value !is ProxiesUiState.Content) return
+            sortsBySpeed = true
             saved
                 .map { it.proxy }
                 .distinct()
@@ -192,5 +198,12 @@ class ProxiesViewModel
 
         private companion object {
             const val MAX_PINGS = 4
+
+            /** The quickest first, then those still checking, then those that did not get through; stable otherwise. */
+            val BY_SPEED =
+                compareBy<ProxyItem>(
+                    { (it.check as? ProxyCheck.Available)?.ping ?: Duration.INFINITE },
+                    { it.check == ProxyCheck.Unavailable },
+                )
         }
     }

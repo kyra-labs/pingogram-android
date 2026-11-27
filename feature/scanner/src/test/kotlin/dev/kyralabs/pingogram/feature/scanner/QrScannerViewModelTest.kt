@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
+import dev.kyralabs.pingogram.core.domain.model.Proxy
+import dev.kyralabs.pingogram.core.domain.model.ProxyType
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -149,6 +151,21 @@ class QrScannerViewModelTest {
 
             viewModel.onEvent(QrScannerEvent.ScanAgain)
             assertTrue(viewModel.uiState.value.isScanning)
+        }
+
+    @Test
+    fun `a proxy's code opens its sheet, where the user decides to connect`() =
+        runTest {
+            val proxy = Proxy("proxy.example.org", 443, ProxyType.Mtproto("dd00"))
+            links.target = LinkTarget.ProxyServer(proxy)
+            val viewModel = viewModel().started()
+
+            viewModel.effects.test {
+                viewModel.onEvent(QrScannerEvent.Scanned("tg://proxy?server=proxy.example.org&port=443&secret=dd00"))
+                runCurrent()
+                assertEquals(QrScannerEffect.Found, awaitItem())
+                assertEquals(QrScannerEffect.Open(LinkTarget.ProxyServer(proxy)), awaitItem())
+            }
         }
 
     @Test
